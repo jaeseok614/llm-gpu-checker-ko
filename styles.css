@@ -266,6 +266,16 @@ h3 {
   gap: 7px;
 }
 
+.field-wide {
+  grid-column: span 2;
+}
+
+.field-control-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(100px, 0.65fr);
+  gap: 7px;
+}
+
 .field span {
   color: var(--muted);
   font-size: 12px;
@@ -925,6 +935,14 @@ button:focus-visible {
   .detail-summary-grid,
   .runtime-grid,
   .model-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-wide {
+    grid-column: auto;
+  }
+
+  .field-control-pair {
     grid-template-columns: 1fr;
   }
 

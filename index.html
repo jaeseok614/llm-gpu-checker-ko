@@ -30,8 +30,10 @@
 
         <div class="settings-panel" id="hardwareEditor">
           <label class="field field-wide">
-            <span>GPU 프리셋</span>
+            <span>GPU 프리셋 / 검색</span>
             <select id="gpuPreset"></select>
+            <input id="gpuSearch" type="search" list="gpuPresetList" placeholder="예: RTX 4090, H100, A100" aria-label="GPU 프리셋 검색" />
+            <datalist id="gpuPresetList"></datalist>
           </label>
           <label class="field">
             <span>VRAM</span>
@@ -60,41 +62,53 @@
 
         <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative">
           <label class="field">
-            <span>컨텍스트 길이</span>
-            <select id="contextSize">
-              <option value="4096">4K</option>
-              <option value="8192" selected>8K</option>
-              <option value="16384">16K</option>
-              <option value="32768">32K</option>
-              <option value="65536">64K</option>
-              <option value="131072">128K</option>
-              <option value="262144">256K</option>
-              <option value="524288">512K</option>
-              <option value="1048576">1M</option>
-            </select>
+            <span>컨텍스트 토큰</span>
+            <div class="field-control-pair">
+              <select id="contextPreset" data-preset-target="contextSize" aria-label="컨텍스트 프리셋">
+                <option value="4096">4K</option>
+                <option value="8192" selected>8K</option>
+                <option value="16384">16K</option>
+                <option value="32768">32K</option>
+                <option value="65536">64K</option>
+                <option value="131072">128K</option>
+                <option value="262144">256K</option>
+                <option value="524288">512K</option>
+                <option value="1048576">1M</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="contextSize" data-direct-preset="contextPreset" type="number" min="512" max="1048576" step="512" value="8192" aria-label="컨텍스트 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>동시 요청</span>
-            <select id="concurrency">
-              <option value="1" selected>1명</option>
-              <option value="2">2명</option>
-              <option value="4">4명</option>
-              <option value="8">8명</option>
-              <option value="16">16명</option>
-              <option value="32">32명</option>
-              <option value="64">64명</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="concurrencyPreset" data-preset-target="concurrency" aria-label="동시 요청 프리셋">
+                <option value="1" selected>1명</option>
+                <option value="2">2명</option>
+                <option value="4">4명</option>
+                <option value="8">8명</option>
+                <option value="16">16명</option>
+                <option value="32">32명</option>
+                <option value="64">64명</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="concurrency" data-direct-preset="concurrencyPreset" type="number" min="1" max="256" step="1" value="1" aria-label="동시 요청 직접 입력" />
+            </div>
           </label>
           <label class="field">
-            <span>평균 출력</span>
-            <select id="outputTokens">
-              <option value="256">256 토큰</option>
-              <option value="512" selected>512 토큰</option>
-              <option value="1024">1K 토큰</option>
-              <option value="2048">2K 토큰</option>
-              <option value="4096">4K 토큰</option>
-              <option value="8192">8K 토큰</option>
-            </select>
+            <span>평균 출력 토큰</span>
+            <div class="field-control-pair">
+              <select id="outputTokensPreset" data-preset-target="outputTokens" aria-label="평균 출력 프리셋">
+                <option value="256">256 토큰</option>
+                <option value="512" selected>512 토큰</option>
+                <option value="1024">1K 토큰</option>
+                <option value="2048">2K 토큰</option>
+                <option value="4096">4K 토큰</option>
+                <option value="8192">8K 토큰</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="outputTokens" data-direct-preset="outputTokensPreset" type="number" min="16" max="65536" step="16" value="512" aria-label="평균 출력 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>KV cache</span>
@@ -122,29 +136,37 @@
         <div class="settings-panel advanced-panel workload-settings" data-workload-settings="embedding" hidden>
           <label class="field">
             <span>평균 입력 길이</span>
-            <select id="embeddingInputTokens">
-              <option value="128">128 토큰</option>
-              <option value="256">256 토큰</option>
-              <option value="384" selected>384 토큰</option>
-              <option value="512">512 토큰</option>
-              <option value="1024">1K 토큰</option>
-              <option value="2048">2K 토큰</option>
-              <option value="4096">4K 토큰</option>
-              <option value="8192">8K 토큰</option>
-              <option value="32768">32K 토큰</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="embeddingInputTokensPreset" data-preset-target="embeddingInputTokens" aria-label="평균 입력 길이 프리셋">
+                <option value="128">128 토큰</option>
+                <option value="256">256 토큰</option>
+                <option value="384" selected>384 토큰</option>
+                <option value="512">512 토큰</option>
+                <option value="1024">1K 토큰</option>
+                <option value="2048">2K 토큰</option>
+                <option value="4096">4K 토큰</option>
+                <option value="8192">8K 토큰</option>
+                <option value="32768">32K 토큰</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="embeddingInputTokens" data-direct-preset="embeddingInputTokensPreset" type="number" min="1" max="32768" step="1" value="384" aria-label="평균 입력 길이 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>배치 크기</span>
-            <select id="embeddingBatchSize">
-              <option value="1">1개</option>
-              <option value="8">8개</option>
-              <option value="16">16개</option>
-              <option value="32" selected>32개</option>
-              <option value="64">64개</option>
-              <option value="128">128개</option>
-              <option value="256">256개</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="embeddingBatchSizePreset" data-preset-target="embeddingBatchSize" aria-label="임베딩 배치 프리셋">
+                <option value="1">1개</option>
+                <option value="8">8개</option>
+                <option value="16">16개</option>
+                <option value="32" selected>32개</option>
+                <option value="64">64개</option>
+                <option value="128">128개</option>
+                <option value="256">256개</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="embeddingBatchSize" data-direct-preset="embeddingBatchSizePreset" type="number" min="1" max="1024" step="1" value="32" aria-label="임베딩 배치 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>정밀도</span>
@@ -161,55 +183,75 @@
           </label>
           <label class="field">
             <span>최대 배치 토큰</span>
-            <select id="embeddingBatchTokens">
-              <option value="8192">8K</option>
-              <option value="16384" selected>16K</option>
-              <option value="32768">32K</option>
-              <option value="65536">64K</option>
-              <option value="131072">128K</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="embeddingBatchTokensPreset" data-preset-target="embeddingBatchTokens" aria-label="최대 배치 토큰 프리셋">
+                <option value="8192">8K</option>
+                <option value="16384" selected>16K</option>
+                <option value="32768">32K</option>
+                <option value="65536">64K</option>
+                <option value="131072">128K</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="embeddingBatchTokens" data-direct-preset="embeddingBatchTokensPreset" type="number" min="512" max="1048576" step="512" value="16384" aria-label="최대 배치 토큰 직접 입력" />
+            </div>
           </label>
         </div>
 
         <div class="settings-panel advanced-panel workload-settings" data-workload-settings="reranker" hidden>
           <label class="field">
             <span>질의 길이</span>
-            <select id="rerankerQueryTokens">
-              <option value="32">32 토큰</option>
-              <option value="64" selected>64 토큰</option>
-              <option value="128">128 토큰</option>
-              <option value="256">256 토큰</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="rerankerQueryTokensPreset" data-preset-target="rerankerQueryTokens" aria-label="질의 길이 프리셋">
+                <option value="32">32 토큰</option>
+                <option value="64" selected>64 토큰</option>
+                <option value="128">128 토큰</option>
+                <option value="256">256 토큰</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="rerankerQueryTokens" data-direct-preset="rerankerQueryTokensPreset" type="number" min="1" max="8192" step="1" value="64" aria-label="질의 길이 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>문서 길이</span>
-            <select id="rerankerDocTokens">
-              <option value="256">256 토큰</option>
-              <option value="512" selected>512 토큰</option>
-              <option value="1024">1K 토큰</option>
-              <option value="2048">2K 토큰</option>
-              <option value="4096">4K 토큰</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="rerankerDocTokensPreset" data-preset-target="rerankerDocTokens" aria-label="문서 길이 프리셋">
+                <option value="256">256 토큰</option>
+                <option value="512" selected>512 토큰</option>
+                <option value="1024">1K 토큰</option>
+                <option value="2048">2K 토큰</option>
+                <option value="4096">4K 토큰</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="rerankerDocTokens" data-direct-preset="rerankerDocTokensPreset" type="number" min="1" max="32768" step="1" value="512" aria-label="문서 길이 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>후보 문서</span>
-            <select id="rerankerCandidates">
-              <option value="10">10개</option>
-              <option value="20">20개</option>
-              <option value="40" selected>40개</option>
-              <option value="80">80개</option>
-              <option value="120">120개</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="rerankerCandidatesPreset" data-preset-target="rerankerCandidates" aria-label="후보 문서 프리셋">
+                <option value="10">10개</option>
+                <option value="20">20개</option>
+                <option value="40" selected>40개</option>
+                <option value="80">80개</option>
+                <option value="120">120개</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="rerankerCandidates" data-direct-preset="rerankerCandidatesPreset" type="number" min="1" max="10000" step="1" value="40" aria-label="후보 문서 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>배치 크기</span>
-            <select id="rerankerBatchSize">
-              <option value="1">1쌍</option>
-              <option value="8">8쌍</option>
-              <option value="16" selected>16쌍</option>
-              <option value="32">32쌍</option>
-              <option value="64">64쌍</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="rerankerBatchSizePreset" data-preset-target="rerankerBatchSize" aria-label="리랭커 배치 프리셋">
+                <option value="1">1쌍</option>
+                <option value="8">8쌍</option>
+                <option value="16" selected>16쌍</option>
+                <option value="32">32쌍</option>
+                <option value="64">64쌍</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="rerankerBatchSize" data-direct-preset="rerankerBatchSizePreset" type="number" min="1" max="1024" step="1" value="16" aria-label="리랭커 배치 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>정밀도</span>
@@ -234,7 +276,7 @@
               <option value="a4-300">A4 300 DPI</option>
               <option value="screen-1080">웹/스크린샷 1080p</option>
               <option value="receipt">영수증/라벨</option>
-              <option value="custom">직접 입력</option>
+              <option value="custom">직접</option>
             </select>
           </label>
           <label class="field">
@@ -247,14 +289,18 @@
           </label>
           <label class="field">
             <span>배치 페이지</span>
-            <select id="ocrBatchSize">
-              <option value="1" selected>1페이지</option>
-              <option value="2">2페이지</option>
-              <option value="4">4페이지</option>
-              <option value="8">8페이지</option>
-              <option value="16">16페이지</option>
-              <option value="32">32페이지</option>
-            </select>
+            <div class="field-control-pair">
+              <select id="ocrBatchSizePreset" data-preset-target="ocrBatchSize" aria-label="OCR 배치 페이지 프리셋">
+                <option value="1" selected>1페이지</option>
+                <option value="2">2페이지</option>
+                <option value="4">4페이지</option>
+                <option value="8">8페이지</option>
+                <option value="16">16페이지</option>
+                <option value="32">32페이지</option>
+                <option value="custom">직접</option>
+              </select>
+              <input id="ocrBatchSize" data-direct-preset="ocrBatchSizePreset" type="number" min="1" max="256" step="1" value="1" aria-label="OCR 배치 페이지 직접 입력" />
+            </div>
           </label>
           <label class="field">
             <span>정밀도</span>

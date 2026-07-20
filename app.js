@@ -103,6 +103,10 @@ function populateSelects() {
   $("gpuPreset").innerHTML = GPU_PRESETS.map(
     (gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`,
   ).join("");
+  $("gpuPresetList").innerHTML = GPU_PRESETS
+    .filter((gpu) => gpu.id !== "custom")
+    .map((gpu) => `<option value="${escapeAttr(gpu.name)}"></option>`)
+    .join("");
   $("gpuPreset").value = "rtx4090-24";
 
   $("quantization").innerHTML = QUANTS.map(
@@ -203,10 +207,33 @@ function bindEvents() {
     });
   });
 
+  document.querySelectorAll("[data-preset-target]").forEach((select) => {
+    select.addEventListener("change", () => {
+      if (select.value !== "custom") {
+        $(select.dataset.presetTarget).value = select.value;
+      }
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-direct-preset]").forEach((input) => {
+    input.addEventListener("input", () => {
+      syncPresetForInput(input.id);
+      render();
+    });
+  });
+
   $("searchInput").addEventListener("input", render);
 
   $("gpuPreset").addEventListener("change", (event) => {
     applyPreset(event.target.value);
+    render();
+  });
+
+  $("gpuSearch").addEventListener("input", () => {
+    const preset = findGpuPresetFromSearch($("gpuSearch").value);
+    if (!preset) return;
+    applyPreset(preset.id);
     render();
   });
 
@@ -288,6 +315,8 @@ function applyPreset(id) {
   const preset = GPU_PRESETS.find((gpu) => gpu.id === id) || GPU_PRESETS[0];
   if (!preset) return;
 
+  $("gpuPreset").value = preset.id;
+  $("gpuSearch").value = preset.id === "custom" ? "" : preset.name;
   $("vramGb").value = preset.vram;
   $("ramGb").value = preset.ram;
   $("bandwidth").value = preset.bandwidth;
@@ -295,14 +324,45 @@ function applyPreset(id) {
   detectedHardwareLabel = `${preset.name} 기준`;
 }
 
+function findGpuPresetFromSearch(value) {
+  const query = normalizeSearchText(value);
+  if (query.length < 2) return null;
+
+  const candidates = GPU_PRESETS.filter((gpu) => gpu.id !== "custom");
+  return candidates.find((gpu) => normalizeSearchText(gpu.name) === query)
+    || candidates.find((gpu) => normalizeSearchText(gpu.id) === query)
+    || candidates.find((gpu) => normalizeSearchText(gpu.name).includes(query))
+    || candidates.find((gpu) => query.includes(normalizeSearchText(gpu.name)))
+    || null;
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function syncPresetForInput(inputId) {
+  const select = document.querySelector(`[data-preset-target="${inputId}"]`);
+  if (!select) return;
+  const value = $(inputId).value;
+  select.value = [...select.options].some((option) => option.value === value) ? value : "custom";
+}
+
+function syncPresetControls() {
+  document.querySelectorAll("[data-direct-preset]").forEach((input) => syncPresetForInput(input.id));
+}
+
 function getHardware() {
   const vram = clampNumber($("vramGb").value, 2, 640, 24);
   const count = clampNumber($("gpuCount").value, 1, 16, 1);
   const ram = clampNumber($("ramGb").value, 8, 2048, 64);
   const bandwidth = clampNumber($("bandwidth").value, 100, 12000, 1008);
-  const context = clampNumber($("contextSize").value, 4096, 1048576, 8192);
-  const concurrency = clampNumber($("concurrency").value, 1, 64, 1);
-  const outputTokens = clampNumber($("outputTokens").value, 128, 8192, 512);
+  const context = clampNumber($("contextSize").value, 512, 1048576, 8192);
+  const concurrency = clampNumber($("concurrency").value, 1, 256, 1);
+  const outputTokens = clampNumber($("outputTokens").value, 16, 65536, 512);
   const kvPrecision = $("kvPrecision").value;
   const kvMeta = KV_PRECISION_META[kvPrecision] || KV_PRECISION_META.fp16;
   const runtime = $("runtimeMode").value;
@@ -363,20 +423,20 @@ function getWorkloadSettings() {
     return {
       type: "embedding",
       inputTokens: clampNumber($("embeddingInputTokens").value, 1, 32768, 384),
-      batchSize: clampNumber($("embeddingBatchSize").value, 1, 256, 32),
+      batchSize: clampNumber($("embeddingBatchSize").value, 1, 1024, 32),
       precisionId: $("encoderPrecision").value,
       runtime: $("encoderRuntime").value,
-      maxBatchTokens: clampNumber($("embeddingBatchTokens").value, 1024, 131072, 16384),
+      maxBatchTokens: clampNumber($("embeddingBatchTokens").value, 512, 1048576, 16384),
     };
   }
 
   if (activeWorkload === "reranker") {
     return {
       type: "reranker",
-      queryTokens: clampNumber($("rerankerQueryTokens").value, 1, 4096, 64),
-      docTokens: clampNumber($("rerankerDocTokens").value, 1, 8192, 512),
-      candidates: clampNumber($("rerankerCandidates").value, 1, 1000, 40),
-      batchSize: clampNumber($("rerankerBatchSize").value, 1, 256, 16),
+      queryTokens: clampNumber($("rerankerQueryTokens").value, 1, 8192, 64),
+      docTokens: clampNumber($("rerankerDocTokens").value, 1, 32768, 512),
+      candidates: clampNumber($("rerankerCandidates").value, 1, 10000, 40),
+      batchSize: clampNumber($("rerankerBatchSize").value, 1, 1024, 16),
       precisionId: $("rerankerPrecision").value,
       runtime: $("rerankerRuntime").value,
     };
@@ -388,7 +448,7 @@ function getWorkloadSettings() {
       resolutionPreset: $("ocrResolutionPreset").value,
       width: clampNumber($("ocrWidth").value, 320, 10000, 1654),
       height: clampNumber($("ocrHeight").value, 320, 14000, 2339),
-      batchSize: clampNumber($("ocrBatchSize").value, 1, 64, 1),
+      batchSize: clampNumber($("ocrBatchSize").value, 1, 256, 1),
       precisionId: $("ocrPrecision").value,
       featureSet: $("ocrFeatureSet").value,
     };
@@ -1805,27 +1865,27 @@ function applyUrlState() {
   setValueIfPresent("ramGb", params.get("ram"));
   setValueIfPresent("gpuCount", params.get("count"));
   setValueIfPresent("bandwidth", params.get("bandwidth"));
-  setSelectIfValid("contextSize", params.get("ctx"));
-  setSelectIfValid("concurrency", params.get("con"));
-  setSelectIfValid("outputTokens", params.get("out"));
+  setValueIfPresent("contextSize", params.get("ctx"));
+  setValueIfPresent("concurrency", params.get("con"));
+  setValueIfPresent("outputTokens", params.get("out"));
   setSelectIfValid("kvPrecision", params.get("kv"));
   setSelectIfValid("runtimeMode", params.get("runtime"));
   setSelectIfValid("quantization", params.get("quant"));
-  setSelectIfValid("embeddingInputTokens", params.get("embTokens"));
-  setSelectIfValid("embeddingBatchSize", params.get("embBatch"));
+  setValueIfPresent("embeddingInputTokens", params.get("embTokens"));
+  setValueIfPresent("embeddingBatchSize", params.get("embBatch"));
   setSelectIfValid("encoderPrecision", params.get("embPrecision"));
   setSelectIfValid("encoderRuntime", params.get("embRuntime"));
-  setSelectIfValid("embeddingBatchTokens", params.get("embBatchTokens"));
-  setSelectIfValid("rerankerQueryTokens", params.get("rerankQuery"));
-  setSelectIfValid("rerankerDocTokens", params.get("rerankDoc"));
-  setSelectIfValid("rerankerCandidates", params.get("rerankCandidates"));
-  setSelectIfValid("rerankerBatchSize", params.get("rerankBatch"));
+  setValueIfPresent("embeddingBatchTokens", params.get("embBatchTokens"));
+  setValueIfPresent("rerankerQueryTokens", params.get("rerankQuery"));
+  setValueIfPresent("rerankerDocTokens", params.get("rerankDoc"));
+  setValueIfPresent("rerankerCandidates", params.get("rerankCandidates"));
+  setValueIfPresent("rerankerBatchSize", params.get("rerankBatch"));
   setSelectIfValid("rerankerPrecision", params.get("rerankPrecision"));
   setSelectIfValid("rerankerRuntime", params.get("rerankRuntime"));
   setSelectIfValid("ocrResolutionPreset", params.get("ocrPreset"));
   setValueIfPresent("ocrWidth", params.get("ocrWidth"));
   setValueIfPresent("ocrHeight", params.get("ocrHeight"));
-  setSelectIfValid("ocrBatchSize", params.get("ocrBatch"));
+  setValueIfPresent("ocrBatchSize", params.get("ocrBatch"));
   setSelectIfValid("ocrPrecision", params.get("ocrPrecision"));
   setSelectIfValid("ocrFeatureSet", params.get("ocrFeature"));
   setSelectIfValid("taskFilter", params.get("task"));
@@ -1839,6 +1899,8 @@ function applyUrlState() {
 
   const nextView = params.get("view");
   viewMode = nextView === "card" ? "card" : "list";
+
+  syncPresetControls();
 
   const model = params.get("model");
   selectedModelKey = model && getModelByKey(model) ? model : "";
