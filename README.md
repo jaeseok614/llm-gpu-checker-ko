@@ -30,11 +30,12 @@
 
 ```mermaid
 flowchart LR
-  A[PC 자동 감지] --> B[GPU 프리셋 선택]
-  B --> C[컨텍스트·동시 요청 선택]
-  C --> D[양자화·런타임 선택]
-  D --> E[가능 모델 확인]
-  E --> F[요청당 속도·응답 시간 비교]
+  A[PC 자동 감지] --> B[하드웨어 요약 확인]
+  B --> C[적합도 칩으로 빠른 필터]
+  C --> D[모델 목록 비교]
+  D --> E[모델 클릭]
+  E --> F[양자화·VRAM·런타임 상세 분석]
+  F --> G[URL로 설정 공유]
 ```
 
 ## 대표 사용 사례
@@ -66,56 +67,62 @@ flowchart LR
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰, KV cache 정밀도 선택 |
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
+| 빠른 목록 | 모델명, 등급, 권장 양자화, 필요 VRAM, 예상 속도, 컨텍스트를 한 줄로 비교 |
+| 상세 분석 | 모델 클릭 시 양자화별 비교, VRAM 구성, 실행 방식별 속도, 예시 명령어 표시 |
 | 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 일반 챗봇 |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
-| 정렬 | 실행 적합도, 모델 크기, 예상 속도 |
+| 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
+| 정렬 | 추천순, 예상 속도순, 품질 우선, 필요 VRAM 낮은 순, 파라미터 큰 순, 최신 모델순 |
+| URL 상태 저장 | GPU, VRAM, RAM, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
 
 ## 화면 흐름
 
 ```mermaid
 flowchart LR
-  subgraph Input[입력 조건]
+  subgraph Hardware[하드웨어 기준]
     Q[PC 자동 감지<br/>WebGPU/WebGL]
-    A[GPU 프리셋/직접 입력]
-    B[컨텍스트 길이]
-    C[동시 요청 수]
-    D[평균 출력 토큰]
-    E[KV cache 정밀도]
-    F[양자화 방식]
-    G[실행 방식]
+    A[GPU·VRAM·RAM]
+    B[고급 설정<br/>컨텍스트·동시 요청·KV cache·런타임]
   end
 
-  subgraph Memory[메모리 추정]
+  subgraph Estimate[모델별 추정]
     H[총 VRAM 계산]
     I[모델 가중치]
     J[KV cache<br/>컨텍스트 x 동시 요청 x 정밀도]
     K[런타임 오버헤드]
+    L{실행 등급 산정}
   end
 
-  subgraph Result[결과 화면]
-    L{모델별 실행 등급}
-    M[추천 Top 3]
-    N[모델 카드 목록]
-    O[요청당 속도]
-    P[예상 응답 시간]
+  subgraph List[첫 화면]
+    M[적합도 칩 필터]
+    N[목록형 모델 비교]
+    O[검색·용도·공급사·라이선스·정렬]
+  end
+
+  subgraph Detail[모델 상세]
+    P[양자화별 VRAM/속도]
+    R[VRAM 상세 분석]
+    S[llama.cpp/Ollama·vLLM·Transformers 비교]
+    T[실행 명령어와 외부 링크]
   end
 
   Q --> A
+  A --> B
   A --> H
-  F --> I
+  A --> I
   B --> J
-  C --> J
-  E --> J
-  G --> K
-  D --> P
+  B --> K
   H --> L
   I --> L
   J --> L
   K --> L
   L --> M
   L --> N
-  L --> O
-  O --> P
+  O --> N
+  N --> P
+  P --> R
+  P --> S
+  S --> T
 ```
 
 ## 계산 기준

@@ -19,21 +19,32 @@
     </header>
 
     <main class="app-shell">
-      <section class="control-panel" aria-label="하드웨어 설정">
-        <div class="panel-title">
-          <h2>하드웨어</h2>
-          <button type="button" class="ghost-button" id="detectGpuButton">PC 자동 감지</button>
+      <section class="hardware-panel" aria-label="하드웨어 설정">
+        <div class="hardware-topline">
+          <div class="hardware-copy">
+            <span class="section-kicker">내 하드웨어</span>
+            <strong id="hardwareHeadline">GeForce RTX 4090 24GB · RAM 64GB · GPU 1개</strong>
+            <p id="hardwareSubline">현재 기준: 8K · 동시 1명 · llama.cpp / Ollama</p>
+          </div>
+          <div class="hardware-actions">
+            <button type="button" class="ghost-button" id="detectGpuButton">PC 자동 감지</button>
+            <button type="button" class="ghost-button" id="toggleHardwareEditor" aria-expanded="false" aria-controls="hardwareEditor">하드웨어 수정</button>
+            <button type="button" class="ghost-button" id="toggleAdvancedSettings" aria-expanded="false" aria-controls="advancedEditor">고급 설정</button>
+          </div>
         </div>
 
-        <label class="field">
-          <span>GPU 프리셋</span>
-          <select id="gpuPreset"></select>
-        </label>
-
-        <div class="field-grid">
+        <div class="settings-panel" id="hardwareEditor" hidden>
+          <label class="field field-wide">
+            <span>GPU 프리셋</span>
+            <select id="gpuPreset"></select>
+          </label>
           <label class="field">
             <span>VRAM</span>
             <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
+          </label>
+          <label class="field">
+            <span>시스템 RAM</span>
+            <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
           </label>
           <label class="field">
             <span>GPU 수</span>
@@ -41,18 +52,11 @@
           </label>
         </div>
 
-        <div class="field-grid">
-          <label class="field">
-            <span>시스템 RAM</span>
-            <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
-          </label>
+        <div class="settings-panel advanced-panel" id="advancedEditor" hidden>
           <label class="field">
             <span>대역폭 GB/s</span>
             <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
           </label>
-        </div>
-
-        <div class="field-grid">
           <label class="field">
             <span>컨텍스트 길이</span>
             <select id="contextSize">
@@ -79,9 +83,6 @@
               <option value="64">64명</option>
             </select>
           </label>
-        </div>
-
-        <div class="field-grid">
           <label class="field">
             <span>평균 출력</span>
             <select id="outputTokens">
@@ -102,47 +103,38 @@
               <option value="q4">Q4</option>
             </select>
           </label>
-        </div>
-
-        <label class="field">
-          <span>양자화</span>
-          <select id="quantization"></select>
-        </label>
-
-        <label class="field">
-          <span>실행 방식</span>
-          <select id="runtimeMode">
-            <option value="llamacpp">llama.cpp / Ollama</option>
-            <option value="vllm">vLLM</option>
-            <option value="transformers">Transformers</option>
-          </select>
-        </label>
-
-        <div class="metric-strip" aria-label="하드웨어 요약">
-          <div>
-            <span class="metric-label">총 VRAM</span>
-            <strong id="totalVram">24 GB</strong>
-          </div>
-          <div>
-            <span class="metric-label">추천 가능</span>
-            <strong id="fitCount">0개</strong>
-          </div>
-          <div>
-            <span class="metric-label">서빙 부하</span>
-            <strong id="servingLoad">1명</strong>
-          </div>
-          <div>
-            <span class="metric-label">KV 기준</span>
-            <strong id="kvMode">FP16</strong>
-          </div>
+          <label class="field">
+            <span>양자화</span>
+            <select id="quantization"></select>
+          </label>
+          <label class="field">
+            <span>실행 방식</span>
+            <select id="runtimeMode">
+              <option value="llamacpp">llama.cpp / Ollama</option>
+              <option value="vllm">vLLM</option>
+              <option value="transformers">Transformers</option>
+            </select>
+          </label>
         </div>
       </section>
 
       <section class="results-panel" aria-label="모델 검색 결과">
+        <div class="summary-filterbar" id="summaryGrid"></div>
+
         <div class="toolbar">
           <div class="search-wrap">
             <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" />
           </div>
+          <select id="gradeFilter" aria-label="실행 등급">
+            <option value="all">전체 등급</option>
+            <option value="fit">가능 이상</option>
+            <option value="S">쾌적</option>
+            <option value="A">잘 돌아감</option>
+            <option value="B">가능</option>
+            <option value="C">빡빡함</option>
+            <option value="D">오프로딩</option>
+            <option value="F">부적합</option>
+          </select>
           <select id="taskFilter" aria-label="작업 유형">
             <option value="all">전체 작업</option>
             <option value="general">일반 챗봇</option>
@@ -155,25 +147,30 @@
           <select id="providerFilter" aria-label="공급사">
             <option value="all">전체 공급사</option>
           </select>
-          <select id="gradeFilter" aria-label="실행 등급">
-            <option value="all">전체 등급</option>
-            <option value="B">가능 이상</option>
-            <option value="A">잘 돌아감 이상</option>
-            <option value="S">쾌적만</option>
+          <select id="licenseFilter" aria-label="라이선스">
+            <option value="all">전체 라이선스</option>
           </select>
           <select id="sortBy" aria-label="정렬">
-            <option value="fit">실행 적합도순</option>
-            <option value="sizeAsc">작은 모델순</option>
-            <option value="sizeDesc">큰 모델순</option>
-            <option value="speed">속도 예상순</option>
+            <option value="fit">추천순</option>
+            <option value="speed">예상 속도순</option>
+            <option value="quality">품질 우선</option>
+            <option value="vramAsc">필요 VRAM 낮은 순</option>
+            <option value="sizeDesc">파라미터 큰 순</option>
+            <option value="latest">최신 모델순</option>
           </select>
+          <div class="view-toggle" aria-label="보기 방식">
+            <button type="button" id="listViewButton" class="toggle-button is-active" aria-pressed="true">목록</button>
+            <button type="button" id="cardViewButton" class="toggle-button" aria-pressed="false">카드</button>
+          </div>
         </div>
 
-        <div class="summary-grid" id="summaryGrid"></div>
-        <div class="recommendation-band" id="recommendationBand"></div>
-        <div class="model-grid" id="modelGrid"></div>
+        <div class="result-meta" id="resultMeta">모델 0개</div>
+        <div class="model-results" id="modelResults"></div>
       </section>
     </main>
+
+    <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+    <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
 
     <footer class="app-footer">
       <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, KV cache 설정에 따라 달라집니다.</span>

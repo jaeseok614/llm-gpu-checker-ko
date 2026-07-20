@@ -12,6 +12,20 @@ const GRADE_META = {
   F: { label: "부적합", className: "grade-f", score: 0, color: "#ba2f2f" },
 };
 
+const SUMMARY_FILTERS = [
+  { id: "all", label: "전체", grades: ["S", "A", "B", "C", "D", "F"] },
+  { id: "S", label: "쾌적", grades: ["S"] },
+  { id: "A", label: "잘 돌아감", grades: ["A"] },
+  { id: "B", label: "가능", grades: ["B"] },
+  {
+    id: "conditional",
+    label: "조건부",
+    grades: ["C", "D"],
+    title: "빡빡함: VRAM 여유가 적어 컨텍스트나 동시 요청 제한이 필요합니다. 오프로딩: 일부 연산을 시스템 RAM 또는 CPU에서 처리합니다.",
+  },
+  { id: "F", label: "부적합", grades: ["F"] },
+];
+
 const KV_PRECISION_META = {
   fp16: { label: "FP16", factor: 1 },
   fp8: { label: "FP8", factor: 0.55 },
@@ -19,41 +33,65 @@ const KV_PRECISION_META = {
   q4: { label: "Q4", factor: 0.35 },
 };
 
+const RUNTIME_LABELS = {
+  llamacpp: "llama.cpp / Ollama",
+  vllm: "vLLM",
+  transformers: "Transformers",
+};
+
 let detectedHardwareLabel = "";
+let activeSummaryFilter = "all";
+let selectedModelKey = "";
+let viewMode = "list";
 
 const $ = (id) => document.getElementById(id);
 
 function init() {
   populateSelects();
+  applyUrlState();
   bindEvents();
-  render();
+  render({ syncUrl: false });
 }
 
 function populateSelects() {
   $("gpuPreset").innerHTML = GPU_PRESETS.map(
-    (gpu) => `<option value="${gpu.id}">${gpu.name}</option>`,
+    (gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`,
   ).join("");
   $("gpuPreset").value = "rtx4090-24";
 
   $("quantization").innerHTML = QUANTS.map(
-    (quant) => `<option value="${quant.id}">${quant.label}</option>`,
+    (quant) => `<option value="${escapeAttr(quant.id)}">${escapeHtml(quant.label)}</option>`,
   ).join("");
   $("quantization").value = "auto";
 
   const providers = [...new Set(MODELS.map((model) => model.maker))].sort((a, b) => a.localeCompare(b));
   $("providerFilter").innerHTML = [
     `<option value="all">전체 공급사</option>`,
-    ...providers.map((provider) => `<option value="${provider}">${provider}</option>`),
+    ...providers.map((provider) => `<option value="${escapeAttr(provider)}">${escapeHtml(provider)}</option>`),
+  ].join("");
+
+  const licenses = [...new Set(MODELS.map((model) => model.license))].sort((a, b) => a.localeCompare(b));
+  $("licenseFilter").innerHTML = [
+    `<option value="all">전체 라이선스</option>`,
+    ...licenses.map((license) => `<option value="${escapeAttr(license)}">${escapeHtml(license)}</option>`),
   ].join("");
 
   applyPreset("rtx4090-24");
 }
 
 function bindEvents() {
-  ["vramGb", "gpuCount", "ramGb", "bandwidth", "contextSize", "concurrency", "outputTokens", "kvPrecision", "quantization", "runtimeMode", "searchInput", "taskFilter", "providerFilter", "gradeFilter", "sortBy"].forEach((id) => {
-    $(id).addEventListener("input", render);
+  ["vramGb", "gpuCount", "ramGb", "bandwidth"].forEach((id) => {
+    $(id).addEventListener("input", () => {
+      detectedHardwareLabel = "직접 입력 기준";
+      render();
+    });
+  });
+
+  ["contextSize", "concurrency", "outputTokens", "kvPrecision", "quantization", "runtimeMode", "taskFilter", "providerFilter", "licenseFilter", "gradeFilter", "sortBy"].forEach((id) => {
     $(id).addEventListener("change", render);
   });
+
+  $("searchInput").addEventListener("input", render);
 
   $("gpuPreset").addEventListener("change", (event) => {
     applyPreset(event.target.value);
@@ -61,10 +99,57 @@ function bindEvents() {
   });
 
   $("detectGpuButton").addEventListener("click", detectGpu);
+  $("toggleHardwareEditor").addEventListener("click", () => togglePanel("hardwareEditor", "toggleHardwareEditor"));
+  $("toggleAdvancedSettings").addEventListener("click", () => togglePanel("advancedEditor", "toggleAdvancedSettings"));
+
+  $("summaryGrid").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-summary-filter]");
+    if (!button) return;
+    activeSummaryFilter = button.dataset.summaryFilter;
+    render();
+  });
+
+  $("listViewButton").addEventListener("click", () => setViewMode("list"));
+  $("cardViewButton").addEventListener("click", () => setViewMode("card"));
+
+  $("modelResults").addEventListener("click", (event) => {
+    const target = event.target.closest("[data-model-key]");
+    if (!target) return;
+    selectedModelKey = target.dataset.modelKey;
+    render();
+  });
+
+  $("drawerBackdrop").addEventListener("click", closeModelDetail);
+  $("modelDetail").addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-detail]")) closeModelDetail();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && selectedModelKey) closeModelDetail();
+  });
+
+  window.addEventListener("popstate", () => {
+    applyUrlState();
+    render({ syncUrl: false });
+  });
+}
+
+function togglePanel(panelId, buttonId) {
+  const panel = $(panelId);
+  const button = $(buttonId);
+  panel.hidden = !panel.hidden;
+  button.setAttribute("aria-expanded", String(!panel.hidden));
+}
+
+function setViewMode(nextMode) {
+  viewMode = nextMode === "card" ? "card" : "list";
+  render();
 }
 
 function applyPreset(id) {
   const preset = GPU_PRESETS.find((gpu) => gpu.id === id) || GPU_PRESETS[0];
+  if (!preset) return;
+
   $("vramGb").value = preset.vram;
   $("ramGb").value = preset.ram;
   $("bandwidth").value = preset.bandwidth;
@@ -83,7 +168,9 @@ function getHardware() {
   const kvPrecision = $("kvPrecision").value;
   const kvMeta = KV_PRECISION_META[kvPrecision] || KV_PRECISION_META.fp16;
   const runtime = $("runtimeMode").value;
-  return { vram, count, ram, bandwidth, context, concurrency, outputTokens, kvPrecision, kvMeta, runtime };
+  const preset = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value) || GPU_PRESETS[0];
+
+  return { vram, count, ram, bandwidth, context, concurrency, outputTokens, kvPrecision, kvMeta, runtime, preset };
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -93,7 +180,10 @@ function clampNumber(value, min, max, fallback) {
 }
 
 function estimateModel(model, quantId, hardware) {
-  const quant = quantId === "auto" ? recommendQuant(model, hardware) : QUANTS.find((item) => item.id === quantId);
+  const fallbackQuant = QUANTS.find((item) => item.id === "q4") || QUANTS.find((item) => item.id !== "auto");
+  const quant = quantId === "auto"
+    ? recommendQuant(model, hardware)
+    : QUANTS.find((item) => item.id === quantId) || fallbackQuant;
   const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const weightsGb = model.params * quant.bytesPerB * 1.08;
   const contextLimitTokens = model.context * 1024;
@@ -110,6 +200,7 @@ function estimateModel(model, quantId, hardware) {
   const grade = contextSupported ? gradeFromPressure(pressure, requiredGb, offloadRoom) : "F";
   const speedStats = estimateSpeed(model, quant, hardware, grade);
   const latencySeconds = speedStats.perRequest > 0 ? hardware.outputTokens / speedStats.perRequest : 0;
+  const firstTokenSeconds = estimateFirstTokenSeconds(model, hardware, grade);
   const reason = buildReason(grade, requiredGb, effectiveVram, model, hardware, contextLimitTokens, contextSupported);
 
   return {
@@ -125,6 +216,7 @@ function estimateModel(model, quantId, hardware) {
     speed: speedStats.perRequest,
     throughput: speedStats.total,
     latencySeconds,
+    firstTokenSeconds,
     contextLimitTokens,
     contextSupported,
     reason,
@@ -144,17 +236,28 @@ function estimateKvCacheGb(model, hardware) {
 }
 
 function recommendQuant(model, hardware) {
-  const qualityFirst = [...QUANTS].filter((item) => item.id !== "auto").sort((a, b) => b.rank - a.rank);
+  const preferredIds = ["q6", "q5", "q4", "q3", "q2"];
+  const qualityFirst = preferredIds
+    .map((id) => QUANTS.find((item) => item.id === id))
+    .filter(Boolean);
   const effectiveVram = hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
+
   for (const quant of qualityFirst) {
     const provisional = estimateWithQuant(model, quant, hardware);
-    if (provisional.requiredGb <= effectiveVram * 0.92) return quant;
+    if (provisional.requiredGb <= effectiveVram * 0.85) return quant;
   }
+
+  for (const quant of qualityFirst) {
+    const provisional = estimateWithQuant(model, quant, hardware);
+    if (provisional.requiredGb <= effectiveVram) return quant;
+  }
+
   for (const quant of qualityFirst) {
     const provisional = estimateWithQuant(model, quant, hardware);
     if (provisional.requiredGb <= effectiveVram + hardware.ram * 0.45) return quant;
   }
-  return QUANTS.find((item) => item.id === "q2");
+
+  return QUANTS.find((item) => item.id === "q2") || qualityFirst[qualityFirst.length - 1];
 }
 
 function estimateWithQuant(model, quant, hardware) {
@@ -178,6 +281,7 @@ function gradeFromPressure(pressure, requiredGb, offloadRoom) {
 
 function estimateSpeed(model, quant, hardware, grade) {
   if (grade === "F") return { perRequest: 0, total: 0 };
+
   const multiGpuPenalty = hardware.count > 1 ? 0.76 : 1;
   const runtimePenalty = hardware.runtime === "vllm" ? 1.1 : hardware.runtime === "transformers" ? 0.78 : 1;
   const offloadPenalty = grade === "D" ? 0.22 : grade === "C" ? 0.55 : 1;
@@ -185,10 +289,22 @@ function estimateSpeed(model, quant, hardware, grade) {
   const activeBytes = Math.max(model.active * quant.bytesPerB, 1);
   const raw = (hardware.bandwidth * hardware.count * multiGpuPenalty * runtimePenalty) / (activeBytes * 4);
   const total = raw * (1 + (hardware.concurrency - 1) * runtimeFactor.concurrencyEfficiency) * offloadPenalty;
+
   return {
     perRequest: total / hardware.concurrency,
     total,
   };
+}
+
+function estimateFirstTokenSeconds(model, hardware, grade) {
+  if (grade === "F") return 0;
+
+  const runtimeMultiplier = hardware.runtime === "vllm" ? 0.85 : hardware.runtime === "transformers" ? 1.2 : 1;
+  const pressureMultiplier = grade === "D" ? 2.4 : grade === "C" ? 1.6 : 1;
+  const contextSeconds = (hardware.context / 8192) * 0.08;
+  const modelSeconds = Math.min(5, model.active * 0.025);
+  const concurrencySeconds = Math.max(0, hardware.concurrency - 1) * 0.025;
+  return (0.18 + modelSeconds + contextSeconds + concurrencySeconds) * runtimeMultiplier * pressureMultiplier;
 }
 
 function buildReason(grade, requiredGb, effectiveVram, model, hardware, contextLimitTokens, contextSupported) {
@@ -215,10 +331,16 @@ function getFilteredEstimates() {
   const selectedQuant = $("quantization").value;
   const task = $("taskFilter").value;
   const provider = $("providerFilter").value;
-  const minGrade = $("gradeFilter").value;
+  const license = $("licenseFilter").value;
+  const gradeChoice = $("gradeFilter").value;
   const search = $("searchInput").value.trim().toLowerCase();
+  const summaryFilter = SUMMARY_FILTERS.find((item) => item.id === activeSummaryFilter) || SUMMARY_FILTERS[0];
 
   let estimates = MODELS.map((model) => estimateModel(model, selectedQuant, hardware));
+
+  if (summaryFilter.id !== "all") {
+    estimates = estimates.filter((estimate) => summaryFilter.grades.includes(estimate.grade));
+  }
 
   if (task !== "all") {
     estimates = estimates.filter((estimate) => estimate.model.tags.includes(task));
@@ -228,6 +350,10 @@ function getFilteredEstimates() {
     estimates = estimates.filter((estimate) => estimate.model.maker === provider);
   }
 
+  if (license !== "all") {
+    estimates = estimates.filter((estimate) => estimate.model.license === license);
+  }
+
   if (search) {
     estimates = estimates.filter((estimate) => {
       const haystack = [
@@ -235,15 +361,18 @@ function getFilteredEstimates() {
         estimate.model.maker,
         estimate.model.license,
         estimate.model.summary,
+        formatParams(estimate.model.params),
+        estimate.model.tags.map(tagLabel).join(" "),
         estimate.model.tags.join(" "),
       ].join(" ").toLowerCase();
       return haystack.includes(search);
     });
   }
 
-  if (minGrade !== "all") {
-    const minScore = GRADE_META[minGrade].score;
-    estimates = estimates.filter((estimate) => GRADE_META[estimate.grade].score >= minScore);
+  if (gradeChoice === "fit") {
+    estimates = estimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
+  } else if (GRADE_META[gradeChoice]) {
+    estimates = estimates.filter((estimate) => estimate.grade === gradeChoice);
   }
 
   return sortEstimates(estimates);
@@ -252,141 +381,441 @@ function getFilteredEstimates() {
 function sortEstimates(estimates) {
   const sortBy = $("sortBy").value;
   return [...estimates].sort((a, b) => {
-    if (sortBy === "sizeAsc") return a.model.params - b.model.params;
-    if (sortBy === "sizeDesc") return b.model.params - a.model.params;
-    if (sortBy === "speed") return b.speed - a.speed;
-    const gradeDiff = GRADE_META[b.grade].score - GRADE_META[a.grade].score;
-    if (gradeDiff !== 0) return gradeDiff;
-    const pressureDiff = a.pressure - b.pressure;
-    if (Math.abs(pressureDiff) > 0.02) return pressureDiff;
-    return b.model.params - a.model.params;
+    if (sortBy === "speed") return b.speed - a.speed || gradeSort(a, b) || a.requiredGb - b.requiredGb;
+    if (sortBy === "quality") return gradeSort(a, b) || b.model.params - a.model.params || b.speed - a.speed;
+    if (sortBy === "vramAsc") return a.requiredGb - b.requiredGb || gradeSort(a, b);
+    if (sortBy === "sizeDesc") return b.model.params - a.model.params || gradeSort(a, b);
+    if (sortBy === "latest") return modelFreshnessScore(b.model) - modelFreshnessScore(a.model) || gradeSort(a, b);
+
+    return recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure;
   });
 }
 
-function render() {
+function gradeSort(a, b) {
+  return GRADE_META[b.grade].score - GRADE_META[a.grade].score;
+}
+
+function modelFreshnessScore(model) {
+  const text = model.name.toLowerCase();
+  let score = 0;
+  if (text.includes("gpt-oss")) score += 720;
+  if (text.includes("qwen3")) score += 700;
+  if (text.includes("deepseek v3.2")) score += 690;
+  if (text.includes("llama 4")) score += 680;
+  if (text.includes("gemma 3")) score += 660;
+  if (text.includes("phi-4")) score += 650;
+  if (text.includes("mistral small 3.1")) score += 640;
+  if (text.includes("devstral")) score += 630;
+  if (text.includes("qwen2.5")) score += 600;
+  if (text.includes("llama 3.3")) score += 590;
+  if (text.includes("llama 3.2")) score += 570;
+  if (text.includes("llama 3.1")) score += 560;
+  if (text.includes("gemma 2")) score += 540;
+  return score + Math.min(model.params, 1000) / 1000;
+}
+
+function recommendationScore(estimate) {
+  const gradeBonus = {
+    S: 34,
+    A: 32,
+    B: 28,
+    C: 14,
+    D: 8,
+    F: 0,
+  }[estimate.grade];
+  const usefulSize = Math.min(estimate.model.params, 34) * 1.7;
+  const tagBonus = [
+    estimate.model.tags.includes("korean") ? 5 : 0,
+    estimate.model.tags.includes("coding") ? 4 : 0,
+    estimate.model.tags.includes("reasoning") ? 4 : 0,
+    estimate.model.tags.includes("long") ? 2 : 0,
+  ].reduce((sum, value) => sum + value, 0);
+  const speedBonus = Math.min(estimate.speed, 90) / 6;
+  const pressurePenalty = estimate.pressure > 0.95 ? (estimate.pressure - 0.95) * 22 : 0;
+
+  return gradeBonus + usefulSize + tagBonus + speedBonus - pressurePenalty;
+}
+
+function render(options = {}) {
+  const { syncUrl = true } = options;
   const hardware = getHardware();
-  const estimates = getFilteredEstimates();
   const allEstimates = MODELS.map((model) => estimateModel(model, $("quantization").value, hardware));
+  const estimates = getFilteredEstimates();
 
-  $("totalVram").textContent = formatGb(hardware.vram * hardware.count);
-  $("fitCount").textContent = `${allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length}개`;
-  $("servingLoad").textContent = `${hardware.concurrency}명`;
-  $("kvMode").textContent = hardware.kvMeta.label;
-  const hardwareSummary = `${formatGb(hardware.vram * hardware.count)} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`;
-  $("hardwareStatus").textContent = detectedHardwareLabel ? `${detectedHardwareLabel} · ${hardwareSummary}` : hardwareSummary;
-
+  renderHardware(hardware, allEstimates);
   renderSummary(allEstimates);
-  renderRecommendations(estimates);
-  renderModels(estimates);
+  renderResults(estimates);
+  renderDetail();
+  renderViewToggle();
+
+  if (syncUrl) syncUrlState();
+}
+
+function renderHardware(hardware, allEstimates) {
+  const totalVram = hardware.vram * hardware.count;
+  const runnableCount = allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length;
+  const quant = QUANTS.find((item) => item.id === $("quantization").value);
+  const quantLabel = quant ? quant.label : "자동 추천";
+  const basis = `${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명 · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`;
+  const headerSummary = `${formatGb(totalVram)} · RAM ${formatGb(hardware.ram)} · ${formatContext(hardware.context)} · 실행 가능 ${runnableCount}개`;
+  const headlineParts = [hardware.preset.name, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
+
+  $("hardwareHeadline").innerHTML = headlineParts
+    .map((part, index) => `
+      <span class="hardware-piece">
+        ${index > 0 ? `<span class="dot-separator" aria-hidden="true">·</span>` : ""}
+        ${escapeHtml(part)}
+      </span>
+    `)
+    .join("");
+  $("hardwareSubline").textContent = `현재 기준: ${basis}`;
+  $("hardwareStatus").textContent = detectedHardwareLabel ? `${detectedHardwareLabel} · ${headerSummary}` : headerSummary;
 }
 
 function renderSummary(estimates) {
-  const counts = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
+  const counts = { all: estimates.length, S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
   estimates.forEach((estimate) => {
     counts[estimate.grade] += 1;
   });
 
-  $("summaryGrid").innerHTML = Object.keys(counts)
-    .map((grade) => {
-      const meta = GRADE_META[grade];
+  $("summaryGrid").innerHTML = SUMMARY_FILTERS.map((filter) => {
+    const count = filter.id === "all"
+      ? counts.all
+      : filter.grades.reduce((sum, grade) => sum + counts[grade], 0);
+    const isActive = filter.id === activeSummaryFilter;
+    return `
+      <button
+        type="button"
+        class="summary-chip ${isActive ? "is-active" : ""}"
+        data-summary-filter="${escapeAttr(filter.id)}"
+        title="${escapeAttr(filter.title || "")}"
+        aria-pressed="${isActive}"
+      >
+        <span>${escapeHtml(filter.label)}</span>
+        <strong>${count}</strong>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderResults(estimates) {
+  const recommendationRanks = getRecommendationRanks();
+  $("resultMeta").textContent = `모델 ${estimates.length}개 · ${viewMode === "list" ? "목록 보기" : "카드 보기"}`;
+
+  if (!estimates.length) {
+    $("modelResults").className = "model-results";
+    $("modelResults").innerHTML = `<div class="empty-state">조건에 맞는 모델이 없습니다.</div>`;
+    return;
+  }
+
+  if (viewMode === "card") {
+    $("modelResults").className = "model-results card-mode";
+    $("modelResults").innerHTML = estimates
+      .map((estimate) => renderModelCard(estimate, recommendationRanks.get(modelKey(estimate.model))))
+      .join("");
+    return;
+  }
+
+  $("modelResults").className = "model-results list-mode";
+  $("modelResults").innerHTML = `
+    <div class="model-list-head" aria-hidden="true">
+      <span>모델</span>
+      <span>등급</span>
+      <span>권장 양자화</span>
+      <span>필요 VRAM</span>
+      <span>예상 속도</span>
+      <span>컨텍스트</span>
+      <span></span>
+    </div>
+    ${estimates.map((estimate) => renderModelRow(estimate, recommendationRanks.get(modelKey(estimate.model)))).join("")}
+  `;
+}
+
+function renderModelRow(estimate, recommendationRank) {
+  const meta = GRADE_META[estimate.grade];
+  const tags = renderTags(estimate.model, 3);
+  const key = modelKey(estimate.model);
+
+  return `
+    <button type="button" class="model-row" data-model-key="${escapeAttr(key)}">
+      <span class="model-cell model-name-cell">
+        <strong>
+          ${recommendationRank ? `<span class="recommend-badge">추천 ${recommendationRank}</span>` : ""}
+          ${escapeHtml(estimate.model.name)}
+        </strong>
+        <span class="model-meta">${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
+        <span class="tag-row compact-tags">${tags}</span>
+      </span>
+      <span class="model-cell"><span class="grade-pill ${meta.className}">${meta.label}</span></span>
+      <span class="model-cell">${escapeHtml(estimate.quant.label)}</span>
+      <span class="model-cell">${formatGb(estimate.requiredGb)}</span>
+      <span class="model-cell">${formatSpeed(estimate.speed)}</span>
+      <span class="model-cell">${formatContext(estimate.contextLimitTokens)}</span>
+      <span class="row-chevron" aria-hidden="true">›</span>
+    </button>
+  `;
+}
+
+function renderModelCard(estimate, recommendationRank) {
+  const meta = GRADE_META[estimate.grade];
+  const key = modelKey(estimate.model);
+  const tags = renderTags(estimate.model, 4);
+
+  return `
+    <button type="button" class="compact-card" data-model-key="${escapeAttr(key)}">
+      <span class="compact-card-head">
+        <span>
+          <strong>
+            ${recommendationRank ? `<span class="recommend-badge">추천 ${recommendationRank}</span>` : ""}
+            ${escapeHtml(estimate.model.name)}
+          </strong>
+          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
+        </span>
+        <span class="grade-pill ${meta.className}">${meta.label}</span>
+      </span>
+      <span class="compact-specs">
+        <span>${escapeHtml(estimate.quant.label)}</span>
+        <span>VRAM ${formatGb(estimate.requiredGb)}</span>
+        <span>${formatSpeed(estimate.speed)}</span>
+        <span>${formatContext(estimate.contextLimitTokens)}</span>
+      </span>
+      <span class="tag-row">${tags}</span>
+      <span class="compact-summary">${escapeHtml(estimate.model.summary)}</span>
+    </button>
+  `;
+}
+
+function getRecommendationRanks() {
+  const hardware = getHardware();
+  const selectedQuant = $("quantization").value;
+  const ranked = MODELS
+    .map((model) => estimateModel(model, selectedQuant, hardware))
+    .filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score)
+    .sort((a, b) => recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure)
+    .slice(0, 3);
+
+  return new Map(ranked.map((estimate, index) => [modelKey(estimate.model), index + 1]));
+}
+
+function renderDetail() {
+  const detail = $("modelDetail");
+  const backdrop = $("drawerBackdrop");
+
+  if (!selectedModelKey) {
+    detail.hidden = true;
+    backdrop.hidden = true;
+    detail.innerHTML = "";
+    return;
+  }
+
+  const model = getModelByKey(selectedModelKey);
+  if (!model) {
+    selectedModelKey = "";
+    detail.hidden = true;
+    backdrop.hidden = true;
+    detail.innerHTML = "";
+    return;
+  }
+
+  const hardware = getHardware();
+  const estimate = estimateModel(model, $("quantization").value, hardware);
+  const meta = GRADE_META[estimate.grade];
+  const safetyGb = estimateSafetyGb(estimate);
+  const totalWithSafety = estimate.requiredGb + safetyGb;
+
+  detail.hidden = false;
+  backdrop.hidden = false;
+  detail.innerHTML = `
+    <div class="detail-head">
+      <button type="button" class="back-button" data-close-detail>← 모델 목록</button>
+      <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
+    </div>
+
+    <div class="detail-title">
+      <span class="grade-pill ${meta.className}">${meta.label}</span>
+      <h2>${escapeHtml(model.name)}</h2>
+      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+    </div>
+
+    <div class="detail-summary-grid">
+      ${renderDetailMetric("권장 설정", `${estimate.quant.label} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`)}
+      ${renderDetailMetric("예상 VRAM", `${formatGb(estimate.requiredGb)} / ${formatGb(estimate.effectiveVram)}`)}
+      ${renderDetailMetric("예상 속도", formatSpeed(estimate.speed))}
+      ${renderDetailMetric("첫 응답", formatDuration(estimate.firstTokenSeconds))}
+    </div>
+
+    <section class="detail-section">
+      <h3>양자화별 비교</h3>
+      <div class="detail-table quant-table">
+        <div class="detail-row detail-table-head">
+          <span>양자화</span>
+          <span>예상 VRAM</span>
+          <span>예상 속도</span>
+          <span>품질</span>
+          <span>실행 상태</span>
+        </div>
+        ${renderQuantRows(model, hardware, estimate.quant.id)}
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <h3>VRAM 상세 분석</h3>
+      <div class="memory-breakdown">
+        ${renderMemoryLine("모델 가중치", estimate.weightsGb, totalWithSafety)}
+        ${renderMemoryLine("KV cache", estimate.kvGb, totalWithSafety)}
+        ${renderMemoryLine("런타임 오버헤드", estimate.runtimeOverheadGb, totalWithSafety)}
+        ${renderMemoryLine("권장 여유분", safetyGb, totalWithSafety)}
+      </div>
+      <div class="memory-total">
+        <span>총 예상 확보 VRAM</span>
+        <strong>${formatGb(totalWithSafety)}</strong>
+      </div>
+      <p class="detail-note">${escapeHtml(estimate.reason)}</p>
+    </section>
+
+    <section class="detail-section">
+      <h3>실행 방식별 비교</h3>
+      <div class="runtime-grid">
+        ${renderRuntimeRows(model, hardware)}
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <h3>실행 명령어</h3>
+      <pre class="command-block"><code>${escapeHtml(buildOllamaCommand(model, estimate.quant, hardware))}
+${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre>
+    </section>
+
+    <section class="detail-section">
+      <h3>모델 정보</h3>
+      <div class="model-info-grid">
+        ${renderInfoItem("파라미터", formatParams(model.params))}
+        ${renderInfoItem("활성 파라미터", formatParams(model.active))}
+        ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
+        ${renderInfoItem("라이선스", model.license)}
+      </div>
+      <div class="external-links">
+        ${renderExternalLink("Hugging Face", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
+        ${renderExternalLink("Ollama", `https://ollama.com/search?q=${encodeURIComponent(model.name)}`)}
+        ${renderExternalLink("공식 문서 검색", `https://www.google.com/search?q=${encodeURIComponent(`${model.name} official`)}`)}
+      </div>
+    </section>
+  `;
+}
+
+function renderDetailMetric(label, value) {
+  return `
+    <div class="detail-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function renderQuantRows(model, hardware, recommendedQuantId) {
+  return QUANTS
+    .filter((quant) => quant.id !== "auto")
+    .map((quant) => {
+      const estimate = estimateModel(model, quant.id, hardware);
+      const meta = GRADE_META[estimate.grade];
       return `
-        <div class="summary-card">
-          <span>${meta.label}</span>
-          <strong>${counts[grade]}</strong>
+        <div class="detail-row">
+          <span>${escapeHtml(quant.label)}</span>
+          <span>${formatGb(estimate.requiredGb)}</span>
+          <span>${formatSpeed(estimate.speed)}</span>
+          <span>${quantQualityLabel(quant, recommendedQuantId)}</span>
+          <span><span class="grade-pill ${meta.className}">${meta.label}</span></span>
         </div>
       `;
     })
     .join("");
 }
 
-function renderRecommendations(estimates) {
-  const recommendations = estimates
-    .filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score)
-    .slice(0, 3);
+function quantQualityLabel(quant, recommendedQuantId) {
+  if (quant.id === recommendedQuantId) return "권장";
+  if (quant.id === "fp16") return "원본";
+  if (quant.rank >= 6) return "우수";
+  if (quant.rank >= 5) return "매우 높음";
+  if (quant.rank >= 4) return "높음";
+  if (quant.rank >= 3) return "보통";
+  return "낮음";
+}
 
-  if (!recommendations.length) {
-    $("recommendationBand").innerHTML = `
-      <div class="recommendation">
-        <span class="rank">추천 없음</span>
-        <strong>VRAM 또는 양자화를 조정하세요</strong>
-        <p>Q3/Q2, 컨텍스트 4K, GPU 수 증가를 먼저 확인하는 편이 좋습니다.</p>
+function renderMemoryLine(label, value, total) {
+  const width = Math.max(3, Math.min(100, (value / total) * 100));
+  return `
+    <div class="memory-line">
+      <div class="memory-label">
+        <span>${escapeHtml(label)}</span>
+        <strong>${formatGb(value)}</strong>
+      </div>
+      <div class="memory-bar"><span style="--bar-width: ${width}%"></span></div>
+    </div>
+  `;
+}
+
+function renderRuntimeRows(model, hardware) {
+  const selectedQuant = $("quantization").value;
+  const scenarios = [
+    { label: "llama.cpp / Ollama", hardware: { ...hardware, runtime: "llamacpp" } },
+    { label: "vLLM 단일 요청", hardware: { ...hardware, runtime: "vllm", concurrency: 1 } },
+    { label: `vLLM 동시 요청 ${hardware.concurrency}명`, hardware: { ...hardware, runtime: "vllm" } },
+    { label: "Transformers", hardware: { ...hardware, runtime: "transformers" } },
+  ];
+
+  return scenarios.map((scenario) => {
+    const estimate = estimateModel(model, selectedQuant, scenario.hardware);
+    const meta = GRADE_META[estimate.grade];
+    return `
+      <div class="runtime-card">
+        <span>${escapeHtml(scenario.label)}</span>
+        <strong>${formatSpeed(estimate.speed)}</strong>
+        <small>${formatGb(estimate.requiredGb)} · ${meta.label}</small>
       </div>
     `;
-    return;
-  }
-
-  $("recommendationBand").innerHTML = recommendations
-    .map((estimate, index) => `
-      <div class="recommendation">
-        <span class="rank">추천 ${index + 1}</span>
-        <strong>${estimate.model.name}</strong>
-        <p>${GRADE_META[estimate.grade].label} · ${estimate.quant.label} · 필요 ${formatGb(estimate.requiredGb)} · 예상 ${formatSpeed(estimate.speed)}</p>
-      </div>
-    `)
-    .join("");
+  }).join("");
 }
 
-function renderModels(estimates) {
-  if (!estimates.length) {
-    $("modelGrid").innerHTML = `<div class="empty-state">조건에 맞는 모델이 없습니다.</div>`;
-    return;
-  }
-
-  $("modelGrid").innerHTML = estimates.map(renderModelCard).join("");
-}
-
-function renderModelCard(estimate) {
-  const meta = GRADE_META[estimate.grade];
-  const pressurePercent = Math.min(100, Math.round(estimate.pressure * 100));
-  const tags = estimate.model.tags.map((tag) => `<span class="tag">${tagLabel(tag)}</span>`).join("");
+function renderInfoItem(label, value) {
   return `
-    <article class="model-card">
-      <div class="model-head">
-        <div class="model-title">
-          <h3>${estimate.model.name}</h3>
-          <p>${estimate.model.maker} · ${estimate.model.license}</p>
-        </div>
-        <span class="grade-pill ${meta.className}">${meta.label}</span>
-      </div>
-      <div class="model-body">
-        <p class="model-summary">${estimate.model.summary}</p>
-        <div class="spec-grid">
-          <div class="spec">
-            <span>파라미터</span>
-            <strong>${formatParams(estimate.model.params)}</strong>
-          </div>
-          <div class="spec">
-            <span>권장 양자화</span>
-            <strong>${estimate.quant.label}</strong>
-          </div>
-          <div class="spec">
-            <span>요청당 속도</span>
-            <strong>${formatSpeed(estimate.speed)}</strong>
-          </div>
-          <div class="spec">
-            <span>응답 시간</span>
-            <strong>${formatDuration(estimate.latencySeconds)}</strong>
-          </div>
-        </div>
-        <div class="bar-wrap">
-          <div class="bar-label">
-            <span>VRAM 사용률</span>
-            <span>${formatGb(estimate.requiredGb)} / ${formatGb(estimate.effectiveVram)}</span>
-          </div>
-          <div class="bar" style="--bar-color: ${meta.color}">
-            <span style="--bar-width: ${pressurePercent}%"></span>
-          </div>
-        </div>
-        <div class="tag-row">${tags}</div>
-      </div>
-      <div class="model-foot">${estimate.reason} KV cache ${formatGb(estimate.kvGb)}, 전체 처리량 ${formatSpeed(estimate.throughput)} 기준입니다.</div>
-    </article>
+    <div class="info-item">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
   `;
+}
+
+function renderExternalLink(label, href) {
+  return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+}
+
+function estimateSafetyGb(estimate) {
+  return Math.min(4, Math.max(0.8, estimate.effectiveVram * 0.08));
+}
+
+function closeModelDetail() {
+  selectedModelKey = "";
+  render();
+}
+
+function renderViewToggle() {
+  const isList = viewMode === "list";
+  $("listViewButton").classList.toggle("is-active", isList);
+  $("cardViewButton").classList.toggle("is-active", !isList);
+  $("listViewButton").setAttribute("aria-pressed", String(isList));
+  $("cardViewButton").setAttribute("aria-pressed", String(!isList));
+}
+
+function renderTags(model, limit) {
+  return model.tags
+    .slice(0, limit)
+    .map((tag) => `<span class="tag">${escapeHtml(tagLabel(tag))}</span>`)
+    .join("");
 }
 
 function tagLabel(tag) {
   const labels = {
-    general: "일반",
+    general: "대화",
     korean: "한국어",
     coding: "코딩",
     reasoning: "추론",
@@ -397,7 +826,19 @@ function tagLabel(tag) {
   return labels[tag] || tag;
 }
 
+function modelKey(model) {
+  return String(model.name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getModelByKey(key) {
+  return MODELS.find((model) => modelKey(model) === key) || null;
+}
+
 function formatGb(value) {
+  if (Math.abs(value - Math.round(value)) < 0.05) return `${Math.round(value)} GB`;
   if (value >= 100) return `${Math.round(value)} GB`;
   return `${value.toFixed(1)} GB`;
 }
@@ -419,8 +860,125 @@ function formatSpeed(value) {
 
 function formatDuration(seconds) {
   if (!seconds) return "불가";
-  if (seconds < 60) return `${Math.round(seconds)}초`;
+  if (seconds < 1) return `${seconds.toFixed(1)}초`;
+  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 1 : 0)}초`;
   return `${Math.floor(seconds / 60)}분 ${Math.round(seconds % 60)}초`;
+}
+
+function buildOllamaCommand(model, quant, hardware) {
+  return `ollama run ${buildOllamaModelName(model)} # ${quant.label}, ${formatContext(hardware.context)}`;
+}
+
+function buildLlamaCppCommand(model, quant, hardware) {
+  return `llama-cli -m ./models/${toSlug(model.name)}-${quant.label}.gguf -c ${hardware.context} -ngl 999`;
+}
+
+function buildOllamaModelName(model) {
+  const lower = model.name.toLowerCase();
+  const size = extractModelSize(model.name);
+
+  if (lower.includes("qwen2.5 coder")) return `qwen2.5-coder:${size}`;
+  if (lower.includes("qwen2.5-vl")) return `qwen2.5vl:${size}`;
+  if (lower.includes("qwen2.5")) return `qwen2.5:${size}`;
+  if (lower.includes("qwen3 coder")) return `qwen3-coder:${size}`;
+  if (lower.includes("qwen3")) return `qwen3:${size}`;
+  if (lower.includes("llama 3.3")) return `llama3.3:${size}`;
+  if (lower.includes("llama 3.2")) return `llama3.2:${size}`;
+  if (lower.includes("llama 3.1")) return `llama3.1:${size}`;
+  if (lower.includes("gemma 3")) return `gemma3:${size}`;
+  if (lower.includes("gemma 2")) return `gemma2:${size}`;
+  if (lower.includes("mistral")) return `mistral:${size}`;
+  if (lower.includes("phi-4")) return `phi4:${size}`;
+  if (lower.includes("phi-3.5")) return `phi3.5:${size}`;
+
+  return `${toSlug(model.name)}:${size || "latest"}`;
+}
+
+function extractModelSize(name) {
+  const match = String(name).match(/(\d+(?:\.\d+)?)B/i);
+  if (!match) return "latest";
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return "latest";
+  return `${value % 1 === 0 ? value.toFixed(0) : value.toString()}b`;
+}
+
+function toSlug(value) {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function syncUrlState() {
+  if (!window.history || !window.location) return;
+
+  const params = new URLSearchParams();
+  params.set("gpu", $("gpuPreset").value);
+  params.set("vram", String(getHardware().vram));
+  params.set("ram", String(getHardware().ram));
+  params.set("count", String(getHardware().count));
+  params.set("bandwidth", String(getHardware().bandwidth));
+  params.set("ctx", String(getHardware().context));
+  params.set("con", String(getHardware().concurrency));
+  params.set("out", String(getHardware().outputTokens));
+  params.set("kv", getHardware().kvPrecision);
+  params.set("runtime", getHardware().runtime);
+  params.set("quant", $("quantization").value);
+  params.set("task", $("taskFilter").value);
+  params.set("provider", $("providerFilter").value);
+  params.set("license", $("licenseFilter").value);
+  params.set("grade", $("gradeFilter").value);
+  params.set("fit", activeSummaryFilter);
+  params.set("sort", $("sortBy").value);
+  params.set("view", viewMode);
+  if (selectedModelKey) params.set("model", selectedModelKey);
+
+  const nextUrl = `${window.location.pathname}?${params.toString()}`;
+  window.history.replaceState({}, "", nextUrl);
+}
+
+function applyUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const gpuId = params.get("gpu");
+  if (setSelectIfValid("gpuPreset", gpuId)) applyPreset(gpuId);
+
+  setValueIfPresent("vramGb", params.get("vram"));
+  setValueIfPresent("ramGb", params.get("ram"));
+  setValueIfPresent("gpuCount", params.get("count"));
+  setValueIfPresent("bandwidth", params.get("bandwidth"));
+  setSelectIfValid("contextSize", params.get("ctx"));
+  setSelectIfValid("concurrency", params.get("con"));
+  setSelectIfValid("outputTokens", params.get("out"));
+  setSelectIfValid("kvPrecision", params.get("kv"));
+  setSelectIfValid("runtimeMode", params.get("runtime"));
+  setSelectIfValid("quantization", params.get("quant"));
+  setSelectIfValid("taskFilter", params.get("task"));
+  setSelectIfValid("providerFilter", params.get("provider"));
+  setSelectIfValid("licenseFilter", params.get("license"));
+  setSelectIfValid("gradeFilter", params.get("grade"));
+  setSelectIfValid("sortBy", params.get("sort"));
+
+  const fit = params.get("fit");
+  if (SUMMARY_FILTERS.some((item) => item.id === fit)) activeSummaryFilter = fit;
+
+  const nextView = params.get("view");
+  viewMode = nextView === "card" ? "card" : "list";
+
+  const model = params.get("model");
+  selectedModelKey = model && getModelByKey(model) ? model : "";
+}
+
+function setSelectIfValid(id, value) {
+  if (!value) return false;
+  const select = $(id);
+  if (![...select.options].some((option) => option.value === value)) return false;
+  select.value = value;
+  return true;
+}
+
+function setValueIfPresent(id, value) {
+  if (value === null || value === "") return;
+  $(id).value = value;
 }
 
 async function detectGpu() {
@@ -575,11 +1133,17 @@ function summarizeDetectedGpu(text) {
   return `${compact.slice(0, 77)}...`;
 }
 
-function resetDetectedHardwareLabel() {
-  const preset = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value);
-  if (preset) {
-    detectedHardwareLabel = `${preset.name} 기준`;
-  }
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, "&#96;");
 }
 
 document.addEventListener("DOMContentLoaded", init);
