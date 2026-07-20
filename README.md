@@ -26,19 +26,12 @@
 
 ![앱 미리보기](./docs/preview.svg)
 
-## 10초 사용 흐름
+## 빠른 사용법
 
-```mermaid
-flowchart TB
-  A["1. GPU 선택"]
-  B["2. 예약 VRAM 입력"]
-  C["3. 워크로드 탭 선택"]
-  D["4. 모델 목록 비교"]
-  E["5. 상세 분석 확인"]
-  F["6. URL 공유"]
-
-  A --> B --> C --> D --> E --> F
-```
+1. 웹 데모를 열고 GPU 프리셋을 선택합니다.
+2. VRAM, RAM, GPU 수, 이미 사용 중인 VRAM을 필요하면 직접 수정합니다.
+3. 생성형 LLM, 임베딩, 리랭커, OCR/VLM 탭에서 실행 가능한 모델을 확인합니다.
+4. 모델을 클릭해 VRAM 구성, 속도 추정, 실행 예시를 확인합니다.
 
 ## 대표 사용 사례
 
@@ -92,64 +85,6 @@ flowchart TB
 | 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
 | 정렬 | 추천순, 예상 속도순, 품질 우선, 필요 VRAM 낮은 순, 파라미터 큰 순, 최신 모델순 |
 | URL 상태 저장 | GPU, VRAM, RAM, 예약 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
-
-## 화면 흐름
-
-GitHub README에서는 큰 가로 Mermaid가 자동 축소되어 읽기 어려워집니다. 그래서 화면 구조, 계산 흐름, 워크로드별 메모리 항목을 작은 세로형 다이어그램으로 나눠 표시합니다.
-
-### 앱 화면 구조
-
-```mermaid
-flowchart TB
-  A["하드웨어 공통 설정<br/>GPU·VRAM·RAM·예약 VRAM"]
-  B["워크로드 탭<br/>LLM / 임베딩 / 리랭커 / OCR / VLM"]
-  C["검색·필터·정렬"]
-  D["모델 목록<br/>등급·필요 VRAM·예상 속도"]
-  E["모델 상세<br/>정밀도별 비교·계산 근거·실행 예시"]
-
-  A --> B --> C --> D --> E
-```
-
-### 계산 파이프라인
-
-```mermaid
-flowchart TB
-  A["GPU VRAM Pool<br/>V × G × sharding factor"]
-  B["Model Budget<br/>pool - reserved - safety"]
-  C["Required VRAM<br/>weights + runtime + workload memory"]
-  D{"required ≤ budget?"}
-  E["S / A / B / C<br/>GPU 실행"]
-  F{"required ≤ budget + RAM assist?"}
-  G["D<br/>오프로딩"]
-  H["F<br/>부적합"]
-
-  A --> B
-  B --> D
-  C --> D
-  D -- "yes" --> E
-  D -- "no" --> F
-  F -- "yes" --> G
-  F -- "no" --> H
-```
-
-### 워크로드별 메모리 항목
-
-```mermaid
-flowchart TB
-  A["공통 가용 VRAM 예산"]
-  B["생성형 LLM<br/>weights + KV cache + runtime"]
-  C["임베딩<br/>weights + activation + attention"]
-  D["리랭커<br/>weights + pair activation + attention"]
-  E["경량 OCR<br/>resident modules + image buffer"]
-  F["문서/범용 VLM<br/>vision activation + image tokens + decoder KV"]
-  G["실행 등급"]
-
-  A --> B --> G
-  A --> C --> G
-  A --> D --> G
-  A --> E --> G
-  A --> F --> G
-```
 
 ## 계산 기준
 
@@ -611,35 +546,6 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 | RTX 4090 24GB | BAAI/bge-m3 | FP16, 384 tokens, batch 32 | 쾌적 | 제보 대기 |
 | A100 80GB | MinerU2.5-Pro-2604 1.2B | BF16, A4 300DPI, batch 1 | 쾌적 | 제보 대기 |
 | RTX 4090 24GB | PaddleOCR-VL-1.6 | BF16, A4 200DPI, batch 1 | 잘 돌아감 | 제보 대기 |
-
-## 데이터 구조
-
-```mermaid
-flowchart TB
-  A["data/*.js<br/>GPU·모델·정밀도 카탈로그"]
-  B["app.js<br/>계산·필터·URL 상태"]
-  C["index.html<br/>입력 UI"]
-  D["styles.css<br/>반응형 화면"]
-  E["모델 목록"]
-  F["상세 분석 패널"]
-  G["공유 URL"]
-
-  A --> B
-  C --> B
-  D --> C
-  B --> E
-  B --> F
-  B --> G
-```
-
-| 파일 | 역할 |
-| --- | --- |
-| `data/gpus.js` | GPU 프리셋과 성능 기준 |
-| `data/models.js` | 생성형 LLM 카탈로그 |
-| `data/embedding-models.js` | 임베딩 모델 카탈로그 |
-| `data/reranker-models.js` | 리랭커 모델 카탈로그 |
-| `data/ocr-models.js` | OCR, 문서 VLM, 범용 VLM 카탈로그 |
-| `data/precision-profiles.js` | FP32/FP16/BF16/INT8/INT4, 런타임 프로필 |
 
 ## 로컬 실행
 
