@@ -49,24 +49,24 @@ flowchart LR
 | bge-m3 임베딩을 배치 32개로 돌리면 얼마나 빠를까? | `임베딩` 탭, `BAAI/bge-m3`, `평균 입력 길이`, `배치 크기` 변경 |
 | OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `경량 OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
 | PDF를 Markdown으로 복원하는 문서 VLM은 어떤 GPU가 필요할까? | `문서 VLM` 탭, `PaddleOCR-VL`, `MinerU`, `olmOCR` 검색 |
-| Qwen3-VL 같은 범용 VLM으로 문서 질의응답을 돌릴 수 있을까? | `범용 VLM` 탭, `Qwen3-VL`, `MiniCPM-V`, `InternVL` 검색 |
+| DeepSeek-VL2나 Qwen2.5-VL 같은 범용 VLM으로 문서 질의응답을 돌릴 수 있을까? | `범용 VLM` 탭, `DeepSeek-VL2`, `Qwen2.5-VL`, `Llama Vision` 검색 |
 
 ## 지원 규모
 
 | 데이터 | 개수 |
 | --- | ---: |
 | GPU 프리셋 | 86 |
-| 전체 AI 모델 | 175 |
+| 전체 AI 모델 | 200 |
 | LLM 모델 | 114 |
 | 임베딩 모델 | 27 |
 | 리랭커 모델 | 14 |
 | 경량 OCR 모델 | 4 |
 | 문서 VLM 모델 | 9 |
-| 범용 VLM 모델 | 7 |
+| 범용 VLM 모델 | 32 |
 | 양자화 옵션 | 8 |
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
-| 모델 공급사 | 37 |
-| 비전/멀티모달 모델 | 34 |
+| 모델 공급사 | 40 |
+| 비전/멀티모달 모델 | 64 |
 
 ## 주요 기능
 
@@ -551,7 +551,7 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 | OCR 해상도 | A4 300DPI처럼 이미지가 커질수록 중간 feature map과 이미지 버퍼가 커져 VRAM 사용량이 증가합니다. |
 | OCR 처리 기능 | 텍스트만 읽는 것보다 레이아웃, 표, 수식, 전체 문서 파싱을 켜면 더 많은 모델/작업공간이 필요합니다. |
 | 문서 VLM | PDF를 Markdown/JSON으로 복원하는 모델입니다. 이미지 토큰, 출력 토큰, decoder KV cache까지 함께 계산합니다. |
-| 범용 VLM | Qwen3-VL, InternVL처럼 이미지 이해와 질의응답을 같이 하는 모델입니다. OCR 전용 모델보다 목적이 넓어 출력 길이에 따른 지연시간 차이가 큽니다. |
+| 범용 VLM | DeepSeek-VL2, Qwen2.5-VL, Llama Vision, Pixtral, InternVL처럼 이미지 이해와 질의응답을 같이 하는 모델입니다. OCR 전용 모델보다 목적이 넓어 출력 길이에 따른 지연시간 차이가 큽니다. |
 
 쉽게 보면 계산기는 아래 순서로 판단합니다.
 
@@ -664,8 +664,8 @@ http://127.0.0.1:8787
 general, korean, coding, reasoning, long, edge, vision,
 embedding, reranker, retrieval, sparse, dense, multilingual,
 matryoshka, ocr, document, document-vlm, general-vlm, vlm,
-layout, table, math, handwriting, pdf, markdown, chart, seal,
-spotting, coordinate, screen, mobile, agent, legacy,
+layout, table, math, handwriting, pdf, markdown, chart, video,
+grounding, audio, gui, seal, spotting, coordinate, screen, mobile, agent, legacy,
 classification, clustering, matching, codeRetrieval
 ```
 
@@ -737,6 +737,19 @@ npm run check
 - [dots.mocr model card](https://huggingface.co/rednote-hilab/dots.mocr)
 - [olmOCR-2-7B-1025 model card](https://huggingface.co/allenai/olmOCR-2-7B-1025)
 - [Qwen3-VL-2B-Instruct model card](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct)
+- [DeepSeek-VL2 repository](https://github.com/deepseek-ai/DeepSeek-VL2)
+- [DeepSeek-VL2 Small model card](https://huggingface.co/deepseek-ai/deepseek-vl2-small)
+- [Qwen2.5-VL-7B-Instruct model card](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct)
+- [Qwen2-VL-2B-Instruct model card](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)
+- [Llama 3.2 11B Vision model card](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct)
+- [Pixtral 12B model card](https://huggingface.co/mistralai/Pixtral-12B-Base-2409)
+- [Pixtral Large model card](https://huggingface.co/mistralai/Pixtral-Large-Instruct-2411)
+- [LLaVA-OneVision Qwen2 7B model card](https://huggingface.co/llava-hf/llava-onevision-qwen2-7b-ov-hf)
+- [Molmo-7B-D model card](https://huggingface.co/allenai/Molmo-7B-D-0924)
+- [SmolVLM2 model release](https://huggingface.co/blog/smolvlm2)
+- [Phi-4 multimodal model card](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
+- [Aya Vision 8B model card](https://huggingface.co/CohereLabs/aya-vision-8b)
+- [GLM-4.1V-9B-Thinking model card](https://huggingface.co/zai-org/GLM-4.1V-9B-Thinking)
 - [MiniCPM-V-4.6 model card](https://huggingface.co/openbmb/MiniCPM-V-4.6)
 - [InternVL3.5-4B model card](https://huggingface.co/OpenGVLab/InternVL3_5-4B)
 - [Kimi-VL-A3B-Instruct model card](https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct)

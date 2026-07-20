@@ -1030,14 +1030,26 @@ function modelFreshnessScore(model) {
   if (text.includes("paddleocr-vl-1.6")) score += 755;
   if (text.includes("deepseek-ocr-2")) score += 750;
   if (text.includes("qwen3-vl")) score += 745;
+  if (text.includes("glm-4.1v")) score += 742;
   if (text.includes("internvl3.5")) score += 740;
+  if (text.includes("deepseek-vl2")) score += 739;
   if (text.includes("minicpm-v-4.6")) score += 738;
   if (text.includes("kimi-vl")) score += 736;
   if (text.includes("qwen3-embedding") || text.includes("qwen3-reranker")) score += 735;
   if (text.includes("jina-embeddings-v5")) score += 730;
   if (text.includes("olmocr-2")) score += 728;
   if (text.includes("dots.ocr")) score += 724;
+  if (text.includes("qwen2.5-vl")) score += 722;
+  if (text.includes("phi-4-multimodal")) score += 721;
   if (text.includes("gpt-oss")) score += 720;
+  if (text.includes("aya-vision")) score += 719;
+  if (text.includes("smolvlm2")) score += 718;
+  if (text.includes("pixtral-large")) score += 716;
+  if (text.includes("pixtral")) score += 714;
+  if (text.includes("llava-onevision")) score += 712;
+  if (text.includes("molmo")) score += 710;
+  if (text.includes("llama-3.2") && text.includes("vision")) score += 708;
+  if (text.includes("qwen2-vl")) score += 706;
   if (text.includes("qwen3")) score += 700;
   if (text.includes("deepseek v3.2")) score += 690;
   if (text.includes("llama 4")) score += 680;
@@ -1617,10 +1629,96 @@ for result in output:
 
 # Transformers 또는 SGLang 런타임도 모델 카드 예시를 기준으로 사용할 수 있습니다.`;
   }
+  if (lowerName.includes("deepseek-vl2")) {
+    return `git clone https://github.com/deepseek-ai/DeepSeek-VL2
+cd DeepSeek-VL2
+pip install -e .
+CUDA_VISIBLE_DEVICES=0 python inference.py --model_path "${model.name}"
+
+# MoE 모델이라 total parameter와 activated parameter가 다릅니다. 큰 모델은 A100/H100급 VRAM을 기준으로 보세요.`;
+  }
+  if (lowerName.includes("deepseek-vl-7b")) {
+    return `from transformers import AutoModelForCausalLM
+
+model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True).cuda()
+
+# 이전 세대 DeepSeek-VL 비교군입니다. 최신 운영 후보는 DeepSeek-VL2 계열을 먼저 보세요.`;
+  }
+  if (lowerName.includes("qwen2.5-vl") || lowerName.includes("qwen2-vl")) {
+    return `pip install qwen-vl-utils[decord]
+vllm serve ${model.name}
+
+# 이미지, 비디오, 문서 OCR-like extraction에 사용할 수 있습니다.`;
+  }
   if (lowerName.includes("qwen3-vl")) {
     return `vllm serve ${model.name}
 
 # 문서 이미지와 "Extract this page as Markdown." 같은 프롬프트를 함께 전달하세요.`;
+  }
+  if (lowerName.includes("llama-3.2") && lowerName.includes("vision")) {
+    return `from transformers import MllamaForConditionalGeneration, AutoProcessor
+
+processor = AutoProcessor.from_pretrained("${model.name}")
+model = MllamaForConditionalGeneration.from_pretrained("${model.name}", device_map="auto")
+
+# Meta 라이선스와 지역 제한 조건을 배포 전에 확인하세요.`;
+  }
+  if (lowerName.includes("pixtral-large")) {
+    return `vllm serve ${model.name} \\
+  --config-format mistral \\
+  --load-format mistral \\
+  --tokenizer-mode mistral \\
+  --tensor-parallel-size 8 \\
+  --limit-mm-per-prompt '{"image": 10}'
+
+# Pixtral Large는 vLLM/tensor parallel 서버 환경을 권장합니다.`;
+  }
+  if (lowerName.includes("pixtral")) {
+    return `vllm serve ${model.name}
+
+# 128K context와 가변 해상도 이미지를 쓰는 Pixtral 계열 비교군입니다.`;
+  }
+  if (lowerName.includes("llava-onevision")) {
+    return `vllm serve ${model.name}
+
+# 단일 이미지, 다중 이미지, 비디오 시나리오를 같은 계열에서 비교하세요.`;
+  }
+  if (lowerName.includes("molmo")) {
+    return `from transformers import AutoProcessor, AutoModelForCausalLM
+
+processor = AutoProcessor.from_pretrained("${model.name}", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True, device_map="auto")
+
+# 이미지 이해와 pointing/grounding 비교용 모델입니다.`;
+  }
+  if (lowerName.includes("smolvlm2")) {
+    return `from transformers import pipeline
+
+pipe = pipeline("image-text-to-text", model="${model.name}", device_map="auto")
+result = pipe("./page.png", text="Read the document and summarize key fields.")
+
+# 저VRAM/온디바이스 비전 테스트에 적합합니다.`;
+  }
+  if (lowerName.includes("phi-4-multimodal")) {
+    return `from transformers import AutoModelForCausalLM, AutoProcessor
+
+processor = AutoProcessor.from_pretrained("${model.name}", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True, device_map="auto")
+
+# 이미지와 오디오 입력을 같이 다루는 멀티모달 모델입니다.`;
+  }
+  if (lowerName.includes("aya-vision")) {
+    return `vllm serve ${model.name}
+
+# 다국어 이미지 QA와 OCR-like 추출을 테스트할 때 사용하세요.`;
+  }
+  if (lowerName.includes("glm-4.1v") || lowerName.includes("glm-4v")) {
+    return `from transformers import AutoProcessor, AutoModelForCausalLM
+
+processor = AutoProcessor.from_pretrained("${model.name}", trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True, device_map="auto")
+
+# 문서, 비디오, GUI 에이전트 작업의 멀티모달 reasoning 비교군입니다.`;
   }
   if (lowerName.includes("internvl") || lowerName.includes("kimi-vl") || lowerName.includes("minicpm-v")) {
     return `vllm serve ${model.name}
@@ -1808,6 +1906,10 @@ function tagLabel(tag) {
     pdf: "PDF",
     markdown: "Markdown",
     chart: "차트",
+    video: "비디오",
+    grounding: "Grounding",
+    audio: "오디오",
+    gui: "GUI",
     seal: "인장",
     spotting: "영역 인식",
     coordinate: "좌표",

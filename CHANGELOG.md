@@ -6,8 +6,8 @@
 - 하드웨어 입력과 고급 설정을 접힘 영역 없이 기본 노출되도록 변경
 - 브라우저 보안 제약으로 정확도가 낮은 PC 자동 감지 기능 제거
 - 생성형 LLM, 임베딩, 리랭커, 경량 OCR, 문서 VLM, 범용 VLM 탭 추가
-- 임베딩 모델 27종, 리랭커 14종, OCR/VLM 모델 20종 추가
-- PaddleOCR-VL-1.6, MinerU2.5-Pro, DeepSeek-OCR-2, dots.ocr, dots.mocr, olmOCR-2, Qwen3-VL, MiniCPM-V, InternVL3.5, Kimi-VL 추가
+- 임베딩 모델 27종, 리랭커 14종, OCR/VLM 모델 45종 추가
+- PaddleOCR-VL-1.6, MinerU2.5-Pro, DeepSeek-OCR-2, dots.ocr, dots.mocr, olmOCR-2, DeepSeek-VL2, Qwen3-VL, Qwen2.5-VL, Qwen2-VL, Llama 3.2 Vision, Pixtral, LLaVA-OneVision, Molmo, SmolVLM2, Phi-4 multimodal, Aya Vision, GLM-4.1V, MiniCPM-V, InternVL3.5, Kimi-VL 추가
 - 임베딩 encoder FLOPs/activation, 리랭커 query latency, OCR 해상도/megapixel 기반 계산식 추가
 - 컨텍스트, 동시 요청, 출력 토큰, RAG 배치, OCR 배치 페이지에 프리셋과 직접 입력을 함께 제공
 - H100/A100 같은 데이터센터 GPU를 빠르게 찾을 수 있도록 GPU 프리셋 검색 입력 추가
