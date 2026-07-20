@@ -19,6 +19,8 @@ const KV_PRECISION_META = {
   q4: { label: "Q4", factor: 0.35 },
 };
 
+let detectedHardwareLabel = "";
+
 const $ = (id) => document.getElementById(id);
 
 function init() {
@@ -67,7 +69,7 @@ function applyPreset(id) {
   $("ramGb").value = preset.ram;
   $("bandwidth").value = preset.bandwidth;
   $("gpuCount").value = 1;
-  $("hardwareStatus").textContent = `${preset.name} 기준`;
+  detectedHardwareLabel = `${preset.name} 기준`;
 }
 
 function getHardware() {
@@ -270,7 +272,8 @@ function render() {
   $("fitCount").textContent = `${allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length}개`;
   $("servingLoad").textContent = `${hardware.concurrency}명`;
   $("kvMode").textContent = hardware.kvMeta.label;
-  $("hardwareStatus").textContent = `${formatGb(hardware.vram * hardware.count)} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`;
+  const hardwareSummary = `${formatGb(hardware.vram * hardware.count)} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`;
+  $("hardwareStatus").textContent = detectedHardwareLabel ? `${detectedHardwareLabel} · ${hardwareSummary}` : hardwareSummary;
 
   renderSummary(allEstimates);
   renderRecommendations(estimates);
@@ -422,29 +425,160 @@ function formatDuration(seconds) {
 
 async function detectGpu() {
   const status = $("hardwareStatus");
-  if (!navigator.gpu) {
-    status.textContent = "이 브라우저는 WebGPU 감지를 지원하지 않습니다";
-    return;
-  }
+  status.textContent = "PC 정보를 감지하는 중입니다";
 
   try {
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) {
-      status.textContent = "GPU 어댑터를 찾지 못했습니다";
+    const webGpuInfo = await getWebGpuInfo();
+    const webGlInfo = getWebGlInfo();
+    const detectedText = [webGpuInfo, webGlInfo].filter(Boolean).join(" ");
+    const matchedPreset = findGpuPresetForText(detectedText);
+    const browserRam = getBrowserMemoryGb();
+
+    if (matchedPreset) {
+      $("gpuPreset").value = matchedPreset.id;
+      $("vramGb").value = matchedPreset.vram;
+      $("bandwidth").value = matchedPreset.bandwidth;
+      $("gpuCount").value = 1;
+      $("ramGb").value = browserRam && browserRam > matchedPreset.ram ? browserRam : matchedPreset.ram;
+
+      detectedHardwareLabel = `감지: ${summarizeDetectedGpu(detectedText)} → ${matchedPreset.name} 추정 매칭`;
+      render();
       return;
     }
 
-    let info = {};
-    if (typeof adapter.requestAdapterInfo === "function") {
+    if (browserRam) {
+      $("ramGb").value = Math.max(Number($("ramGb").value), browserRam);
+    }
+
+    detectedHardwareLabel = detectedText
+      ? `감지: ${summarizeDetectedGpu(detectedText)} · 프리셋 매칭 실패`
+      : "브라우저가 GPU 모델명을 공개하지 않습니다";
+    render();
+  } catch (error) {
+    detectedHardwareLabel = "GPU 감지 권한 또는 브라우저 설정을 확인하세요";
+    render();
+  }
+}
+
+async function getWebGpuInfo() {
+  try {
+    if (!navigator.gpu) return "";
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return "";
+
+    let info = adapter.info || {};
+    if (!info.vendor && typeof adapter.requestAdapterInfo === "function") {
       info = await adapter.requestAdapterInfo();
     }
 
-    const detected = [info.vendor, info.architecture, info.device, info.description]
+    return [info.vendor, info.architecture, info.device, info.description]
       .filter(Boolean)
       .join(" ");
-    status.textContent = detected || "GPU가 감지됐지만 모델명 정보가 제한됩니다";
   } catch (error) {
-    status.textContent = "GPU 감지 권한 또는 브라우저 설정을 확인하세요";
+    return "";
+  }
+}
+
+function getWebGlInfo() {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) return "";
+
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    if (!debugInfo) return "";
+
+    return [
+      gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+      gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL),
+    ]
+      .filter(Boolean)
+      .join(" ");
+  } catch (error) {
+    return "";
+  }
+}
+
+function getBrowserMemoryGb() {
+  if (typeof navigator.deviceMemory !== "number") return null;
+  return clampNumber(navigator.deviceMemory, 1, 2048, null);
+}
+
+function findGpuPresetForText(text) {
+  const normalizedDetected = normalizeGpuText(text);
+  if (!normalizedDetected) return null;
+
+  const candidates = GPU_PRESETS
+    .filter((gpu) => gpu.id !== "custom")
+    .map((gpu) => ({
+      gpu,
+      key: normalizeGpuText(gpu.name),
+      familyKey: normalizeGpuText(gpu.name.replace(/\b\d+(\.\d+)?\s*gb\b/gi, "")),
+      coreKey: getGpuCoreKey(gpu.name),
+    }))
+    .sort((a, b) => b.familyKey.length - a.familyKey.length || b.gpu.vram - a.gpu.vram);
+
+  return candidates.find(({ key }) => normalizedDetected.includes(key))?.gpu
+    || candidates.find(({ familyKey }) => normalizedDetected.includes(familyKey))?.gpu
+    || candidates
+      .sort((a, b) => b.coreKey.length - a.coreKey.length || b.gpu.vram - a.gpu.vram)
+      .find(({ coreKey }) => coreKey && normalizedDetected.includes(coreKey))?.gpu
+    || null;
+}
+
+function normalizeGpuText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/\b(nvidia|amd|intel|apple|geforce|radeon|graphics|gpu|direct3d\d*|angle|metal|opencl|vulkan|pci-e|pcie|sxm|mobile|laptop|family|renderer|vendor|tm|r)\b/g, " ")
+    .replace(/\b\d+(\.\d+)?\s*gb\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(ti)\b/g, "ti")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getGpuCoreKey(text) {
+  const normalized = normalizeGpuText(text);
+  const patterns = [
+    /\brtx pro \d{4} blackwell\b/,
+    /\brtx \d{4} ti super\b/,
+    /\brtx \d{4} ti\b/,
+    /\brtx \d{4} super\b/,
+    /\brtx \d{4}\b/,
+    /\bquadrotx \d{4}\b/,
+    /\btitan rtx\b/,
+    /\b(b200|b100|h200|h100 nvl|h100|a100|l40s|l40|l4|a40|a30|a10|t4|v100|p100)\b/,
+    /\bmi(325x|300x|250x|210)\b/,
+    /\bw(7900|7800|7700|6800)\b/,
+    /\brx \d{4} xtx\b/,
+    /\brx \d{4} xt\b/,
+    /\brx \d{4} gre\b/,
+    /\brx \d{4}\b/,
+    /\bdata center max \d{4}\b/,
+    /\bdata center flex \d{3}\b/,
+    /\barc a\d{3}\b/,
+    /\bm\d ultra\b/,
+    /\bm\d max\b/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (match) return match[0];
+  }
+  return "";
+}
+
+function summarizeDetectedGpu(text) {
+  const compact = String(text || "").replace(/\s+/g, " ").trim();
+  if (!compact) return "GPU 이름 제한";
+  if (compact.length <= 80) return compact;
+  return `${compact.slice(0, 77)}...`;
+}
+
+function resetDetectedHardwareLabel() {
+  const preset = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value);
+  if (preset) {
+    detectedHardwareLabel = `${preset.name} 기준`;
   }
 }
 

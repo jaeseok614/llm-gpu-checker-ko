@@ -11,7 +11,7 @@
   <rect x="36" y="132" width="305" height="584" rx="12" fill="#FFFFFF" stroke="#D9E1EA"/>
   <text x="60" y="166" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#17202A">하드웨어</text>
   <rect x="229" y="145" width="88" height="34" rx="8" fill="#F8FAFC" stroke="#D9E1EA"/>
-  <text x="247" y="167" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#225EA8">감지</text>
+  <text x="244" y="167" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#225EA8">PC 감지</text>
 
   <text x="60" y="206" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#617080">GPU 프리셋</text>
   <rect x="60" y="217" width="257" height="40" rx="8" fill="#FFFFFF" stroke="#CBD5DF"/>

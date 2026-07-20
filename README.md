@@ -53,13 +53,14 @@ http://127.0.0.1:8787
 | 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 일반 챗봇 |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
 | 정렬 | 실행 적합도, 모델 크기, 예상 속도 |
-| WebGPU 감지 | 브라우저가 허용하는 범위에서 GPU 정보 감지 |
+| PC 자동 감지 | WebGPU/WebGL로 감지한 GPU 이름을 프리셋과 자동 매칭 |
 
 ## 화면 흐름
 
 ```mermaid
 flowchart LR
   subgraph Input[입력 조건]
+    Q[PC 자동 감지<br/>WebGPU/WebGL]
     A[GPU 프리셋/직접 입력]
     B[컨텍스트 길이]
     C[동시 요청 수]
@@ -84,6 +85,7 @@ flowchart LR
     P[예상 응답 시간]
   end
 
+  Q --> A
   A --> H
   F --> I
   B --> J
@@ -231,6 +233,8 @@ npm run check
 ## 주의사항
 
 이 계산기는 로컬 추정 도구입니다. 실제 실행 가능 여부와 속도는 드라이버, CUDA/ROCm, 런타임, 모델 구현, KV cache precision, 배치 크기, CPU/RAM 성능에 따라 달라질 수 있습니다.
+
+브라우저는 보안상 `nvidia-smi`처럼 정확한 VRAM, 드라이버, GPU 점유율을 직접 읽을 수 없습니다. `PC 자동 감지`는 WebGPU/WebGL이 공개하는 GPU 이름을 기반으로 프리셋을 추정 매칭하고, 매칭된 프리셋의 VRAM/대역폭 값을 입력란에 채우는 방식입니다.
 
 ## 확장 계획
 
