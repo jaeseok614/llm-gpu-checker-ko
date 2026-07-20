@@ -31,11 +31,17 @@ function populateSelects() {
   ).join("");
   $("quantization").value = "auto";
 
+  const providers = [...new Set(MODELS.map((model) => model.maker))].sort((a, b) => a.localeCompare(b));
+  $("providerFilter").innerHTML = [
+    `<option value="all">전체 공급사</option>`,
+    ...providers.map((provider) => `<option value="${provider}">${provider}</option>`),
+  ].join("");
+
   applyPreset("rtx4090-24");
 }
 
 function bindEvents() {
-  ["vramGb", "gpuCount", "ramGb", "bandwidth", "contextSize", "quantization", "runtimeMode", "searchInput", "taskFilter", "gradeFilter", "sortBy"].forEach((id) => {
+  ["vramGb", "gpuCount", "ramGb", "bandwidth", "contextSize", "quantization", "runtimeMode", "searchInput", "taskFilter", "providerFilter", "gradeFilter", "sortBy"].forEach((id) => {
     $(id).addEventListener("input", render);
   });
 
@@ -169,6 +175,7 @@ function getFilteredEstimates() {
   const hardware = getHardware();
   const selectedQuant = $("quantization").value;
   const task = $("taskFilter").value;
+  const provider = $("providerFilter").value;
   const minGrade = $("gradeFilter").value;
   const search = $("searchInput").value.trim().toLowerCase();
 
@@ -176,6 +183,10 @@ function getFilteredEstimates() {
 
   if (task !== "all") {
     estimates = estimates.filter((estimate) => estimate.model.tags.includes(task));
+  }
+
+  if (provider !== "all") {
+    estimates = estimates.filter((estimate) => estimate.model.maker === provider);
   }
 
   if (search) {
@@ -334,6 +345,7 @@ function tagLabel(tag) {
     reasoning: "추론",
     long: "긴 문서",
     edge: "경량",
+    vision: "비전",
   };
   return labels[tag] || tag;
 }

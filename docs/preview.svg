@@ -32,7 +32,7 @@
   <text x="78" y="493" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#617080">총 VRAM</text>
   <text x="78" y="523" font-family="Arial, sans-serif" font-size="25" font-weight="800" fill="#17202A">24 GB</text>
   <text x="213" y="493" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#617080">추천 가능</text>
-  <text x="213" y="523" font-family="Arial, sans-serif" font-size="25" font-weight="800" fill="#17202A">11개</text>
+  <text x="213" y="523" font-family="Arial, sans-serif" font-size="25" font-weight="800" fill="#17202A">83개</text>
 
   <rect x="365" y="132" width="799" height="438" rx="12" fill="#FFFFFF" stroke="#D9E1EA"/>
   <rect x="389" y="156" width="315" height="42" rx="8" fill="#FFFFFF" stroke="#CBD5DF"/>

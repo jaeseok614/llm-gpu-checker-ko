@@ -34,11 +34,15 @@ for (const quant of data.quantizations) {
 }
 
 const modelNames = new Set();
+const allowedTags = new Set(["general", "korean", "coding", "reasoning", "long", "edge", "vision"]);
 for (const model of data.models) {
   requireFields(model, ["name", "maker", "params", "active", "context", "license", "tags", "summary"], "model");
   if (modelNames.has(model.name)) throw new Error(`duplicate model: ${model.name}`);
   if (!Array.isArray(model.tags) || model.tags.length === 0) {
     throw new Error(`model ${model.name} needs at least one tag`);
+  }
+  for (const tag of model.tags) {
+    if (!allowedTags.has(tag)) throw new Error(`model ${model.name} has unsupported tag: ${tag}`);
   }
   modelNames.add(model.name);
 }

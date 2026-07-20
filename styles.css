@@ -221,7 +221,7 @@ button:focus-visible {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 150px 150px 160px;
+  grid-template-columns: minmax(220px, 1fr) 150px 150px 150px 160px;
   gap: 10px;
   margin-bottom: 16px;
 }

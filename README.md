@@ -45,11 +45,12 @@ http://127.0.0.1:8787
 
 | 기능 | 설명 |
 | --- | --- |
-| GPU 프리셋 | RTX 3060, RTX 4090, L4, L40S, A100, H100 등 기본 제공 |
+| GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터, AMD, Intel, Apple Silicon 포함 |
 | 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭 직접 조정 |
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
-| 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 일반 챗봇 |
+| 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 일반 챗봇 |
+| 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
 | 정렬 | 실행 적합도, 모델 크기, 예상 속도 |
 | WebGPU 감지 | 브라우저가 허용하는 범위에서 GPU 정보 감지 |
 
@@ -162,7 +163,7 @@ flowchart TB
 지원 태그:
 
 ```text
-general, korean, coding, reasoning, long, edge
+general, korean, coding, reasoning, long, edge, vision
 ```
 
 ## 검증
@@ -177,9 +178,23 @@ npm run check
 
 | 데이터 | 개수 |
 | --- | ---: |
-| GPU 프리셋 | 12 |
+| GPU 프리셋 | 86 |
 | 양자화 옵션 | 8 |
-| LLM 모델 | 20 |
+| LLM 모델 | 114 |
+| 모델 공급사 | 22 |
+| 비전/멀티모달 모델 | 19 |
+
+## 데이터 참고
+
+모델명, 파라미터 수, 컨텍스트 길이, GPU 메모리/대역폭은 공개 모델 카드와 제조사 제품 페이지를 기준으로 정리했습니다. 일부 신형 모델과 MoE 모델은 공개 자료 간 표기가 다를 수 있어 운영 적용 전 재확인이 필요합니다.
+
+- [Can I Run AI](https://www.canirun.ai/)
+- [NVIDIA Data Center GPUs](https://www.nvidia.com/en-us/data-center/products/)
+- [NVIDIA GeForce Graphics Cards](https://www.nvidia.com/en-us/geforce/graphics-cards/)
+- [AMD Instinct Accelerators](https://www.amd.com/en/products/accelerators/instinct.html)
+- [AMD Radeon PRO Graphics](https://www.amd.com/en/products/graphics/workstations.html)
+- [Intel Data Center GPU](https://www.intel.com/content/www/us/en/products/details/discrete-gpus/data-center-gpu.html)
+- [Apple Mac Technical Specifications](https://support.apple.com/specs)
 
 ## 주의사항
 
