@@ -29,13 +29,15 @@
 ## 10초 사용 흐름
 
 ```mermaid
-flowchart LR
-  A[GPU 프리셋 선택] --> B[VRAM·RAM·예약 메모리 확인]
-  B --> C[워크로드 탭 선택<br/>LLM·임베딩·리랭커·OCR/VLM]
-  C --> D[모델별 조건 조정]
-  D --> E[모델 클릭]
-  E --> F[메모리·속도·계산 근거 상세 분석]
-  F --> G[URL로 설정 공유]
+flowchart TB
+  A["1. GPU 선택"]
+  B["2. 예약 VRAM 입력"]
+  C["3. 워크로드 탭 선택"]
+  D["4. 모델 목록 비교"]
+  E["5. 상세 분석 확인"]
+  F["6. URL 공유"]
+
+  A --> B --> C --> D --> E --> F
 ```
 
 ## 대표 사용 사례
@@ -93,72 +95,60 @@ flowchart LR
 
 ## 화면 흐름
 
+GitHub README에서는 큰 가로 Mermaid가 자동 축소되어 읽기 어려워집니다. 그래서 화면 구조, 계산 흐름, 워크로드별 메모리 항목을 작은 세로형 다이어그램으로 나눠 표시합니다.
+
+### 앱 화면 구조
+
 ```mermaid
-flowchart LR
-  subgraph Hardware[하드웨어 기준]
-    A[GPU·VRAM·RAM]
-    B[공통 성능 입력<br/>대역폭·GPU 수]
-    C[공유 GPU 예산<br/>예약 VRAM·안전 여유분]
-  end
+flowchart TB
+  A["하드웨어 공통 설정<br/>GPU·VRAM·RAM·예약 VRAM"]
+  B["워크로드 탭<br/>LLM / 임베딩 / 리랭커 / OCR / VLM"]
+  C["검색·필터·정렬"]
+  D["모델 목록<br/>등급·필요 VRAM·예상 속도"]
+  E["모델 상세<br/>정밀도별 비교·계산 근거·실행 예시"]
 
-  subgraph Workload[워크로드 탭]
-    W1[생성형 LLM<br/>컨텍스트·KV cache·양자화]
-    W2[임베딩<br/>입력 토큰·배치·정밀도]
-    W3[리랭커<br/>질의+문서·후보 수]
-    W4[경량 OCR<br/>해상도·좌표·페이지 배치]
-    W5[문서 VLM<br/>PDF→Markdown·표·수식]
-    W6[범용 VLM<br/>문서 QA·화면 이해]
-  end
+  A --> B --> C --> D --> E
+```
 
-  subgraph Estimate[타입별 추정]
-    H[Peak VRAM 계산]
-    I[가중치/상주 모델]
-    J[작업 메모리<br/>KV·activation·attention·image buffer]
-    K[런타임/배치 오버헤드]
-    L{가용 VRAM 기준<br/>실행 등급 산정}
-  end
+### 계산 파이프라인
 
-  subgraph List[첫 화면]
-    M[적합도 칩 필터]
-    N[목록형 모델 비교]
-    O[검색·용도·공급사·라이선스·정렬]
-  end
-
-  subgraph Detail[모델 상세]
-    P[양자화/정밀도별 VRAM/속도]
-    R[VRAM 상세 분석]
-    S[런타임·기능별 비교]
-    T[계산식·실행 예시·외부 링크]
-  end
+```mermaid
+flowchart TB
+  A["GPU VRAM Pool<br/>V × G × sharding factor"]
+  B["Model Budget<br/>pool - reserved - safety"]
+  C["Required VRAM<br/>weights + runtime + workload memory"]
+  D{"required ≤ budget?"}
+  E["S / A / B / C<br/>GPU 실행"]
+  F{"required ≤ budget + RAM assist?"}
+  G["D<br/>오프로딩"]
+  H["F<br/>부적합"]
 
   A --> B
-  B --> C
-  C --> W1
-  C --> W2
-  C --> W3
-  C --> W4
-  C --> W5
-  C --> W6
-  W1 --> H
-  W2 --> H
-  W3 --> H
-  W4 --> H
-  W5 --> H
-  W6 --> H
-  H --> I
-  H --> J
-  H --> K
-  H --> L
-  I --> L
-  J --> L
-  K --> L
-  L --> M
-  L --> N
-  O --> N
-  N --> P
-  P --> R
-  P --> S
-  S --> T
+  B --> D
+  C --> D
+  D -- "yes" --> E
+  D -- "no" --> F
+  F -- "yes" --> G
+  F -- "no" --> H
+```
+
+### 워크로드별 메모리 항목
+
+```mermaid
+flowchart TB
+  A["공통 가용 VRAM 예산"]
+  B["생성형 LLM<br/>weights + KV cache + runtime"]
+  C["임베딩<br/>weights + activation + attention"]
+  D["리랭커<br/>weights + pair activation + attention"]
+  E["경량 OCR<br/>resident modules + image buffer"]
+  F["문서/범용 VLM<br/>vision activation + image tokens + decoder KV"]
+  G["실행 등급"]
+
+  A --> B --> G
+  A --> C --> G
+  A --> D --> G
+  A --> E --> G
+  A --> F --> G
 ```
 
 ## 계산 기준
@@ -354,7 +344,7 @@ $$
 When quantization is set to `자동 추천`, the calculator searches from higher quality to lower quality:
 
 $$
-q \in \{Q6\_K,\ Q5\_K\_M,\ Q4\_K\_M,\ Q3\_K\_M,\ Q2\_K\}
+q \in \{\mathrm{Q6\_K},\ \mathrm{Q5\_K\_M},\ \mathrm{Q4\_K\_M},\ \mathrm{Q3\_K\_M},\ \mathrm{Q2\_K}\}
 $$
 
 The first quantization that satisfies the memory budget is selected:
@@ -622,34 +612,30 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 ```mermaid
 flowchart TB
-  subgraph Data[data 폴더]
-    G[gpus.js<br/>GPU 프리셋]
-    Q[quantizations.js<br/>양자화 기준]
-    P[precision-profiles.js<br/>정밀도·런타임 프로필]
-    M[models.js<br/>LLM 모델 목록]
-    E[embedding-models.js<br/>임베딩 모델]
-    R[reranker-models.js<br/>리랭커 모델]
-    O[ocr-models.js<br/>경량 OCR·문서 VLM·범용 VLM]
-  end
+  A["data/*.js<br/>GPU·모델·정밀도 카탈로그"]
+  B["app.js<br/>계산·필터·URL 상태"]
+  C["index.html<br/>입력 UI"]
+  D["styles.css<br/>반응형 화면"]
+  E["모델 목록"]
+  F["상세 분석 패널"]
+  G["공유 URL"]
 
-  subgraph App[브라우저 앱]
-    UI[index.html<br/>입력 UI]
-    Logic[app.js<br/>계산/필터/렌더링]
-    Style[styles.css<br/>화면 스타일]
-  end
-
-  G --> Logic
-  Q --> Logic
-  P --> Logic
-  M --> Logic
-  E --> Logic
-  R --> Logic
-  O --> Logic
-  UI --> Logic
-  Style --> UI
-  Logic --> List[목록형 모델 비교]
-  Logic --> Detail[모델 상세 분석 패널]
+  A --> B
+  C --> B
+  D --> C
+  B --> E
+  B --> F
+  B --> G
 ```
+
+| 파일 | 역할 |
+| --- | --- |
+| `data/gpus.js` | GPU 프리셋과 성능 기준 |
+| `data/models.js` | 생성형 LLM 카탈로그 |
+| `data/embedding-models.js` | 임베딩 모델 카탈로그 |
+| `data/reranker-models.js` | 리랭커 모델 카탈로그 |
+| `data/ocr-models.js` | OCR, 문서 VLM, 범용 VLM 카탈로그 |
+| `data/precision-profiles.js` | FP32/FP16/BF16/INT8/INT4, 런타임 프로필 |
 
 ## 로컬 실행
 
