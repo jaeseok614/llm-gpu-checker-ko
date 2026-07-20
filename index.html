@@ -26,14 +26,9 @@
             <strong id="hardwareHeadline">GeForce RTX 4090 24GB · RAM 64GB · GPU 1개</strong>
             <p id="hardwareSubline">현재 기준: 8K · 동시 1명 · llama.cpp / Ollama</p>
           </div>
-          <div class="hardware-actions">
-            <button type="button" class="ghost-button" id="detectGpuButton">PC 자동 감지</button>
-            <button type="button" class="ghost-button" id="toggleHardwareEditor" aria-expanded="false" aria-controls="hardwareEditor">하드웨어 수정</button>
-            <button type="button" class="ghost-button" id="toggleAdvancedSettings" aria-expanded="false" aria-controls="advancedEditor">고급 설정</button>
-          </div>
         </div>
 
-        <div class="settings-panel" id="hardwareEditor" hidden>
+        <div class="settings-panel" id="hardwareEditor">
           <label class="field field-wide">
             <span>GPU 프리셋</span>
             <select id="gpuPreset"></select>
@@ -52,7 +47,7 @@
           </label>
         </div>
 
-        <div class="settings-panel advanced-panel" id="advancedEditor" hidden>
+        <div class="settings-panel advanced-panel" id="advancedEditor">
           <label class="field">
             <span>대역폭 GB/s</span>
             <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />

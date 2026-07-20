@@ -30,8 +30,8 @@
 
 ```mermaid
 flowchart LR
-  A[PC 자동 감지] --> B[하드웨어 요약 확인]
-  B --> C[적합도 칩으로 빠른 필터]
+  A[GPU 프리셋 선택] --> B[VRAM·RAM·GPU 수 확인]
+  B --> C[컨텍스트·동시 요청 조정]
   C --> D[모델 목록 비교]
   D --> E[모델 클릭]
   E --> F[양자화·VRAM·런타임 상세 분석]
@@ -62,7 +62,6 @@ flowchart LR
 | 기능 | 설명 |
 | --- | --- |
 | GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터, AMD, Intel, Apple Silicon 포함 |
-| PC 자동 감지 | WebGPU/WebGL로 감지한 GPU 이름을 프리셋과 자동 매칭 |
 | 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭 직접 조정 |
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰, KV cache 정밀도 선택 |
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
@@ -80,7 +79,6 @@ flowchart LR
 ```mermaid
 flowchart LR
   subgraph Hardware[하드웨어 기준]
-    Q[PC 자동 감지<br/>WebGPU/WebGL]
     A[GPU·VRAM·RAM]
     B[고급 설정<br/>컨텍스트·동시 요청·KV cache·런타임]
   end
@@ -106,7 +104,6 @@ flowchart LR
     T[실행 명령어와 외부 링크]
   end
 
-  Q --> A
   A --> B
   A --> H
   A --> I
@@ -450,7 +447,7 @@ npm run check
 
 ## 정확도와 한계
 
-브라우저는 보안상 `nvidia-smi`처럼 정확한 VRAM, 드라이버, GPU 점유율을 직접 읽을 수 없습니다. `PC 자동 감지`는 WebGPU/WebGL이 공개하는 GPU 이름을 기반으로 프리셋을 추정 매칭하고, 매칭된 프리셋의 VRAM/대역폭 값을 입력란에 채우는 방식입니다.
+브라우저는 보안상 `nvidia-smi`처럼 정확한 VRAM, 드라이버, GPU 점유율을 직접 읽을 수 없습니다. 그래서 이 계산기는 자동 감지 대신 GPU 프리셋 선택과 직접 입력값을 기준으로 계산합니다.
 
 실제 실행 가능 여부와 속도는 드라이버, CUDA/ROCm, 런타임, 모델 구현, KV cache precision, 배치 크기, CPU/RAM 성능에 따라 달라질 수 있습니다.
 

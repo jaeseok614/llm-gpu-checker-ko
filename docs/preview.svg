@@ -13,12 +13,10 @@
   <text x="58" y="153" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#225EA8">내 하드웨어</text>
   <text x="58" y="181" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#17202A">GeForce RTX 4090 24GB · RAM 64 GB · GPU 1개</text>
   <text x="58" y="204" font-family="Arial, sans-serif" font-size="13" fill="#617080">현재 기준: 8K · 동시 1명 · llama.cpp / Ollama · 자동 추천</text>
-  <rect x="848" y="150" width="92" height="34" rx="8" fill="#F8FAFC" stroke="#D9E1EA"/>
-  <text x="866" y="172" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#225EA8">PC 자동 감지</text>
-  <rect x="952" y="150" width="94" height="34" rx="8" fill="#F8FAFC" stroke="#D9E1EA"/>
-  <text x="970" y="172" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#225EA8">하드웨어 수정</text>
-  <rect x="1058" y="150" width="78" height="34" rx="8" fill="#F8FAFC" stroke="#D9E1EA"/>
-  <text x="1076" y="172" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#225EA8">고급 설정</text>
+  <rect x="828" y="150" width="138" height="34" rx="8" fill="#F8FAFC" stroke="#D9E1EA"/>
+  <text x="849" y="172" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#225EA8">GPU 프리셋 상시 표시</text>
+  <rect x="980" y="150" width="136" height="34" rx="8" fill="#F8FAFC" stroke="#D9E1EA"/>
+  <text x="1000" y="172" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#225EA8">고급 설정 상시 표시</text>
 
   <rect x="34" y="238" width="1132" height="476" rx="12" fill="#FFFFFF" stroke="#D9E1EA"/>
 

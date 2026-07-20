@@ -180,7 +180,6 @@ h3 {
   font-size: 13px;
 }
 
-.hardware-actions,
 .view-toggle {
   display: flex;
   align-items: center;
@@ -880,21 +879,6 @@ button:focus-visible {
   .hardware-copy p {
     white-space: normal;
     word-break: break-word;
-  }
-
-  .hardware-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
-
-  .hardware-actions .ghost-button {
-    min-width: 0;
-    padding: 0 8px;
-  }
-
-  .hardware-actions .ghost-button:first-child {
-    grid-column: 1 / -1;
   }
 
   .settings-panel,
