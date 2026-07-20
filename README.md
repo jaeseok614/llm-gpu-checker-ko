@@ -343,26 +343,30 @@ $$
 
 When quantization is set to `자동 추천`, the calculator searches from higher quality to lower quality:
 
-$$
-q \in \{\mathrm{Q6\_K},\ \mathrm{Q5\_K\_M},\ \mathrm{Q4\_K\_M},\ \mathrm{Q3\_K\_M},\ \mathrm{Q2\_K}\}
-$$
+| Priority | Quantization |
+| ---: | --- |
+| 1 | `Q6_K` |
+| 2 | `Q5_K_M` |
+| 3 | `Q4_K_M` |
+| 4 | `Q3_K_M` |
+| 5 | `Q2_K` |
 
 The first quantization that satisfies the memory budget is selected:
 
 $$
-M_{required}(q) \le 0.85M_{budget}
+M_{\mathrm{required}}(q) \le 0.85M_{\mathrm{budget}}
 $$
 
 If no option satisfies that comfortable threshold, the calculator tries:
 
 $$
-M_{required}(q) \le M_{budget}
+M_{\mathrm{required}}(q) \le M_{\mathrm{budget}}
 $$
 
 and then:
 
 $$
-M_{required}(q) \le M_{offload}
+M_{\mathrm{required}}(q) \le M_{\mathrm{offload}}
 $$
 
 If all checks fail, `Q2_K` is used as the last possible comparison baseline.
