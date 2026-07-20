@@ -2,7 +2,7 @@
   "name": "llm-gpu-checker-ko",
   "version": "1.0.0",
   "private": false,
-  "description": "Korean static web app for estimating which LLMs can run on a selected GPU.",
+  "description": "Korean static web app for estimating which LLM, embedding, reranker, and OCR models can run on a selected GPU.",
   "type": "module",
   "scripts": {
     "check": "node --check app.js && node scripts/validate-data.mjs",
@@ -12,6 +12,10 @@
     "llm",
     "gpu",
     "vram",
+    "rag",
+    "embedding",
+    "reranker",
+    "ocr",
     "korean",
     "hardware"
   ],

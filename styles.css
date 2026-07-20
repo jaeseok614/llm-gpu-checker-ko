@@ -188,6 +188,38 @@ h3 {
   flex-wrap: wrap;
 }
 
+.workload-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.workload-tab {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 13px;
+  background: #f8fafc;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.workload-tab:hover {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.workload-tab.is-active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #ffffff;
+}
+
 .ghost-button,
 .toggle-button,
 .icon-button,
@@ -218,7 +250,7 @@ h3 {
 
 .settings-panel {
   display: grid;
-  grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(130px, 1fr));
+  grid-template-columns: minmax(260px, 1.5fr) repeat(4, minmax(120px, 1fr));
   gap: 12px;
   padding: 16px 18px 18px;
   border-top: 1px solid var(--line);
@@ -731,7 +763,8 @@ button:focus-visible {
   font-weight: 700;
 }
 
-.command-block {
+.command-block,
+.formula-block {
   margin: 0;
   overflow-x: auto;
   border: 1px solid var(--line);
@@ -741,6 +774,11 @@ button:focus-visible {
   color: #e5edf6;
   font-size: 12px;
   line-height: 1.6;
+}
+
+.formula-block {
+  background: #f8fafc;
+  color: #1f2937;
 }
 
 .external-links {
@@ -923,36 +961,8 @@ button:focus-visible {
     min-height: 26px;
   }
 
-  .model-row .model-cell:nth-child(2)::before {
-    content: "등급";
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .model-row .model-cell:nth-child(3)::before {
-    content: "권장 양자화";
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .model-row .model-cell:nth-child(4)::before {
-    content: "필요 VRAM";
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .model-row .model-cell:nth-child(5)::before {
-    content: "예상 속도";
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .model-row .model-cell:nth-child(6)::before {
-    content: "컨텍스트";
+  .model-row .model-cell:not(.model-name-cell)::before {
+    content: attr(data-label);
     color: var(--muted);
     font-size: 12px;
     font-weight: 800;

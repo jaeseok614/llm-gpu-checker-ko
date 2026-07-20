@@ -1,7 +1,52 @@
 const DATA = window.LLM_GPU_CHECKER_DATA || {};
 const GPU_PRESETS = DATA.gpus || [];
 const QUANTS = DATA.quantizations || [];
-const MODELS = DATA.models || [];
+const GENERATIVE_MODELS = (DATA.models || []).map((model) => ({ ...model, type: "generative" }));
+const EMBEDDING_MODELS = (DATA.embeddingModels || []).map((model) => ({ ...model, type: "embedding" }));
+const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => ({ ...model, type: "reranker" }));
+const OCR_MODELS = (DATA.ocrModels || []).map((model) => ({ ...model, type: model.type || "ocr-pipeline" }));
+const ENCODER_PRECISIONS = DATA.precisions?.encoder || [];
+const OCR_PRECISIONS = DATA.precisions?.ocr || [];
+const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
+const OCR_RESOLUTION_PRESETS = DATA.ocrResolutionPresets || {};
+
+const MODEL_GROUPS = {
+  generative: GENERATIVE_MODELS,
+  embedding: EMBEDDING_MODELS,
+  reranker: RERANKER_MODELS,
+  ocr: OCR_MODELS,
+};
+
+const WORKLOAD_META = {
+  generative: {
+    label: "생성형 LLM",
+    statusLabel: "LLM",
+    modelCountLabel: "LLM 모델",
+    searchPlaceholder: "모델명, 제조사, 태그 검색",
+    listHeaders: ["모델", "등급", "권장 양자화", "필요 VRAM", "예상 속도", "컨텍스트", ""],
+  },
+  embedding: {
+    label: "임베딩",
+    statusLabel: "임베딩",
+    modelCountLabel: "임베딩 모델",
+    searchPlaceholder: "임베딩 모델명, 제조사, 태그 검색",
+    listHeaders: ["모델", "등급", "정밀도/런타임", "Peak VRAM", "문서 처리량", "최대 입력", ""],
+  },
+  reranker: {
+    label: "리랭커",
+    statusLabel: "리랭커",
+    modelCountLabel: "리랭커 모델",
+    searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
+    listHeaders: ["모델", "등급", "정밀도/런타임", "Peak VRAM", "쌍 처리량", "권장 입력", ""],
+  },
+  ocr: {
+    label: "OCR·문서",
+    statusLabel: "OCR",
+    modelCountLabel: "OCR 모델",
+    searchPlaceholder: "OCR 모델명, 제조사, 태그 검색",
+    listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
+  },
+};
 
 const GRADE_META = {
   S: { label: "쾌적", className: "grade-s", score: 5, color: "#13795b" },
@@ -40,6 +85,7 @@ const RUNTIME_LABELS = {
 };
 
 let detectedHardwareLabel = "";
+let activeWorkload = "generative";
 let activeSummaryFilter = "all";
 let selectedModelKey = "";
 let viewMode = "list";
@@ -64,19 +110,50 @@ function populateSelects() {
   ).join("");
   $("quantization").value = "auto";
 
-  const providers = [...new Set(MODELS.map((model) => model.maker))].sort((a, b) => a.localeCompare(b));
+  populatePrecisionSelect("encoderPrecision", ENCODER_PRECISIONS);
+  populatePrecisionSelect("rerankerPrecision", ENCODER_PRECISIONS);
+  populatePrecisionSelect("ocrPrecision", OCR_PRECISIONS);
+  refreshWorkloadUi();
+  refreshFilterOptions();
+
+  applyPreset("rtx4090-24");
+}
+
+function populatePrecisionSelect(id, options) {
+  const select = $(id);
+  if (!select) return;
+  select.innerHTML = options.map(
+    (option) => `<option value="${escapeAttr(option.id)}">${escapeHtml(option.label)}</option>`,
+  ).join("");
+  select.value = "auto";
+}
+
+function refreshFilterOptions() {
+  const models = getActiveModels();
+  const previousProvider = $("providerFilter").value;
+  const previousLicense = $("licenseFilter").value;
+  const previousTask = $("taskFilter").value;
+  const providers = [...new Set(models.map((model) => model.maker))].sort((a, b) => a.localeCompare(b));
+  const licenses = [...new Set(models.map((model) => model.license))].sort((a, b) => a.localeCompare(b));
+  const tags = [...new Set(models.flatMap((model) => model.tags || []))].sort((a, b) => tagLabel(a).localeCompare(tagLabel(b)));
+
   $("providerFilter").innerHTML = [
     `<option value="all">전체 공급사</option>`,
     ...providers.map((provider) => `<option value="${escapeAttr(provider)}">${escapeHtml(provider)}</option>`),
   ].join("");
-
-  const licenses = [...new Set(MODELS.map((model) => model.license))].sort((a, b) => a.localeCompare(b));
   $("licenseFilter").innerHTML = [
     `<option value="all">전체 라이선스</option>`,
     ...licenses.map((license) => `<option value="${escapeAttr(license)}">${escapeHtml(license)}</option>`),
   ].join("");
+  $("taskFilter").innerHTML = [
+    `<option value="all">전체 작업</option>`,
+    ...tags.map((tag) => `<option value="${escapeAttr(tag)}">${escapeHtml(tagLabel(tag))}</option>`),
+  ].join("");
 
-  applyPreset("rtx4090-24");
+  setSelectIfValid("providerFilter", previousProvider) || ($("providerFilter").value = "all");
+  setSelectIfValid("licenseFilter", previousLicense) || ($("licenseFilter").value = "all");
+  setSelectIfValid("taskFilter", previousTask) || ($("taskFilter").value = "all");
+  $("searchInput").placeholder = WORKLOAD_META[activeWorkload].searchPlaceholder;
 }
 
 function bindEvents() {
@@ -87,14 +164,67 @@ function bindEvents() {
     });
   });
 
-  ["contextSize", "concurrency", "outputTokens", "kvPrecision", "quantization", "runtimeMode", "taskFilter", "providerFilter", "licenseFilter", "gradeFilter", "sortBy"].forEach((id) => {
+  [
+    "contextSize",
+    "concurrency",
+    "outputTokens",
+    "kvPrecision",
+    "quantization",
+    "runtimeMode",
+    "embeddingInputTokens",
+    "embeddingBatchSize",
+    "encoderPrecision",
+    "encoderRuntime",
+    "embeddingBatchTokens",
+    "rerankerQueryTokens",
+    "rerankerDocTokens",
+    "rerankerCandidates",
+    "rerankerBatchSize",
+    "rerankerPrecision",
+    "rerankerRuntime",
+    "ocrWidth",
+    "ocrHeight",
+    "ocrBatchSize",
+    "ocrPrecision",
+    "ocrFeatureSet",
+    "taskFilter",
+    "providerFilter",
+    "licenseFilter",
+    "gradeFilter",
+    "sortBy",
+  ].forEach((id) => {
     $(id).addEventListener("change", render);
+  });
+
+  ["ocrWidth", "ocrHeight"].forEach((id) => {
+    $(id).addEventListener("input", () => {
+      $("ocrResolutionPreset").value = "custom";
+      render();
+    });
   });
 
   $("searchInput").addEventListener("input", render);
 
   $("gpuPreset").addEventListener("change", (event) => {
     applyPreset(event.target.value);
+    render();
+  });
+
+  document.querySelectorAll("[data-workload-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextWorkload = button.dataset.workloadTab;
+      if (!MODEL_GROUPS[nextWorkload] || nextWorkload === activeWorkload) return;
+      activeWorkload = nextWorkload;
+      activeSummaryFilter = "all";
+      selectedModelKey = "";
+      refreshWorkloadUi();
+      refreshFilterOptions();
+      render();
+    });
+  });
+
+  $("ocrResolutionPreset").addEventListener("change", () => {
+    applyOcrResolutionPreset($("ocrResolutionPreset").value);
     render();
   });
 
@@ -135,6 +265,25 @@ function setViewMode(nextMode) {
   render();
 }
 
+function refreshWorkloadUi() {
+  document.querySelectorAll("[data-workload-tab]").forEach((button) => {
+    const isActive = button.dataset.workloadTab === activeWorkload;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  document.querySelectorAll("[data-workload-settings]").forEach((panel) => {
+    panel.hidden = panel.dataset.workloadSettings !== activeWorkload;
+  });
+}
+
+function applyOcrResolutionPreset(id) {
+  const preset = OCR_RESOLUTION_PRESETS[id];
+  if (!preset || !preset.width || !preset.height) return;
+  $("ocrWidth").value = preset.width;
+  $("ocrHeight").value = preset.height;
+}
+
 function applyPreset(id) {
   const preset = GPU_PRESETS.find((gpu) => gpu.id === id) || GPU_PRESETS[0];
   if (!preset) return;
@@ -159,13 +308,101 @@ function getHardware() {
   const runtime = $("runtimeMode").value;
   const preset = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value) || GPU_PRESETS[0];
 
-  return { vram, count, ram, bandwidth, context, concurrency, outputTokens, kvPrecision, kvMeta, runtime, preset };
+  const compute = estimateHardwareCompute(preset, bandwidth);
+
+  return { vram, count, ram, bandwidth, context, concurrency, outputTokens, kvPrecision, kvMeta, runtime, preset, compute };
 }
 
 function clampNumber(value, min, max, fallback) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
+}
+
+function estimateHardwareCompute(preset, bandwidth) {
+  if (preset?.fp16Tflops || preset?.bf16Tflops || preset?.int8Tops) {
+    return {
+      fp32Tflops: preset.fp32Tflops || Math.max(4, preset.fp16Tflops * 0.5),
+      fp16Tflops: preset.fp16Tflops || Math.max(8, bandwidth * 0.12),
+      bf16Tflops: preset.bf16Tflops || preset.fp16Tflops || Math.max(8, bandwidth * 0.1),
+      int8Tops: preset.int8Tops || Math.max(16, bandwidth * 0.24),
+    };
+  }
+
+  const name = `${preset?.id || ""} ${preset?.name || ""}`.toLowerCase();
+  let tensorFactor = 0.14;
+  if (name.includes("b200") || name.includes("b100")) tensorFactor = 0.55;
+  else if (name.includes("h200") || name.includes("h100")) tensorFactor = 0.42;
+  else if (name.includes("a100")) tensorFactor = 0.2;
+  else if (name.includes("rtx 50") || name.includes("blackwell")) tensorFactor = 0.22;
+  else if (name.includes("rtx 40") || name.includes("ada")) tensorFactor = 0.17;
+  else if (name.includes("rtx 30")) tensorFactor = 0.12;
+  else if (name.includes("t4") || name.includes("v100")) tensorFactor = 0.09;
+  else if (name.includes("mi3") || name.includes("mi2")) tensorFactor = 0.22;
+  else if (name.includes("apple")) tensorFactor = 0.07;
+
+  const fp16Tflops = Math.max(6, bandwidth * tensorFactor);
+  return {
+    fp32Tflops: fp16Tflops * 0.5,
+    fp16Tflops,
+    bf16Tflops: fp16Tflops * 0.92,
+    int8Tops: fp16Tflops * 2,
+  };
+}
+
+function getActiveModels() {
+  return MODEL_GROUPS[activeWorkload] || GENERATIVE_MODELS;
+}
+
+function getAllModels() {
+  return Object.values(MODEL_GROUPS).flat();
+}
+
+function getWorkloadSettings() {
+  if (activeWorkload === "embedding") {
+    return {
+      type: "embedding",
+      inputTokens: clampNumber($("embeddingInputTokens").value, 1, 32768, 384),
+      batchSize: clampNumber($("embeddingBatchSize").value, 1, 256, 32),
+      precisionId: $("encoderPrecision").value,
+      runtime: $("encoderRuntime").value,
+      maxBatchTokens: clampNumber($("embeddingBatchTokens").value, 1024, 131072, 16384),
+    };
+  }
+
+  if (activeWorkload === "reranker") {
+    return {
+      type: "reranker",
+      queryTokens: clampNumber($("rerankerQueryTokens").value, 1, 4096, 64),
+      docTokens: clampNumber($("rerankerDocTokens").value, 1, 8192, 512),
+      candidates: clampNumber($("rerankerCandidates").value, 1, 1000, 40),
+      batchSize: clampNumber($("rerankerBatchSize").value, 1, 256, 16),
+      precisionId: $("rerankerPrecision").value,
+      runtime: $("rerankerRuntime").value,
+    };
+  }
+
+  if (activeWorkload === "ocr") {
+    return {
+      type: "ocr",
+      resolutionPreset: $("ocrResolutionPreset").value,
+      width: clampNumber($("ocrWidth").value, 320, 10000, 1654),
+      height: clampNumber($("ocrHeight").value, 320, 14000, 2339),
+      batchSize: clampNumber($("ocrBatchSize").value, 1, 64, 1),
+      precisionId: $("ocrPrecision").value,
+      featureSet: $("ocrFeatureSet").value,
+    };
+  }
+
+  return {
+    type: "generative",
+    context: getHardware().context,
+    concurrency: getHardware().concurrency,
+    outputTokens: getHardware().outputTokens,
+    kvPrecision: getHardware().kvPrecision,
+    runtime: getHardware().runtime,
+    quantization: $("quantization").value,
+  };
 }
 
 function estimateModel(model, quantId, hardware) {
@@ -259,6 +496,316 @@ function estimateWithQuant(model, quant, hardware) {
   return { requiredGb: weightsGb + kvGb + runtimeOverheadGb };
 }
 
+function estimateAnyModel(model, hardware) {
+  if (model.type === "embedding") return estimateEncoderModel(model, hardware, getWorkloadSettings());
+  if (model.type === "reranker") return estimateRerankerModel(model, hardware, getWorkloadSettings());
+  if (model.type === "ocr-pipeline" || model.type === "ocr-vlm") return estimateOcrModel(model, hardware, getWorkloadSettings());
+  return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
+}
+
+function normalizeGenerativeEstimate(estimate) {
+  return {
+    ...estimate,
+    settingLabel: estimate.quant.label,
+    speedLabel: formatSpeed(estimate.speed),
+    limitLabel: formatContext(estimate.contextLimitTokens),
+    unitLabel: "tok/s",
+    latencyLabel: formatDuration(estimate.latencySeconds),
+  };
+}
+
+function estimateEncoderModel(model, hardware, workload, precisionId = workload.precisionId) {
+  const precision = resolvePrecision(model, precisionId, ENCODER_PRECISIONS, (candidate) => {
+    const estimate = estimateEncoderWithPrecision(model, hardware, workload, candidate);
+    return estimate.grade !== "F" || candidate.id === "int4";
+  });
+  return estimateEncoderWithPrecision(model, hardware, workload, precision);
+}
+
+function estimateEncoderWithPrecision(model, hardware, workload, precision) {
+  const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime] || ENCODER_RUNTIME_PROFILES.tei;
+  const effectiveVram = getEffectiveVram(hardware);
+  const inputTokens = Math.min(workload.inputTokens, model.maxTokens);
+  const microBatch = Math.max(1, Math.min(workload.batchSize, Math.floor(workload.maxBatchTokens / Math.max(1, inputTokens))));
+  const microBatches = Math.ceil(workload.batchSize / microBatch);
+  const weightsGb = model.params * precision.bytesPerParam * 1.08;
+  const tokenStateGb = microBatch * inputTokens * model.hiddenSize * precision.activationBytes / 1e9;
+  const activationGb = tokenStateGb * runtime.hiddenFactor;
+  const attentionGb = model.supportsFlashAttention
+    ? tokenStateGb * runtime.attentionFactor
+    : microBatch * model.attentionHeads * inputTokens * inputTokens * precision.activationBytes * runtime.attentionFactor / 1e9;
+  const outputGb = microBatch * model.embeddingDim * 4 / 1e9;
+  const runtimeOverheadGb = runtime.baseOverheadGb + Math.max(0, microBatch - 1) * runtime.batchOverheadGb;
+  const requiredGb = weightsGb + activationGb + attentionGb + outputGb + runtimeOverheadGb;
+  const pressure = requiredGb / effectiveVram;
+  const grade = workload.inputTokens <= model.maxTokens
+    ? gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.35)
+    : "F";
+  const speed = estimateEncoderThroughput(model, hardware, runtime, precision, inputTokens, microBatch, weightsGb, activationGb, attentionGb, grade);
+  const batchLatencySeconds = speed.batchSeconds * microBatches;
+  const reason = buildEncoderReason(model, workload, grade, requiredGb, effectiveVram, microBatch);
+
+  return {
+    model,
+    precision,
+    runtime,
+    weightsGb,
+    activationGb,
+    attentionGb,
+    outputGb,
+    runtimeOverheadGb,
+    requiredGb,
+    effectiveVram,
+    pressure,
+    grade,
+    speed: speed.docsPerSecond,
+    throughput: speed.tokensPerSecond,
+    batchLatencySeconds,
+    firstTokenSeconds: batchLatencySeconds,
+    contextLimitTokens: model.maxTokens,
+    contextSupported: workload.inputTokens <= model.maxTokens,
+    settingLabel: `${precision.label} · ${runtime.shortLabel || runtime.label}`,
+    speedLabel: `${formatThroughput(speed.docsPerSecond, "doc/s")} · ${formatThroughput(speed.tokensPerSecond, "tok/s")}`,
+    limitLabel: formatContext(model.maxTokens),
+    unitLabel: "doc/s",
+    reason,
+    microBatch,
+    microBatches,
+    inputTokens,
+  };
+}
+
+function estimateRerankerModel(model, hardware, workload, precisionId = workload.precisionId) {
+  const precision = resolvePrecision(model, precisionId, ENCODER_PRECISIONS, (candidate) => {
+    const estimate = estimateRerankerWithPrecision(model, hardware, workload, candidate);
+    return estimate.grade !== "F" || candidate.id === "int4";
+  });
+  return estimateRerankerWithPrecision(model, hardware, workload, precision);
+}
+
+function estimateRerankerWithPrecision(model, hardware, workload, precision) {
+  const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime] || ENCODER_RUNTIME_PROFILES.tei;
+  const effectiveVram = getEffectiveVram(hardware);
+  const pairTokens = workload.queryTokens + workload.docTokens + 3;
+  const batchSize = workload.batchSize;
+  const weightsGb = model.params * precision.bytesPerParam * 1.08;
+  const tokenStateGb = batchSize * Math.min(pairTokens, model.maxTokens) * model.hiddenSize * precision.activationBytes / 1e9;
+  const activationGb = tokenStateGb * (runtime.hiddenFactor + 1.2);
+  const attentionGb = model.supportsFlashAttention
+    ? tokenStateGb * runtime.attentionFactor
+    : batchSize * model.attentionHeads * pairTokens * pairTokens * precision.activationBytes * runtime.attentionFactor / 1e9;
+  const scoreBufferGb = batchSize * 4 / 1e9;
+  const runtimeOverheadGb = runtime.baseOverheadGb + Math.max(0, batchSize - 1) * runtime.batchOverheadGb;
+  const requiredGb = weightsGb + activationGb + attentionGb + scoreBufferGb + runtimeOverheadGb;
+  const pressure = requiredGb / effectiveVram;
+  const contextSupported = pairTokens <= model.maxTokens;
+  const grade = contextSupported ? gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.35) : "F";
+  const speed = estimateEncoderThroughput(model, hardware, runtime, precision, Math.min(pairTokens, model.maxTokens), batchSize, weightsGb, activationGb, attentionGb, grade);
+  const rerankPasses = Math.ceil(workload.candidates / batchSize);
+  const queryLatencySeconds = speed.batchSeconds * rerankPasses;
+  const pairsPerSecond = speed.docsPerSecond;
+  const reason = buildRerankerReason(model, workload, grade, requiredGb, effectiveVram, pairTokens);
+
+  return {
+    model,
+    precision,
+    runtime,
+    weightsGb,
+    activationGb,
+    attentionGb,
+    outputGb: scoreBufferGb,
+    runtimeOverheadGb,
+    requiredGb,
+    effectiveVram,
+    pressure,
+    grade,
+    speed: pairsPerSecond,
+    throughput: pairsPerSecond * pairTokens,
+    batchLatencySeconds: speed.batchSeconds,
+    latencySeconds: queryLatencySeconds,
+    firstTokenSeconds: queryLatencySeconds,
+    contextLimitTokens: model.maxTokens,
+    contextSupported,
+    settingLabel: `${precision.label} · ${runtime.shortLabel || runtime.label}`,
+    speedLabel: `${formatThroughput(pairsPerSecond, "pair/s")} · 질의 ${formatDuration(queryLatencySeconds)}`,
+    limitLabel: formatContext(model.recommendedTokens || model.maxTokens),
+    unitLabel: "pair/s",
+    reason,
+    pairTokens,
+    rerankPasses,
+  };
+}
+
+function estimateEncoderThroughput(model, hardware, runtime, precision, tokens, batchSize, weightsGb, activationGb, attentionGb, grade) {
+  if (grade === "F") return { docsPerSecond: 0, tokensPerSecond: 0, batchSeconds: 0 };
+
+  const multiGpuPenalty = hardware.count > 1 ? 0.82 : 1;
+  const computeTflops = Math.max(1, hardware.compute[precision.computeKey] || hardware.compute.fp16Tflops) * hardware.count * multiGpuPenalty * precision.speedFactor;
+  const flops = model.layers * (
+    24 * batchSize * tokens * model.hiddenSize * model.hiddenSize
+    + 4 * batchSize * tokens * tokens * model.hiddenSize
+  );
+  const computeSeconds = flops / (computeTflops * 1e12 * runtime.computeEfficiency);
+  const bytesRead = Math.max(0.05, weightsGb + activationGb + attentionGb) * 1e9;
+  const memorySeconds = bytesRead / (hardware.bandwidth * hardware.count * 1e9 * runtime.bandwidthEfficiency);
+  const pressurePenalty = grade === "D" ? 3.8 : grade === "C" ? 1.7 : 1;
+  const batchSeconds = (Math.max(computeSeconds, memorySeconds) + runtime.fixedLatencyMs / 1000) * pressurePenalty;
+  const docsPerSecond = batchSeconds > 0 ? batchSize / batchSeconds : 0;
+  const tokensPerSecond = docsPerSecond * tokens;
+
+  return { docsPerSecond, tokensPerSecond, batchSeconds };
+}
+
+function estimateOcrModel(model, hardware, workload, precisionId = workload.precisionId) {
+  const precision = resolvePrecision(model, precisionId, OCR_PRECISIONS, (candidate) => {
+    const estimate = estimateOcrWithPrecision(model, hardware, workload, candidate);
+    return estimate.grade !== "F" || candidate.id === "int8";
+  });
+  return estimateOcrWithPrecision(model, hardware, workload, precision);
+}
+
+function estimateOcrWithPrecision(model, hardware, workload, precision) {
+  const effectiveVram = getEffectiveVram(hardware);
+  const megapixels = (workload.width * workload.height) / 1e6;
+  const profile = model.profiles?.[precision.id] || model.profiles?.fp16 || {};
+  const featureMultiplier = getOcrFeatureMultiplier(workload.featureSet, model);
+  const imageBufferGb = workload.batchSize * workload.width * workload.height * 3 * precision.activationBytes * 2 / 1e9;
+  let weightsGb = 0;
+  let kvGb = 0;
+
+  if (model.type === "ocr-vlm") {
+    weightsGb = model.params * precision.bytesPerParam * 1.08;
+    const imageTokens = estimateImageTokens(model, workload.width, workload.height);
+    const totalTokens = imageTokens + 64 + Math.min(2048, model.maxOutputTokens || 1024);
+    kvGb = 2 * model.decoderLayers * workload.batchSize * totalTokens * model.kvHeads * model.headDim * precision.activationBytes / 1e9;
+  } else {
+    weightsGb = (profile.residentWeightsGb || model.params * precision.bytesPerParam * 1.08) * featureMultiplier;
+  }
+
+  const activationGb = workload.batchSize * megapixels * (profile.activationGbPerMegapixel || 0.2) * featureMultiplier;
+  const runtimeOverheadGb = (profile.baseRuntimeGb || 0.8) * featureMultiplier
+    + Math.max(0, workload.batchSize - 1) * (profile.batchOverheadGb || 0.06);
+  const requiredGb = weightsGb + kvGb + activationGb + imageBufferGb + runtimeOverheadGb;
+  const pressure = requiredGb / effectiveVram;
+  const grade = gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.3);
+  const pagesPerSecond = estimateOcrThroughput(model, hardware, workload, precision, megapixels, grade, featureMultiplier);
+  const secondsPerPage = pagesPerSecond > 0 ? 1 / pagesPerSecond : 0;
+  const reason = buildOcrReason(model, workload, grade, requiredGb, effectiveVram, megapixels);
+
+  return {
+    model,
+    precision,
+    weightsGb,
+    kvGb,
+    activationGb,
+    imageBufferGb,
+    runtimeOverheadGb,
+    requiredGb,
+    effectiveVram,
+    pressure,
+    grade,
+    speed: pagesPerSecond,
+    throughput: pagesPerSecond,
+    latencySeconds: secondsPerPage,
+    firstTokenSeconds: secondsPerPage,
+    contextLimitTokens: model.maxImageTokens || 0,
+    contextSupported: true,
+    settingLabel: `${precision.label} · ${ocrFeatureLabel(workload.featureSet)}`,
+    speedLabel: `${formatThroughput(pagesPerSecond, "page/s")} · ${formatDuration(secondsPerPage)}/page`,
+    limitLabel: `${formatMegapixels(megapixels)}`,
+    unitLabel: "page/s",
+    reason,
+    megapixels,
+  };
+}
+
+function estimateOcrThroughput(model, hardware, workload, precision, megapixels, grade, featureMultiplier) {
+  if (grade === "F") return 0;
+
+  const reference = model.reference || {};
+  const referenceBandwidth = reference.bandwidth || 1008;
+  const referenceMegapixels = reference.width && reference.height ? reference.width * reference.height / 1e6 : 3.87;
+  const referenceBatch = reference.batch || 1;
+  const basePps = reference.pagesPerSecond || 1;
+  const hardwareScale = Math.sqrt((hardware.bandwidth * hardware.count) / referenceBandwidth);
+  const resolutionScale = Math.pow(referenceMegapixels / Math.max(0.2, megapixels), 0.85);
+  const batchScale = referenceBatch > 1
+    ? Math.log2(workload.batchSize + 1) / Math.log2(referenceBatch + 1)
+    : 1 + Math.log2(workload.batchSize) * 0.32;
+  const precisionScale = precision.speedFactor || 1;
+  const fitPenalty = grade === "D" ? 0.2 : grade === "C" ? 0.55 : 1;
+  return Math.max(0, basePps * hardwareScale * resolutionScale * Math.max(0.12, batchScale) * precisionScale * fitPenalty / featureMultiplier);
+}
+
+function resolvePrecision(model, precisionId, precisionOptions, predicate) {
+  const supported = precisionOptions.filter((precision) => precision.id !== "auto" && model.precisions.includes(precision.id));
+  if (precisionId !== "auto") {
+    return supported.find((precision) => precision.id === precisionId) || supported[0] || precisionOptions[1];
+  }
+
+  const priority = ["fp16", "bf16", "int8", "int4", "fp32"];
+  for (const id of priority) {
+    const candidate = supported.find((precision) => precision.id === id);
+    if (candidate && predicate(candidate)) return candidate;
+  }
+  const fallbackOrder = ["int4", "int8", "fp16", "bf16", "fp32"];
+  return fallbackOrder.map((id) => supported.find((precision) => precision.id === id)).find(Boolean)
+    || supported[0]
+    || precisionOptions[1];
+}
+
+function getEffectiveVram(hardware) {
+  return hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
+}
+
+function getOcrFeatureMultiplier(featureSet, model) {
+  const supportsLayout = model.tags?.includes("layout");
+  const supportsTable = model.tags?.includes("table") || model.tags?.includes("math");
+  if (featureSet === "full") return supportsLayout || supportsTable ? 1.75 : 1.2;
+  if (featureSet === "table") return supportsTable ? 1.45 : 1.15;
+  if (featureSet === "layout") return supportsLayout ? 1.25 : 1.08;
+  return 1;
+}
+
+function estimateImageTokens(model, width, height) {
+  const patchSize = model.patchSize || 16;
+  const mergeSize = model.mergeSize || 1;
+  const rawTokens = Math.ceil(width / patchSize) * Math.ceil(height / patchSize) / (mergeSize * mergeSize);
+  return Math.min(model.maxImageTokens || rawTokens, rawTokens);
+}
+
+function buildEncoderReason(model, workload, grade, requiredGb, effectiveVram, microBatch) {
+  if (workload.inputTokens > model.maxTokens) {
+    return `선택한 ${formatContext(workload.inputTokens)} 입력 길이가 모델 한도 ${formatContext(model.maxTokens)}를 초과합니다.`;
+  }
+  if (microBatch < workload.batchSize) {
+    return `TEI식 최대 배치 토큰 기준으로 ${workload.batchSize}개 요청을 ${microBatch}개 micro-batch로 나누어 계산했습니다.`;
+  }
+  if (grade === "F") return `Peak VRAM ${formatGb(requiredGb)}가 총 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
+  if (grade === "D") return `GPU 단독 처리보다 RAM/CPU 보조나 배치 축소가 필요한 범위입니다.`;
+  if (grade === "C") return `배치 또는 입력 길이를 조금 낮추면 더 안정적인 임베딩 처리량을 기대할 수 있습니다.`;
+  return `${workload.inputTokens} 토큰, 배치 ${workload.batchSize} 기준으로 GPU 메모리 안에 들어오는 임베딩 워크로드입니다.`;
+}
+
+function buildRerankerReason(model, workload, grade, requiredGb, effectiveVram, pairTokens) {
+  if (pairTokens > model.maxTokens) {
+    return `질의+문서 ${formatContext(pairTokens)} 입력이 모델 한도 ${formatContext(model.maxTokens)}를 초과합니다.`;
+  }
+  if (pairTokens > (model.recommendedTokens || model.maxTokens)) {
+    return `모델 한도 안에는 들어가지만 권장 입력 ${formatContext(model.recommendedTokens || model.maxTokens)}보다 길어 지연시간이 커질 수 있습니다.`;
+  }
+  if (grade === "F") return `리랭커 peak VRAM ${formatGb(requiredGb)}가 총 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
+  if (grade === "D") return `후보 ${workload.candidates}개를 처리하려면 배치 축소나 CPU/RAM 보조를 고려해야 합니다.`;
+  return `후보 ${workload.candidates}개를 배치 ${workload.batchSize}로 나누어 ${Math.ceil(workload.candidates / workload.batchSize)}회 추론하는 기준입니다.`;
+}
+
+function buildOcrReason(model, workload, grade, requiredGb, effectiveVram, megapixels) {
+  if (grade === "F") return `${formatMegapixels(megapixels)} 이미지의 peak VRAM ${formatGb(requiredGb)}가 총 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
+  if (grade === "D") return `GPU 단독 처리보다 CPU/RAM 보조 또는 배치 페이지 축소가 필요한 OCR 워크로드입니다.`;
+  if (grade === "C") return `이미지 해상도나 배치가 높아 VRAM 여유가 작습니다. DPI 또는 배치 페이지를 낮추는 편이 안정적입니다.`;
+  return `${formatMegapixels(megapixels)}, 배치 ${workload.batchSize}페이지 기준으로 실행 가능한 OCR 워크로드입니다.`;
+}
+
 function gradeFromPressure(pressure, requiredGb, offloadRoom) {
   if (pressure <= 0.7) return "S";
   if (pressure <= 0.85) return "A";
@@ -317,7 +864,6 @@ function buildReason(grade, requiredGb, effectiveVram, model, hardware, contextL
 
 function getFilteredEstimates() {
   const hardware = getHardware();
-  const selectedQuant = $("quantization").value;
   const task = $("taskFilter").value;
   const provider = $("providerFilter").value;
   const license = $("licenseFilter").value;
@@ -325,7 +871,7 @@ function getFilteredEstimates() {
   const search = $("searchInput").value.trim().toLowerCase();
   const summaryFilter = SUMMARY_FILTERS.find((item) => item.id === activeSummaryFilter) || SUMMARY_FILTERS[0];
 
-  let estimates = MODELS.map((model) => estimateModel(model, selectedQuant, hardware));
+  let estimates = getActiveModels().map((model) => estimateAnyModel(model, hardware));
 
   if (summaryFilter.id !== "all") {
     estimates = estimates.filter((estimate) => summaryFilter.grades.includes(estimate.grade));
@@ -350,7 +896,9 @@ function getFilteredEstimates() {
         estimate.model.maker,
         estimate.model.license,
         estimate.model.summary,
-        formatParams(estimate.model.params),
+        formatParams(estimate.model.params || 0),
+        estimate.settingLabel,
+        estimate.limitLabel,
         estimate.model.tags.map(tagLabel).join(" "),
         estimate.model.tags.join(" "),
       ].join(" ").toLowerCase();
@@ -428,9 +976,10 @@ function recommendationScore(estimate) {
 function render(options = {}) {
   const { syncUrl = true } = options;
   const hardware = getHardware();
-  const allEstimates = MODELS.map((model) => estimateModel(model, $("quantization").value, hardware));
+  const allEstimates = getActiveModels().map((model) => estimateAnyModel(model, hardware));
   const estimates = getFilteredEstimates();
 
+  refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
   renderSummary(allEstimates);
   renderResults(estimates);
@@ -443,10 +992,9 @@ function render(options = {}) {
 function renderHardware(hardware, allEstimates) {
   const totalVram = hardware.vram * hardware.count;
   const runnableCount = allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length;
-  const quant = QUANTS.find((item) => item.id === $("quantization").value);
-  const quantLabel = quant ? quant.label : "자동 추천";
-  const basis = `${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명 · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`;
-  const headerSummary = `${formatGb(totalVram)} · RAM ${formatGb(hardware.ram)} · ${formatContext(hardware.context)} · 실행 가능 ${runnableCount}개`;
+  const basis = buildHardwareBasis(hardware);
+  const groupLabel = WORKLOAD_META[activeWorkload].statusLabel;
+  const headerSummary = `${formatGb(totalVram)} · RAM ${formatGb(hardware.ram)} · ${groupLabel} 실행 가능 ${runnableCount}개`;
   const headlineParts = [hardware.preset.name, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
 
   $("hardwareHeadline").innerHTML = headlineParts
@@ -459,6 +1007,30 @@ function renderHardware(hardware, allEstimates) {
     .join("");
   $("hardwareSubline").textContent = `현재 기준: ${basis}`;
   $("hardwareStatus").textContent = detectedHardwareLabel ? `${detectedHardwareLabel} · ${headerSummary}` : headerSummary;
+}
+
+function buildHardwareBasis(hardware) {
+  if (activeWorkload === "embedding") {
+    const workload = getWorkloadSettings();
+    const precision = getPrecisionLabel(workload.precisionId, ENCODER_PRECISIONS);
+    const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime]?.label || workload.runtime;
+    return `${workload.inputTokens} 토큰 · 배치 ${workload.batchSize}개 · ${runtime} · ${precision}`;
+  }
+  if (activeWorkload === "reranker") {
+    const workload = getWorkloadSettings();
+    const precision = getPrecisionLabel(workload.precisionId, ENCODER_PRECISIONS);
+    const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime]?.label || workload.runtime;
+    return `질의 ${workload.queryTokens} + 문서 ${workload.docTokens} · 후보 ${workload.candidates}개 · ${runtime} · ${precision}`;
+  }
+  if (activeWorkload === "ocr") {
+    const workload = getWorkloadSettings();
+    const precision = getPrecisionLabel(workload.precisionId, OCR_PRECISIONS);
+    return `${workload.width}x${workload.height} · 배치 ${workload.batchSize}페이지 · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`;
+  }
+
+  const quant = QUANTS.find((item) => item.id === $("quantization").value);
+  const quantLabel = quant ? quant.label : "자동 추천";
+  return `${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명 · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`;
 }
 
 function renderSummary(estimates) {
@@ -489,7 +1061,8 @@ function renderSummary(estimates) {
 
 function renderResults(estimates) {
   const recommendationRanks = getRecommendationRanks();
-  $("resultMeta").textContent = `모델 ${estimates.length}개 · ${viewMode === "list" ? "목록 보기" : "카드 보기"}`;
+  const meta = WORKLOAD_META[activeWorkload];
+  $("resultMeta").textContent = `${meta.modelCountLabel} ${estimates.length}개 · ${viewMode === "list" ? "목록 보기" : "카드 보기"}`;
 
   if (!estimates.length) {
     $("modelResults").className = "model-results";
@@ -508,13 +1081,7 @@ function renderResults(estimates) {
   $("modelResults").className = "model-results list-mode";
   $("modelResults").innerHTML = `
     <div class="model-list-head" aria-hidden="true">
-      <span>모델</span>
-      <span>등급</span>
-      <span>권장 양자화</span>
-      <span>필요 VRAM</span>
-      <span>예상 속도</span>
-      <span>컨텍스트</span>
-      <span></span>
+      ${meta.listHeaders.map((header) => `<span>${escapeHtml(header)}</span>`).join("")}
     </div>
     ${estimates.map((estimate) => renderModelRow(estimate, recommendationRanks.get(modelKey(estimate.model)))).join("")}
   `;
@@ -535,11 +1102,11 @@ function renderModelRow(estimate, recommendationRank) {
         <span class="model-meta">${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
         <span class="tag-row compact-tags">${tags}</span>
       </span>
-      <span class="model-cell"><span class="grade-pill ${meta.className}">${meta.label}</span></span>
-      <span class="model-cell">${escapeHtml(estimate.quant.label)}</span>
-      <span class="model-cell">${formatGb(estimate.requiredGb)}</span>
-      <span class="model-cell">${formatSpeed(estimate.speed)}</span>
-      <span class="model-cell">${formatContext(estimate.contextLimitTokens)}</span>
+      <span class="model-cell" data-label="등급"><span class="grade-pill ${meta.className}">${meta.label}</span></span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[2])}">${escapeHtml(estimate.settingLabel)}</span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[3])}">${formatGb(estimate.requiredGb)}</span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${escapeHtml(estimate.speedLabel)}</span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.limitLabel)}</span>
       <span class="row-chevron" aria-hidden="true">›</span>
     </button>
   `;
@@ -563,10 +1130,10 @@ function renderModelCard(estimate, recommendationRank) {
         <span class="grade-pill ${meta.className}">${meta.label}</span>
       </span>
       <span class="compact-specs">
-        <span>${escapeHtml(estimate.quant.label)}</span>
+        <span>${escapeHtml(estimate.settingLabel)}</span>
         <span>VRAM ${formatGb(estimate.requiredGb)}</span>
-        <span>${formatSpeed(estimate.speed)}</span>
-        <span>${formatContext(estimate.contextLimitTokens)}</span>
+        <span>${escapeHtml(estimate.speedLabel)}</span>
+        <span>${escapeHtml(estimate.limitLabel)}</span>
       </span>
       <span class="tag-row">${tags}</span>
       <span class="compact-summary">${escapeHtml(estimate.model.summary)}</span>
@@ -576,9 +1143,8 @@ function renderModelCard(estimate, recommendationRank) {
 
 function getRecommendationRanks() {
   const hardware = getHardware();
-  const selectedQuant = $("quantization").value;
-  const ranked = MODELS
-    .map((model) => estimateModel(model, selectedQuant, hardware))
+  const ranked = getActiveModels()
+    .map((model) => estimateAnyModel(model, hardware))
     .filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score)
     .sort((a, b) => recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure)
     .slice(0, 3);
@@ -607,6 +1173,11 @@ function renderDetail() {
   }
 
   const hardware = getHardware();
+  if (model.type !== "generative") {
+    renderNonGenerativeDetail(detail, backdrop, model, hardware);
+    return;
+  }
+
   const estimate = estimateModel(model, $("quantization").value, hardware);
   const meta = GRADE_META[estimate.grade];
   const safetyGb = estimateSafetyGb(estimate);
@@ -692,6 +1263,229 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
   `;
 }
 
+function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
+  const estimate = estimateAnyModel(model, hardware);
+  const meta = GRADE_META[estimate.grade];
+  const safetyGb = estimateSafetyGb(estimate);
+  const totalWithSafety = estimate.requiredGb + safetyGb;
+  const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : "OCR·문서";
+
+  detail.hidden = false;
+  backdrop.hidden = false;
+  detail.innerHTML = `
+    <div class="detail-head">
+      <button type="button" class="back-button" data-close-detail>← 모델 목록</button>
+      <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
+    </div>
+
+    <div class="detail-title">
+      <span class="grade-pill ${meta.className}">${meta.label}</span>
+      <h2>${escapeHtml(model.name)}</h2>
+      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+    </div>
+
+    <div class="detail-summary-grid">
+      ${renderDetailMetric("권장 설정", estimate.settingLabel)}
+      ${renderDetailMetric("Peak VRAM", `${formatGb(estimate.requiredGb)} / ${formatGb(estimate.effectiveVram)}`)}
+      ${renderDetailMetric("예상 처리량", estimate.speedLabel)}
+      ${renderDetailMetric(model.type === "reranker" ? "질의당 지연" : "처리 지연", formatDuration(estimate.firstTokenSeconds))}
+    </div>
+
+    <section class="detail-section">
+      <h3>정밀도별 비교</h3>
+      <div class="detail-table">
+        <div class="detail-row detail-table-head">
+          <span>정밀도</span>
+          <span>Peak VRAM</span>
+          <span>예상 처리량</span>
+          <span>품질</span>
+          <span>실행 상태</span>
+        </div>
+        ${renderPrecisionRows(model, hardware, estimate.precision.id)}
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <h3>${detailKind} 메모리 분석</h3>
+      <div class="memory-breakdown">
+        ${renderNonGenerativeMemoryLines(estimate, totalWithSafety)}
+        ${renderMemoryLine("권장 여유분", safetyGb, totalWithSafety)}
+      </div>
+      <div class="memory-total">
+        <span>총 예상 확보 VRAM</span>
+        <strong>${formatGb(totalWithSafety)}</strong>
+      </div>
+      <p class="detail-note">${escapeHtml(estimate.reason)}</p>
+    </section>
+
+    <section class="detail-section">
+      <h3>${model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? "기능별 비교" : "실행 방식별 비교"}</h3>
+      <div class="runtime-grid">
+        ${renderNonGenerativeScenarioRows(model, hardware)}
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <h3>계산 근거</h3>
+      <pre class="formula-block"><code>${escapeHtml(buildFormulaText(model.type))}</code></pre>
+    </section>
+
+    <section class="detail-section">
+      <h3>실행 예시</h3>
+      <pre class="command-block"><code>${escapeHtml(buildNonGenerativeCommand(model, estimate))}</code></pre>
+    </section>
+
+    <section class="detail-section">
+      <h3>모델 정보</h3>
+      <div class="model-info-grid">
+        ${renderInfoItem("파라미터", formatParams(model.params || 0))}
+        ${renderInfoItem(model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? "처리 유형" : "최대 입력", model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
+        ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
+        ${renderInfoItem("라이선스", model.license)}
+      </div>
+      <div class="external-links">
+        ${model.sourceUrl ? renderExternalLink("공식/모델 카드", model.sourceUrl) : ""}
+        ${renderExternalLink("Hugging Face 검색", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
+      </div>
+    </section>
+  `;
+}
+
+function renderPrecisionRows(model, hardware, recommendedPrecisionId) {
+  const precisionOptions = model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? OCR_PRECISIONS : ENCODER_PRECISIONS;
+  const supported = precisionOptions.filter((precision) => precision.id !== "auto" && model.precisions.includes(precision.id));
+  return supported.map((precision) => {
+    const estimate = model.type === "embedding"
+      ? estimateEncoderModel(model, hardware, getWorkloadSettings(), precision.id)
+      : model.type === "reranker"
+        ? estimateRerankerModel(model, hardware, getWorkloadSettings(), precision.id)
+        : estimateOcrModel(model, hardware, getWorkloadSettings(), precision.id);
+    const meta = GRADE_META[estimate.grade];
+    return `
+      <div class="detail-row">
+        <span>${escapeHtml(precision.label)}</span>
+        <span>${formatGb(estimate.requiredGb)}</span>
+        <span>${escapeHtml(estimate.speedLabel)}</span>
+        <span>${precisionQualityLabel(precision, recommendedPrecisionId)}</span>
+        <span><span class="grade-pill ${meta.className}">${meta.label}</span></span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderNonGenerativeMemoryLines(estimate, totalWithSafety) {
+  const rows = [
+    renderMemoryLine(estimate.model.type === "ocr-pipeline" ? "상주 모델/모듈" : "모델 가중치", estimate.weightsGb, totalWithSafety),
+  ];
+  if (estimate.kvGb) rows.push(renderMemoryLine("Decoder KV cache", estimate.kvGb, totalWithSafety));
+  if (estimate.activationGb) rows.push(renderMemoryLine("활성화 메모리", estimate.activationGb, totalWithSafety));
+  if (estimate.attentionGb) rows.push(renderMemoryLine("Attention 작업공간", estimate.attentionGb, totalWithSafety));
+  if (estimate.imageBufferGb) rows.push(renderMemoryLine("이미지 버퍼", estimate.imageBufferGb, totalWithSafety));
+  if (estimate.outputGb) rows.push(renderMemoryLine("출력/점수 버퍼", estimate.outputGb, totalWithSafety));
+  rows.push(renderMemoryLine("런타임 오버헤드", estimate.runtimeOverheadGb, totalWithSafety));
+  return rows.join("");
+}
+
+function renderNonGenerativeScenarioRows(model, hardware) {
+  const workload = getWorkloadSettings();
+  if (model.type === "embedding") {
+    return ["sentenceTransformers", "tei", "onnx", "pytorch"].map((runtime) => {
+      const estimate = estimateEncoderModel(model, hardware, { ...workload, runtime }, workload.precisionId);
+      const meta = GRADE_META[estimate.grade];
+      return renderRuntimeCard(ENCODER_RUNTIME_PROFILES[runtime].label, estimate.speedLabel, `${formatGb(estimate.requiredGb)} · ${meta.label}`);
+    }).join("");
+  }
+  if (model.type === "reranker") {
+    return ["sentenceTransformers", "tei", "onnx", "pytorch"].map((runtime) => {
+      const estimate = estimateRerankerModel(model, hardware, { ...workload, runtime }, workload.precisionId);
+      const meta = GRADE_META[estimate.grade];
+      return renderRuntimeCard(ENCODER_RUNTIME_PROFILES[runtime].label, estimate.speedLabel, `${formatGb(estimate.requiredGb)} · ${meta.label}`);
+    }).join("");
+  }
+  return ["text", "layout", "table", "full"].map((featureSet) => {
+    const estimate = estimateOcrModel(model, hardware, { ...workload, featureSet }, workload.precisionId);
+    const meta = GRADE_META[estimate.grade];
+    return renderRuntimeCard(ocrFeatureLabel(featureSet), estimate.speedLabel, `${formatGb(estimate.requiredGb)} · ${meta.label}`);
+  }).join("");
+}
+
+function renderRuntimeCard(label, value, note) {
+  return `
+    <div class="runtime-card">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(note)}</small>
+    </div>
+  `;
+}
+
+function buildFormulaText(type) {
+  if (type === "embedding") {
+    return [
+      "Embedding encoder estimate",
+      "M_required = M_weights + M_activation + M_attention + M_output + M_runtime",
+      "M_weights = P * bytes_precision * 1.08",
+      "M_activation ~= batch * tokens * hidden * activation_bytes * hidden_factor",
+      "FLOPs ~= layers * (24 * batch * tokens * hidden^2 + 4 * batch * tokens^2 * hidden)",
+      "t_batch ~= max(FLOPs / (TFLOPS_eff * eta_compute), bytes / (BW * eta_mem)) + fixed_latency",
+      "docs/s = batch / t_batch, tokens/s = docs/s * tokens",
+    ].join("\n");
+  }
+  if (type === "reranker") {
+    return [
+      "Cross-encoder reranker estimate",
+      "pair_tokens = query_tokens + document_tokens + special_tokens",
+      "M_required = M_weights + M_activation(pair_tokens) + M_attention(pair_tokens) + M_runtime",
+      "t_batch follows the same encoder FLOPs model",
+      "query_latency ~= ceil(candidate_count / batch_size) * t_batch",
+      "pair/s = batch_size / t_batch",
+    ].join("\n");
+  }
+  return [
+    "OCR / document estimate",
+    "MP = image_width * image_height / 1e6",
+    "Pipeline OCR: M_peak ~= resident_modules + batch * MP * activation_GB_per_MP + image_buffer + runtime",
+    "OCR-VLM: M_peak also adds decoder KV cache",
+    "KV ~= 2 * decoder_layers * batch * total_tokens * kv_heads * head_dim * precision_bytes",
+    "pages/s ~= reference_pps * sqrt(BW / BW_ref) * (MP_ref / MP)^0.85 * precision_factor * batch_factor",
+  ].join("\n");
+}
+
+function buildNonGenerativeCommand(model, estimate) {
+  if (model.type === "embedding") {
+    const torchDtype = ["fp16", "bf16", "fp32"].includes(estimate.precision.id)
+      ? estimate.precision.id.replace("fp", "float").replace("bf", "bfloat")
+      : "float16";
+    return `from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("${model.name}", model_kwargs={"torch_dtype": "${torchDtype}"})
+embeddings = model.encode(texts, batch_size=${getWorkloadSettings().batchSize}, normalize_embeddings=True)
+
+docker run --gpus all -p 8080:80 \\
+  -e MODEL_ID=${model.name} \\
+  ghcr.io/huggingface/text-embeddings-inference:cuda-latest`;
+  }
+  if (model.type === "reranker") {
+    return `from FlagEmbedding import FlagReranker
+
+reranker = FlagReranker("${model.name}", use_fp16=${String(estimate.precision.id === "fp16")})
+scores = reranker.compute_score([["query", "passage"]], normalize=True)
+
+# TEI 사용 시 /rerank endpoint로 후보 문서를 전달하세요.`;
+  }
+  if (model.name.toLowerCase().includes("paddle") || model.name.toLowerCase().includes("pp-")) {
+    return `paddleocr ocr -i ./document.pdf --device gpu
+
+# 문서 구조 분석은 PP-StructureV3 파이프라인으로 실행하세요.`;
+  }
+  if (model.name.toLowerCase().includes("surya")) {
+    return `surya_ocr ./document.pdf --images --langs ko,en
+
+# GPU Docker 실행 시 Surya 공식 README의 Docker 옵션을 확인하세요.`;
+  }
+  return `python got_ocr2_infer.py --image ./page.png --dtype ${estimate.precision.label}`;
+}
+
 function renderDetailMetric(label, value) {
   return `
     <div class="detail-metric">
@@ -728,6 +1522,15 @@ function quantQualityLabel(quant, recommendedQuantId) {
   if (quant.rank >= 4) return "높음";
   if (quant.rank >= 3) return "보통";
   return "낮음";
+}
+
+function precisionQualityLabel(precision, recommendedPrecisionId) {
+  if (precision.id === recommendedPrecisionId) return "권장";
+  return precision.quality || "비교";
+}
+
+function getPrecisionLabel(precisionId, precisionOptions) {
+  return precisionOptions.find((precision) => precision.id === precisionId)?.label || "자동 추천";
 }
 
 function renderMemoryLine(label, value, total) {
@@ -811,19 +1614,35 @@ function tagLabel(tag) {
     long: "긴 문서",
     edge: "경량",
     vision: "비전",
+    embedding: "임베딩",
+    reranker: "리랭커",
+    retrieval: "검색",
+    sparse: "Sparse",
+    dense: "Dense",
+    multilingual: "다국어",
+    matryoshka: "차원 축소",
+    ocr: "OCR",
+    document: "문서",
+    layout: "레이아웃",
+    table: "표",
+    math: "수식",
+    handwriting: "필기",
   };
   return labels[tag] || tag;
 }
 
 function modelKey(model) {
-  return String(model.name)
+  const slug = String(model.name)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+  return model.type && model.type !== "generative" ? `${model.type}-${slug}` : slug;
 }
 
 function getModelByKey(key) {
-  return MODELS.find((model) => modelKey(model) === key) || null;
+  return getAllModels().find((model) => modelKey(model) === key)
+    || GENERATIVE_MODELS.find((model) => modelKey(model) === key)
+    || null;
 }
 
 function formatGb(value) {
@@ -838,6 +1657,8 @@ function formatContext(tokens) {
 }
 
 function formatParams(value) {
+  if (value < 0.001) return `${Math.round(value * 1_000_000)}K`;
+  if (value < 1) return `${Math.round(value * 1000)}M`;
   return `${value.toFixed(value >= 10 ? 0 : 1)}B`;
 }
 
@@ -847,11 +1668,37 @@ function formatSpeed(value) {
   return `${Math.round(value)} tok/s`;
 }
 
+function formatThroughput(value, unit) {
+  if (!value) return `불가`;
+  if (value >= 1000) return `${Math.round(value).toLocaleString("ko-KR")} ${unit}`;
+  if (value >= 10) return `${Math.round(value)} ${unit}`;
+  return `${value.toFixed(1)} ${unit}`;
+}
+
+function formatMegapixels(value) {
+  return `${value.toFixed(value >= 10 ? 0 : 1)} MP`;
+}
+
 function formatDuration(seconds) {
   if (!seconds) return "불가";
   if (seconds < 1) return `${seconds.toFixed(1)}초`;
   if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 1 : 0)}초`;
   return `${Math.floor(seconds / 60)}분 ${Math.round(seconds % 60)}초`;
+}
+
+function ocrFeatureLabel(value) {
+  const labels = {
+    text: "텍스트 OCR",
+    layout: "레이아웃 포함",
+    table: "표/수식 포함",
+    full: "문서 파싱 전체",
+  };
+  return labels[value] || value;
+}
+
+function ocrTypeLabel(value) {
+  if (value === "ocr-vlm") return "생성형 OCR/VLM";
+  return "OCR 파이프라인";
 }
 
 function buildOllamaCommand(model, quant, hardware) {
@@ -902,6 +1749,7 @@ function syncUrlState() {
   if (!window.history || !window.location) return;
 
   const params = new URLSearchParams();
+  params.set("mode", activeWorkload);
   params.set("gpu", $("gpuPreset").value);
   params.set("vram", String(getHardware().vram));
   params.set("ram", String(getHardware().ram));
@@ -913,6 +1761,23 @@ function syncUrlState() {
   params.set("kv", getHardware().kvPrecision);
   params.set("runtime", getHardware().runtime);
   params.set("quant", $("quantization").value);
+  params.set("embTokens", $("embeddingInputTokens").value);
+  params.set("embBatch", $("embeddingBatchSize").value);
+  params.set("embPrecision", $("encoderPrecision").value);
+  params.set("embRuntime", $("encoderRuntime").value);
+  params.set("embBatchTokens", $("embeddingBatchTokens").value);
+  params.set("rerankQuery", $("rerankerQueryTokens").value);
+  params.set("rerankDoc", $("rerankerDocTokens").value);
+  params.set("rerankCandidates", $("rerankerCandidates").value);
+  params.set("rerankBatch", $("rerankerBatchSize").value);
+  params.set("rerankPrecision", $("rerankerPrecision").value);
+  params.set("rerankRuntime", $("rerankerRuntime").value);
+  params.set("ocrPreset", $("ocrResolutionPreset").value);
+  params.set("ocrWidth", $("ocrWidth").value);
+  params.set("ocrHeight", $("ocrHeight").value);
+  params.set("ocrBatch", $("ocrBatchSize").value);
+  params.set("ocrPrecision", $("ocrPrecision").value);
+  params.set("ocrFeature", $("ocrFeatureSet").value);
   params.set("task", $("taskFilter").value);
   params.set("provider", $("providerFilter").value);
   params.set("license", $("licenseFilter").value);
@@ -928,6 +1793,11 @@ function syncUrlState() {
 
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode");
+  if (WORKLOAD_META[mode]) activeWorkload = mode;
+  refreshWorkloadUi();
+  refreshFilterOptions();
+
   const gpuId = params.get("gpu");
   if (setSelectIfValid("gpuPreset", gpuId)) applyPreset(gpuId);
 
@@ -941,6 +1811,23 @@ function applyUrlState() {
   setSelectIfValid("kvPrecision", params.get("kv"));
   setSelectIfValid("runtimeMode", params.get("runtime"));
   setSelectIfValid("quantization", params.get("quant"));
+  setSelectIfValid("embeddingInputTokens", params.get("embTokens"));
+  setSelectIfValid("embeddingBatchSize", params.get("embBatch"));
+  setSelectIfValid("encoderPrecision", params.get("embPrecision"));
+  setSelectIfValid("encoderRuntime", params.get("embRuntime"));
+  setSelectIfValid("embeddingBatchTokens", params.get("embBatchTokens"));
+  setSelectIfValid("rerankerQueryTokens", params.get("rerankQuery"));
+  setSelectIfValid("rerankerDocTokens", params.get("rerankDoc"));
+  setSelectIfValid("rerankerCandidates", params.get("rerankCandidates"));
+  setSelectIfValid("rerankerBatchSize", params.get("rerankBatch"));
+  setSelectIfValid("rerankerPrecision", params.get("rerankPrecision"));
+  setSelectIfValid("rerankerRuntime", params.get("rerankRuntime"));
+  setSelectIfValid("ocrResolutionPreset", params.get("ocrPreset"));
+  setValueIfPresent("ocrWidth", params.get("ocrWidth"));
+  setValueIfPresent("ocrHeight", params.get("ocrHeight"));
+  setSelectIfValid("ocrBatchSize", params.get("ocrBatch"));
+  setSelectIfValid("ocrPrecision", params.get("ocrPrecision"));
+  setSelectIfValid("ocrFeatureSet", params.get("ocrFeature"));
   setSelectIfValid("taskFilter", params.get("task"));
   setSelectIfValid("providerFilter", params.get("provider"));
   setSelectIfValid("licenseFilter", params.get("license"));

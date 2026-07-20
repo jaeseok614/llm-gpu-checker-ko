@@ -11,7 +11,7 @@
       <div class="brand-block">
         <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
         <div>
-          <p class="eyebrow">Korean LLM Hardware Fit</p>
+          <p class="eyebrow">Korean AI Hardware Fit</p>
           <h1>LLM GPU 실행 가능성 계산기</h1>
         </div>
       </div>
@@ -45,13 +45,20 @@
             <span>GPU 수</span>
             <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
           </label>
-        </div>
-
-        <div class="settings-panel advanced-panel" id="advancedEditor">
           <label class="field">
             <span>대역폭 GB/s</span>
             <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
           </label>
+        </div>
+
+        <div class="workload-tabs" role="tablist" aria-label="모델 종류">
+          <button type="button" class="workload-tab is-active" data-workload-tab="generative" aria-selected="true">생성형 LLM</button>
+          <button type="button" class="workload-tab" data-workload-tab="embedding" aria-selected="false">임베딩</button>
+          <button type="button" class="workload-tab" data-workload-tab="reranker" aria-selected="false">리랭커</button>
+          <button type="button" class="workload-tab" data-workload-tab="ocr" aria-selected="false">OCR·문서</button>
+        </div>
+
+        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative">
           <label class="field">
             <span>컨텍스트 길이</span>
             <select id="contextSize">
@@ -108,6 +115,158 @@
               <option value="llamacpp">llama.cpp / Ollama</option>
               <option value="vllm">vLLM</option>
               <option value="transformers">Transformers</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="embedding" hidden>
+          <label class="field">
+            <span>평균 입력 길이</span>
+            <select id="embeddingInputTokens">
+              <option value="128">128 토큰</option>
+              <option value="256">256 토큰</option>
+              <option value="384" selected>384 토큰</option>
+              <option value="512">512 토큰</option>
+              <option value="1024">1K 토큰</option>
+              <option value="2048">2K 토큰</option>
+              <option value="4096">4K 토큰</option>
+              <option value="8192">8K 토큰</option>
+              <option value="32768">32K 토큰</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>배치 크기</span>
+            <select id="embeddingBatchSize">
+              <option value="1">1개</option>
+              <option value="8">8개</option>
+              <option value="16">16개</option>
+              <option value="32" selected>32개</option>
+              <option value="64">64개</option>
+              <option value="128">128개</option>
+              <option value="256">256개</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>정밀도</span>
+            <select id="encoderPrecision"></select>
+          </label>
+          <label class="field">
+            <span>실행 방식</span>
+            <select id="encoderRuntime">
+              <option value="sentenceTransformers">Sentence Transformers</option>
+              <option value="tei" selected>TEI</option>
+              <option value="onnx">ONNX / OpenVINO</option>
+              <option value="pytorch">PyTorch 직접 실행</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>최대 배치 토큰</span>
+            <select id="embeddingBatchTokens">
+              <option value="8192">8K</option>
+              <option value="16384" selected>16K</option>
+              <option value="32768">32K</option>
+              <option value="65536">64K</option>
+              <option value="131072">128K</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="reranker" hidden>
+          <label class="field">
+            <span>질의 길이</span>
+            <select id="rerankerQueryTokens">
+              <option value="32">32 토큰</option>
+              <option value="64" selected>64 토큰</option>
+              <option value="128">128 토큰</option>
+              <option value="256">256 토큰</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>문서 길이</span>
+            <select id="rerankerDocTokens">
+              <option value="256">256 토큰</option>
+              <option value="512" selected>512 토큰</option>
+              <option value="1024">1K 토큰</option>
+              <option value="2048">2K 토큰</option>
+              <option value="4096">4K 토큰</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>후보 문서</span>
+            <select id="rerankerCandidates">
+              <option value="10">10개</option>
+              <option value="20">20개</option>
+              <option value="40" selected>40개</option>
+              <option value="80">80개</option>
+              <option value="120">120개</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>배치 크기</span>
+            <select id="rerankerBatchSize">
+              <option value="1">1쌍</option>
+              <option value="8">8쌍</option>
+              <option value="16" selected>16쌍</option>
+              <option value="32">32쌍</option>
+              <option value="64">64쌍</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>정밀도</span>
+            <select id="rerankerPrecision"></select>
+          </label>
+          <label class="field">
+            <span>실행 방식</span>
+            <select id="rerankerRuntime">
+              <option value="sentenceTransformers">Sentence Transformers</option>
+              <option value="tei" selected>TEI</option>
+              <option value="onnx">ONNX / OpenVINO</option>
+              <option value="pytorch">PyTorch 직접 실행</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="ocr" hidden>
+          <label class="field">
+            <span>문서 크기</span>
+            <select id="ocrResolutionPreset">
+              <option value="a4-200" selected>A4 200 DPI</option>
+              <option value="a4-300">A4 300 DPI</option>
+              <option value="screen-1080">웹/스크린샷 1080p</option>
+              <option value="receipt">영수증/라벨</option>
+              <option value="custom">직접 입력</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>이미지 너비</span>
+            <input id="ocrWidth" type="number" min="320" max="10000" step="16" value="1654" />
+          </label>
+          <label class="field">
+            <span>이미지 높이</span>
+            <input id="ocrHeight" type="number" min="320" max="14000" step="16" value="2339" />
+          </label>
+          <label class="field">
+            <span>배치 페이지</span>
+            <select id="ocrBatchSize">
+              <option value="1" selected>1페이지</option>
+              <option value="2">2페이지</option>
+              <option value="4">4페이지</option>
+              <option value="8">8페이지</option>
+              <option value="16">16페이지</option>
+              <option value="32">32페이지</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>정밀도</span>
+            <select id="ocrPrecision"></select>
+          </label>
+          <label class="field">
+            <span>처리 기능</span>
+            <select id="ocrFeatureSet">
+              <option value="text" selected>텍스트 OCR</option>
+              <option value="layout">레이아웃 포함</option>
+              <option value="table">표/수식 포함</option>
+              <option value="full">문서 파싱 전체</option>
             </select>
           </label>
         </div>
@@ -168,12 +327,16 @@
     <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
 
     <footer class="app-footer">
-      <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, KV cache 설정에 따라 달라집니다.</span>
+      <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
     </footer>
 
     <script src="./data/gpus.js" defer></script>
     <script src="./data/quantizations.js" defer></script>
+    <script src="./data/precision-profiles.js" defer></script>
     <script src="./data/models.js" defer></script>
+    <script src="./data/embedding-models.js" defer></script>
+    <script src="./data/reranker-models.js" defer></script>
+    <script src="./data/ocr-models.js" defer></script>
     <script src="./app.js" defer></script>
   </body>
 </html>

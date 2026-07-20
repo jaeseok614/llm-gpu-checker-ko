@@ -29,13 +29,13 @@ function main() {
   strokeRect(104, 98, 92, 92, colors.blue, 6);
   rect(130, 124, 40, 40, colors.greenSoft);
   strokeRect(130, 124, 40, 40, colors.green, 6);
-  text(230, 112, "KOREAN LLM HARDWARE FIT", 4, colors.blue);
+  text(230, 112, "KOREAN AI HARDWARE FIT", 4, colors.blue);
   text(230, 166, "LLM GPU CHECKER", 8, colors.ink);
-  text(230, 252, "KOREAN VRAM AND LOCAL LLM CALCULATOR", 4, colors.muted);
+  text(230, 252, "LLM RAG OCR GPU FIT CALCULATOR", 4, colors.muted);
   infoCard(104, 336, "86 GPUS", "RTX A100 H100", colors.greenSoft, colors.green);
-  infoCard(376, 336, "114 MODELS", "LLAMA QWEN GEMMA", colors.blueSoft, colors.blue);
-  infoCard(648, 336, "SERVING FIT", "VRAM KV CACHE", colors.violetSoft, colors.violet);
-  infoCard(920, 336, "WEB DEMO", "NO INSTALL", colors.yellowSoft, colors.yellow);
+  infoCard(376, 336, "128 MODELS", "LLM RAG OCR", colors.blueSoft, colors.blue);
+  infoCard(648, 336, "RAG FIT", "BATCH TOKENS", colors.violetSoft, colors.violet);
+  infoCard(920, 336, "OCR FIT", "DPI PAGES", colors.yellowSoft, colors.yellow);
   rect(104, 496, 1058, 48, colors.ink);
   text(130, 511, "JAESEOK614.GITHUB.IO/LLM-GPU-CHECKER-KO", 3, colors.panel);
 
