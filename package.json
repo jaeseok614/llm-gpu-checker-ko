@@ -1,11 +1,12 @@
 {
   "name": "llm-gpu-checker-ko",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": false,
   "description": "Korean static web app for estimating which LLMs can run on a selected GPU.",
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node scripts/validate-data.mjs"
+    "check": "node --check app.js && node scripts/validate-data.mjs",
+    "social-preview": "node scripts/generate-social-preview.mjs"
   },
   "keywords": [
     "llm",

@@ -1,0 +1,61 @@
+name: Model request
+description: 새 LLM 모델 추가를 요청합니다.
+title: "[Model] "
+labels: ["data", "model"]
+body:
+  - type: input
+    id: model_name
+    attributes:
+      label: 모델명
+      placeholder: Qwen2.5 14B Instruct
+    validations:
+      required: true
+  - type: input
+    id: maker
+    attributes:
+      label: 공급사
+      placeholder: Alibaba
+    validations:
+      required: true
+  - type: input
+    id: params
+    attributes:
+      label: 전체 파라미터 수
+      placeholder: 14.7B
+    validations:
+      required: true
+  - type: input
+    id: active_params
+    attributes:
+      label: 활성 파라미터 수
+      description: Dense 모델이면 전체 파라미터와 동일하게 적어 주세요.
+      placeholder: 14.7B
+    validations:
+      required: true
+  - type: input
+    id: context
+    attributes:
+      label: 최대 컨텍스트
+      placeholder: 128K
+    validations:
+      required: true
+  - type: dropdown
+    id: tags
+    attributes:
+      label: 태그
+      multiple: true
+      options:
+        - general
+        - korean
+        - coding
+        - reasoning
+        - long
+        - edge
+        - vision
+  - type: textarea
+    id: source
+    attributes:
+      label: 출처
+      description: 모델 카드, 공식 문서, 벤치마크 링크를 적어 주세요.
+    validations:
+      required: true

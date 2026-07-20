@@ -1,0 +1,45 @@
+name: Benchmark report
+description: 실제 실행 결과를 제보합니다.
+title: "[Benchmark] "
+labels: ["benchmark"]
+body:
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: RTX 4090 24GB
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: 모델
+      placeholder: Qwen2.5 32B Instruct
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: 런타임
+      placeholder: Ollama, llama.cpp, vLLM, Transformers
+    validations:
+      required: true
+  - type: input
+    id: settings
+    attributes:
+      label: 실행 설정
+      placeholder: Q4_K_M, 8K context, concurrency 1
+    validations:
+      required: true
+  - type: input
+    id: result
+    attributes:
+      label: 실제 결과
+      placeholder: OOM 없음, 32 tok/s
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 또는 참고 자료
+      description: 가능하면 명령어, VRAM 사용량, 토큰 속도 로그를 붙여 주세요.

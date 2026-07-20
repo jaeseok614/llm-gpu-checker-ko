@@ -1,0 +1,38 @@
+name: GPU request
+description: 새 GPU 프리셋 추가를 요청합니다.
+title: "[GPU] "
+labels: ["data", "gpu"]
+body:
+  - type: input
+    id: gpu_name
+    attributes:
+      label: GPU 이름
+      placeholder: GeForce RTX 4090 24GB
+    validations:
+      required: true
+  - type: input
+    id: vram
+    attributes:
+      label: VRAM
+      placeholder: 24GB
+    validations:
+      required: true
+  - type: input
+    id: bandwidth
+    attributes:
+      label: 메모리 대역폭
+      placeholder: 1008 GB/s
+    validations:
+      required: true
+  - type: input
+    id: ram
+    attributes:
+      label: 권장 시스템 RAM
+      placeholder: 64GB
+  - type: textarea
+    id: source
+    attributes:
+      label: 출처
+      description: 제조사 제품 페이지나 신뢰 가능한 스펙 링크를 적어 주세요.
+    validations:
+      required: true

@@ -1,0 +1,28 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LLM GPU Checker social preview">
+  <rect width="1280" height="640" fill="#F4F6F8"/>
+  <rect x="64" y="56" width="1152" height="528" rx="28" fill="#FFFFFF" stroke="#D9E1EA" stroke-width="3"/>
+  <rect x="104" y="98" width="92" height="92" rx="18" fill="#E8F1FB" stroke="#225EA8" stroke-width="6"/>
+  <rect x="130" y="124" width="40" height="40" rx="8" fill="#E5F4EE" stroke="#13795B" stroke-width="6"/>
+  <text x="230" y="132" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#225EA8">KOREAN LLM HARDWARE FIT</text>
+  <text x="230" y="208" font-family="Arial, sans-serif" font-size="64" font-weight="900" fill="#17202A">LLM GPU Checker</text>
+  <text x="230" y="264" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#617080">내 GPU에서 실행 가능한 LLM과 양자화 설정을 바로 계산</text>
+
+  <rect x="104" y="336" width="242" height="116" rx="18" fill="#E5F4EE"/>
+  <text x="130" y="382" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#13795B">86 GPUs</text>
+  <text x="130" y="420" font-family="Arial, sans-serif" font-size="22" fill="#17202A">RTX · A100 · H100</text>
+
+  <rect x="376" y="336" width="242" height="116" rx="18" fill="#E8F1FB"/>
+  <text x="402" y="382" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#225EA8">114 Models</text>
+  <text x="402" y="420" font-family="Arial, sans-serif" font-size="22" fill="#17202A">Llama · Qwen · Gemma</text>
+
+  <rect x="648" y="336" width="242" height="116" rx="18" fill="#EEEAFD"/>
+  <text x="674" y="382" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#5F4BB6">Serving Fit</text>
+  <text x="674" y="420" font-family="Arial, sans-serif" font-size="22" fill="#17202A">VRAM · KV cache</text>
+
+  <rect x="920" y="336" width="242" height="116" rx="18" fill="#FFF4D6"/>
+  <text x="946" y="382" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#9A6700">Web Demo</text>
+  <text x="946" y="420" font-family="Arial, sans-serif" font-size="22" fill="#17202A">No install required</text>
+
+  <rect x="104" y="496" width="1058" height="48" rx="12" fill="#17202A"/>
+  <text x="130" y="528" font-family="Arial, sans-serif" font-size="23" font-weight="800" fill="#FFFFFF">jaeseok614.github.io/llm-gpu-checker-ko</text>
+</svg>
