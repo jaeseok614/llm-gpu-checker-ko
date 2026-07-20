@@ -183,7 +183,7 @@ function refreshFilterOptions() {
 }
 
 function bindEvents() {
-  ["vramGb", "gpuCount", "ramGb", "bandwidth"].forEach((id) => {
+  ["vramGb", "gpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb"].forEach((id) => {
     $(id).addEventListener("input", () => {
       detectedHardwareLabel = "직접 입력 기준";
       render();
@@ -383,6 +383,8 @@ function getHardware() {
   const count = clampNumber($("gpuCount").value, 1, 16, 1);
   const ram = clampNumber($("ramGb").value, 8, 2048, 64);
   const bandwidth = clampNumber($("bandwidth").value, 100, 12000, 1008);
+  const reservedVram = clampNumber($("reservedVramGb").value, 0, 10240, 0);
+  const safetyMarginGb = clampNumber($("safetyMarginGb").value, 0, 256, 2);
   const context = clampNumber($("contextSize").value, 512, 1048576, 8192);
   const concurrency = clampNumber($("concurrency").value, 1, 256, 1);
   const outputTokens = clampNumber($("outputTokens").value, 16, 65536, 512);
@@ -392,8 +394,29 @@ function getHardware() {
   const preset = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value) || GPU_PRESETS[0];
 
   const compute = estimateHardwareCompute(preset, bandwidth);
+  const totalVram = vram * count;
+  const baseEffectiveVram = totalVram * (count > 1 ? 0.92 : 1);
+  const availableVram = Math.max(0, baseEffectiveVram - reservedVram - safetyMarginGb);
 
-  return { vram, count, ram, bandwidth, context, concurrency, outputTokens, kvPrecision, kvMeta, runtime, preset, compute };
+  return {
+    vram,
+    count,
+    ram,
+    bandwidth,
+    reservedVram,
+    safetyMarginGb,
+    totalVram,
+    baseEffectiveVram,
+    availableVram,
+    context,
+    concurrency,
+    outputTokens,
+    kvPrecision,
+    kvMeta,
+    runtime,
+    preset,
+    compute,
+  };
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -510,8 +533,8 @@ function estimateModel(model, quantId, hardware) {
     + Math.min(runtimeFactor.cap, weightsGb * runtimeFactor.weightRatio)
     + Math.max(0, hardware.concurrency - 1) * runtimeFactor.requestOverhead;
   const requiredGb = weightsGb + kvGb + runtimeOverheadGb;
-  const effectiveVram = hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
-  const pressure = requiredGb / effectiveVram;
+  const effectiveVram = getEffectiveVram(hardware);
+  const pressure = getVramPressure(requiredGb, effectiveVram);
   const ramAssist = hardware.ram * 0.45;
   const offloadRoom = effectiveVram + ramAssist;
   const grade = contextSupported ? gradeFromPressure(pressure, requiredGb, offloadRoom) : "F";
@@ -557,7 +580,7 @@ function recommendQuant(model, hardware) {
   const qualityFirst = preferredIds
     .map((id) => QUANTS.find((item) => item.id === id))
     .filter(Boolean);
-  const effectiveVram = hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
+  const effectiveVram = getEffectiveVram(hardware);
 
   for (const quant of qualityFirst) {
     const provisional = estimateWithQuant(model, quant, hardware);
@@ -606,10 +629,12 @@ function normalizeGenerativeEstimate(estimate) {
 }
 
 function estimateEncoderModel(model, hardware, workload, precisionId = workload.precisionId) {
-  const precision = resolvePrecision(model, precisionId, ENCODER_PRECISIONS, (candidate) => {
-    const estimate = estimateEncoderWithPrecision(model, hardware, workload, candidate);
-    return estimate.grade !== "F" || candidate.id === "int4";
-  });
+  const precision = resolvePrecision(
+    model,
+    precisionId,
+    ENCODER_PRECISIONS,
+    (candidate) => estimateEncoderWithPrecision(model, hardware, workload, candidate),
+  );
   return estimateEncoderWithPrecision(model, hardware, workload, precision);
 }
 
@@ -628,7 +653,7 @@ function estimateEncoderWithPrecision(model, hardware, workload, precision) {
   const outputGb = microBatch * model.embeddingDim * 4 / 1e9;
   const runtimeOverheadGb = runtime.baseOverheadGb + Math.max(0, microBatch - 1) * runtime.batchOverheadGb;
   const requiredGb = weightsGb + activationGb + attentionGb + outputGb + runtimeOverheadGb;
-  const pressure = requiredGb / effectiveVram;
+  const pressure = getVramPressure(requiredGb, effectiveVram);
   const grade = workload.inputTokens <= model.maxTokens
     ? gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.35)
     : "F";
@@ -667,10 +692,12 @@ function estimateEncoderWithPrecision(model, hardware, workload, precision) {
 }
 
 function estimateRerankerModel(model, hardware, workload, precisionId = workload.precisionId) {
-  const precision = resolvePrecision(model, precisionId, ENCODER_PRECISIONS, (candidate) => {
-    const estimate = estimateRerankerWithPrecision(model, hardware, workload, candidate);
-    return estimate.grade !== "F" || candidate.id === "int4";
-  });
+  const precision = resolvePrecision(
+    model,
+    precisionId,
+    ENCODER_PRECISIONS,
+    (candidate) => estimateRerankerWithPrecision(model, hardware, workload, candidate),
+  );
   return estimateRerankerWithPrecision(model, hardware, workload, precision);
 }
 
@@ -688,7 +715,7 @@ function estimateRerankerWithPrecision(model, hardware, workload, precision) {
   const scoreBufferGb = batchSize * 4 / 1e9;
   const runtimeOverheadGb = runtime.baseOverheadGb + Math.max(0, batchSize - 1) * runtime.batchOverheadGb;
   const requiredGb = weightsGb + activationGb + attentionGb + scoreBufferGb + runtimeOverheadGb;
-  const pressure = requiredGb / effectiveVram;
+  const pressure = getVramPressure(requiredGb, effectiveVram);
   const contextSupported = pairTokens <= model.maxTokens;
   const grade = contextSupported ? gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.35) : "F";
   const speed = estimateEncoderThroughput(model, hardware, runtime, precision, Math.min(pairTokens, model.maxTokens), batchSize, weightsGb, activationGb, attentionGb, grade);
@@ -748,10 +775,12 @@ function estimateEncoderThroughput(model, hardware, runtime, precision, tokens, 
 }
 
 function estimateOcrModel(model, hardware, workload, precisionId = workload.precisionId) {
-  const precision = resolvePrecision(model, precisionId, OCR_PRECISIONS, (candidate) => {
-    const estimate = estimateOcrWithPrecision(model, hardware, workload, candidate);
-    return estimate.grade !== "F" || candidate.id === "int8";
-  });
+  const precision = resolvePrecision(
+    model,
+    precisionId,
+    OCR_PRECISIONS,
+    (candidate) => estimateOcrWithPrecision(model, hardware, workload, candidate),
+  );
   return estimateOcrWithPrecision(model, hardware, workload, precision);
 }
 
@@ -777,7 +806,7 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
   const runtimeOverheadGb = (profile.baseRuntimeGb || 0.8) * featureMultiplier
     + Math.max(0, workload.batchSize - 1) * (profile.batchOverheadGb || 0.06);
   const requiredGb = weightsGb + kvGb + activationGb + imageBufferGb + runtimeOverheadGb;
-  const pressure = requiredGb / effectiveVram;
+  const pressure = getVramPressure(requiredGb, effectiveVram);
   const grade = gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.3);
   const pagesPerSecond = estimateOcrThroughput(model, hardware, workload, precision, megapixels, grade, featureMultiplier);
   const secondsPerPage = pagesPerSecond > 0 ? 1 / pagesPerSecond : 0;
@@ -828,16 +857,30 @@ function estimateOcrThroughput(model, hardware, workload, precision, megapixels,
   return Math.max(0, basePps * hardwareScale * resolutionScale * Math.max(0.12, batchScale) * precisionScale * fitPenalty / featureMultiplier);
 }
 
-function resolvePrecision(model, precisionId, precisionOptions, predicate) {
+function resolvePrecision(model, precisionId, precisionOptions, estimateForPrecision) {
   const supported = precisionOptions.filter((precision) => precision.id !== "auto" && model.precisions.includes(precision.id));
   if (precisionId !== "auto") {
     return supported.find((precision) => precision.id === precisionId) || supported[0] || precisionOptions[1];
   }
 
   const priority = ["fp16", "bf16", "int8", "int4", "fp32"];
+  const prioritized = priority
+    .map((id) => supported.find((precision) => precision.id === id))
+    .filter(Boolean);
+
+  for (const candidate of prioritized) {
+    const estimate = estimateForPrecision(candidate);
+    if (GRADE_META[estimate.grade].score >= GRADE_META.B.score) return candidate;
+  }
+
+  for (const candidate of prioritized) {
+    const estimate = estimateForPrecision(candidate);
+    if (estimate.grade !== "F") return candidate;
+  }
+
   for (const id of priority) {
     const candidate = supported.find((precision) => precision.id === id);
-    if (candidate && predicate(candidate)) return candidate;
+    if (candidate) return candidate;
   }
   const fallbackOrder = ["int4", "int8", "fp16", "bf16", "fp32"];
   return fallbackOrder.map((id) => supported.find((precision) => precision.id === id)).find(Boolean)
@@ -846,7 +889,12 @@ function resolvePrecision(model, precisionId, precisionOptions, predicate) {
 }
 
 function getEffectiveVram(hardware) {
+  if (Number.isFinite(hardware.availableVram)) return hardware.availableVram;
   return hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
+}
+
+function getVramPressure(requiredGb, effectiveVram) {
+  return requiredGb / Math.max(0.1, effectiveVram);
 }
 
 function getOcrFeatureMultiplier(featureSet, model) {
@@ -872,7 +920,7 @@ function buildEncoderReason(model, workload, grade, requiredGb, effectiveVram, m
   if (microBatch < workload.batchSize) {
     return `TEI식 최대 배치 토큰 기준으로 ${workload.batchSize}개 요청을 ${microBatch}개 micro-batch로 나누어 계산했습니다.`;
   }
-  if (grade === "F") return `Peak VRAM ${formatGb(requiredGb)}가 총 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
+  if (grade === "F") return `Peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
   if (grade === "D") return `GPU 단독 처리보다 RAM/CPU 보조나 배치 축소가 필요한 범위입니다.`;
   if (grade === "C") return `배치 또는 입력 길이를 조금 낮추면 더 안정적인 임베딩 처리량을 기대할 수 있습니다.`;
   return `${workload.inputTokens} 토큰, 배치 ${workload.batchSize} 기준으로 GPU 메모리 안에 들어오는 임베딩 워크로드입니다.`;
@@ -885,13 +933,13 @@ function buildRerankerReason(model, workload, grade, requiredGb, effectiveVram, 
   if (pairTokens > (model.recommendedTokens || model.maxTokens)) {
     return `모델 한도 안에는 들어가지만 권장 입력 ${formatContext(model.recommendedTokens || model.maxTokens)}보다 길어 지연시간이 커질 수 있습니다.`;
   }
-  if (grade === "F") return `리랭커 peak VRAM ${formatGb(requiredGb)}가 총 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
+  if (grade === "F") return `리랭커 peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
   if (grade === "D") return `후보 ${workload.candidates}개를 처리하려면 배치 축소나 CPU/RAM 보조를 고려해야 합니다.`;
   return `후보 ${workload.candidates}개를 배치 ${workload.batchSize}로 나누어 ${Math.ceil(workload.candidates / workload.batchSize)}회 추론하는 기준입니다.`;
 }
 
 function buildOcrReason(model, workload, grade, requiredGb, effectiveVram, megapixels) {
-  if (grade === "F") return `${formatMegapixels(megapixels)} 이미지의 peak VRAM ${formatGb(requiredGb)}가 총 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
+  if (grade === "F") return `${formatMegapixels(megapixels)} 이미지의 peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
   if (grade === "D") return `GPU 단독 처리보다 CPU/RAM 보조 또는 배치 페이지 축소가 필요한 OCR 워크로드입니다.`;
   if (grade === "C") return `이미지 해상도나 배치가 높아 VRAM 여유가 작습니다. DPI 또는 배치 페이지를 낮추는 편이 안정적입니다.`;
   return `${formatMegapixels(megapixels)}, 배치 ${workload.batchSize}페이지 기준으로 실행 가능한 OCR 워크로드입니다.`;
@@ -939,16 +987,16 @@ function buildReason(grade, requiredGb, effectiveVram, model, hardware, contextL
     return `선택한 ${formatContext(hardware.context)} 컨텍스트가 모델 한도 ${formatContext(contextLimitTokens)}를 초과합니다.`;
   }
   if (grade === "F") {
-    return `동시 ${hardware.concurrency}명 기준 필요 VRAM 추정치가 ${formatGb(requiredGb)}로 총 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
+    return `동시 ${hardware.concurrency}명 기준 필요 VRAM 추정치가 ${formatGb(requiredGb)}로 가용 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
   }
   if (grade === "D") {
     return `동시 ${hardware.concurrency}명 기준 GPU 단독 적재는 어렵고 RAM 오프로딩 전제가 필요합니다.`;
   }
   if (grade === "C") {
-    return `총 VRAM에 거의 맞습니다. 동시 요청, 컨텍스트 길이, KV cache 정밀도를 낮추는 편이 안정적입니다.`;
+    return `가용 VRAM에 거의 맞습니다. 동시 요청, 컨텍스트 길이, KV cache 정밀도를 낮추는 편이 안정적입니다.`;
   }
   if (model.params >= 60 && hardware.count === 1) {
-    return `대형 모델이지만 ${formatGb(effectiveVram)} VRAM에서 선택 양자화 기준 실행 가능 범위입니다.`;
+    return `대형 모델이지만 예약/여유분 제외 가용 VRAM ${formatGb(effectiveVram)}에서 선택 양자화 기준 실행 가능 범위입니다.`;
   }
   return `선택한 GPU에서 ${model.params}B급 모델을 ${formatContext(hardware.context)}, 동시 ${hardware.concurrency}명 기준으로 실행 가능한 범위입니다.`;
 }
@@ -1113,12 +1161,12 @@ function render(options = {}) {
 }
 
 function renderHardware(hardware, allEstimates) {
-  const totalVram = hardware.vram * hardware.count;
   const runnableCount = allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length;
   const basis = buildHardwareBasis(hardware);
   const groupLabel = WORKLOAD_META[activeWorkload].statusLabel;
-  const headerSummary = `${formatGb(totalVram)} · RAM ${formatGb(hardware.ram)} · ${groupLabel} 실행 가능 ${runnableCount}개`;
-  const headlineParts = [hardware.preset.name, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
+  const memoryBasis = buildVramBasis(hardware);
+  const headerSummary = `${memoryBasis} · RAM ${formatGb(hardware.ram)} · ${groupLabel} 실행 가능 ${runnableCount}개`;
+  const headlineParts = [hardware.preset.name, `가용 VRAM ${formatGb(hardware.availableVram)}`, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
 
   $("hardwareHeadline").innerHTML = headlineParts
     .map((part, index) => `
@@ -1128,8 +1176,17 @@ function renderHardware(hardware, allEstimates) {
       </span>
     `)
     .join("");
-  $("hardwareSubline").textContent = `현재 기준: ${basis}`;
+  $("hardwareSubline").textContent = `현재 기준: ${memoryBasis} · ${basis}`;
   $("hardwareStatus").textContent = detectedHardwareLabel ? `${detectedHardwareLabel} · ${headerSummary}` : headerSummary;
+}
+
+function buildVramBasis(hardware) {
+  const excluded = hardware.reservedVram + hardware.safetyMarginGb;
+  const totalLabel = hardware.count > 1
+    ? `${formatGb(hardware.availableVram)} / 물리 ${formatGb(hardware.totalVram)}`
+    : `${formatGb(hardware.availableVram)} / 총 ${formatGb(hardware.totalVram)}`;
+  if (!excluded) return `가용 VRAM ${totalLabel}`;
+  return `가용 VRAM ${totalLabel} · 예약 ${formatGb(hardware.reservedVram)} · 여유 ${formatGb(hardware.safetyMarginGb)}`;
 }
 
 function buildHardwareBasis(hardware) {
@@ -1303,8 +1360,7 @@ function renderDetail() {
 
   const estimate = estimateModel(model, $("quantization").value, hardware);
   const meta = GRADE_META[estimate.grade];
-  const safetyGb = estimateSafetyGb(estimate);
-  const totalWithSafety = estimate.requiredGb + safetyGb;
+  const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
 
   detail.hidden = false;
   backdrop.hidden = false;
@@ -1322,7 +1378,7 @@ function renderDetail() {
 
     <div class="detail-summary-grid">
       ${renderDetailMetric("권장 설정", `${estimate.quant.label} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`)}
-      ${renderDetailMetric("예상 VRAM", `${formatGb(estimate.requiredGb)} / ${formatGb(estimate.effectiveVram)}`)}
+      ${renderDetailMetric("예상 VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
       ${renderDetailMetric("예상 속도", formatSpeed(estimate.speed))}
       ${renderDetailMetric("첫 응답", formatDuration(estimate.firstTokenSeconds))}
     </div>
@@ -1344,15 +1400,15 @@ function renderDetail() {
     <section class="detail-section">
       <h3>VRAM 상세 분석</h3>
       <div class="memory-breakdown">
-        ${renderMemoryLine("모델 가중치", estimate.weightsGb, totalWithSafety)}
-        ${renderMemoryLine("KV cache", estimate.kvGb, totalWithSafety)}
-        ${renderMemoryLine("런타임 오버헤드", estimate.runtimeOverheadGb, totalWithSafety)}
-        ${renderMemoryLine("권장 여유분", safetyGb, totalWithSafety)}
+        ${renderMemoryLine("모델 가중치", estimate.weightsGb, breakdownTotal)}
+        ${renderMemoryLine("KV cache", estimate.kvGb, breakdownTotal)}
+        ${renderMemoryLine("런타임 오버헤드", estimate.runtimeOverheadGb, breakdownTotal)}
       </div>
       <div class="memory-total">
-        <span>총 예상 확보 VRAM</span>
-        <strong>${formatGb(totalWithSafety)}</strong>
+        <span>모델 필요 VRAM</span>
+        <strong>${formatGb(estimate.requiredGb)}</strong>
       </div>
+      ${renderVramBudget(hardware, estimate)}
       <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
 
@@ -1389,8 +1445,7 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
 function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
   const estimate = estimateAnyModel(model, hardware);
   const meta = GRADE_META[estimate.grade];
-  const safetyGb = estimateSafetyGb(estimate);
-  const totalWithSafety = estimate.requiredGb + safetyGb;
+  const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
   const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
 
   detail.hidden = false;
@@ -1409,7 +1464,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
 
     <div class="detail-summary-grid">
       ${renderDetailMetric("권장 설정", estimate.settingLabel)}
-      ${renderDetailMetric("Peak VRAM", `${formatGb(estimate.requiredGb)} / ${formatGb(estimate.effectiveVram)}`)}
+      ${renderDetailMetric("Peak VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
       ${renderDetailMetric("예상 처리량", estimate.speedLabel)}
       ${renderDetailMetric(model.type === "reranker" ? "질의당 지연" : "처리 지연", formatDuration(estimate.firstTokenSeconds))}
     </div>
@@ -1431,13 +1486,13 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
     <section class="detail-section">
       <h3>${detailKind} 메모리 분석</h3>
       <div class="memory-breakdown">
-        ${renderNonGenerativeMemoryLines(estimate, totalWithSafety)}
-        ${renderMemoryLine("권장 여유분", safetyGb, totalWithSafety)}
+        ${renderNonGenerativeMemoryLines(estimate, breakdownTotal)}
       </div>
       <div class="memory-total">
-        <span>총 예상 확보 VRAM</span>
-        <strong>${formatGb(totalWithSafety)}</strong>
+        <span>모델 필요 VRAM</span>
+        <strong>${formatGb(estimate.requiredGb)}</strong>
       </div>
+      ${renderVramBudget(hardware, estimate)}
       <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
 
@@ -1814,7 +1869,8 @@ function getPrecisionLabel(precisionId, precisionOptions) {
 }
 
 function renderMemoryLine(label, value, total) {
-  const width = Math.max(3, Math.min(100, (value / total) * 100));
+  const safeTotal = Math.max(0.1, total, value);
+  const width = Math.max(3, Math.min(100, (value / safeTotal) * 100));
   return `
     <div class="memory-line">
       <div class="memory-label">
@@ -1822,6 +1878,23 @@ function renderMemoryLine(label, value, total) {
         <strong>${formatGb(value)}</strong>
       </div>
       <div class="memory-bar"><span style="--bar-width: ${width}%"></span></div>
+    </div>
+  `;
+}
+
+function renderVramBudget(hardware, estimate) {
+  const remainder = hardware.availableVram - estimate.requiredGb;
+  const deltaLabel = remainder >= 0 ? "실행 후 잔여" : "가용 대비 부족";
+  const deltaValue = Math.abs(remainder);
+  const gpuPoolLabel = hardware.count > 1 ? "병렬 반영 VRAM" : "계산 기준 VRAM";
+  return `
+    <div class="vram-budget-grid">
+      ${renderInfoItem("총 GPU VRAM", formatGb(hardware.totalVram))}
+      ${renderInfoItem(gpuPoolLabel, formatGb(hardware.baseEffectiveVram))}
+      ${renderInfoItem("다른 작업 예약", formatGb(hardware.reservedVram))}
+      ${renderInfoItem("안전 여유분", formatGb(hardware.safetyMarginGb))}
+      ${renderInfoItem("모델 가용 VRAM", formatGb(hardware.availableVram))}
+      ${renderInfoItem(deltaLabel, formatGb(deltaValue))}
     </div>
   `;
 }
@@ -1859,10 +1932,6 @@ function renderInfoItem(label, value) {
 
 function renderExternalLink(label, href) {
   return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
-}
-
-function estimateSafetyGb(estimate) {
-  return Math.min(4, Math.max(0.8, estimate.effectiveVram * 0.08));
 }
 
 function closeModelDetail() {
@@ -2055,15 +2124,18 @@ function syncUrlState() {
   const params = new URLSearchParams();
   params.set("mode", activeWorkload);
   params.set("gpu", $("gpuPreset").value);
-  params.set("vram", String(getHardware().vram));
-  params.set("ram", String(getHardware().ram));
-  params.set("count", String(getHardware().count));
-  params.set("bandwidth", String(getHardware().bandwidth));
-  params.set("ctx", String(getHardware().context));
-  params.set("con", String(getHardware().concurrency));
-  params.set("out", String(getHardware().outputTokens));
-  params.set("kv", getHardware().kvPrecision);
-  params.set("runtime", getHardware().runtime);
+  const hardware = getHardware();
+  params.set("vram", String(hardware.vram));
+  params.set("ram", String(hardware.ram));
+  params.set("count", String(hardware.count));
+  params.set("bandwidth", String(hardware.bandwidth));
+  params.set("reserved", String(hardware.reservedVram));
+  params.set("margin", String(hardware.safetyMarginGb));
+  params.set("ctx", String(hardware.context));
+  params.set("con", String(hardware.concurrency));
+  params.set("out", String(hardware.outputTokens));
+  params.set("kv", hardware.kvPrecision);
+  params.set("runtime", hardware.runtime);
   params.set("quant", $("quantization").value);
   params.set("embTokens", $("embeddingInputTokens").value);
   params.set("embBatch", $("embeddingBatchSize").value);
@@ -2110,6 +2182,8 @@ function applyUrlState() {
   setValueIfPresent("ramGb", params.get("ram"));
   setValueIfPresent("gpuCount", params.get("count"));
   setValueIfPresent("bandwidth", params.get("bandwidth"));
+  setValueIfPresent("reservedVramGb", params.get("reserved"));
+  setValueIfPresent("safetyMarginGb", params.get("margin"));
   setValueIfPresent("contextSize", params.get("ctx"));
   setValueIfPresent("concurrency", params.get("con"));
   setValueIfPresent("outputTokens", params.get("out"));

@@ -51,6 +51,14 @@
             <span>대역폭 GB/s</span>
             <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
           </label>
+          <label class="field">
+            <span>이미 사용 중인 VRAM</span>
+            <input id="reservedVramGb" type="number" min="0" max="10240" step="0.5" value="0" />
+          </label>
+          <label class="field">
+            <span>안전 여유분</span>
+            <input id="safetyMarginGb" type="number" min="0" max="256" step="0.5" value="2" />
+          </label>
         </div>
 
         <div class="workload-tabs" role="tablist" aria-label="모델 종류">
@@ -375,7 +383,7 @@
     <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
 
     <footer class="app-footer">
-      <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
+      <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
     </footer>
 
     <script src="./data/gpus.js" defer></script>

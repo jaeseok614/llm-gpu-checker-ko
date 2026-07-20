@@ -30,7 +30,7 @@
 
 ```mermaid
 flowchart LR
-  A[GPU 프리셋 선택] --> B[VRAM·RAM·GPU 수 확인]
+  A[GPU 프리셋 선택] --> B[VRAM·RAM·예약 메모리 확인]
   B --> C[워크로드 탭 선택<br/>LLM·임베딩·리랭커·OCR/VLM]
   C --> D[모델별 조건 조정]
   D --> E[모델 클릭]
@@ -46,6 +46,7 @@ flowchart LR
 | RTX 4090 24GB로 32B Q4 모델을 돌릴 수 있을까? | `GeForce RTX 4090 24GB`, `Q4_K_M`, `32B` 검색 |
 | Mac 32GB에서 로컬 LLM은 어느 정도까지 가능할까? | Apple Silicon 프리셋 선택 후 VRAM/RAM 직접 조정 |
 | A100 80GB 2장으로 동시 요청을 몇 개 처리할 수 있을까? | `A100 80GB`, `GPU 수 2`, `동시 요청` 변경 |
+| LLM 서버가 이미 14GB를 쓰는 상태에서 임베딩/리랭커를 같이 띄울 수 있을까? | `이미 사용 중인 VRAM`, `안전 여유분` 입력 후 워크로드 탭별 확인 |
 | EmbeddingGemma, KURE, Granite R2, bge-m3 임베딩을 배치로 돌리면 얼마나 빠를까? | `임베딩` 탭, 모델명 검색 후 `평균 입력 길이`, `배치 크기` 변경 |
 | 한국어 RAG에서 bge-reranker, Qwen3 Reranker, mxbai-rerank 중 무엇이 맞을까? | `리랭커` 탭, `후보 수`, `문서 길이`, `배치 크기` 변경 |
 | OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `경량 OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
@@ -74,7 +75,7 @@ flowchart LR
 | 기능 | 설명 |
 | --- | --- |
 | GPU 프리셋/검색 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
-| 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
+| 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
 | 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, 경량 OCR, 문서 VLM, 범용 VLM을 분리 계산 |
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
 | RAG 조건 | 임베딩 입력 길이, 배치 크기, TEI 최대 배치 토큰, 리랭킹 후보 수를 프리셋 또는 직접 입력으로 조정 |
@@ -88,7 +89,7 @@ flowchart LR
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
 | 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
 | 정렬 | 추천순, 예상 속도순, 품질 우선, 필요 VRAM 낮은 순, 파라미터 큰 순, 최신 모델순 |
-| URL 상태 저장 | GPU, VRAM, RAM, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
+| URL 상태 저장 | GPU, VRAM, RAM, 예약 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
 
 ## 화면 흐름
 
@@ -97,6 +98,7 @@ flowchart LR
   subgraph Hardware[하드웨어 기준]
     A[GPU·VRAM·RAM]
     B[공통 성능 입력<br/>대역폭·GPU 수]
+    C[공유 GPU 예산<br/>예약 VRAM·안전 여유분]
   end
 
   subgraph Workload[워크로드 탭]
@@ -113,7 +115,7 @@ flowchart LR
     I[가중치/상주 모델]
     J[작업 메모리<br/>KV·activation·attention·image buffer]
     K[런타임/배치 오버헤드]
-    L{실행 등급 산정}
+    L{가용 VRAM 기준<br/>실행 등급 산정}
   end
 
   subgraph List[첫 화면]
@@ -130,12 +132,13 @@ flowchart LR
   end
 
   A --> B
-  B --> W1
-  B --> W2
-  B --> W3
-  B --> W4
-  B --> W5
-  B --> W6
+  B --> C
+  C --> W1
+  C --> W2
+  C --> W3
+  C --> W4
+  C --> W5
+  C --> W6
   W1 --> H
   W2 --> H
   W3 --> H
@@ -180,6 +183,9 @@ This calculator uses a deterministic heuristic model. It estimates whether a loc
 | `V` | VRAM per GPU in GB |
 | `R` | System RAM in GB |
 | `B` | Memory bandwidth in GB/s |
+| `M_reserved` | VRAM already occupied by other running workloads |
+| `M_safety` | User-selected free VRAM buffer |
+| `M_budget` | VRAM budget available to the model being evaluated |
 
 #### Memory Model
 
@@ -218,16 +224,16 @@ $$
 | vLLM | `2.6` | `5.5` | `0.10` | `0.12` |
 | Transformers | `2.2` | `4.5` | `0.09` | `0.18` |
 
-Total estimated VRAM:
+Total estimated model VRAM:
 
 $$
 M_{required} = M_{weights} + M_{KV} + M_{runtime}
 $$
 
-Effective GPU memory:
+Physical and sharding-adjusted GPU memory:
 
 $$
-M_{effective} =
+M_{pool} =
 \begin{cases}
 V \cdot G, & G = 1 \\
 V \cdot G \cdot 0.92, & G > 1
@@ -235,6 +241,14 @@ V \cdot G \cdot 0.92, & G > 1
 $$
 
 The multi-GPU `0.92` factor approximates memory loss from sharding, communication buffers, and uneven placement.
+
+Because production machines often run an LLM server, embedding worker, reranker, OCR worker, or monitoring process at the same time, the calculator separates the shared GPU memory budget:
+
+$$
+M_{budget}=\max(0,\ M_{pool}-M_{reserved}-M_{safety})
+$$
+
+where `M_reserved` is VRAM already used by other workloads and `M_safety` is the user-selected buffer left empty to avoid OOM spikes.
 
 #### Fit Grade
 
@@ -247,13 +261,13 @@ $$
 Then the memory pressure ratio is:
 
 $$
-\rho = \frac{M_{required}}{M_{effective}}
+\rho = \frac{M_{required}}{\max(M_{budget},\epsilon)}
 $$
 
 Offload room includes partial use of system RAM:
 
 $$
-M_{offload} = M_{effective} + 0.45R
+M_{offload} = M_{budget} + 0.45R
 $$
 
 | Grade | Condition |
@@ -346,13 +360,13 @@ $$
 The first quantization that satisfies the memory budget is selected:
 
 $$
-M_{required}(q) \le 0.85M_{effective}
+M_{required}(q) \le 0.85M_{budget}
 $$
 
 If no option satisfies that comfortable threshold, the calculator tries:
 
 $$
-M_{required}(q) \le M_{effective}
+M_{required}(q) \le M_{budget}
 $$
 
 and then:
@@ -366,6 +380,8 @@ If all checks fail, `Q2_K` is used as the last possible comparison baseline.
 ### Encoder, Reranker, And OCR/VLM Methodology
 
 Embedding and reranker models are encoder-style workloads. They do not keep a decoder KV cache across generated tokens, so the calculator uses an activation/attention workspace model instead of the LLM decoder model.
+
+All workload families use the same shared GPU budget `M_budget`; only the model-specific `M_required` formula changes.
 
 #### Embedding Encoder Memory
 
@@ -545,6 +561,8 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 | KV cache | 모델이 긴 대화와 문맥을 기억하기 위해 잡아두는 작업 메모리입니다. 컨텍스트 길이, 동시 요청 수, KV 정밀도에 비례해서 커집니다. |
 | 평균 출력 토큰 | 답변을 평균 몇 토큰까지 생성할지입니다. VRAM 적합도보다는 “답변이 몇 초 걸릴지” 계산에 사용됩니다. |
 | 런타임 오버헤드 | Ollama, llama.cpp, vLLM, Transformers가 모델 외에 추가로 쓰는 여유 메모리입니다. vLLM은 동시 처리에 강하지만 기본 오버헤드가 더 큽니다. |
+| 이미 사용 중인 VRAM | 같은 GPU에서 이미 떠 있는 LLM 서버, 임베딩 서버, 리랭커, OCR 작업 등이 차지한다고 보는 메모리입니다. 모든 탭의 실행 가능 여부에서 먼저 제외합니다. |
+| 안전 여유분 | 순간적인 메모리 증가와 드라이버/런타임 변동을 피하려고 일부러 비워 두는 VRAM입니다. 값이 클수록 계산 결과가 보수적으로 바뀝니다. |
 | 시스템 RAM 보조 | VRAM에 딱 안 들어가도 RAM 오프로딩으로 가능할 수 있습니다. 대신 속도는 크게 느려질 수 있습니다. |
 | 임베딩 입력 길이 | 문서 하나를 몇 토큰으로 임베딩할지입니다. 길수록 처리량은 줄고 activation/attention 메모리는 늘어납니다. |
 | 임베딩 배치 | 한 번에 몇 문서를 임베딩할지입니다. 배치가 커지면 처리량은 좋아질 수 있지만 peak VRAM도 증가합니다. |
@@ -558,19 +576,22 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 ```text
 1. 선택한 텍스트/이미지 입력 길이가 모델 한도를 넘는지 확인
-2. 모델 가중치 + KV cache/activation/image buffer + 런타임 오버헤드를 더해 필요 VRAM 계산
-3. 내 GPU의 실제 사용 가능 VRAM과 비교
-4. 부족하면 시스템 RAM 오프로딩 가능성 확인
-5. 메모리 여유와 예상 속도를 같이 보고 등급 결정
+2. 전체 GPU VRAM에서 이미 사용 중인 VRAM과 안전 여유분을 빼서 모델 가용 VRAM 계산
+3. 모델 가중치 + KV cache/activation/image buffer + 런타임 오버헤드를 더해 필요 VRAM 계산
+4. 필요 VRAM을 모델 가용 VRAM과 비교
+5. 부족하면 시스템 RAM 오프로딩 가능성 확인
+6. 메모리 여유와 예상 속도를 같이 보고 등급 결정
 ```
 
-가장 많이 영향을 주는 값은 보통 아래 네 가지입니다.
+가장 많이 영향을 주는 값은 보통 아래 항목들입니다.
 
 | 사용자가 바꾸는 값 | 결과에 미치는 영향 |
 | --- | --- |
 | 양자화 | Q6/Q5는 품질이 좋지만 VRAM을 더 쓰고, Q4/Q3/Q2는 더 가볍지만 품질 손실이 커질 수 있습니다. |
 | 컨텍스트 길이 | 길수록 긴 문서를 잘 다루지만 KV cache가 커져 VRAM을 더 씁니다. |
 | 동시 요청 수 | 동시에 여러 명이 쓰면 요청당 속도는 줄고 KV cache는 커집니다. |
+| 이미 사용 중인 VRAM | 같은 GPU에 여러 모델/서버를 함께 띄운 상황을 반영합니다. 값이 커질수록 실행 가능한 모델 수가 줄어듭니다. |
+| 안전 여유분 | OOM을 피하기 위한 빈 공간입니다. 운영 서버처럼 안정성이 중요하면 2~4GB 이상을 잡는 편이 안전합니다. |
 | 실행 방식 | Ollama/llama.cpp는 가볍고 단순한 편이고, vLLM은 서버형 동시 처리에 유리하며, Transformers는 범용성이 높지만 오버헤드가 다를 수 있습니다. |
 | 임베딩 정밀도 | FP16/BF16은 GPU 기본 추천이고, INT8/INT4는 메모리를 줄이지만 모델과 런타임 지원 여부를 확인해야 합니다. |
 | OCR/VLM DPI·배치 | DPI와 배치를 낮추면 속도와 안정성이 좋아지고, 문서 품질이 낮으면 정확도는 떨어질 수 있습니다. 문서 VLM은 출력 토큰도 길어질수록 느려집니다. |

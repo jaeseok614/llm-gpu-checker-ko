@@ -768,10 +768,16 @@ button:focus-visible {
 }
 
 .runtime-grid,
-.model-info-grid {
+.model-info-grid,
+.vram-budget-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+}
+
+.vram-budget-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12px;
 }
 
 .runtime-card small {
@@ -871,7 +877,8 @@ button:focus-visible {
 
   .detail-summary-grid,
   .runtime-grid,
-  .model-info-grid {
+  .model-info-grid,
+  .vram-budget-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -945,7 +952,8 @@ button:focus-visible {
   .toolbar,
   .detail-summary-grid,
   .runtime-grid,
-  .model-info-grid {
+  .model-info-grid,
+  .vram-budget-grid {
     grid-template-columns: 1fr;
   }
 

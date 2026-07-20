@@ -11,6 +11,7 @@
 - bge-reranker-v2.5-gemma2-lightweight, mxbai-rerank v2, gte-reranker-modernbert, Granite reranker R2, Jina v1, BCE, 한국어 리랭커, Sentence Transformers cross-encoder 기준선 추가
 - PaddleOCR-VL-1.6, MinerU2.5-Pro, DeepSeek-OCR-2, dots.ocr, dots.mocr, olmOCR-2, DeepSeek-VL2, Qwen3-VL, Qwen2.5-VL, Qwen2-VL, Llama 3.2 Vision, Pixtral, LLaVA-OneVision, Molmo, SmolVLM2, Phi-4 multimodal, Aya Vision, GLM-4.1V, MiniCPM-V, InternVL3.5, Kimi-VL 추가
 - 임베딩 encoder FLOPs/activation, 리랭커 query latency, OCR 해상도/megapixel 기반 계산식 추가
+- 모든 워크로드에 공통 적용되는 이미 사용 중인 VRAM/안전 여유분 입력과 가용 VRAM 기준 등급 계산 추가
 - 컨텍스트, 동시 요청, 출력 토큰, RAG 배치, OCR 배치 페이지에 프리셋과 직접 입력을 함께 제공
 - H100/A100 같은 데이터센터 GPU를 빠르게 찾을 수 있도록 GPU 프리셋 검색 입력 추가
 - 적합도 요약을 클릭 가능한 필터 칩으로 변경
