@@ -237,3 +237,13 @@ npm run check
 ## 라이선스
 
 [MIT License](./LICENSE)
+
+## GPU 스펙 데이터
+
+GPU 목록과 스펙 원천 데이터는 **[gpu-specs-kr](https://github.com/jaeseok614/gpu-specs-kr)** 프로젝트에서 관리합니다.
+
+> Wikipedia의 NVIDIA·AMD·Intel GPU 스펙을 정규화한 오픈소스 데이터셋·REST API
+
+- JSON · CSV · SQLite 다운로드 가능
+- 1,833개 GPU (NVIDIA 959 / AMD 870 / Intel 4)
+- [데이터셋 바로가기 →](https://github.com/jaeseok614/gpu-specs-kr)
