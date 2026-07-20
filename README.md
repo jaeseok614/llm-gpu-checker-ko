@@ -59,20 +59,46 @@ http://127.0.0.1:8787
 
 ```mermaid
 flowchart LR
-  A[사용자 입력] --> B[GPU 프리셋/직접 입력]
-  A --> C[컨텍스트 길이]
-  A --> D[양자화 방식]
-  A --> L[동시 요청/KV cache]
-  B --> E[총 VRAM 계산]
-  C --> F[KV Cache 추정]
-  D --> G[가중치 메모리 추정]
-  L --> F
-  E --> H[모델별 필요 메모리 비교]
-  F --> H
-  G --> H
-  H --> I{실행 등급}
-  I --> J[추천 Top 3]
-  I --> K[모델 카드 목록]
+  subgraph Input[입력 조건]
+    A[GPU 프리셋/직접 입력]
+    B[컨텍스트 길이]
+    C[동시 요청 수]
+    D[평균 출력 토큰]
+    E[KV cache 정밀도]
+    F[양자화 방식]
+    G[실행 방식]
+  end
+
+  subgraph Memory[메모리 추정]
+    H[총 VRAM 계산]
+    I[모델 가중치]
+    J[KV cache<br/>컨텍스트 x 동시 요청 x 정밀도]
+    K[런타임 오버헤드]
+  end
+
+  subgraph Result[결과 화면]
+    L{모델별 실행 등급}
+    M[추천 Top 3]
+    N[모델 카드 목록]
+    O[요청당 속도]
+    P[예상 응답 시간]
+  end
+
+  A --> H
+  F --> I
+  B --> J
+  C --> J
+  E --> J
+  G --> K
+  D --> P
+  H --> L
+  I --> L
+  J --> L
+  K --> L
+  L --> M
+  L --> N
+  L --> O
+  O --> P
 ```
 
 ## 구조
