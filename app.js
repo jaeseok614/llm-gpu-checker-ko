@@ -12,6 +12,13 @@ const GRADE_META = {
   F: { label: "부적합", className: "grade-f", score: 0, color: "#ba2f2f" },
 };
 
+const KV_PRECISION_META = {
+  fp16: { label: "FP16", factor: 1 },
+  fp8: { label: "FP8", factor: 0.55 },
+  q8: { label: "Q8", factor: 0.6 },
+  q4: { label: "Q4", factor: 0.35 },
+};
+
 const $ = (id) => document.getElementById(id);
 
 function init() {
@@ -41,8 +48,9 @@ function populateSelects() {
 }
 
 function bindEvents() {
-  ["vramGb", "gpuCount", "ramGb", "bandwidth", "contextSize", "quantization", "runtimeMode", "searchInput", "taskFilter", "providerFilter", "gradeFilter", "sortBy"].forEach((id) => {
+  ["vramGb", "gpuCount", "ramGb", "bandwidth", "contextSize", "concurrency", "outputTokens", "kvPrecision", "quantization", "runtimeMode", "searchInput", "taskFilter", "providerFilter", "gradeFilter", "sortBy"].forEach((id) => {
     $(id).addEventListener("input", render);
+    $(id).addEventListener("change", render);
   });
 
   $("gpuPreset").addEventListener("change", (event) => {
@@ -67,9 +75,13 @@ function getHardware() {
   const count = clampNumber($("gpuCount").value, 1, 16, 1);
   const ram = clampNumber($("ramGb").value, 8, 2048, 64);
   const bandwidth = clampNumber($("bandwidth").value, 100, 12000, 1008);
-  const context = clampNumber($("contextSize").value, 4096, 32768, 8192);
+  const context = clampNumber($("contextSize").value, 4096, 1048576, 8192);
+  const concurrency = clampNumber($("concurrency").value, 1, 64, 1);
+  const outputTokens = clampNumber($("outputTokens").value, 128, 8192, 512);
+  const kvPrecision = $("kvPrecision").value;
+  const kvMeta = KV_PRECISION_META[kvPrecision] || KV_PRECISION_META.fp16;
   const runtime = $("runtimeMode").value;
-  return { vram, count, ram, bandwidth, context, runtime };
+  return { vram, count, ram, bandwidth, context, concurrency, outputTokens, kvPrecision, kvMeta, runtime };
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -82,16 +94,21 @@ function estimateModel(model, quantId, hardware) {
   const quant = quantId === "auto" ? recommendQuant(model, hardware) : QUANTS.find((item) => item.id === quantId);
   const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const weightsGb = model.params * quant.bytesPerB * 1.08;
-  const kvGb = model.active * 0.09 * (hardware.context / 4096);
-  const runtimeOverheadGb = runtimeFactor.base + Math.min(runtimeFactor.cap, weightsGb * runtimeFactor.weightRatio);
+  const contextLimitTokens = model.context * 1024;
+  const contextSupported = hardware.context <= contextLimitTokens;
+  const kvGb = estimateKvCacheGb(model, hardware);
+  const runtimeOverheadGb = runtimeFactor.base
+    + Math.min(runtimeFactor.cap, weightsGb * runtimeFactor.weightRatio)
+    + Math.max(0, hardware.concurrency - 1) * runtimeFactor.requestOverhead;
   const requiredGb = weightsGb + kvGb + runtimeOverheadGb;
   const effectiveVram = hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
   const pressure = requiredGb / effectiveVram;
   const ramAssist = hardware.ram * 0.45;
   const offloadRoom = effectiveVram + ramAssist;
-  const grade = gradeFromPressure(pressure, requiredGb, offloadRoom);
-  const speed = estimateSpeed(model, quant, hardware, grade);
-  const reason = buildReason(grade, requiredGb, effectiveVram, model, hardware);
+  const grade = contextSupported ? gradeFromPressure(pressure, requiredGb, offloadRoom) : "F";
+  const speedStats = estimateSpeed(model, quant, hardware, grade);
+  const latencySeconds = speedStats.perRequest > 0 ? hardware.outputTokens / speedStats.perRequest : 0;
+  const reason = buildReason(grade, requiredGb, effectiveVram, model, hardware, contextLimitTokens, contextSupported);
 
   return {
     model,
@@ -103,15 +120,25 @@ function estimateModel(model, quantId, hardware) {
     effectiveVram,
     pressure,
     grade,
-    speed,
+    speed: speedStats.perRequest,
+    throughput: speedStats.total,
+    latencySeconds,
+    contextLimitTokens,
+    contextSupported,
     reason,
   };
 }
 
 function getRuntimeFactor(runtime) {
-  if (runtime === "vllm") return { base: 2.6, cap: 5.5, weightRatio: 0.1 };
-  if (runtime === "transformers") return { base: 2.2, cap: 4.5, weightRatio: 0.09 };
-  return { base: 1.2, cap: 3.0, weightRatio: 0.06 };
+  if (runtime === "vllm") return { base: 2.6, cap: 5.5, weightRatio: 0.1, requestOverhead: 0.12, concurrencyEfficiency: 0.78 };
+  if (runtime === "transformers") return { base: 2.2, cap: 4.5, weightRatio: 0.09, requestOverhead: 0.18, concurrencyEfficiency: 0.38 };
+  return { base: 1.2, cap: 3.0, weightRatio: 0.06, requestOverhead: 0.08, concurrencyEfficiency: 0.55 };
+}
+
+function estimateKvCacheGb(model, hardware) {
+  const contextMultiplier = hardware.context / 4096;
+  const concurrencyMultiplier = hardware.concurrency;
+  return model.active * 0.09 * contextMultiplier * concurrencyMultiplier * hardware.kvMeta.factor;
 }
 
 function recommendQuant(model, hardware) {
@@ -131,8 +158,10 @@ function recommendQuant(model, hardware) {
 function estimateWithQuant(model, quant, hardware) {
   const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const weightsGb = model.params * quant.bytesPerB * 1.08;
-  const kvGb = model.active * 0.09 * (hardware.context / 4096);
-  const runtimeOverheadGb = runtimeFactor.base + Math.min(runtimeFactor.cap, weightsGb * runtimeFactor.weightRatio);
+  const kvGb = estimateKvCacheGb(model, hardware);
+  const runtimeOverheadGb = runtimeFactor.base
+    + Math.min(runtimeFactor.cap, weightsGb * runtimeFactor.weightRatio)
+    + Math.max(0, hardware.concurrency - 1) * runtimeFactor.requestOverhead;
   return { requiredGb: weightsGb + kvGb + runtimeOverheadGb };
 }
 
@@ -146,29 +175,37 @@ function gradeFromPressure(pressure, requiredGb, offloadRoom) {
 }
 
 function estimateSpeed(model, quant, hardware, grade) {
-  if (grade === "F") return 0;
+  if (grade === "F") return { perRequest: 0, total: 0 };
   const multiGpuPenalty = hardware.count > 1 ? 0.76 : 1;
   const runtimePenalty = hardware.runtime === "vllm" ? 1.1 : hardware.runtime === "transformers" ? 0.78 : 1;
   const offloadPenalty = grade === "D" ? 0.22 : grade === "C" ? 0.55 : 1;
+  const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const activeBytes = Math.max(model.active * quant.bytesPerB, 1);
   const raw = (hardware.bandwidth * hardware.count * multiGpuPenalty * runtimePenalty) / (activeBytes * 4);
-  return raw * offloadPenalty;
+  const total = raw * (1 + (hardware.concurrency - 1) * runtimeFactor.concurrencyEfficiency) * offloadPenalty;
+  return {
+    perRequest: total / hardware.concurrency,
+    total,
+  };
 }
 
-function buildReason(grade, requiredGb, effectiveVram, model, hardware) {
+function buildReason(grade, requiredGb, effectiveVram, model, hardware, contextLimitTokens, contextSupported) {
+  if (!contextSupported) {
+    return `선택한 ${formatContext(hardware.context)} 컨텍스트가 모델 한도 ${formatContext(contextLimitTokens)}를 초과합니다.`;
+  }
   if (grade === "F") {
-    return `필요 VRAM 추정치가 ${formatGb(requiredGb)}로 총 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
+    return `동시 ${hardware.concurrency}명 기준 필요 VRAM 추정치가 ${formatGb(requiredGb)}로 총 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
   }
   if (grade === "D") {
-    return `GPU 단독 적재는 어렵고 RAM 오프로딩 전제가 필요합니다. 긴 컨텍스트에서는 속도 저하가 큽니다.`;
+    return `동시 ${hardware.concurrency}명 기준 GPU 단독 적재는 어렵고 RAM 오프로딩 전제가 필요합니다.`;
   }
   if (grade === "C") {
-    return `총 VRAM에 거의 맞습니다. ${hardware.context / 1024}K 컨텍스트와 배치 크기를 낮추는 편이 안정적입니다.`;
+    return `총 VRAM에 거의 맞습니다. 동시 요청, 컨텍스트 길이, KV cache 정밀도를 낮추는 편이 안정적입니다.`;
   }
   if (model.params >= 60 && hardware.count === 1) {
     return `대형 모델이지만 ${formatGb(effectiveVram)} VRAM에서 선택 양자화 기준 실행 가능 범위입니다.`;
   }
-  return `선택한 GPU에서 ${model.params}B급 모델을 ${hardware.context / 1024}K 컨텍스트로 실행 가능한 범위입니다.`;
+  return `선택한 GPU에서 ${model.params}B급 모델을 ${formatContext(hardware.context)}, 동시 ${hardware.concurrency}명 기준으로 실행 가능한 범위입니다.`;
 }
 
 function getFilteredEstimates() {
@@ -231,6 +268,9 @@ function render() {
 
   $("totalVram").textContent = formatGb(hardware.vram * hardware.count);
   $("fitCount").textContent = `${allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length}개`;
+  $("servingLoad").textContent = `${hardware.concurrency}명`;
+  $("kvMode").textContent = hardware.kvMeta.label;
+  $("hardwareStatus").textContent = `${formatGb(hardware.vram * hardware.count)} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`;
 
   renderSummary(allEstimates);
   renderRecommendations(estimates);
@@ -317,8 +357,12 @@ function renderModelCard(estimate) {
             <strong>${estimate.quant.label}</strong>
           </div>
           <div class="spec">
-            <span>예상 속도</span>
+            <span>요청당 속도</span>
             <strong>${formatSpeed(estimate.speed)}</strong>
+          </div>
+          <div class="spec">
+            <span>응답 시간</span>
+            <strong>${formatDuration(estimate.latencySeconds)}</strong>
           </div>
         </div>
         <div class="bar-wrap">
@@ -332,7 +376,7 @@ function renderModelCard(estimate) {
         </div>
         <div class="tag-row">${tags}</div>
       </div>
-      <div class="model-foot">${estimate.reason}</div>
+      <div class="model-foot">${estimate.reason} KV cache ${formatGb(estimate.kvGb)}, 전체 처리량 ${formatSpeed(estimate.throughput)} 기준입니다.</div>
     </article>
   `;
 }
@@ -355,6 +399,11 @@ function formatGb(value) {
   return `${value.toFixed(1)} GB`;
 }
 
+function formatContext(tokens) {
+  if (tokens >= 1048576) return `${Math.round(tokens / 1048576)}M`;
+  return `${Math.round(tokens / 1024)}K`;
+}
+
 function formatParams(value) {
   return `${value.toFixed(value >= 10 ? 0 : 1)}B`;
 }
@@ -363,6 +412,12 @@ function formatSpeed(value) {
   if (!value) return "불가";
   if (value < 1) return `${value.toFixed(1)} tok/s`;
   return `${Math.round(value)} tok/s`;
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return "불가";
+  if (seconds < 60) return `${Math.round(seconds)}초`;
+  return `${Math.floor(seconds / 60)}분 ${Math.round(seconds % 60)}초`;
 }
 
 async function detectGpu() {

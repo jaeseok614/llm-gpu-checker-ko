@@ -47,6 +47,7 @@ http://127.0.0.1:8787
 | --- | --- |
 | GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터, AMD, Intel, Apple Silicon 포함 |
 | 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭 직접 조정 |
+| 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰, KV cache 정밀도 선택 |
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 일반 챗봇 |
@@ -61,9 +62,11 @@ flowchart LR
   A[사용자 입력] --> B[GPU 프리셋/직접 입력]
   A --> C[컨텍스트 길이]
   A --> D[양자화 방식]
+  A --> L[동시 요청/KV cache]
   B --> E[총 VRAM 계산]
   C --> F[KV Cache 추정]
   D --> G[가중치 메모리 추정]
+  L --> F
   E --> H[모델별 필요 메모리 비교]
   F --> H
   G --> H
@@ -130,6 +133,9 @@ flowchart TB
 | 모델 가중치 | 파라미터 수와 양자화별 byte/parameter 기준으로 계산 |
 | KV cache | 활성 파라미터와 컨텍스트 길이에 따라 증가 |
 | 런타임 오버헤드 | llama.cpp/Ollama, vLLM, Transformers별 기본 여유분 |
+| 동시 요청 | 동시 요청 수만큼 KV cache 사용량 증가 |
+| KV cache 정밀도 | FP16/BF16, FP8, Q8, Q4에 따라 KV cache 추정치를 보정 |
+| 평균 출력 토큰 | 요청당 예상 응답 시간 계산에 사용 |
 | 오프로딩 | VRAM을 초과하지만 RAM 보조로 가능한 경우 별도 등급 표시 |
 
 등급은 총 VRAM 대비 필요 VRAM 비율을 기준으로 나눕니다.

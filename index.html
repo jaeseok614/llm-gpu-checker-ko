@@ -52,15 +52,57 @@
           </label>
         </div>
 
-        <label class="field">
-          <span>컨텍스트 길이</span>
-          <select id="contextSize">
-            <option value="4096">4K</option>
-            <option value="8192" selected>8K</option>
-            <option value="16384">16K</option>
-            <option value="32768">32K</option>
-          </select>
-        </label>
+        <div class="field-grid">
+          <label class="field">
+            <span>컨텍스트 길이</span>
+            <select id="contextSize">
+              <option value="4096">4K</option>
+              <option value="8192" selected>8K</option>
+              <option value="16384">16K</option>
+              <option value="32768">32K</option>
+              <option value="65536">64K</option>
+              <option value="131072">128K</option>
+              <option value="262144">256K</option>
+              <option value="524288">512K</option>
+              <option value="1048576">1M</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>동시 요청</span>
+            <select id="concurrency">
+              <option value="1" selected>1명</option>
+              <option value="2">2명</option>
+              <option value="4">4명</option>
+              <option value="8">8명</option>
+              <option value="16">16명</option>
+              <option value="32">32명</option>
+              <option value="64">64명</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-grid">
+          <label class="field">
+            <span>평균 출력</span>
+            <select id="outputTokens">
+              <option value="256">256 토큰</option>
+              <option value="512" selected>512 토큰</option>
+              <option value="1024">1K 토큰</option>
+              <option value="2048">2K 토큰</option>
+              <option value="4096">4K 토큰</option>
+              <option value="8192">8K 토큰</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>KV cache</span>
+            <select id="kvPrecision">
+              <option value="fp16" selected>FP16/BF16</option>
+              <option value="fp8">FP8</option>
+              <option value="q8">Q8</option>
+              <option value="q4">Q4</option>
+            </select>
+          </label>
+        </div>
 
         <label class="field">
           <span>양자화</span>
@@ -84,6 +126,14 @@
           <div>
             <span class="metric-label">추천 가능</span>
             <strong id="fitCount">0개</strong>
+          </div>
+          <div>
+            <span class="metric-label">서빙 부하</span>
+            <strong id="servingLoad">1명</strong>
+          </div>
+          <div>
+            <span class="metric-label">KV 기준</span>
+            <strong id="kvMode">FP16</strong>
           </div>
         </div>
       </section>
