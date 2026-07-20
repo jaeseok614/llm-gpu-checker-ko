@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LLM GPU 실행 가능성 계산기</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand-block">
+        <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
+        <div>
+          <p class="eyebrow">Korean LLM Hardware Fit</p>
+          <h1>LLM GPU 실행 가능성 계산기</h1>
+        </div>
+      </div>
+      <div class="header-status" id="hardwareStatus">GPU 정보를 입력해 주세요</div>
+    </header>
+
+    <main class="app-shell">
+      <section class="control-panel" aria-label="하드웨어 설정">
+        <div class="panel-title">
+          <h2>하드웨어</h2>
+          <button type="button" class="ghost-button" id="detectGpuButton">브라우저 감지</button>
+        </div>
+
+        <label class="field">
+          <span>GPU 프리셋</span>
+          <select id="gpuPreset"></select>
+        </label>
+
+        <div class="field-grid">
+          <label class="field">
+            <span>VRAM</span>
+            <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
+          </label>
+          <label class="field">
+            <span>GPU 수</span>
+            <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
+          </label>
+        </div>
+
+        <div class="field-grid">
+          <label class="field">
+            <span>시스템 RAM</span>
+            <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
+          </label>
+          <label class="field">
+            <span>대역폭 GB/s</span>
+            <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>컨텍스트 길이</span>
+          <select id="contextSize">
+            <option value="4096">4K</option>
+            <option value="8192" selected>8K</option>
+            <option value="16384">16K</option>
+            <option value="32768">32K</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>양자화</span>
+          <select id="quantization"></select>
+        </label>
+
+        <label class="field">
+          <span>실행 방식</span>
+          <select id="runtimeMode">
+            <option value="llamacpp">llama.cpp / Ollama</option>
+            <option value="vllm">vLLM</option>
+            <option value="transformers">Transformers</option>
+          </select>
+        </label>
+
+        <div class="metric-strip" aria-label="하드웨어 요약">
+          <div>
+            <span class="metric-label">총 VRAM</span>
+            <strong id="totalVram">24 GB</strong>
+          </div>
+          <div>
+            <span class="metric-label">추천 가능</span>
+            <strong id="fitCount">0개</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="results-panel" aria-label="모델 검색 결과">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" />
+          </div>
+          <select id="taskFilter" aria-label="작업 유형">
+            <option value="all">전체 작업</option>
+            <option value="general">일반 챗봇</option>
+            <option value="korean">한국어</option>
+            <option value="coding">코딩</option>
+            <option value="reasoning">추론</option>
+            <option value="long">긴 문서</option>
+          </select>
+          <select id="gradeFilter" aria-label="실행 등급">
+            <option value="all">전체 등급</option>
+            <option value="B">가능 이상</option>
+            <option value="A">잘 돌아감 이상</option>
+            <option value="S">쾌적만</option>
+          </select>
+          <select id="sortBy" aria-label="정렬">
+            <option value="fit">실행 적합도순</option>
+            <option value="sizeAsc">작은 모델순</option>
+            <option value="sizeDesc">큰 모델순</option>
+            <option value="speed">속도 예상순</option>
+          </select>
+        </div>
+
+        <div class="summary-grid" id="summaryGrid"></div>
+        <div class="recommendation-band" id="recommendationBand"></div>
+        <div class="model-grid" id="modelGrid"></div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, KV cache 설정에 따라 달라집니다.</span>
+    </footer>
+
+    <script src="./data/gpus.js" defer></script>
+    <script src="./data/quantizations.js" defer></script>
+    <script src="./data/models.js" defer></script>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
