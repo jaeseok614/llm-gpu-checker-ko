@@ -9,12 +9,20 @@ const ENCODER_PRECISIONS = DATA.precisions?.encoder || [];
 const OCR_PRECISIONS = DATA.precisions?.ocr || [];
 const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
 const OCR_RESOLUTION_PRESETS = DATA.ocrResolutionPresets || {};
+const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm"]);
+const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm"]);
+const WORKLOAD_ALIASES = { ocr: "ocrPipeline" };
+const OCR_PIPELINE_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-pipeline");
+const DOCUMENT_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-vlm" || model.type === "document-vlm");
+const GENERAL_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "general-vlm");
 
 const MODEL_GROUPS = {
   generative: GENERATIVE_MODELS,
   embedding: EMBEDDING_MODELS,
   reranker: RERANKER_MODELS,
-  ocr: OCR_MODELS,
+  ocrPipeline: OCR_PIPELINE_MODELS,
+  documentVlm: DOCUMENT_VLM_MODELS,
+  generalVlm: GENERAL_VLM_MODELS,
 };
 
 const WORKLOAD_META = {
@@ -39,11 +47,25 @@ const WORKLOAD_META = {
     searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
     listHeaders: ["모델", "등급", "정밀도/런타임", "Peak VRAM", "쌍 처리량", "권장 입력", ""],
   },
-  ocr: {
-    label: "OCR·문서",
-    statusLabel: "OCR",
-    modelCountLabel: "OCR 모델",
-    searchPlaceholder: "OCR 모델명, 제조사, 태그 검색",
+  ocrPipeline: {
+    label: "경량 OCR",
+    statusLabel: "경량 OCR",
+    modelCountLabel: "경량 OCR 모델",
+    searchPlaceholder: "OCR 파이프라인, 제조사, 태그 검색",
+    listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
+  },
+  documentVlm: {
+    label: "문서 VLM",
+    statusLabel: "문서 VLM",
+    modelCountLabel: "문서 VLM 모델",
+    searchPlaceholder: "문서 VLM, 제조사, 태그 검색",
+    listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
+  },
+  generalVlm: {
+    label: "범용 VLM",
+    statusLabel: "범용 VLM",
+    modelCountLabel: "범용 VLM 모델",
+    searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
     listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
   },
 };
@@ -300,7 +322,8 @@ function refreshWorkloadUi() {
   });
 
   document.querySelectorAll("[data-workload-settings]").forEach((panel) => {
-    panel.hidden = panel.dataset.workloadSettings !== activeWorkload;
+    const panelKey = panel.dataset.workloadSettings;
+    panel.hidden = panelKey !== activeWorkload && !(panelKey === "vision" && isVisionWorkload(activeWorkload));
   });
 }
 
@@ -418,6 +441,14 @@ function getAllModels() {
   return Object.values(MODEL_GROUPS).flat();
 }
 
+function isVisionWorkload(workload) {
+  return VISION_WORKLOADS.has(workload);
+}
+
+function isVisionModel(model) {
+  return VISION_MODEL_TYPES.has(model.type);
+}
+
 function getWorkloadSettings() {
   if (activeWorkload === "embedding") {
     return {
@@ -442,9 +473,9 @@ function getWorkloadSettings() {
     };
   }
 
-  if (activeWorkload === "ocr") {
+  if (isVisionWorkload(activeWorkload)) {
     return {
-      type: "ocr",
+      type: activeWorkload,
       resolutionPreset: $("ocrResolutionPreset").value,
       width: clampNumber($("ocrWidth").value, 320, 10000, 1654),
       height: clampNumber($("ocrHeight").value, 320, 14000, 2339),
@@ -559,7 +590,7 @@ function estimateWithQuant(model, quant, hardware) {
 function estimateAnyModel(model, hardware) {
   if (model.type === "embedding") return estimateEncoderModel(model, hardware, getWorkloadSettings());
   if (model.type === "reranker") return estimateRerankerModel(model, hardware, getWorkloadSettings());
-  if (model.type === "ocr-pipeline" || model.type === "ocr-vlm") return estimateOcrModel(model, hardware, getWorkloadSettings());
+  if (isVisionModel(model)) return estimateOcrModel(model, hardware, getWorkloadSettings());
   return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
 }
 
@@ -733,7 +764,7 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
   let weightsGb = 0;
   let kvGb = 0;
 
-  if (model.type === "ocr-vlm") {
+  if (model.type !== "ocr-pipeline") {
     weightsGb = model.params * precision.bytesPerParam * 1.08;
     const imageTokens = estimateImageTokens(model, workload.width, workload.height);
     const totalTokens = imageTokens + 64 + Math.min(2048, model.maxOutputTokens || 1024);
@@ -995,6 +1026,17 @@ function gradeSort(a, b) {
 function modelFreshnessScore(model) {
   const text = model.name.toLowerCase();
   let score = 0;
+  if (text.includes("mineru2.5-pro-2604")) score += 760;
+  if (text.includes("paddleocr-vl-1.6")) score += 755;
+  if (text.includes("deepseek-ocr-2")) score += 750;
+  if (text.includes("qwen3-vl")) score += 745;
+  if (text.includes("internvl3.5")) score += 740;
+  if (text.includes("minicpm-v-4.6")) score += 738;
+  if (text.includes("kimi-vl")) score += 736;
+  if (text.includes("qwen3-embedding") || text.includes("qwen3-reranker")) score += 735;
+  if (text.includes("jina-embeddings-v5")) score += 730;
+  if (text.includes("olmocr-2")) score += 728;
+  if (text.includes("dots.ocr")) score += 724;
   if (text.includes("gpt-oss")) score += 720;
   if (text.includes("qwen3")) score += 700;
   if (text.includes("deepseek v3.2")) score += 690;
@@ -1082,7 +1124,7 @@ function buildHardwareBasis(hardware) {
     const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime]?.label || workload.runtime;
     return `질의 ${workload.queryTokens} + 문서 ${workload.docTokens} · 후보 ${workload.candidates}개 · ${runtime} · ${precision}`;
   }
-  if (activeWorkload === "ocr") {
+  if (isVisionWorkload(activeWorkload)) {
     const workload = getWorkloadSettings();
     const precision = getPrecisionLabel(workload.precisionId, OCR_PRECISIONS);
     return `${workload.width}x${workload.height} · 배치 ${workload.batchSize}페이지 · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`;
@@ -1328,7 +1370,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
   const meta = GRADE_META[estimate.grade];
   const safetyGb = estimateSafetyGb(estimate);
   const totalWithSafety = estimate.requiredGb + safetyGb;
-  const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : "OCR·문서";
+  const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
 
   detail.hidden = false;
   backdrop.hidden = false;
@@ -1379,7 +1421,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
     </section>
 
     <section class="detail-section">
-      <h3>${model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? "기능별 비교" : "실행 방식별 비교"}</h3>
+      <h3>${isVisionModel(model) ? "기능별 비교" : "실행 방식별 비교"}</h3>
       <div class="runtime-grid">
         ${renderNonGenerativeScenarioRows(model, hardware)}
       </div>
@@ -1399,7 +1441,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
       <h3>모델 정보</h3>
       <div class="model-info-grid">
         ${renderInfoItem("파라미터", formatParams(model.params || 0))}
-        ${renderInfoItem(model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? "처리 유형" : "최대 입력", model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
+        ${renderInfoItem(isVisionModel(model) ? "처리 유형" : "최대 입력", isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
         ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
         ${renderInfoItem("라이선스", model.license)}
       </div>
@@ -1412,7 +1454,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
 }
 
 function renderPrecisionRows(model, hardware, recommendedPrecisionId) {
-  const precisionOptions = model.type === "ocr-pipeline" || model.type === "ocr-vlm" ? OCR_PRECISIONS : ENCODER_PRECISIONS;
+  const precisionOptions = isVisionModel(model) ? OCR_PRECISIONS : ENCODER_PRECISIONS;
   const supported = precisionOptions.filter((precision) => precision.id !== "auto" && model.precisions.includes(precision.id));
   return supported.map((precision) => {
     const estimate = model.type === "embedding"
@@ -1501,17 +1543,39 @@ function buildFormulaText(type) {
       "pair/s = batch_size / t_batch",
     ].join("\n");
   }
+  if (type === "ocr-pipeline") {
+    return [
+      "Lightweight OCR pipeline estimate",
+      "MP = image_width * image_height / 1e6",
+      "M_peak ~= M_resident_modules + batch_pages * MP * alpha_model + M_image + M_runtime",
+      "M_image = batch_pages * width * height * channels * precision_bytes * buffer_factor / 1e9",
+      "Only the largest active stage is counted at peak because detection, recognition, and layout modules usually run sequentially.",
+      "pages/s ~= reference_pps * sqrt(BW / BW_ref) * (MP_ref / MP)^0.85 * precision_factor * batch_factor * feature_factor^-1",
+    ].join("\n");
+  }
+  if (type === "document-vlm" || type === "ocr-vlm") {
+    return [
+      "Document-specialized VLM estimate",
+      "T_image ~= min(T_image_max, ceil(width / patch) * ceil(height / patch) / merge^2)",
+      "T_total = T_image + T_prompt + T_output",
+      "M_required = M_weights + M_vision_activation + M_image + M_decoder_KV + M_runtime",
+      "M_decoder_KV = 2 * decoder_layers * batch_pages * T_total * kv_heads * head_dim * precision_bytes / 1e9",
+      "seconds/page ~= image_preprocess + vision_encode + prefill(T_image + T_prompt) + decode(T_output) + layout_postprocess",
+      "pages/s is calibrated from model-specific reference_pps and then scaled by bandwidth, megapixels, batch, precision, and selected document features.",
+    ].join("\n");
+  }
   return [
-    "OCR / document estimate",
-    "MP = image_width * image_height / 1e6",
-    "Pipeline OCR: M_peak ~= resident_modules + batch * MP * activation_GB_per_MP + image_buffer + runtime",
-    "OCR-VLM: M_peak also adds decoder KV cache",
-    "KV ~= 2 * decoder_layers * batch * total_tokens * kv_heads * head_dim * precision_bytes",
-    "pages/s ~= reference_pps * sqrt(BW / BW_ref) * (MP_ref / MP)^0.85 * precision_factor * batch_factor",
+    "General vision-language model estimate",
+    "T_image follows the model image strategy: dynamic-resolution, tiling, or compressed visual tokens.",
+    "T_total = T_image + T_prompt + previous_conversation_tokens + T_output",
+    "M_required = M_text_weights + M_vision_projector + M_vision_activation + M_image + M_decoder_KV + M_runtime",
+    "M_decoder_KV = 2 * decoder_layers * batch_pages * T_total * kv_heads * head_dim * precision_bytes / 1e9",
+    "For OCR-like document use, pages/s is a practical estimate; open-ended VQA latency can vary with generated token length.",
   ].join("\n");
 }
 
 function buildNonGenerativeCommand(model, estimate) {
+  const lowerName = model.name.toLowerCase();
   if (model.type === "embedding") {
     const torchDtype = ["fp16", "bf16", "fp32"].includes(estimate.precision.id)
       ? estimate.precision.id.replace("fp", "float").replace("bf", "bfloat")
@@ -1533,12 +1597,61 @@ scores = reranker.compute_score([["query", "passage"]], normalize=True)
 
 # TEI 사용 시 /rerank endpoint로 후보 문서를 전달하세요.`;
   }
-  if (model.name.toLowerCase().includes("paddle") || model.name.toLowerCase().includes("pp-")) {
+  if (lowerName.includes("paddleocr-vl")) {
+    const paddleVersion = lowerName.includes("1.6") ? "v1.6" : "v1";
+    return `from paddleocr import PaddleOCRVL
+
+pipeline = PaddleOCRVL(pipeline_version="${paddleVersion}")
+output = pipeline.predict("./document.png")
+for result in output:
+    result.save_to_markdown(save_path="./output")
+    result.save_to_json(save_path="./output")`;
+  }
+  if (lowerName.includes("mineru")) {
+    return `vllm serve opendatalab/MinerU2.5-Pro-2604-1.2B
+
+# PDF to Markdown 파이프라인에서 페이지 이미지를 모델 입력으로 전달하세요.`;
+  }
+  if (lowerName.includes("deepseek-ocr")) {
+    return `vllm serve deepseek-ai/DeepSeek-OCR-2
+
+# Transformers 또는 SGLang 런타임도 모델 카드 예시를 기준으로 사용할 수 있습니다.`;
+  }
+  if (lowerName.includes("qwen3-vl")) {
+    return `vllm serve ${model.name}
+
+# 문서 이미지와 "Extract this page as Markdown." 같은 프롬프트를 함께 전달하세요.`;
+  }
+  if (lowerName.includes("internvl") || lowerName.includes("kimi-vl") || lowerName.includes("minicpm-v")) {
+    return `vllm serve ${model.name}
+
+# 이미지 질의응답, 문서 요약, OCR-like extraction 용도로 프롬프트를 구성하세요.`;
+  }
+  if (lowerName.includes("olmocr")) {
+    return `olmocr ./localworkspace --markdown --pdfs ./document.pdf --model allenai/olmOCR-2-7B-1025
+
+# PDF를 Markdown으로 변환하는 배치 파이프라인 기준입니다.`;
+  }
+  if (lowerName.includes("dots.ocr") || lowerName.includes("dots.mocr")) {
+    return `from transformers import pipeline
+
+pipe = pipeline("image-text-to-text", model="${model.name}", trust_remote_code=True)
+result = pipe(text=[{
+    "role": "user",
+    "content": [
+        {"type": "image", "image": "./page.png"},
+        {"type": "text", "text": "Parse this document into Markdown with layout."},
+    ],
+}])
+
+# 배포 저장소별 CLI 이름이 다를 수 있으므로 모델 카드의 최신 예시를 확인하세요.`;
+  }
+  if (lowerName.includes("paddle") || lowerName.includes("pp-")) {
     return `paddleocr ocr -i ./document.pdf --device gpu
 
 # 문서 구조 분석은 PP-StructureV3 파이프라인으로 실행하세요.`;
   }
-  if (model.name.toLowerCase().includes("surya")) {
+  if (lowerName.includes("surya")) {
     return `surya_ocr ./document.pdf --images --langs ko,en
 
 # GPU Docker 실행 시 Surya 공식 README의 Docker 옵션을 확인하세요.`;
@@ -1687,6 +1800,25 @@ function tagLabel(tag) {
     table: "표",
     math: "수식",
     handwriting: "필기",
+    documentVlm: "문서 VLM",
+    generalVlm: "범용 VLM",
+    "document-vlm": "문서 VLM",
+    "general-vlm": "범용 VLM",
+    vlm: "VLM",
+    pdf: "PDF",
+    markdown: "Markdown",
+    chart: "차트",
+    seal: "인장",
+    spotting: "영역 인식",
+    coordinate: "좌표",
+    screen: "화면",
+    mobile: "온디바이스",
+    agent: "에이전트",
+    legacy: "비교군",
+    classification: "분류",
+    clustering: "클러스터링",
+    matching: "문장 매칭",
+    codeRetrieval: "코드 검색",
   };
   return labels[tag] || tag;
 }
@@ -1757,7 +1889,8 @@ function ocrFeatureLabel(value) {
 }
 
 function ocrTypeLabel(value) {
-  if (value === "ocr-vlm") return "생성형 OCR/VLM";
+  if (value === "document-vlm" || value === "ocr-vlm") return "문서 특화 VLM";
+  if (value === "general-vlm") return "범용 VLM";
   return "OCR 파이프라인";
 }
 
@@ -1853,7 +1986,8 @@ function syncUrlState() {
 
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode");
+  const modeParam = params.get("mode");
+  const mode = WORKLOAD_ALIASES[modeParam] || modeParam;
   if (WORKLOAD_META[mode]) activeWorkload = mode;
   refreshWorkloadUi();
   refreshFilterOptions();

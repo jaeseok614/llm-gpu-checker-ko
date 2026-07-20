@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>내 GPU에서 생성형 LLM, 임베딩, 리랭커, OCR 모델을 현실적으로 실행할 수 있는지 확인하세요.</strong><br />
+  <strong>내 GPU에서 생성형 LLM, 임베딩, 리랭커, OCR/VLM 모델을 현실적으로 실행할 수 있는지 확인하세요.</strong><br />
   Korean web-based AI model compatibility, VRAM, RAG, and OCR workload calculator.
 </p>
 
@@ -31,7 +31,7 @@
 ```mermaid
 flowchart LR
   A[GPU 프리셋 선택] --> B[VRAM·RAM·GPU 수 확인]
-  B --> C[워크로드 탭 선택<br/>LLM·임베딩·리랭커·OCR]
+  B --> C[워크로드 탭 선택<br/>LLM·임베딩·리랭커·OCR/VLM]
   C --> D[모델별 조건 조정]
   D --> E[모델 클릭]
   E --> F[메모리·속도·계산 근거 상세 분석]
@@ -47,22 +47,26 @@ flowchart LR
 | Mac 32GB에서 로컬 LLM은 어느 정도까지 가능할까? | Apple Silicon 프리셋 선택 후 VRAM/RAM 직접 조정 |
 | A100 80GB 2장으로 동시 요청을 몇 개 처리할 수 있을까? | `A100 80GB`, `GPU 수 2`, `동시 요청` 변경 |
 | bge-m3 임베딩을 배치 32개로 돌리면 얼마나 빠를까? | `임베딩` 탭, `BAAI/bge-m3`, `평균 입력 길이`, `배치 크기` 변경 |
-| OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `OCR·문서` 탭, `A4 300 DPI`, `PP-StructureV3` 또는 `Surya OCR 2` 선택 |
+| OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `경량 OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
+| PDF를 Markdown으로 복원하는 문서 VLM은 어떤 GPU가 필요할까? | `문서 VLM` 탭, `PaddleOCR-VL`, `MinerU`, `olmOCR` 검색 |
+| Qwen3-VL 같은 범용 VLM으로 문서 질의응답을 돌릴 수 있을까? | `범용 VLM` 탭, `Qwen3-VL`, `MiniCPM-V`, `InternVL` 검색 |
 
 ## 지원 규모
 
 | 데이터 | 개수 |
 | --- | ---: |
 | GPU 프리셋 | 86 |
-| 전체 AI 모델 | 128 |
+| 전체 AI 모델 | 175 |
 | LLM 모델 | 114 |
-| 임베딩 모델 | 4 |
-| 리랭커 모델 | 4 |
-| OCR·문서 분석 모델 | 6 |
+| 임베딩 모델 | 27 |
+| 리랭커 모델 | 14 |
+| 경량 OCR 모델 | 4 |
+| 문서 VLM 모델 | 9 |
+| 범용 VLM 모델 | 7 |
 | 양자화 옵션 | 8 |
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
-| 모델 공급사 | 28 |
-| 비전/멀티모달 모델 | 19 |
+| 모델 공급사 | 37 |
+| 비전/멀티모달 모델 | 34 |
 
 ## 주요 기능
 
@@ -70,16 +74,16 @@ flowchart LR
 | --- | --- |
 | GPU 프리셋/검색 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
 | 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
-| 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, OCR·문서 분석을 분리 계산 |
+| 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, 경량 OCR, 문서 VLM, 범용 VLM을 분리 계산 |
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
 | RAG 조건 | 임베딩 입력 길이, 배치 크기, TEI 최대 배치 토큰, 리랭킹 후보 수를 프리셋 또는 직접 입력으로 조정 |
-| OCR 조건 | 문서 해상도, 이미지 너비/높이, 배치 페이지, 처리 기능 조정 |
+| OCR/VLM 조건 | 문서 해상도, 이미지 너비/높이, 배치 페이지, 처리 기능 조정 |
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 빠른 목록 | 모델명, 등급, 권장 양자화, 필요 VRAM, 예상 속도, 컨텍스트를 한 줄로 비교 |
 | 상세 분석 | 모델 클릭 시 정밀도별 비교, VRAM 구성, 실행 방식별 속도, 계산 근거, 예시 명령어 표시 |
-| 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 분석 |
+| 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
 | 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
 | 정렬 | 추천순, 예상 속도순, 품질 우선, 필요 VRAM 낮은 순, 파라미터 큰 순, 최신 모델순 |
@@ -98,7 +102,9 @@ flowchart LR
     W1[생성형 LLM<br/>컨텍스트·KV cache·양자화]
     W2[임베딩<br/>입력 토큰·배치·정밀도]
     W3[리랭커<br/>질의+문서·후보 수]
-    W4[OCR·문서<br/>해상도·페이지 배치·처리 기능]
+    W4[경량 OCR<br/>해상도·좌표·페이지 배치]
+    W5[문서 VLM<br/>PDF→Markdown·표·수식]
+    W6[범용 VLM<br/>문서 QA·화면 이해]
   end
 
   subgraph Estimate[타입별 추정]
@@ -127,10 +133,14 @@ flowchart LR
   B --> W2
   B --> W3
   B --> W4
+  B --> W5
+  B --> W6
   W1 --> H
   W2 --> H
   W3 --> H
   W4 --> H
+  W5 --> H
+  W6 --> H
   H --> I
   H --> J
   H --> K
@@ -352,7 +362,7 @@ $$
 
 If all checks fail, `Q2_K` is used as the last possible comparison baseline.
 
-### Encoder, Reranker, And OCR Methodology
+### Encoder, Reranker, And OCR/VLM Methodology
 
 Embedding and reranker models are encoder-style workloads. They do not keep a decoder KV cache across generated tokens, so the calculator uses an activation/attention workspace model instead of the LLM decoder model.
 
@@ -446,7 +456,17 @@ $$
 pairs/s=\frac{B_r}{t_{batch}}
 $$
 
-#### OCR Pipeline
+#### OCR And VLM Categories
+
+OCR workloads are separated into three model families because their peak memory drivers are different.
+
+| Family | Calculator tab | Main memory driver |
+| --- | --- | --- |
+| Lightweight OCR pipeline | `경량 OCR` | Resident detection/recognition modules and image feature maps |
+| Document-specialized VLM | `문서 VLM` | Vision encoding, image tokens, decoder KV cache, structured output length |
+| General VLM | `범용 VLM` | Image/video tokens, conversation context, decoder KV cache, generated answer length |
+
+#### Lightweight OCR Pipeline
 
 OCR models are image workloads, so the first-order driver is image size:
 
@@ -467,7 +487,16 @@ $$
 M_{image}=\frac{B_o\cdot W\cdot H\cdot channels\cdot s\cdot bufferFactor}{10^9}
 $$
 
-For OCR-VLM models such as GOT-OCR2.0 or Surya-style document models, decoder KV cache is added:
+For sequential detection, recognition, and layout modules, the peak activation term counts the largest active stage rather than summing every stage:
+
+$$
+M_{activation,peak}\approx
+\max(M_{det}, M_{rec}, M_{layout}, M_{table}, M_{formula})
+$$
+
+#### Document VLM And General VLM
+
+For document-specialized VLMs and general VLMs used as OCR engines, decoder KV cache is added:
 
 $$
 M_{KV}= \frac{
@@ -481,7 +510,7 @@ $$
 T_{total}=T_{image}+T_{prompt}+T_{output}
 $$
 
-Image token count is approximated as:
+Image token count is approximated as a model profile, not a single universal rule:
 
 $$
 T_{image}\approx
@@ -521,12 +550,14 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 | 리랭커 후보 수 | 검색된 후보 문서 몇 개를 다시 점수화할지입니다. 후보가 많을수록 질의당 지연시간이 늘어납니다. |
 | OCR 해상도 | A4 300DPI처럼 이미지가 커질수록 중간 feature map과 이미지 버퍼가 커져 VRAM 사용량이 증가합니다. |
 | OCR 처리 기능 | 텍스트만 읽는 것보다 레이아웃, 표, 수식, 전체 문서 파싱을 켜면 더 많은 모델/작업공간이 필요합니다. |
+| 문서 VLM | PDF를 Markdown/JSON으로 복원하는 모델입니다. 이미지 토큰, 출력 토큰, decoder KV cache까지 함께 계산합니다. |
+| 범용 VLM | Qwen3-VL, InternVL처럼 이미지 이해와 질의응답을 같이 하는 모델입니다. OCR 전용 모델보다 목적이 넓어 출력 길이에 따른 지연시간 차이가 큽니다. |
 
 쉽게 보면 계산기는 아래 순서로 판단합니다.
 
 ```text
-1. 선택한 컨텍스트 길이가 모델 한도를 넘는지 확인
-2. 모델 가중치 + KV cache + 런타임 오버헤드를 더해 필요 VRAM 계산
+1. 선택한 텍스트/이미지 입력 길이가 모델 한도를 넘는지 확인
+2. 모델 가중치 + KV cache/activation/image buffer + 런타임 오버헤드를 더해 필요 VRAM 계산
 3. 내 GPU의 실제 사용 가능 VRAM과 비교
 4. 부족하면 시스템 RAM 오프로딩 가능성 확인
 5. 메모리 여유와 예상 속도를 같이 보고 등급 결정
@@ -541,7 +572,7 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 | 동시 요청 수 | 동시에 여러 명이 쓰면 요청당 속도는 줄고 KV cache는 커집니다. |
 | 실행 방식 | Ollama/llama.cpp는 가볍고 단순한 편이고, vLLM은 서버형 동시 처리에 유리하며, Transformers는 범용성이 높지만 오버헤드가 다를 수 있습니다. |
 | 임베딩 정밀도 | FP16/BF16은 GPU 기본 추천이고, INT8/INT4는 메모리를 줄이지만 모델과 런타임 지원 여부를 확인해야 합니다. |
-| OCR DPI/배치 | DPI와 배치를 낮추면 속도와 안정성이 좋아지고, 문서 품질이 낮으면 정확도는 떨어질 수 있습니다. |
+| OCR/VLM DPI·배치 | DPI와 배치를 낮추면 속도와 안정성이 좋아지고, 문서 품질이 낮으면 정확도는 떨어질 수 있습니다. 문서 VLM은 출력 토큰도 길어질수록 느려집니다. |
 
 | 등급 | 의미 |
 | --- | --- |
@@ -562,7 +593,8 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 | RTX 3060 12GB | Llama 3.1 8B Instruct | Q4, 4K, 동시 1명 | 가능 | 제보 대기 |
 | A100 80GB x2 | Llama 3.3 70B Instruct | Q4, 16K, 동시 4명 | 잘 돌아감 | 제보 대기 |
 | RTX 4090 24GB | BAAI/bge-m3 | FP16, 384 tokens, batch 32 | 쾌적 | 제보 대기 |
-| RTX 4090 24GB | Surya OCR 2 | FP16, A4 200DPI, batch 1 | 가능 | 제보 대기 |
+| A100 80GB | MinerU2.5-Pro-2604 1.2B | BF16, A4 300DPI, batch 1 | 쾌적 | 제보 대기 |
+| RTX 4090 24GB | PaddleOCR-VL-1.6 | BF16, A4 200DPI, batch 1 | 잘 돌아감 | 제보 대기 |
 
 ## 데이터 구조
 
@@ -575,7 +607,7 @@ flowchart TB
     M[models.js<br/>LLM 모델 목록]
     E[embedding-models.js<br/>임베딩 모델]
     R[reranker-models.js<br/>리랭커 모델]
-    O[ocr-models.js<br/>OCR·문서 모델]
+    O[ocr-models.js<br/>경량 OCR·문서 VLM·범용 VLM]
   end
 
   subgraph App[브라우저 앱]
@@ -631,7 +663,10 @@ http://127.0.0.1:8787
 ```text
 general, korean, coding, reasoning, long, edge, vision,
 embedding, reranker, retrieval, sparse, dense, multilingual,
-matryoshka, ocr, document, layout, table, math, handwriting
+matryoshka, ocr, document, document-vlm, general-vlm, vlm,
+layout, table, math, handwriting, pdf, markdown, chart, seal,
+spotting, coordinate, screen, mobile, agent, legacy,
+classification, clustering, matching, codeRetrieval
 ```
 
 임베딩 모델은 `data/embedding-models.js`에 추가합니다.
@@ -656,7 +691,15 @@ matryoshka, ocr, document, layout, table, math, handwriting
 }
 ```
 
-OCR 모델은 `data/ocr-models.js`에 `ocr-pipeline` 또는 `ocr-vlm` 타입으로 추가합니다. OCR은 모델별 activation 계수와 reference benchmark가 중요하므로, 실제 측정값이 있으면 `reference`에 함께 넣는 것이 좋습니다.
+OCR/VLM 모델은 `data/ocr-models.js`에 아래 타입으로 추가합니다.
+
+| 타입 | 표시 탭 | 용도 |
+| --- | --- | --- |
+| `ocr-pipeline` | 경량 OCR | PP-OCR처럼 검출/인식/좌표 추출 중심 |
+| `document-vlm` | 문서 VLM | PDF→Markdown, 표·수식·레이아웃 복원 |
+| `general-vlm` | 범용 VLM | OCR-like 추출, 문서 질의응답, 화면 이해 |
+
+OCR/VLM은 모델별 activation 계수와 reference benchmark가 중요하므로, 실제 측정값이 있으면 `reference`에 함께 넣는 것이 좋습니다.
 
 ## 검증
 
@@ -677,13 +720,26 @@ npm run check
 ## 참고한 공식 자료
 
 - [BAAI/bge-m3 model card](https://huggingface.co/BAAI/bge-m3)
+- [Qwen3 Embedding model cards](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B)
+- [Qwen3 Reranker model cards](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B)
 - [BAAI/bge-reranker-v2-m3 model card](https://huggingface.co/BAAI/bge-reranker-v2-m3)
 - [Alibaba-NLP/gte-multilingual-base model card](https://huggingface.co/Alibaba-NLP/gte-multilingual-base)
 - [Alibaba-NLP/gte-multilingual-reranker-base model card](https://huggingface.co/Alibaba-NLP/gte-multilingual-reranker-base)
 - [jina-embeddings-v5-text-small model card](https://huggingface.co/jinaai/jina-embeddings-v5-text-small)
 - [Hugging Face Text Embeddings Inference docs](https://huggingface.co/docs/text-embeddings-inference/main/en/index)
 - [Sentence Transformers inference efficiency docs](https://www.sbert.net/docs/sentence_transformer/usage/efficiency.html)
+- [PaddleOCR home and PP-OCRv6 release notes](https://www.paddleocr.ai/main/en/index.html)
 - [PaddleOCR PP-OCRv6 documentation](https://www.paddleocr.ai/latest/en/version3.x/algorithm/PP-OCRv6/PP-OCRv6.html)
+- [PaddleOCR-VL-1.6 model card](https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6)
+- [MinerU2.5-Pro-2604-1.2B model card](https://huggingface.co/opendatalab/MinerU2.5-Pro-2604-1.2B)
+- [DeepSeek-OCR-2 model card](https://huggingface.co/deepseek-ai/DeepSeek-OCR-2)
+- [dots.ocr model card](https://huggingface.co/rednote-hilab/dots.ocr)
+- [dots.mocr model card](https://huggingface.co/rednote-hilab/dots.mocr)
+- [olmOCR-2-7B-1025 model card](https://huggingface.co/allenai/olmOCR-2-7B-1025)
+- [Qwen3-VL-2B-Instruct model card](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct)
+- [MiniCPM-V-4.6 model card](https://huggingface.co/openbmb/MiniCPM-V-4.6)
+- [InternVL3.5-4B model card](https://huggingface.co/OpenGVLab/InternVL3_5-4B)
+- [Kimi-VL-A3B-Instruct model card](https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct)
 - [PaddleOCR PP-StructureV3 benchmark](https://paddlepaddle.github.io/PaddleOCR/v3.0.1/en/version3.x/algorithm/PP-StructureV3/PP-StructureV3.html)
 - [GOT-OCR2 Transformers docs](https://huggingface.co/docs/transformers/model_doc/got_ocr2)
 - [Surya OCR README](https://github.com/datalab-to/surya)

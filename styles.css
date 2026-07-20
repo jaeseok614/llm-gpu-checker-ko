@@ -198,6 +198,7 @@ h3 {
 }
 
 .workload-tab {
+  min-width: 0;
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -264,6 +265,7 @@ h3 {
 .field {
   display: grid;
   gap: 7px;
+  min-width: 0;
 }
 
 .field-wide {
@@ -276,6 +278,12 @@ h3 {
   gap: 7px;
 }
 
+@media (min-width: 761px) {
+  .advanced-panel .field:has(.field-control-pair) {
+    grid-column: span 2;
+  }
+}
+
 .field span {
   color: var(--muted);
   font-size: 12px;
@@ -285,6 +293,7 @@ h3 {
 input,
 select {
   width: 100%;
+  min-width: 0;
   min-height: 40px;
   border: 1px solid #cbd5df;
   border-radius: 8px;
@@ -878,8 +887,10 @@ button:focus-visible {
 
   .app-shell,
   .app-footer {
-    width: calc(100% - 24px);
+    width: 100%;
     margin-top: 12px;
+    padding-right: 12px;
+    padding-left: 12px;
   }
 
   h1 {
@@ -946,6 +957,17 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .workload-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 14px;
+  }
+
+  .workload-tab {
+    width: 100%;
+    padding: 0 8px;
+  }
+
   .summary-filterbar {
     display: grid;
     grid-template-columns: 1fr;
@@ -971,12 +993,13 @@ button:focus-visible {
   }
 
   .model-row .model-cell:not(.model-name-cell) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: start;
+    gap: 5px;
     grid-column: 1 / -1;
     min-height: 26px;
+    overflow-wrap: anywhere;
   }
 
   .model-row .model-cell:not(.model-name-cell)::before {

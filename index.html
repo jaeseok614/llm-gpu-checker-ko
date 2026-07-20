@@ -57,7 +57,9 @@
           <button type="button" class="workload-tab is-active" data-workload-tab="generative" aria-selected="true">생성형 LLM</button>
           <button type="button" class="workload-tab" data-workload-tab="embedding" aria-selected="false">임베딩</button>
           <button type="button" class="workload-tab" data-workload-tab="reranker" aria-selected="false">리랭커</button>
-          <button type="button" class="workload-tab" data-workload-tab="ocr" aria-selected="false">OCR·문서</button>
+          <button type="button" class="workload-tab" data-workload-tab="ocrPipeline" aria-selected="false">경량 OCR</button>
+          <button type="button" class="workload-tab" data-workload-tab="documentVlm" aria-selected="false">문서 VLM</button>
+          <button type="button" class="workload-tab" data-workload-tab="generalVlm" aria-selected="false">범용 VLM</button>
         </div>
 
         <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative">
@@ -268,7 +270,7 @@
           </label>
         </div>
 
-        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="ocr" hidden>
+        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="vision" hidden>
           <label class="field">
             <span>문서 크기</span>
             <select id="ocrResolutionPreset">
