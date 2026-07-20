@@ -46,7 +46,8 @@ flowchart LR
 | RTX 4090 24GB로 32B Q4 모델을 돌릴 수 있을까? | `GeForce RTX 4090 24GB`, `Q4_K_M`, `32B` 검색 |
 | Mac 32GB에서 로컬 LLM은 어느 정도까지 가능할까? | Apple Silicon 프리셋 선택 후 VRAM/RAM 직접 조정 |
 | A100 80GB 2장으로 동시 요청을 몇 개 처리할 수 있을까? | `A100 80GB`, `GPU 수 2`, `동시 요청` 변경 |
-| bge-m3 임베딩을 배치 32개로 돌리면 얼마나 빠를까? | `임베딩` 탭, `BAAI/bge-m3`, `평균 입력 길이`, `배치 크기` 변경 |
+| EmbeddingGemma, KURE, Granite R2, bge-m3 임베딩을 배치로 돌리면 얼마나 빠를까? | `임베딩` 탭, 모델명 검색 후 `평균 입력 길이`, `배치 크기` 변경 |
+| 한국어 RAG에서 bge-reranker, Qwen3 Reranker, mxbai-rerank 중 무엇이 맞을까? | `리랭커` 탭, `후보 수`, `문서 길이`, `배치 크기` 변경 |
 | OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `경량 OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
 | PDF를 Markdown으로 복원하는 문서 VLM은 어떤 GPU가 필요할까? | `문서 VLM` 탭, `PaddleOCR-VL`, `MinerU`, `olmOCR` 검색 |
 | DeepSeek-VL2나 Qwen2.5-VL 같은 범용 VLM으로 문서 질의응답을 돌릴 수 있을까? | `범용 VLM` 탭, `DeepSeek-VL2`, `Qwen2.5-VL`, `Llama Vision` 검색 |
@@ -56,17 +57,17 @@ flowchart LR
 | 데이터 | 개수 |
 | --- | ---: |
 | GPU 프리셋 | 86 |
-| 전체 AI 모델 | 200 |
+| 전체 AI 모델 | 253 |
 | LLM 모델 | 114 |
-| 임베딩 모델 | 27 |
-| 리랭커 모델 | 14 |
+| 임베딩 모델 | 60 |
+| 리랭커 모델 | 34 |
 | 경량 OCR 모델 | 4 |
 | 문서 VLM 모델 | 9 |
 | 범용 VLM 모델 | 32 |
 | 양자화 옵션 | 8 |
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
-| 모델 공급사 | 40 |
-| 비전/멀티모달 모델 | 64 |
+| 모델 공급사 | 51 |
+| 비전/멀티모달 모델 | 65 |
 
 ## 주요 기능
 
@@ -723,9 +724,26 @@ npm run check
 - [Qwen3 Embedding model cards](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B)
 - [Qwen3 Reranker model cards](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B)
 - [BAAI/bge-reranker-v2-m3 model card](https://huggingface.co/BAAI/bge-reranker-v2-m3)
+- [BAAI/bge-reranker-v2.5-gemma2-lightweight model card](https://huggingface.co/BAAI/bge-reranker-v2.5-gemma2-lightweight)
+- [BAAI/bge-multilingual-gemma2 model card](https://huggingface.co/BAAI/bge-multilingual-gemma2)
+- [BAAI/bge-code-v1 model card](https://huggingface.co/BAAI/bge-code-v1)
+- [Google EmbeddingGemma model card](https://huggingface.co/google/embeddinggemma-300m)
+- [Jina Embeddings v4 model card](https://huggingface.co/jinaai/jina-embeddings-v4)
 - [Alibaba-NLP/gte-multilingual-base model card](https://huggingface.co/Alibaba-NLP/gte-multilingual-base)
 - [Alibaba-NLP/gte-multilingual-reranker-base model card](https://huggingface.co/Alibaba-NLP/gte-multilingual-reranker-base)
+- [Alibaba-NLP/gte-Qwen2-1.5B-instruct model card](https://huggingface.co/Alibaba-NLP/gte-Qwen2-1.5B-instruct)
+- [Alibaba-NLP/gte-Qwen2-7B-instruct model card](https://huggingface.co/Alibaba-NLP/gte-Qwen2-7B-instruct)
+- [Alibaba-NLP/gte-reranker-modernbert-base model card](https://huggingface.co/Alibaba-NLP/gte-reranker-modernbert-base)
 - [jina-embeddings-v5-text-small model card](https://huggingface.co/jinaai/jina-embeddings-v5-text-small)
+- [intfloat/e5-mistral-7b-instruct model card](https://huggingface.co/intfloat/e5-mistral-7b-instruct)
+- [Salesforce/SFR-Embedding-2_R model card](https://huggingface.co/Salesforce/SFR-Embedding-2_R)
+- [IBM Granite Embedding models](https://www.ibm.com/granite/docs/models/embedding)
+- [IBM Granite reranker R2 model card](https://huggingface.co/ibm-granite/granite-embedding-reranker-english-r2)
+- [nlpai-lab/KURE-v1 model card](https://huggingface.co/nlpai-lab/KURE-v1)
+- [dragonkue/BGE-m3-ko model card](https://huggingface.co/dragonkue/BGE-m3-ko)
+- [dragonkue/bge-reranker-v2-m3-ko model card](https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko)
+- [mixedbread rerank v2 release note](https://www.mixedbread.com/blog/mxbai-rerank-v2)
+- [maidalun1020/bce-reranker-base_v1 model card](https://huggingface.co/maidalun1020/bce-reranker-base_v1)
 - [Hugging Face Text Embeddings Inference docs](https://huggingface.co/docs/text-embeddings-inference/main/en/index)
 - [Sentence Transformers inference efficiency docs](https://www.sbert.net/docs/sentence_transformer/usage/efficiency.html)
 - [PaddleOCR home and PP-OCRv6 release notes](https://www.paddleocr.ai/main/en/index.html)
