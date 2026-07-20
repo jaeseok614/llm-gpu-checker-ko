@@ -127,19 +127,239 @@ flowchart LR
 
 ## 계산 기준
 
-필요 VRAM은 아래 요소를 합산해 추정합니다.
+### Methodology, Formula-Oriented
 
-```text
-필요 VRAM = 모델 가중치 + KV cache + 런타임 오버헤드
-```
+This calculator uses a deterministic heuristic model. It estimates whether a local LLM can fit into the selected hardware budget under a given quantization, context length, concurrency, output length, KV cache precision, and runtime backend.
+
+#### Notation
+
+| Symbol | Meaning |
+| --- | --- |
+| `P` | Total model parameters in billions |
+| `A` | Active parameters per token in billions, especially relevant for MoE models |
+| `b_q` | Bytes per parameter for quantization `q` |
+| `C` | Selected context length in tokens |
+| `C_max` | Model maximum context length in tokens |
+| `N` | Concurrent requests |
+| `O` | Average generated output tokens per request |
+| `k` | KV cache precision factor |
+| `G` | Number of GPUs |
+| `V` | VRAM per GPU in GB |
+| `R` | System RAM in GB |
+| `B` | Memory bandwidth in GB/s |
+
+#### Memory Model
+
+The model weight footprint is approximated as:
+
+$$
+M_{weights} = P \cdot b_q \cdot 1.08
+$$
+
+The `1.08` multiplier covers metadata, tensor layout overhead, and practical loader overhead. The calculator uses decimal GB-style estimation, where 1B parameters at 1 byte per parameter is treated as roughly 1 GB.
+
+The KV cache grows with active parameters, context length, concurrency, and KV precision:
+
+$$
+M_{KV} = A \cdot 0.09 \cdot \frac{C}{4096} \cdot N \cdot k
+$$
+
+KV precision factors:
+
+| KV precision | `k` |
+| --- | ---: |
+| FP16/BF16 | `1.00` |
+| FP8 | `0.55` |
+| Q8 | `0.60` |
+| Q4 | `0.35` |
+
+Runtime overhead is modeled per backend:
+
+$$
+M_{runtime} = base_r + \min(cap_r,\alpha_r \cdot M_{weights}) + \max(0,N-1)\cdot \beta_r
+$$
+
+| Runtime | `base_r` | `cap_r` | `alpha_r` | `beta_r` |
+| --- | ---: | ---: | ---: | ---: |
+| llama.cpp / Ollama | `1.2` | `3.0` | `0.06` | `0.08` |
+| vLLM | `2.6` | `5.5` | `0.10` | `0.12` |
+| Transformers | `2.2` | `4.5` | `0.09` | `0.18` |
+
+Total estimated VRAM:
+
+$$
+M_{required} = M_{weights} + M_{KV} + M_{runtime}
+$$
+
+Effective GPU memory:
+
+$$
+M_{effective} =
+\begin{cases}
+V \cdot G, & G = 1 \\
+V \cdot G \cdot 0.92, & G > 1
+\end{cases}
+$$
+
+The multi-GPU `0.92` factor approximates memory loss from sharding, communication buffers, and uneven placement.
+
+#### Fit Grade
+
+First, the selected context must fit the model limit:
+
+$$
+C \le C_{max}
+$$
+
+Then the memory pressure ratio is:
+
+$$
+\rho = \frac{M_{required}}{M_{effective}}
+$$
+
+Offload room includes partial use of system RAM:
+
+$$
+M_{offload} = M_{effective} + 0.45R
+$$
+
+| Grade | Condition |
+| --- | --- |
+| `S` 쾌적 | `rho <= 0.70` |
+| `A` 잘 돌아감 | `0.70 < rho <= 0.85` |
+| `B` 가능 | `0.85 < rho <= 1.00` |
+| `C` 빡빡함 | `1.00 < rho <= 1.12` |
+| `D` 오프로딩 | `M_required <= M_offload` |
+| `F` 부적합 | Context overflow or memory exceeds offload room |
+
+#### Throughput and Response-Time Model
+
+The token throughput estimate is bandwidth-oriented:
+
+$$
+T_{raw} =
+\frac{B \cdot G \cdot m_G \cdot m_r}
+{\max(A \cdot b_q, 1)\cdot 4}
+$$
+
+Runtime and multi-GPU multipliers:
+
+| Factor | Value |
+| --- | --- |
+| `m_G` | `1.00` for single GPU, `0.76` for multi-GPU |
+| `m_r` | `1.00` llama.cpp/Ollama, `1.10` vLLM, `0.78` Transformers |
+
+Offload and tight-memory penalty:
+
+| Grade | `p_fit` |
+| --- | ---: |
+| `S/A/B` | `1.00` |
+| `C` | `0.55` |
+| `D` | `0.22` |
+| `F` | `0.00` |
+
+Backend concurrency efficiency:
+
+| Runtime | `eta_r` |
+| --- | ---: |
+| llama.cpp / Ollama | `0.55` |
+| vLLM | `0.78` |
+| Transformers | `0.38` |
+
+Total and per-request throughput:
+
+$$
+T_{total}=T_{raw}\cdot(1+(N-1)\eta_r)\cdot p_{fit}
+$$
+
+$$
+T_{request}=\frac{T_{total}}{N}
+$$
+
+Average generation latency is derived from output length:
+
+$$
+L_{generation}=\frac{O}{T_{request}}
+$$
+
+Estimated time to first token:
+
+$$
+L_{first}=
+\left(0.18+\min(5,0.025A)+0.08\frac{C}{8192}+0.025\max(0,N-1)\right)
+\cdot u_r \cdot u_{fit}
+$$
+
+| Runtime | `u_r` |
+| --- | ---: |
+| llama.cpp / Ollama | `1.00` |
+| vLLM | `0.85` |
+| Transformers | `1.20` |
+
+| Grade | `u_fit` |
+| --- | ---: |
+| `S/A/B` | `1.00` |
+| `C` | `1.60` |
+| `D` | `2.40` |
+
+#### Auto Quantization Policy
+
+When quantization is set to `자동 추천`, the calculator searches from higher quality to lower quality:
+
+$$
+q \in \{Q6\_K,\ Q5\_K\_M,\ Q4\_K\_M,\ Q3\_K\_M,\ Q2\_K\}
+$$
+
+The first quantization that satisfies the memory budget is selected:
+
+$$
+M_{required}(q) \le 0.85M_{effective}
+$$
+
+If no option satisfies that comfortable threshold, the calculator tries:
+
+$$
+M_{required}(q) \le M_{effective}
+$$
+
+and then:
+
+$$
+M_{required}(q) \le M_{offload}
+$$
+
+If all checks fail, `Q2_K` is used as the last possible comparison baseline.
+
+### 쉬운 설명
 
 | 항목 | 의미 |
 | --- | --- |
-| 모델 가중치 | 파라미터 수와 양자화별 byte/parameter 기준으로 계산 |
-| KV cache | 활성 파라미터, 컨텍스트 길이, 동시 요청 수, KV 정밀도에 따라 증가 |
-| 런타임 오버헤드 | llama.cpp/Ollama, vLLM, Transformers별 기본 여유분 |
-| 평균 출력 토큰 | 요청당 예상 응답 시간 계산에 사용 |
-| 오프로딩 | VRAM을 초과하지만 RAM 보조로 가능한 경우 별도 등급 표시 |
+| 모델 가중치 | 모델 자체를 GPU에 올리는 데 필요한 메모리입니다. 모델이 클수록 커지고, Q4/Q5/Q6 같은 양자화가 낮을수록 줄어듭니다. |
+| 컨텍스트 길이 | 한 번에 읽을 수 있는 텍스트 길이입니다. 8K보다 32K가 더 많은 메모리를 씁니다. 긴 문서/RAG를 돌릴수록 이 값이 중요합니다. |
+| 동시 요청 수 | 동시에 몇 명이 쓰는지입니다. 1명보다 4명, 8명이 훨씬 많은 KV cache를 씁니다. |
+| KV cache | 모델이 긴 대화와 문맥을 기억하기 위해 잡아두는 작업 메모리입니다. 컨텍스트 길이, 동시 요청 수, KV 정밀도에 비례해서 커집니다. |
+| 평균 출력 토큰 | 답변을 평균 몇 토큰까지 생성할지입니다. VRAM 적합도보다는 “답변이 몇 초 걸릴지” 계산에 사용됩니다. |
+| 런타임 오버헤드 | Ollama, llama.cpp, vLLM, Transformers가 모델 외에 추가로 쓰는 여유 메모리입니다. vLLM은 동시 처리에 강하지만 기본 오버헤드가 더 큽니다. |
+| 시스템 RAM 보조 | VRAM에 딱 안 들어가도 RAM 오프로딩으로 가능할 수 있습니다. 대신 속도는 크게 느려질 수 있습니다. |
+
+쉽게 보면 계산기는 아래 순서로 판단합니다.
+
+```text
+1. 선택한 컨텍스트 길이가 모델 한도를 넘는지 확인
+2. 모델 가중치 + KV cache + 런타임 오버헤드를 더해 필요 VRAM 계산
+3. 내 GPU의 실제 사용 가능 VRAM과 비교
+4. 부족하면 시스템 RAM 오프로딩 가능성 확인
+5. 메모리 여유와 예상 속도를 같이 보고 등급 결정
+```
+
+가장 많이 영향을 주는 값은 보통 아래 네 가지입니다.
+
+| 사용자가 바꾸는 값 | 결과에 미치는 영향 |
+| --- | --- |
+| 양자화 | Q6/Q5는 품질이 좋지만 VRAM을 더 쓰고, Q4/Q3/Q2는 더 가볍지만 품질 손실이 커질 수 있습니다. |
+| 컨텍스트 길이 | 길수록 긴 문서를 잘 다루지만 KV cache가 커져 VRAM을 더 씁니다. |
+| 동시 요청 수 | 동시에 여러 명이 쓰면 요청당 속도는 줄고 KV cache는 커집니다. |
+| 실행 방식 | Ollama/llama.cpp는 가볍고 단순한 편이고, vLLM은 서버형 동시 처리에 유리하며, Transformers는 범용성이 높지만 오버헤드가 다를 수 있습니다. |
 
 | 등급 | 의미 |
 | --- | --- |
@@ -181,7 +401,8 @@ flowchart TB
   M --> Logic
   UI --> Logic
   Style --> UI
-  Logic --> Cards[추천 요약 및 모델 카드]
+  Logic --> List[목록형 모델 비교]
+  Logic --> Detail[모델 상세 분석 패널]
 ```
 
 ## 로컬 실행
