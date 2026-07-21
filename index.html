@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 모델 실행 가능성 계산기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260721-ui2" />
+    <link rel="stylesheet" href="./styles.css?v=20260721-ui3" />
   </head>
   <body>
     <header class="app-header">
@@ -16,8 +16,8 @@
         </div>
       </div>
       <nav class="header-nav" aria-label="상단 메뉴">
-        <a href="#modelResults">계산기</a>
         <a href="#calculationBasis">계산 기준</a>
+        <a href="https://github.com/jaeseok614/llm-gpu-checker-ko#참고한-공식-자료" target="_blank" rel="noreferrer">데이터 출처</a>
         <a href="https://github.com/jaeseok614/llm-gpu-checker-ko" target="_blank" rel="noreferrer">GitHub</a>
       </nav>
     </header>
@@ -28,6 +28,7 @@
           <div class="hardware-copy">
             <span class="section-kicker">내 실행 환경</span>
             <strong id="hardwareHeadline">GeForce RTX 4090 24GB · RAM 64GB · GPU 1개</strong>
+            <p class="hardware-meta-line" id="hardwareMeta">가용 VRAM 22GB · RAM 64GB · GPU 1개</p>
             <p id="hardwareSubline">현재 기준: 8K · 동시 1명 · llama.cpp / Ollama</p>
           </div>
           <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">설정 변경</button>
@@ -338,6 +339,24 @@
       <section class="results-panel" aria-label="모델 검색 결과">
         <div class="summary-filterbar" id="summaryGrid"></div>
 
+        <div class="result-toolbar-head">
+          <div class="result-meta" id="resultMeta">모델 0개</div>
+          <div class="toolbar-actions">
+            <select id="sortBy" aria-label="정렬">
+              <option value="fit">추천순</option>
+              <option value="speed">예상 속도순</option>
+              <option value="quality">품질 우선</option>
+              <option value="vramAsc">필요 VRAM 낮은 순</option>
+              <option value="sizeDesc">파라미터 큰 순</option>
+              <option value="latest">최신 모델순</option>
+            </select>
+            <div class="view-toggle" aria-label="보기 방식">
+              <button type="button" id="listViewButton" class="toggle-button is-active" aria-label="목록 보기" title="목록 보기" aria-pressed="true">≡</button>
+              <button type="button" id="cardViewButton" class="toggle-button" aria-label="카드 보기" title="카드 보기" aria-pressed="false">▦</button>
+            </div>
+          </div>
+        </div>
+
         <div class="toolbar">
           <div class="search-wrap">
             <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" />
@@ -367,21 +386,8 @@
           <select id="licenseFilter" aria-label="라이선스">
             <option value="all">전체 라이선스</option>
           </select>
-          <select id="sortBy" aria-label="정렬">
-            <option value="fit">추천순</option>
-            <option value="speed">예상 속도순</option>
-            <option value="quality">품질 우선</option>
-            <option value="vramAsc">필요 VRAM 낮은 순</option>
-            <option value="sizeDesc">파라미터 큰 순</option>
-            <option value="latest">최신 모델순</option>
-          </select>
-          <div class="view-toggle" aria-label="보기 방식">
-            <button type="button" id="listViewButton" class="toggle-button is-active" aria-pressed="true">목록</button>
-            <button type="button" id="cardViewButton" class="toggle-button" aria-pressed="false">카드</button>
-          </div>
         </div>
 
-        <div class="result-meta" id="resultMeta">모델 0개</div>
         <div class="model-results" id="modelResults"></div>
       </section>
     </main>
@@ -393,13 +399,13 @@
       <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
     </footer>
 
-    <script src="./data/gpus.js?v=20260721-ui2" defer></script>
-    <script src="./data/quantizations.js?v=20260721-ui2" defer></script>
-    <script src="./data/precision-profiles.js?v=20260721-ui2" defer></script>
-    <script src="./data/models.js?v=20260721-ui2" defer></script>
-    <script src="./data/embedding-models.js?v=20260721-ui2" defer></script>
-    <script src="./data/reranker-models.js?v=20260721-ui2" defer></script>
-    <script src="./data/ocr-models.js?v=20260721-ui2" defer></script>
-    <script src="./app.js?v=20260721-ui2" defer></script>
+    <script src="./data/gpus.js?v=20260721-ui3" defer></script>
+    <script src="./data/quantizations.js?v=20260721-ui3" defer></script>
+    <script src="./data/precision-profiles.js?v=20260721-ui3" defer></script>
+    <script src="./data/models.js?v=20260721-ui3" defer></script>
+    <script src="./data/embedding-models.js?v=20260721-ui3" defer></script>
+    <script src="./data/reranker-models.js?v=20260721-ui3" defer></script>
+    <script src="./data/ocr-models.js?v=20260721-ui3" defer></script>
+    <script src="./app.js?v=20260721-ui3" defer></script>
   </body>
 </html>

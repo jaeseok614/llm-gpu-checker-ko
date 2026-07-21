@@ -24,7 +24,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg?ui=professional-20260721)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260721-wide)
 
 ## 빠른 사용법
 
@@ -78,7 +78,7 @@
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
-| 빠른 목록 | 상태, 모델명, 공급사, 권장 설정, 필요 VRAM, 예상 속도, 컨텍스트를 표 형태로 비교 |
+| 빠른 목록 | 상태, 모델명, 공급사, 라이선스, 권장 설정, 필요 VRAM, 예상 속도, 컨텍스트를 표 형태로 비교 |
 | 상세 분석 | 모델 클릭 시 정밀도별 비교, VRAM 구성, 실행 방식별 속도, 계산 근거, 예시 명령어 표시 |
 | 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |

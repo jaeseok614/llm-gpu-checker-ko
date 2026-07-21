@@ -31,52 +31,52 @@ const WORKLOAD_META = {
     statusLabel: "LLM",
     modelCountLabel: "LLM 모델",
     searchPlaceholder: "모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "권장 설정", "VRAM", "속도", "CTX", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "권장 설정", "VRAM", "속도", "CTX", ""],
   },
   embedding: {
     label: "임베딩",
     statusLabel: "임베딩",
     modelCountLabel: "임베딩 모델",
     searchPlaceholder: "임베딩 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
   },
   reranker: {
     label: "리랭커",
     statusLabel: "리랭커",
     modelCountLabel: "리랭커 모델",
     searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
   },
   ocrPipeline: {
     label: "OCR",
     statusLabel: "OCR",
     modelCountLabel: "OCR 모델",
     searchPlaceholder: "OCR 파이프라인, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
   },
   documentVlm: {
     label: "문서 VLM",
     statusLabel: "문서 VLM",
     modelCountLabel: "문서 VLM 모델",
     searchPlaceholder: "문서 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
   },
   generalVlm: {
     label: "범용 VLM",
     statusLabel: "범용 VLM",
     modelCountLabel: "범용 VLM 모델",
     searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
   },
 };
 
 const GRADE_META = {
-  S: { label: "쾌적", className: "grade-s", score: 5, color: "#13795b" },
-  A: { label: "잘 돌아감", className: "grade-a", score: 4, color: "#225ea8" },
-  B: { label: "가능", className: "grade-b", score: 3, color: "#5f4bb6" },
-  C: { label: "빡빡함", className: "grade-c", score: 2, color: "#9a6700" },
-  D: { label: "오프로딩", className: "grade-d", score: 1, color: "#9a6700" },
-  F: { label: "부적합", className: "grade-f", score: 0, color: "#ba2f2f" },
+  S: { label: "쾌적", className: "grade-s", score: 5, color: "#237655" },
+  A: { label: "잘 돌아감", className: "grade-a", score: 4, color: "#2f6687" },
+  B: { label: "가능", className: "grade-b", score: 3, color: "#5f6472" },
+  C: { label: "빡빡함", className: "grade-c", score: 2, color: "#91621c" },
+  D: { label: "오프로딩", className: "grade-d", score: 1, color: "#91621c" },
+  F: { label: "부적합", className: "grade-f", score: 0, color: "#a53a3a" },
 };
 
 const SUMMARY_FILTERS = [
@@ -1159,7 +1159,7 @@ function render(options = {}) {
   refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
   renderSummary(allEstimates);
-  renderResults(estimates);
+  renderResults(estimates, allEstimates);
   renderDetail();
   renderViewToggle();
 
@@ -1168,9 +1168,10 @@ function render(options = {}) {
 
 function renderHardware(hardware, allEstimates) {
   const basis = buildHardwareBasis(hardware);
-  const headlineParts = [hardware.preset.name, `가용 VRAM ${formatGb(hardware.availableVram)}`, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
+  const metaParts = [`가용 VRAM ${formatGb(hardware.availableVram)}`, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
 
-  $("hardwareHeadline").innerHTML = headlineParts
+  $("hardwareHeadline").textContent = hardware.preset.name;
+  $("hardwareMeta").innerHTML = metaParts
     .map((part, index) => `
       <span class="hardware-piece">
         ${index > 0 ? `<span class="dot-separator" aria-hidden="true">·</span>` : ""}
@@ -1231,9 +1232,13 @@ function renderSummary(estimates) {
   }).join("");
 }
 
-function renderResults(estimates) {
+function renderResults(estimates, allEstimates = []) {
   const meta = WORKLOAD_META[activeWorkload];
-  $("resultMeta").textContent = `${estimates.length.toLocaleString("ko-KR")}개 모델`;
+  const shownCount = estimates.length.toLocaleString("ko-KR");
+  const totalCount = allEstimates.length.toLocaleString("ko-KR");
+  $("resultMeta").textContent = estimates.length === allEstimates.length
+    ? `모델 ${shownCount}개`
+    : `전체 ${totalCount}개 중 ${shownCount}개 표시`;
 
   if (!estimates.length) {
     $("modelResults").className = "model-results";
@@ -1272,12 +1277,12 @@ function renderModelRow(estimate) {
       </span>
       <span class="model-cell provider-cell" data-label="공급사">
         <strong>${escapeHtml(estimate.model.maker)}</strong>
-        <span class="model-meta">${escapeHtml(estimate.model.license)}</span>
       </span>
-      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[3])}">${escapeHtml(estimate.settingLabel)}</span>
-      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${formatGb(estimate.requiredGb)}</span>
-      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.speedLabel)}</span>
-      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${escapeHtml(estimate.limitLabel)}</span>
+      <span class="model-cell license-cell" data-label="라이선스">${escapeHtml(estimate.model.license)}</span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${escapeHtml(estimate.settingLabel)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${formatGb(estimate.requiredGb)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${escapeHtml(estimate.speedLabel)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[7])}">${escapeHtml(estimate.limitLabel)}</span>
       <span class="row-chevron" aria-hidden="true">›</span>
     </button>
   `;
@@ -1936,10 +1941,13 @@ function renderViewToggle() {
 }
 
 function renderTags(model, limit) {
-  return model.tags
-    .slice(0, limit)
-    .map((tag) => `<span class="tag">${escapeHtml(tagLabel(tag))}</span>`)
-    .join("");
+  const tags = model.tags || [];
+  const visible = tags.slice(0, limit);
+  const hiddenCount = Math.max(0, tags.length - visible.length);
+  return [
+    ...visible.map((tag) => `<span class="tag">${escapeHtml(tagLabel(tag))}</span>`),
+    hiddenCount ? `<span class="tag tag-more">+${hiddenCount}</span>` : "",
+  ].join("");
 }
 
 function tagLabel(tag) {
