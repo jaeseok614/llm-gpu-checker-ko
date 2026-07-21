@@ -31,42 +31,42 @@ const WORKLOAD_META = {
     statusLabel: "LLM",
     modelCountLabel: "LLM 모델",
     searchPlaceholder: "모델명, 제조사, 태그 검색",
-    listHeaders: ["모델", "등급", "권장 양자화", "필요 VRAM", "예상 속도", "컨텍스트", ""],
+    listHeaders: ["상태", "모델", "공급사", "권장 설정", "VRAM", "속도", "CTX", ""],
   },
   embedding: {
     label: "임베딩",
     statusLabel: "임베딩",
     modelCountLabel: "임베딩 모델",
     searchPlaceholder: "임베딩 모델명, 제조사, 태그 검색",
-    listHeaders: ["모델", "등급", "정밀도/런타임", "Peak VRAM", "문서 처리량", "최대 입력", ""],
+    listHeaders: ["상태", "모델", "공급사", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
   },
   reranker: {
     label: "리랭커",
     statusLabel: "리랭커",
     modelCountLabel: "리랭커 모델",
     searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
-    listHeaders: ["모델", "등급", "정밀도/런타임", "Peak VRAM", "쌍 처리량", "권장 입력", ""],
+    listHeaders: ["상태", "모델", "공급사", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
   },
   ocrPipeline: {
-    label: "경량 OCR",
-    statusLabel: "경량 OCR",
-    modelCountLabel: "경량 OCR 모델",
+    label: "OCR",
+    statusLabel: "OCR",
+    modelCountLabel: "OCR 모델",
     searchPlaceholder: "OCR 파이프라인, 제조사, 태그 검색",
-    listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
   },
   documentVlm: {
     label: "문서 VLM",
     statusLabel: "문서 VLM",
     modelCountLabel: "문서 VLM 모델",
     searchPlaceholder: "문서 VLM, 제조사, 태그 검색",
-    listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
   },
   generalVlm: {
     label: "범용 VLM",
     statusLabel: "범용 VLM",
     modelCountLabel: "범용 VLM 모델",
     searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
-    listHeaders: ["모델", "등급", "정밀도/기능", "Peak VRAM", "페이지 처리량", "기준 이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
   },
 };
 
@@ -106,11 +106,11 @@ const RUNTIME_LABELS = {
   transformers: "Transformers",
 };
 
-let detectedHardwareLabel = "";
 let activeWorkload = "generative";
 let activeSummaryFilter = "all";
 let selectedModelKey = "";
 let viewMode = "list";
+let settingsExpanded = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -125,10 +125,6 @@ function populateSelects() {
   $("gpuPreset").innerHTML = GPU_PRESETS.map(
     (gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`,
   ).join("");
-  $("gpuPresetList").innerHTML = GPU_PRESETS
-    .filter((gpu) => gpu.id !== "custom")
-    .map((gpu) => `<option value="${escapeAttr(gpu.name)}"></option>`)
-    .join("");
   $("gpuPreset").value = "rtx4090-24";
 
   $("quantization").innerHTML = QUANTS.map(
@@ -183,9 +179,13 @@ function refreshFilterOptions() {
 }
 
 function bindEvents() {
+  $("settingsToggle").addEventListener("click", () => {
+    settingsExpanded = !settingsExpanded;
+    refreshWorkloadUi();
+  });
+
   ["vramGb", "gpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb"].forEach((id) => {
     $(id).addEventListener("input", () => {
-      detectedHardwareLabel = "직접 입력 기준";
       render();
     });
   });
@@ -234,6 +234,7 @@ function bindEvents() {
       if (select.value !== "custom") {
         $(select.dataset.presetTarget).value = select.value;
       }
+      syncPresetControls();
       render();
     });
   });
@@ -249,13 +250,6 @@ function bindEvents() {
 
   $("gpuPreset").addEventListener("change", (event) => {
     applyPreset(event.target.value);
-    render();
-  });
-
-  $("gpuSearch").addEventListener("input", () => {
-    const preset = findGpuPresetFromSearch($("gpuSearch").value);
-    if (!preset) return;
-    applyPreset(preset.id);
     render();
   });
 
@@ -315,6 +309,10 @@ function setViewMode(nextMode) {
 }
 
 function refreshWorkloadUi() {
+  $("settingsDrawer").hidden = !settingsExpanded;
+  $("settingsToggle").setAttribute("aria-expanded", String(settingsExpanded));
+  $("settingsToggle").textContent = settingsExpanded ? "설정 닫기" : "설정 변경";
+
   document.querySelectorAll("[data-workload-tab]").forEach((button) => {
     const isActive = button.dataset.workloadTab === activeWorkload;
     button.classList.toggle("is-active", isActive);
@@ -323,8 +321,10 @@ function refreshWorkloadUi() {
 
   document.querySelectorAll("[data-workload-settings]").forEach((panel) => {
     const panelKey = panel.dataset.workloadSettings;
-    panel.hidden = panelKey !== activeWorkload && !(panelKey === "vision" && isVisionWorkload(activeWorkload));
+    panel.hidden = !settingsExpanded || (panelKey !== activeWorkload && !(panelKey === "vision" && isVisionWorkload(activeWorkload)));
   });
+
+  syncPresetControls();
 }
 
 function applyOcrResolutionPreset(id) {
@@ -339,32 +339,10 @@ function applyPreset(id) {
   if (!preset) return;
 
   $("gpuPreset").value = preset.id;
-  $("gpuSearch").value = preset.id === "custom" ? "" : preset.name;
   $("vramGb").value = preset.vram;
   $("ramGb").value = preset.ram;
   $("bandwidth").value = preset.bandwidth;
   $("gpuCount").value = 1;
-  detectedHardwareLabel = `${preset.name} 기준`;
-}
-
-function findGpuPresetFromSearch(value) {
-  const query = normalizeSearchText(value);
-  if (query.length < 2) return null;
-
-  const candidates = GPU_PRESETS.filter((gpu) => gpu.id !== "custom");
-  return candidates.find((gpu) => normalizeSearchText(gpu.name) === query)
-    || candidates.find((gpu) => normalizeSearchText(gpu.id) === query)
-    || candidates.find((gpu) => normalizeSearchText(gpu.name).includes(query))
-    || candidates.find((gpu) => query.includes(normalizeSearchText(gpu.name)))
-    || null;
-}
-
-function normalizeSearchText(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function syncPresetForInput(inputId) {
@@ -375,7 +353,14 @@ function syncPresetForInput(inputId) {
 }
 
 function syncPresetControls() {
-  document.querySelectorAll("[data-direct-preset]").forEach((input) => syncPresetForInput(input.id));
+  document.querySelectorAll("[data-direct-preset]").forEach((input) => {
+    const select = $(input.dataset.directPreset);
+    if (select?.value !== "custom") syncPresetForInput(input.id);
+    const pair = input.closest(".field-control-pair");
+    const isCustom = select?.value === "custom";
+    input.hidden = !isCustom;
+    pair?.classList.toggle("is-custom", Boolean(isCustom));
+  });
 }
 
 function getHardware() {
@@ -1112,7 +1097,27 @@ function modelFreshnessScore(model) {
   if (text.includes("llama 4")) score += 680;
   if (text.includes("gemma 3")) score += 660;
   if (text.includes("phi-4")) score += 650;
+  if (text.includes("gemma 4")) score += 675;
+  if (text.includes("qwen3.6")) score += 646;
+  if (text.includes("qwen3.5")) score += 645;
+  if (text.includes("mistral small 4")) score += 674;
+  if (text.includes("mistral medium 3.5")) score += 673;
+  if (text.includes("mistral large 3")) score += 672;
+  if (text.includes("ministral 3")) score += 671;
+  if (text.includes("magistral small 1.2")) score += 671;
   if (text.includes("mistral small 3.1")) score += 640;
+  if (text.includes("mistral small 3.2")) score += 640;
+  if (text.includes("qwen3-next")) score += 638;
+  if (text.includes("qwen3-coder")) score += 637;
+  if (text.includes("granite 4.1")) score += 667;
+  if (text.includes("glm-4.5")) score += 666;
+  if (text.includes("kimi k2 thinking")) score += 665;
+  if (text.includes("a.x 4.0")) score += 664;
+  if (text.includes("exaone 4.0")) score += 663;
+  if (text.includes("hyperclovax")) score += 662;
+  if (text.includes("kanana 1.5")) score += 661;
+  if (text.includes("trillion 7b")) score += 658;
+  if (text.includes("bllossom-70b")) score += 657;
   if (text.includes("devstral")) score += 630;
   if (text.includes("qwen2.5")) score += 600;
   if (text.includes("llama 3.3")) score += 590;
@@ -1137,6 +1142,7 @@ function recommendationScore(estimate) {
     estimate.model.tags.includes("coding") ? 4 : 0,
     estimate.model.tags.includes("reasoning") ? 4 : 0,
     estimate.model.tags.includes("long") ? 2 : 0,
+    estimate.model.tags.includes("retrieval") ? 3 : 0,
   ].reduce((sum, value) => sum + value, 0);
   const speedBonus = Math.min(estimate.speed, 90) / 6;
   const pressurePenalty = estimate.pressure > 0.95 ? (estimate.pressure - 0.95) * 22 : 0;
@@ -1161,11 +1167,7 @@ function render(options = {}) {
 }
 
 function renderHardware(hardware, allEstimates) {
-  const runnableCount = allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score).length;
   const basis = buildHardwareBasis(hardware);
-  const groupLabel = WORKLOAD_META[activeWorkload].statusLabel;
-  const memoryBasis = buildVramBasis(hardware);
-  const headerSummary = `${memoryBasis} · RAM ${formatGb(hardware.ram)} · ${groupLabel} 실행 가능 ${runnableCount}개`;
   const headlineParts = [hardware.preset.name, `가용 VRAM ${formatGb(hardware.availableVram)}`, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
 
   $("hardwareHeadline").innerHTML = headlineParts
@@ -1176,17 +1178,7 @@ function renderHardware(hardware, allEstimates) {
       </span>
     `)
     .join("");
-  $("hardwareSubline").textContent = `현재 기준: ${memoryBasis} · ${basis}`;
-  $("hardwareStatus").textContent = detectedHardwareLabel ? `${detectedHardwareLabel} · ${headerSummary}` : headerSummary;
-}
-
-function buildVramBasis(hardware) {
-  const excluded = hardware.reservedVram + hardware.safetyMarginGb;
-  const totalLabel = hardware.count > 1
-    ? `${formatGb(hardware.availableVram)} / 물리 ${formatGb(hardware.totalVram)}`
-    : `${formatGb(hardware.availableVram)} / 총 ${formatGb(hardware.totalVram)}`;
-  if (!excluded) return `가용 VRAM ${totalLabel}`;
-  return `가용 VRAM ${totalLabel} · 예약 ${formatGb(hardware.reservedVram)} · 여유 ${formatGb(hardware.safetyMarginGb)}`;
+  $("hardwareSubline").textContent = basis;
 }
 
 function buildHardwareBasis(hardware) {
@@ -1240,9 +1232,8 @@ function renderSummary(estimates) {
 }
 
 function renderResults(estimates) {
-  const recommendationRanks = getRecommendationRanks();
   const meta = WORKLOAD_META[activeWorkload];
-  $("resultMeta").textContent = `${meta.modelCountLabel} ${estimates.length}개 · ${viewMode === "list" ? "목록 보기" : "카드 보기"}`;
+  $("resultMeta").textContent = `${estimates.length.toLocaleString("ko-KR")}개 모델`;
 
   if (!estimates.length) {
     $("modelResults").className = "model-results";
@@ -1253,7 +1244,7 @@ function renderResults(estimates) {
   if (viewMode === "card") {
     $("modelResults").className = "model-results card-mode";
     $("modelResults").innerHTML = estimates
-      .map((estimate) => renderModelCard(estimate, recommendationRanks.get(modelKey(estimate.model))))
+      .map((estimate) => renderModelCard(estimate))
       .join("");
     return;
   }
@@ -1263,36 +1254,36 @@ function renderResults(estimates) {
     <div class="model-list-head" aria-hidden="true">
       ${meta.listHeaders.map((header) => `<span>${escapeHtml(header)}</span>`).join("")}
     </div>
-    ${estimates.map((estimate) => renderModelRow(estimate, recommendationRanks.get(modelKey(estimate.model)))).join("")}
+    ${estimates.map((estimate) => renderModelRow(estimate)).join("")}
   `;
 }
 
-function renderModelRow(estimate, recommendationRank) {
+function renderModelRow(estimate) {
   const meta = GRADE_META[estimate.grade];
   const tags = renderTags(estimate.model, 3);
   const key = modelKey(estimate.model);
 
   return `
     <button type="button" class="model-row" data-model-key="${escapeAttr(key)}">
+      <span class="model-cell status-cell" data-label="상태"><span class="grade-pill ${meta.className}">${meta.label}</span></span>
       <span class="model-cell model-name-cell">
-        <strong>
-          ${recommendationRank ? `<span class="recommend-badge">추천 ${recommendationRank}</span>` : ""}
-          ${escapeHtml(estimate.model.name)}
-        </strong>
-        <span class="model-meta">${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
+        <strong>${escapeHtml(estimate.model.name)}</strong>
         <span class="tag-row compact-tags">${tags}</span>
       </span>
-      <span class="model-cell" data-label="등급"><span class="grade-pill ${meta.className}">${meta.label}</span></span>
-      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[2])}">${escapeHtml(estimate.settingLabel)}</span>
-      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[3])}">${formatGb(estimate.requiredGb)}</span>
-      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${escapeHtml(estimate.speedLabel)}</span>
-      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.limitLabel)}</span>
+      <span class="model-cell provider-cell" data-label="공급사">
+        <strong>${escapeHtml(estimate.model.maker)}</strong>
+        <span class="model-meta">${escapeHtml(estimate.model.license)}</span>
+      </span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[3])}">${escapeHtml(estimate.settingLabel)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${formatGb(estimate.requiredGb)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.speedLabel)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${escapeHtml(estimate.limitLabel)}</span>
       <span class="row-chevron" aria-hidden="true">›</span>
     </button>
   `;
 }
 
-function renderModelCard(estimate, recommendationRank) {
+function renderModelCard(estimate) {
   const meta = GRADE_META[estimate.grade];
   const key = modelKey(estimate.model);
   const tags = renderTags(estimate.model, 4);
@@ -1301,10 +1292,7 @@ function renderModelCard(estimate, recommendationRank) {
     <button type="button" class="compact-card" data-model-key="${escapeAttr(key)}">
       <span class="compact-card-head">
         <span>
-          <strong>
-            ${recommendationRank ? `<span class="recommend-badge">추천 ${recommendationRank}</span>` : ""}
-            ${escapeHtml(estimate.model.name)}
-          </strong>
+          <strong>${escapeHtml(estimate.model.name)}</strong>
           <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
         </span>
         <span class="grade-pill ${meta.className}">${meta.label}</span>
@@ -1965,7 +1953,7 @@ function tagLabel(tag) {
     vision: "비전",
     embedding: "임베딩",
     reranker: "리랭커",
-    retrieval: "검색",
+    retrieval: "RAG/검색",
     sparse: "Sparse",
     dense: "Dense",
     multilingual: "다국어",

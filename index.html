@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>LLM GPU 실행 가능성 계산기</title>
+    <title>AI 모델 실행 가능성 계산기</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -11,66 +11,73 @@
       <div class="brand-block">
         <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
         <div>
-          <p class="eyebrow">Korean AI Hardware Fit</p>
-          <h1>LLM GPU 실행 가능성 계산기</h1>
+          <p class="eyebrow">AI Hardware Fit</p>
+          <h1>AI 모델 실행 가능성 계산기</h1>
         </div>
       </div>
-      <div class="header-status" id="hardwareStatus">GPU 정보를 입력해 주세요</div>
+      <nav class="header-nav" aria-label="상단 메뉴">
+        <a href="#modelResults">계산기</a>
+        <a href="#calculationBasis">계산 기준</a>
+        <a href="https://github.com/jaeseok614/llm-gpu-checker-ko" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
     </header>
 
     <main class="app-shell">
       <section class="hardware-panel" aria-label="하드웨어 설정">
         <div class="hardware-topline">
           <div class="hardware-copy">
-            <span class="section-kicker">내 하드웨어</span>
+            <span class="section-kicker">내 실행 환경</span>
             <strong id="hardwareHeadline">GeForce RTX 4090 24GB · RAM 64GB · GPU 1개</strong>
             <p id="hardwareSubline">현재 기준: 8K · 동시 1명 · llama.cpp / Ollama</p>
           </div>
+          <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">설정 변경</button>
         </div>
 
-        <div class="settings-panel" id="hardwareEditor">
-          <label class="field field-wide">
-            <span>GPU 프리셋 / 검색</span>
-            <select id="gpuPreset"></select>
-            <input id="gpuSearch" type="search" list="gpuPresetList" placeholder="예: RTX 4090, H100, A100" aria-label="GPU 프리셋 검색" />
-            <datalist id="gpuPresetList"></datalist>
-          </label>
-          <label class="field">
-            <span>VRAM</span>
-            <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
-          </label>
-          <label class="field">
-            <span>시스템 RAM</span>
-            <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
-          </label>
-          <label class="field">
-            <span>GPU 수</span>
-            <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
-          </label>
-          <label class="field">
-            <span>대역폭 GB/s</span>
-            <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
-          </label>
-          <label class="field">
-            <span>이미 사용 중인 VRAM</span>
-            <input id="reservedVramGb" type="number" min="0" max="10240" step="0.5" value="0" />
-          </label>
-          <label class="field">
-            <span>안전 여유분</span>
-            <input id="safetyMarginGb" type="number" min="0" max="256" step="0.5" value="2" />
-          </label>
+        <div class="settings-drawer" id="settingsDrawer" hidden>
+          <div class="settings-panel" id="hardwareEditor">
+            <div class="settings-group-title">기본 설정</div>
+            <label class="field field-wide">
+              <span>GPU</span>
+              <select id="gpuPreset"></select>
+            </label>
+            <label class="field">
+              <span>VRAM</span>
+              <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
+            </label>
+            <label class="field">
+              <span>시스템 RAM</span>
+              <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
+            </label>
+            <label class="field">
+              <span>GPU 수</span>
+              <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
+            </label>
+            <div class="settings-group-title">고급 설정</div>
+            <label class="field">
+              <span>대역폭 GB/s</span>
+              <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
+            </label>
+            <label class="field">
+              <span>이미 사용 중인 VRAM</span>
+              <input id="reservedVramGb" type="number" min="0" max="10240" step="0.5" value="0" />
+            </label>
+            <label class="field">
+              <span>안전 여유분</span>
+              <input id="safetyMarginGb" type="number" min="0" max="256" step="0.5" value="2" />
+            </label>
+          </div>
         </div>
 
         <div class="workload-tabs" role="tablist" aria-label="모델 종류">
           <button type="button" class="workload-tab is-active" data-workload-tab="generative" aria-selected="true">생성형 LLM</button>
           <button type="button" class="workload-tab" data-workload-tab="embedding" aria-selected="false">임베딩</button>
           <button type="button" class="workload-tab" data-workload-tab="reranker" aria-selected="false">리랭커</button>
-          <button type="button" class="workload-tab" data-workload-tab="ocrPipeline" aria-selected="false">경량 OCR</button>
+          <button type="button" class="workload-tab" data-workload-tab="ocrPipeline" aria-selected="false">OCR</button>
           <button type="button" class="workload-tab" data-workload-tab="documentVlm" aria-selected="false">문서 VLM</button>
           <button type="button" class="workload-tab" data-workload-tab="generalVlm" aria-selected="false">범용 VLM</button>
         </div>
 
-        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative">
+        <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative" hidden>
           <label class="field">
             <span>컨텍스트 토큰</span>
             <div class="field-control-pair">
@@ -382,7 +389,7 @@
     <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
     <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
 
-    <footer class="app-footer">
+    <footer class="app-footer" id="calculationBasis">
       <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
     </footer>
 

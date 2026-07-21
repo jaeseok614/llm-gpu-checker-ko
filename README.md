@@ -53,8 +53,8 @@
 | 데이터 | 개수 |
 | --- | ---: |
 | GPU 프리셋 | 86 |
-| 전체 AI 모델 | 253 |
-| LLM 모델 | 114 |
+| 전체 AI 모델 | 286 |
+| LLM 모델 | 147 |
 | 임베딩 모델 | 60 |
 | 리랭커 모델 | 34 |
 | 경량 OCR 모델 | 4 |
@@ -62,8 +62,8 @@
 | 범용 VLM 모델 | 32 |
 | 양자화 옵션 | 8 |
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
-| 모델 공급사 | 51 |
-| 비전/멀티모달 모델 | 65 |
+| 모델 공급사 | 56 |
+| 비전/멀티모달 모델 | 81 |
 
 ## 주요 기능
 
@@ -80,7 +80,7 @@
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 빠른 목록 | 모델명, 등급, 권장 양자화, 필요 VRAM, 예상 속도, 컨텍스트를 한 줄로 비교 |
 | 상세 분석 | 모델 클릭 시 정밀도별 비교, VRAM 구성, 실행 방식별 속도, 계산 근거, 예시 명령어 표시 |
-| 모델 필터 | 한국어, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
+| 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
 | 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
 | 정렬 | 추천순, 예상 속도순, 품질 우선, 필요 VRAM 낮은 순, 파라미터 큰 순, 최신 모델순 |
@@ -637,6 +637,29 @@ npm run check
 
 ## 참고한 공식 자료
 
+- [Google Gemma 4 model page](https://deepmind.google/models/gemma/gemma-4/)
+- [Google Gemma 4 launch blog](https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/)
+- [Qwen3-Next 80B A3B model card](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct)
+- [Qwen3-Coder repository](https://github.com/QwenLM/Qwen3-Coder)
+- [Qwen3.5 model card](https://huggingface.co/Qwen/Qwen3.5-397B-A17B)
+- [Qwen3.6 repository](https://github.com/QwenLM/Qwen3.6)
+- [Mistral Small 3.2 model card](https://docs.mistral.ai/models/model-cards/mistral-small-3-2-25-06)
+- [Mistral Small 4 model card](https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03)
+- [Mistral Medium 3.5 model card](https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04)
+- [Mistral Large 3 model card](https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12)
+- [Ministral 3 14B model card](https://docs.mistral.ai/models/model-cards/ministral-3-14b-25-12)
+- [Magistral Small 1.2 model card](https://huggingface.co/mistralai/Magistral-Small-2509)
+- [IBM Granite 4.1 3B model card](https://huggingface.co/ibm-granite/granite-4.1-3b)
+- [GLM-4.5 overview](https://docs.z.ai/guides/llm/glm-4.5)
+- [Kimi K2 model page](https://www.kimi.com/blog/kimi-k2)
+- [SK Telecom A.X LLM series](https://sktelecom.github.io/en/project/axllm/)
+- [A.X 4.0 model card](https://huggingface.co/skt/A.X-4.0)
+- [EXAONE 4.0 1.2B model card](https://huggingface.co/OpenLLM-Korea/EXAONE-4.0-1.2B)
+- [EXAONE 4.0 32B model card](https://huggingface.co/OpenLLM-Korea/EXAONE-4.0-32B)
+- [HyperCLOVAX SEED Think 14B model card](https://huggingface.co/naver-hyperclovax/HyperCLOVAX-SEED-Think-14B)
+- [Kanana 1.5 8B Instruct model card](https://huggingface.co/OpenLLM-Korea/kanana-1.5-8b-instruct-2505)
+- [Trillion 7B Preview model card](https://huggingface.co/trillionlabs/Trillion-7B-preview)
+- [Llama-3-Korean-Bllossom-70B model card](https://huggingface.co/Bllossom/llama-3-Korean-Bllossom-70B)
 - [BAAI/bge-m3 model card](https://huggingface.co/BAAI/bge-m3)
 - [Qwen3 Embedding model cards](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B)
 - [Qwen3 Reranker model cards](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B)
