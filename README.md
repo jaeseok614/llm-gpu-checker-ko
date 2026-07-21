@@ -60,7 +60,7 @@
 | OCR 모델 | 4 |
 | 문서 VLM 모델 | 9 |
 | 범용 VLM 모델 | 32 |
-| 양자화 옵션 | 8 |
+| 양자화 옵션 | 14 |
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
 | 모델 공급사 | 56 |
 | 비전/멀티모달 모델 | 81 |
@@ -75,7 +75,7 @@
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
 | RAG 조건 | 임베딩 입력 길이, 배치 크기, TEI 최대 배치 토큰, 리랭킹 후보 수를 프리셋 또는 직접 입력으로 조정 |
 | OCR/VLM 조건 | 문서 해상도, 이미지 너비/높이, 배치 페이지, 처리 기능 조정 |
-| 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
+| 양자화 선택 | 자동 추천, IQ2_XXS, Q2_K, Q3_K_S/M, Q4_0/K_S/K_M, Q5_0/K_S/K_M, Q6_K, Q8_0, FP16 |
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 빠른 목록 | 상태, 모델명, 공급사, 라이선스, 권장 설정, 필요 VRAM, 예상 속도, 컨텍스트를 표 형태로 비교 |
@@ -276,15 +276,21 @@ $$
 
 #### Auto Quantization Policy
 
-When quantization is set to `자동 추천`, the calculator searches from higher quality to lower quality:
+When quantization is set to `자동 추천`, the calculator searches practical GGUF quantization presets from higher quality to lower quality:
 
 | Priority | Quantization |
 | ---: | --- |
 | 1 | `Q6_K` |
 | 2 | `Q5_K_M` |
-| 3 | `Q4_K_M` |
-| 4 | `Q3_K_M` |
-| 5 | `Q2_K` |
+| 3 | `Q5_K_S` |
+| 4 | `Q5_0` |
+| 5 | `Q4_K_M` |
+| 6 | `Q4_K_S` |
+| 7 | `Q4_0` |
+| 8 | `Q3_K_M` |
+| 9 | `Q3_K_S` |
+| 10 | `Q2_K` |
+| 11 | `IQ2_XXS` |
 
 The first quantization that satisfies the memory budget is selected:
 
@@ -304,7 +310,7 @@ $$
 M_{\mathrm{required}}(q) \le M_{\mathrm{offload}}
 $$
 
-If all checks fail, `Q2_K` is used as the last possible comparison baseline.
+If all checks fail, `IQ2_XXS` is used as the last possible comparison baseline.
 
 ### Encoder, Reranker, And OCR/VLM Methodology
 

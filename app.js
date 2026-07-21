@@ -561,7 +561,7 @@ function estimateKvCacheGb(model, hardware) {
 }
 
 function recommendQuant(model, hardware) {
-  const preferredIds = ["q6", "q5", "q4", "q3", "q2"];
+  const preferredIds = ["q6", "q5", "q5_k_s", "q5_0", "q4", "q4_k_s", "q4_0", "q3", "q3_k_s", "q2", "iq2_xxs"];
   const qualityFirst = preferredIds
     .map((id) => QUANTS.find((item) => item.id === id))
     .filter(Boolean);
@@ -582,7 +582,7 @@ function recommendQuant(model, hardware) {
     if (provisional.requiredGb <= effectiveVram + hardware.ram * 0.45) return quant;
   }
 
-  return QUANTS.find((item) => item.id === "q2") || qualityFirst[qualityFirst.length - 1];
+  return qualityFirst[qualityFirst.length - 1] || QUANTS.find((item) => item.id === "q2");
 }
 
 function estimateWithQuant(model, quant, hardware) {
