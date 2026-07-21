@@ -9,6 +9,9 @@ const ENCODER_PRECISIONS = DATA.precisions?.encoder || [];
 const OCR_PRECISIONS = DATA.precisions?.ocr || [];
 const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
 const OCR_RESOLUTION_PRESETS = DATA.ocrResolutionPresets || {};
+const BENCHMARKS = DATA.benchmarks || [];
+const BENCHMARK_META = DATA.benchmarkMeta || {};
+const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-21";
 const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm"]);
 const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm"]);
 const WORKLOAD_ALIASES = { ocr: "ocrPipeline" };
@@ -31,42 +34,42 @@ const WORKLOAD_META = {
     statusLabel: "LLM",
     modelCountLabel: "LLM 모델",
     searchPlaceholder: "모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "권장 설정", "VRAM", "속도", "CTX", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "권장 설정", "계산 VRAM", "추정 속도", "CTX", ""],
   },
   embedding: {
     label: "임베딩",
     statusLabel: "임베딩",
     modelCountLabel: "임베딩 모델",
     searchPlaceholder: "임베딩 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
   },
   reranker: {
     label: "리랭커",
     statusLabel: "리랭커",
     modelCountLabel: "리랭커 모델",
     searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "VRAM", "처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
   },
   ocrPipeline: {
     label: "OCR",
     statusLabel: "OCR",
     modelCountLabel: "OCR 모델",
     searchPlaceholder: "OCR 파이프라인, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
   documentVlm: {
     label: "문서 VLM",
     statusLabel: "문서 VLM",
     modelCountLabel: "문서 VLM 모델",
     searchPlaceholder: "문서 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
   generalVlm: {
     label: "범용 VLM",
     statusLabel: "범용 VLM",
     modelCountLabel: "범용 VLM 모델",
     searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "VRAM", "처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
 };
 
@@ -278,10 +281,31 @@ function bindEvents() {
     render();
   });
 
+  $("calculationBasisStrip").addEventListener("click", (event) => {
+    if (!event.target.closest("[data-open-settings]")) return;
+    settingsExpanded = true;
+    refreshWorkloadUi();
+    document.querySelector(".hardware-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  $("activeFilterChips").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-clear-filter]");
+    if (!button) return;
+    clearFilter(button.dataset.clearFilter);
+    render();
+  });
+
   $("listViewButton").addEventListener("click", () => setViewMode("list"));
   $("cardViewButton").addEventListener("click", () => setViewMode("card"));
 
   $("modelResults").addEventListener("click", (event) => {
+    const emptyAction = event.target.closest("[data-empty-action]");
+    if (emptyAction) {
+      applyEmptyAction(emptyAction.dataset.emptyAction);
+      render();
+      return;
+    }
+
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
     selectedModelKey = target.dataset.modelKey;
@@ -301,6 +325,33 @@ function bindEvents() {
     applyUrlState();
     render({ syncUrl: false });
   });
+}
+
+function clearFilter(kind) {
+  if (kind === "all") {
+    activeSummaryFilter = "all";
+    $("gradeFilter").value = "all";
+    $("taskFilter").value = "all";
+    $("providerFilter").value = "all";
+    $("licenseFilter").value = "all";
+    $("searchInput").value = "";
+    return;
+  }
+  if (kind === "summary") activeSummaryFilter = "all";
+  if (kind === "grade") $("gradeFilter").value = "all";
+  if (kind === "task") $("taskFilter").value = "all";
+  if (kind === "provider") $("providerFilter").value = "all";
+  if (kind === "license") $("licenseFilter").value = "all";
+  if (kind === "search") $("searchInput").value = "";
+}
+
+function applyEmptyAction(action) {
+  if (action === "include-conditional") {
+    activeSummaryFilter = "all";
+    $("gradeFilter").value = "all";
+    return;
+  }
+  clearFilter("all");
 }
 
 function setViewMode(nextMode) {
@@ -1044,7 +1095,9 @@ function sortEstimates(estimates) {
   return [...estimates].sort((a, b) => {
     if (sortBy === "speed") return b.speed - a.speed || gradeSort(a, b) || a.requiredGb - b.requiredGb;
     if (sortBy === "quality") return gradeSort(a, b) || b.model.params - a.model.params || b.speed - a.speed;
-    if (sortBy === "vramAsc") return a.requiredGb - b.requiredGb || gradeSort(a, b);
+    if (sortBy === "vramAsc" || sortBy === "vramHeadroom") return (b.effectiveVram - b.requiredGb) - (a.effectiveVram - a.requiredGb) || gradeSort(a, b);
+    if (sortBy === "koreanFirst") return tagSort(a, b, "korean") || recommendationScore(b) - recommendationScore(a);
+    if (sortBy === "codingFirst") return tagSort(a, b, "coding") || recommendationScore(b) - recommendationScore(a);
     if (sortBy === "sizeDesc") return b.model.params - a.model.params || gradeSort(a, b);
     if (sortBy === "latest") return modelFreshnessScore(b.model) - modelFreshnessScore(a.model) || gradeSort(a, b);
 
@@ -1054,6 +1107,12 @@ function sortEstimates(estimates) {
 
 function gradeSort(a, b) {
   return GRADE_META[b.grade].score - GRADE_META[a.grade].score;
+}
+
+function tagSort(a, b, tag) {
+  const aHas = a.model.tags.includes(tag) ? 1 : 0;
+  const bHas = b.model.tags.includes(tag) ? 1 : 0;
+  return bHas - aHas || gradeSort(a, b);
 }
 
 function modelFreshnessScore(model) {
@@ -1150,6 +1209,115 @@ function recommendationScore(estimate) {
   return gradeBonus + usefulSize + tagBonus + speedBonus - pressurePenalty;
 }
 
+function buildRecommendationReasons(estimate) {
+  const reasons = [];
+  const headroomRatio = estimate.effectiveVram > 0
+    ? Math.max(0, (estimate.effectiveVram - estimate.requiredGb) / estimate.effectiveVram)
+    : 0;
+
+  if (GRADE_META[estimate.grade].score >= GRADE_META.A.score) reasons.push(`VRAM 여유 ${formatPercent(headroomRatio)}`);
+  else if (GRADE_META[estimate.grade].score >= GRADE_META.B.score) reasons.push("가용 VRAM 안에 들어옴");
+  else if (estimate.grade === "D") reasons.push("오프로딩 전제");
+  else if (estimate.grade === "F") reasons.push("현재 조건 부적합");
+
+  if (estimate.model.tags.includes("korean")) reasons.push("한국어 지원");
+  if (estimate.model.tags.includes("coding")) reasons.push("코딩 적합");
+  if (estimate.model.tags.includes("reasoning")) reasons.push("추론 태그");
+  if (estimate.model.tags.includes("retrieval")) reasons.push("RAG/검색");
+  if (estimate.model.tags.includes("long")) reasons.push(`${escapeTextLabel(estimate.limitLabel)} 컨텍스트`);
+  if (estimate.speed > 0 && estimate.speed >= 80) reasons.push("속도 우수");
+  if (estimate.model.active && estimate.model.params && estimate.model.active < estimate.model.params * 0.5) reasons.push("MoE 활성 파라미터 낮음");
+
+  return [...new Set(reasons)].slice(0, 4);
+}
+
+function getEstimateConfidence(model, estimate, hardware) {
+  const benchmarkRows = findBenchmarksForModel(model);
+  const hasExactMeasured = benchmarkRows.some((row) => {
+    const sameGpu = !row.gpuId || row.gpuId === hardware.preset.id;
+    const sameRuntime = !row.runtime || row.runtime === hardware.runtime;
+    const sameSetting = model.type === "generative" ? (!row.quantization || row.quantization === estimate.settingLabel || row.quantization === estimate.quant?.label) : true;
+    return sameGpu && sameRuntime && sameSetting;
+  });
+
+  if (hasExactMeasured) {
+    return {
+      label: "높음",
+      className: "confidence-high",
+      spread: 0.08,
+      reason: "동일 모델/조건의 출처 연결 실측값이 있습니다.",
+    };
+  }
+
+  if (benchmarkRows.length > 0) {
+    return {
+      label: "보통",
+      className: "confidence-medium",
+      spread: 0.18,
+      reason: "같은 모델의 다른 실행 조건 실측값을 참고할 수 있습니다.",
+    };
+  }
+
+  if (isVisionModel(model) && model.reference?.pagesPerSecond) {
+    return {
+      label: "보통",
+      className: "confidence-medium",
+      spread: 0.18,
+      reason: "모델별 OCR/VLM reference throughput을 기준으로 보정합니다.",
+    };
+  }
+
+  return {
+    label: "낮음",
+    className: "confidence-low",
+    spread: 0.32,
+    reason: "모델별 실측값 없이 파라미터, VRAM, 대역폭 기반 계산식으로 추정합니다.",
+  };
+}
+
+function findBenchmarksForModel(model) {
+  const key = modelKey(model);
+  return BENCHMARKS.filter((row) => row.modelKey === key || row.modelName === model.name);
+}
+
+function formatSpeedRange(estimate, confidence = getEstimateConfidence(estimate.model, estimate, getHardware())) {
+  if (!estimate.speed) return "불가";
+  const spread = confidence.spread ?? 0.32;
+  const unit = estimate.unitLabel || "tok/s";
+  const low = estimate.speed * (1 - spread);
+  const high = estimate.speed * (1 + spread);
+  return `약 ${formatMetricNumber(low, unit, false)}~${formatMetricNumber(high, unit, true)}`;
+}
+
+function formatMetricNumber(value, unit, includeUnit) {
+  let text;
+  if (value >= 1000) text = Math.round(value).toLocaleString("ko-KR");
+  else if (value >= 10) text = String(Math.round(value));
+  else text = value.toFixed(1);
+  return includeUnit ? `${text} ${unit}` : text;
+}
+
+function buildGradeTooltip(estimate) {
+  const meta = GRADE_META[estimate.grade];
+  const margin = estimate.effectiveVram - estimate.requiredGb;
+  return [
+    meta.label,
+    `필요 VRAM ${formatGb(estimate.requiredGb)}`,
+    `가용 VRAM ${formatGb(estimate.effectiveVram)}`,
+    `${margin >= 0 ? "남는 VRAM" : "부족 VRAM"} ${formatGb(Math.abs(margin))}`,
+    `사용률 ${formatPercent(estimate.pressure)}`,
+    `현재 ${buildHardwareBasis(getHardware())} 기준`,
+  ].join("\n");
+}
+
+function formatPercent(value) {
+  return `${Math.round(value * 1000) / 10}%`;
+}
+
+function escapeTextLabel(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
 function render(options = {}) {
   const { syncUrl = true } = options;
   const hardware = getHardware();
@@ -1159,9 +1327,12 @@ function render(options = {}) {
   refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
   renderSummary(allEstimates);
+  renderCalculationBasisStrip(hardware);
   renderResults(estimates, allEstimates);
+  renderActiveFilterChips(estimates, allEstimates);
   renderDetail();
   renderViewToggle();
+  renderBenchmarkSheet();
 
   if (syncUrl) syncUrlState();
 }
@@ -1206,6 +1377,25 @@ function buildHardwareBasis(hardware) {
   return `${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명 · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`;
 }
 
+function renderCalculationBasisStrip(hardware) {
+  const basis = buildHardwareBasis(hardware);
+  $("calculationBasisStrip").innerHTML = `
+    <div>
+      <span>현재 계산 기준</span>
+      <strong>${escapeHtml(shortGpuName(hardware.preset.name))} · 가용 VRAM ${formatGb(hardware.availableVram)} · ${escapeHtml(basis)}</strong>
+    </div>
+    <button type="button" class="ghost-button" data-open-settings>조건 변경</button>
+  `;
+}
+
+function shortGpuName(name) {
+  return String(name || "")
+    .replace(/^NVIDIA\s+/i, "")
+    .replace(/^GeForce\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function renderSummary(estimates) {
   const counts = { all: estimates.length, S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
   estimates.forEach((estimate) => {
@@ -1242,7 +1432,16 @@ function renderResults(estimates, allEstimates = []) {
 
   if (!estimates.length) {
     $("modelResults").className = "model-results";
-    $("modelResults").innerHTML = `<div class="empty-state">조건에 맞는 모델이 없습니다.</div>`;
+    $("modelResults").innerHTML = `
+      <div class="empty-state">
+        <strong>현재 조건에 맞는 모델이 없습니다.</strong>
+        <span>등급, 작업, 공급사, 라이선스 또는 검색어를 줄이면 후보가 다시 표시됩니다.</span>
+        <div class="empty-actions">
+          <button type="button" class="ghost-button" data-empty-action="include-conditional">조건부 모델 포함</button>
+          <button type="button" class="ghost-button" data-empty-action="clear">필터 초기화</button>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -1263,17 +1462,62 @@ function renderResults(estimates, allEstimates = []) {
   `;
 }
 
+function renderActiveFilterChips(estimates, allEstimates) {
+  const chips = [];
+  const summary = SUMMARY_FILTERS.find((item) => item.id === activeSummaryFilter);
+  const gradeValue = $("gradeFilter").value;
+  const taskValue = $("taskFilter").value;
+  const providerValue = $("providerFilter").value;
+  const licenseValue = $("licenseFilter").value;
+  const searchValue = $("searchInput").value.trim();
+
+  if (summary && summary.id !== "all") chips.push({ key: "summary", label: `상태 ${summary.label}` });
+  if (gradeValue !== "all") chips.push({ key: "grade", label: `등급 ${selectedOptionLabel("gradeFilter")}` });
+  if (taskValue !== "all") chips.push({ key: "task", label: `작업 ${tagLabel(taskValue)}` });
+  if (providerValue !== "all") chips.push({ key: "provider", label: `공급사 ${providerValue}` });
+  if (licenseValue !== "all") chips.push({ key: "license", label: `라이선스 ${licenseValue}` });
+  if (searchValue) chips.push({ key: "search", label: `검색 ${searchValue}` });
+
+  const target = $("activeFilterChips");
+  if (!chips.length) {
+    target.hidden = true;
+    target.innerHTML = "";
+    return;
+  }
+
+  target.hidden = false;
+  target.innerHTML = `
+    <span>${allEstimates.length.toLocaleString("ko-KR")}개 중 ${estimates.length.toLocaleString("ko-KR")}개 표시</span>
+    ${chips.map((chip) => `
+      <button type="button" class="filter-chip" data-clear-filter="${escapeAttr(chip.key)}">
+        ${escapeHtml(chip.label)} <span aria-hidden="true">×</span>
+      </button>
+    `).join("")}
+    <button type="button" class="filter-clear" data-clear-filter="all">전체 해제</button>
+  `;
+}
+
+function selectedOptionLabel(id) {
+  const select = $(id);
+  return select.options[select.selectedIndex]?.textContent || select.value;
+}
+
 function renderModelRow(estimate) {
   const meta = GRADE_META[estimate.grade];
   const tags = renderTags(estimate.model, 3);
   const key = modelKey(estimate.model);
+  const confidence = getEstimateConfidence(estimate.model, estimate, getHardware());
+  const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
+  const gradeTitle = buildGradeTooltip(estimate);
+  const isSelected = selectedModelKey === key;
 
   return `
-    <button type="button" class="model-row" data-model-key="${escapeAttr(key)}">
-      <span class="model-cell status-cell" data-label="상태"><span class="grade-pill ${meta.className}">${meta.label}</span></span>
+    <button type="button" class="model-row ${isSelected ? "is-selected" : ""}" data-model-key="${escapeAttr(key)}">
+      <span class="model-cell status-cell" data-label="상태"><span class="grade-pill ${meta.className}" title="${escapeAttr(gradeTitle)}">${meta.label}</span></span>
       <span class="model-cell model-name-cell">
         <strong>${escapeHtml(estimate.model.name)}</strong>
         <span class="tag-row compact-tags">${tags}</span>
+        <span class="recommendation-line">${escapeHtml(recommendation)}</span>
       </span>
       <span class="model-cell provider-cell" data-label="공급사">
         <strong>${escapeHtml(estimate.model.maker)}</strong>
@@ -1281,7 +1525,10 @@ function renderModelRow(estimate) {
       <span class="model-cell license-cell" data-label="라이선스">${escapeHtml(estimate.model.license)}</span>
       <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${escapeHtml(estimate.settingLabel)}</span>
       <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${formatGb(estimate.requiredGb)}</span>
-      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${escapeHtml(estimate.speedLabel)}</span>
+      <span class="model-cell numeric-cell estimate-speed-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">
+        <strong>${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
+        <small>추정 · ${escapeHtml(confidence.label)}</small>
+      </span>
       <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[7])}">${escapeHtml(estimate.limitLabel)}</span>
       <span class="row-chevron" aria-hidden="true">›</span>
     </button>
@@ -1292,6 +1539,8 @@ function renderModelCard(estimate) {
   const meta = GRADE_META[estimate.grade];
   const key = modelKey(estimate.model);
   const tags = renderTags(estimate.model, 4);
+  const confidence = getEstimateConfidence(estimate.model, estimate, getHardware());
+  const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
 
   return `
     <button type="button" class="compact-card" data-model-key="${escapeAttr(key)}">
@@ -1305,10 +1554,11 @@ function renderModelCard(estimate) {
       <span class="compact-specs">
         <span>${escapeHtml(estimate.settingLabel)}</span>
         <span>VRAM ${formatGb(estimate.requiredGb)}</span>
-        <span>${escapeHtml(estimate.speedLabel)}</span>
+        <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
         <span>${escapeHtml(estimate.limitLabel)}</span>
       </span>
       <span class="tag-row">${tags}</span>
+      <span class="recommendation-line">${escapeHtml(recommendation)}</span>
       <span class="compact-summary">${escapeHtml(estimate.model.summary)}</span>
     </button>
   `;
@@ -1353,28 +1603,46 @@ function renderDetail() {
 
   const estimate = estimateModel(model, $("quantization").value, hardware);
   const meta = GRADE_META[estimate.grade];
+  const confidence = getEstimateConfidence(model, estimate, hardware);
+  const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
 
   detail.hidden = false;
-  backdrop.hidden = false;
+  backdrop.hidden = true;
   detail.innerHTML = `
     <div class="detail-head">
-      <button type="button" class="back-button" data-close-detail>← 모델 목록</button>
+      <button type="button" class="back-button" data-close-detail>상세 닫기</button>
       <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
     </div>
 
     <div class="detail-title">
-      <span class="grade-pill ${meta.className}">${meta.label}</span>
+      <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
       <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+      <p class="detail-description">${escapeHtml(model.summary)}</p>
     </div>
 
     <div class="detail-summary-grid">
+      ${renderDetailMetric("실행 판정", meta.label)}
       ${renderDetailMetric("권장 설정", `${estimate.quant.label} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`)}
-      ${renderDetailMetric("예상 VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
-      ${renderDetailMetric("예상 속도", formatSpeed(estimate.speed))}
+      ${renderDetailMetric("계산 VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
+      ${renderDetailMetric("VRAM 여유", formatGb(Math.abs(estimate.effectiveVram - estimate.requiredGb)), estimate.effectiveVram >= estimate.requiredGb ? "남음" : "부족")}
+      ${renderDetailMetric("추정 속도", formatSpeedRange(estimate, confidence), `신뢰도 ${confidence.label}`)}
       ${renderDetailMetric("첫 응답", formatDuration(estimate.firstTokenSeconds))}
     </div>
+
+    <section class="detail-section">
+      <h3>추천 이유</h3>
+      ${renderRecommendationReasonList(recommendationReasons, estimate)}
+    </section>
+
+    ${renderEvidenceSection(model, estimate, hardware, confidence)}
+
+    <section class="detail-section">
+      <h3>판정 근거</h3>
+      ${renderFitRationale(estimate, hardware)}
+      <p class="detail-note">${escapeHtml(estimate.reason)}</p>
+    </section>
 
     <section class="detail-section">
       <h3>양자화별 비교</h3>
@@ -1402,7 +1670,6 @@ function renderDetail() {
         <strong>${formatGb(estimate.requiredGb)}</strong>
       </div>
       ${renderVramBudget(hardware, estimate)}
-      <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
 
     <section class="detail-section">
@@ -1425,11 +1692,14 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
         ${renderInfoItem("활성 파라미터", formatParams(model.active))}
         ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
         ${renderInfoItem("라이선스", model.license)}
+        ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
+        ${renderInfoItem("실측 상태", findBenchmarksForModel(model).length ? "실측값 있음" : "실측값 없음")}
       </div>
       <div class="external-links">
         ${renderExternalLink("Hugging Face", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
         ${renderExternalLink("Ollama", `https://ollama.com/search?q=${encodeURIComponent(model.name)}`)}
         ${renderExternalLink("공식 문서 검색", `https://www.google.com/search?q=${encodeURIComponent(`${model.name} official`)}`)}
+        ${renderExternalLink("스펙 오류 신고", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
       </div>
     </section>
   `;
@@ -1438,29 +1708,47 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
 function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
   const estimate = estimateAnyModel(model, hardware);
   const meta = GRADE_META[estimate.grade];
+  const confidence = getEstimateConfidence(model, estimate, hardware);
+  const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
   const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
 
   detail.hidden = false;
-  backdrop.hidden = false;
+  backdrop.hidden = true;
   detail.innerHTML = `
     <div class="detail-head">
-      <button type="button" class="back-button" data-close-detail>← 모델 목록</button>
+      <button type="button" class="back-button" data-close-detail>상세 닫기</button>
       <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
     </div>
 
     <div class="detail-title">
-      <span class="grade-pill ${meta.className}">${meta.label}</span>
+      <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
       <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+      <p class="detail-description">${escapeHtml(model.summary)}</p>
     </div>
 
     <div class="detail-summary-grid">
+      ${renderDetailMetric("실행 판정", meta.label)}
       ${renderDetailMetric("권장 설정", estimate.settingLabel)}
-      ${renderDetailMetric("Peak VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
-      ${renderDetailMetric("예상 처리량", estimate.speedLabel)}
+      ${renderDetailMetric("계산 VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
+      ${renderDetailMetric("VRAM 여유", formatGb(Math.abs(estimate.effectiveVram - estimate.requiredGb)), estimate.effectiveVram >= estimate.requiredGb ? "남음" : "부족")}
+      ${renderDetailMetric("추정 처리량", formatSpeedRange(estimate, confidence), `신뢰도 ${confidence.label}`)}
       ${renderDetailMetric(model.type === "reranker" ? "질의당 지연" : "처리 지연", formatDuration(estimate.firstTokenSeconds))}
     </div>
+
+    <section class="detail-section">
+      <h3>추천 이유</h3>
+      ${renderRecommendationReasonList(recommendationReasons, estimate)}
+    </section>
+
+    ${renderEvidenceSection(model, estimate, hardware, confidence)}
+
+    <section class="detail-section">
+      <h3>판정 근거</h3>
+      ${renderFitRationale(estimate, hardware)}
+      <p class="detail-note">${escapeHtml(estimate.reason)}</p>
+    </section>
 
     <section class="detail-section">
       <h3>정밀도별 비교</h3>
@@ -1486,7 +1774,6 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
         <strong>${formatGb(estimate.requiredGb)}</strong>
       </div>
       ${renderVramBudget(hardware, estimate)}
-      <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
 
     <section class="detail-section">
@@ -1513,10 +1800,13 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
         ${renderInfoItem(isVisionModel(model) ? "처리 유형" : "최대 입력", isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
         ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
         ${renderInfoItem("라이선스", model.license)}
+        ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
+        ${renderInfoItem("실측 상태", findBenchmarksForModel(model).length ? "실측값 있음" : model.reference?.pagesPerSecond ? "참고 기준 있음" : "실측값 없음")}
       </div>
       <div class="external-links">
         ${model.sourceUrl ? renderExternalLink("공식/모델 카드", model.sourceUrl) : ""}
         ${renderExternalLink("Hugging Face 검색", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
+        ${renderExternalLink("스펙 오류 신고", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
       </div>
     </section>
   `;
@@ -1532,11 +1822,12 @@ function renderPrecisionRows(model, hardware, recommendedPrecisionId) {
         ? estimateRerankerModel(model, hardware, getWorkloadSettings(), precision.id)
         : estimateOcrModel(model, hardware, getWorkloadSettings(), precision.id);
     const meta = GRADE_META[estimate.grade];
+    const confidence = getEstimateConfidence(model, estimate, hardware);
     return `
       <div class="detail-row">
         <span>${escapeHtml(precision.label)}</span>
         <span>${formatGb(estimate.requiredGb)}</span>
-        <span>${escapeHtml(estimate.speedLabel)}</span>
+        <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
         <span>${precisionQualityLabel(precision, recommendedPrecisionId)}</span>
         <span><span class="grade-pill ${meta.className}">${meta.label}</span></span>
       </div>
@@ -1563,20 +1854,23 @@ function renderNonGenerativeScenarioRows(model, hardware) {
     return ["sentenceTransformers", "tei", "onnx", "pytorch"].map((runtime) => {
       const estimate = estimateEncoderModel(model, hardware, { ...workload, runtime }, workload.precisionId);
       const meta = GRADE_META[estimate.grade];
-      return renderRuntimeCard(ENCODER_RUNTIME_PROFILES[runtime].label, estimate.speedLabel, `${formatGb(estimate.requiredGb)} · ${meta.label}`);
+      const confidence = getEstimateConfidence(model, estimate, hardware);
+      return renderRuntimeCard(ENCODER_RUNTIME_PROFILES[runtime].label, formatSpeedRange(estimate, confidence), `${formatGb(estimate.requiredGb)} · ${meta.label}`);
     }).join("");
   }
   if (model.type === "reranker") {
     return ["sentenceTransformers", "tei", "onnx", "pytorch"].map((runtime) => {
       const estimate = estimateRerankerModel(model, hardware, { ...workload, runtime }, workload.precisionId);
       const meta = GRADE_META[estimate.grade];
-      return renderRuntimeCard(ENCODER_RUNTIME_PROFILES[runtime].label, estimate.speedLabel, `${formatGb(estimate.requiredGb)} · ${meta.label}`);
+      const confidence = getEstimateConfidence(model, estimate, hardware);
+      return renderRuntimeCard(ENCODER_RUNTIME_PROFILES[runtime].label, formatSpeedRange(estimate, confidence), `${formatGb(estimate.requiredGb)} · ${meta.label}`);
     }).join("");
   }
   return ["text", "layout", "table", "full"].map((featureSet) => {
     const estimate = estimateOcrModel(model, hardware, { ...workload, featureSet }, workload.precisionId);
     const meta = GRADE_META[estimate.grade];
-    return renderRuntimeCard(ocrFeatureLabel(featureSet), estimate.speedLabel, `${formatGb(estimate.requiredGb)} · ${meta.label}`);
+    const confidence = getEstimateConfidence(model, estimate, hardware);
+    return renderRuntimeCard(ocrFeatureLabel(featureSet), formatSpeedRange(estimate, confidence), `${formatGb(estimate.requiredGb)} · ${meta.label}`);
   }).join("");
 }
 
@@ -1814,11 +2108,100 @@ result = pipe(text=[{
   return `python got_ocr2_infer.py --image ./page.png --dtype ${estimate.precision.label}`;
 }
 
-function renderDetailMetric(label, value) {
+function renderDetailMetric(label, value, note = "") {
   return `
     <div class="detail-metric">
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value)}</strong>
+      ${note ? `<small>${escapeHtml(note)}</small>` : ""}
+    </div>
+  `;
+}
+
+function renderRecommendationReasonList(reasons, estimate) {
+  const items = reasons.length ? reasons : [estimate.reason];
+  return `
+    <div class="reason-list">
+      ${items.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}
+    </div>
+  `;
+}
+
+function renderEvidenceSection(model, estimate, hardware, confidence) {
+  const measuredRows = findBenchmarksForModel(model);
+  const reference = getReferenceBenchmark(model);
+  const measuredLabel = measuredRows.length
+    ? `${measuredRows.length}개 실측값`
+    : reference
+      ? "실측값 없음 · 참고 기준 있음"
+      : "등록된 실측값 없음";
+
+  return `
+    <section class="detail-section">
+      <h3>추정값과 실측값</h3>
+      <div class="evidence-grid">
+        <div class="evidence-card estimate-card">
+          <span>계산 추정</span>
+          <strong>${formatGb(estimate.requiredGb)} · ${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
+          <small>신뢰도 ${escapeHtml(confidence.label)} · ${escapeHtml(confidence.reason)}</small>
+          <small>${escapeHtml(shortGpuName(hardware.preset.name))} · ${escapeHtml(buildHardwareBasis(hardware))}</small>
+        </div>
+        <div class="evidence-card measured-card">
+          <span>실측 벤치마크</span>
+          <strong>${escapeHtml(measuredLabel)}</strong>
+          ${renderBenchmarkMiniRows(measuredRows, reference)}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderBenchmarkMiniRows(rows, reference) {
+  if (rows.length) {
+    return `
+      <div class="benchmark-mini-table">
+        ${rows.slice(0, 3).map((row) => `
+          <div>
+            <span>${escapeHtml(row.gpu || row.gpuId || "GPU 미기재")} · ${escapeHtml(row.runtime || row.workload || "runtime")}</span>
+            <strong>${escapeHtml(formatBenchmarkMetric(row))}</strong>
+            <small>${escapeHtml(row.date || "날짜 미기재")}${row.sourceUrl ? " · 출처 링크 있음" : ""}</small>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  if (reference) {
+    return `
+      <div class="benchmark-mini-table">
+        <div>
+          <span>${escapeHtml(reference.gpu)} · ${escapeHtml(reference.setting)}</span>
+          <strong>${escapeHtml(reference.metric)}</strong>
+          <small>참고 기준 · 실측 제보 데이터와 분리 표시</small>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <small>이 모델의 출처 연결 실측값은 아직 없습니다. 상세 수치는 계산식 기반 추정값으로만 표시합니다.</small>
+    <div class="external-links evidence-links">
+      ${renderExternalLink("벤치마크 제보", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
+    </div>
+  `;
+}
+
+function renderFitRationale(estimate, hardware) {
+  const meta = GRADE_META[estimate.grade];
+  const margin = estimate.effectiveVram - estimate.requiredGb;
+  return `
+    <div class="fit-rationale-grid">
+      ${renderInfoItem("판정", meta.label)}
+      ${renderInfoItem("필요 VRAM", formatGb(estimate.requiredGb))}
+      ${renderInfoItem("가용 VRAM", formatGb(estimate.effectiveVram))}
+      ${renderInfoItem(margin >= 0 ? "남는 VRAM" : "부족 VRAM", formatGb(Math.abs(margin)))}
+      ${renderInfoItem("사용률", formatPercent(estimate.pressure))}
+      ${renderInfoItem("계산 조건", buildHardwareBasis(hardware))}
     </div>
   `;
 }
@@ -1829,11 +2212,12 @@ function renderQuantRows(model, hardware, recommendedQuantId) {
     .map((quant) => {
       const estimate = estimateModel(model, quant.id, hardware);
       const meta = GRADE_META[estimate.grade];
+      const confidence = getEstimateConfidence(model, estimate, hardware);
       return `
         <div class="detail-row">
           <span>${escapeHtml(quant.label)}</span>
           <span>${formatGb(estimate.requiredGb)}</span>
-          <span>${formatSpeed(estimate.speed)}</span>
+          <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
           <span>${quantQualityLabel(quant, recommendedQuantId)}</span>
           <span><span class="grade-pill ${meta.className}">${meta.label}</span></span>
         </div>
@@ -1904,10 +2288,11 @@ function renderRuntimeRows(model, hardware) {
   return scenarios.map((scenario) => {
     const estimate = estimateModel(model, selectedQuant, scenario.hardware);
     const meta = GRADE_META[estimate.grade];
+    const confidence = getEstimateConfidence(model, estimate, scenario.hardware);
     return `
       <div class="runtime-card">
         <span>${escapeHtml(scenario.label)}</span>
-        <strong>${formatSpeed(estimate.speed)}</strong>
+        <strong>${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
         <small>${formatGb(estimate.requiredGb)} · ${meta.label}</small>
       </div>
     `;
@@ -1925,6 +2310,91 @@ function renderInfoItem(label, value) {
 
 function renderExternalLink(label, href) {
   return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
+}
+
+function renderBenchmarkSheet() {
+  const table = $("benchmarkTable");
+  if (!table) return;
+  const measuredRows = BENCHMARKS.map((row) => ({ ...row, rowType: "실측" }));
+  const referenceRows = collectReferenceBenchmarks();
+  const rows = [...measuredRows, ...referenceRows];
+
+  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 실측 ${measuredRows.length}개 · 참고 기준 ${referenceRows.length}개`;
+
+  if (!rows.length) {
+    table.innerHTML = `
+      <div class="empty-state">
+        등록된 실측 벤치마크가 없습니다. 계산 추정값은 상세 패널에서 별도로 표시됩니다.
+      </div>
+    `;
+    return;
+  }
+
+  table.innerHTML = `
+    <div class="benchmark-table">
+      <div class="benchmark-row benchmark-table-head">
+        <span>구분</span>
+        <span>모델</span>
+        <span>GPU</span>
+        <span>조건</span>
+        <span>지표</span>
+        <span>출처</span>
+      </div>
+      ${rows.map((row) => `
+        <div class="benchmark-row">
+          <span><span class="data-kind ${row.rowType === "실측" ? "is-measured" : "is-reference"}">${escapeHtml(row.rowType)}</span></span>
+          <span>${escapeHtml(row.modelName)}</span>
+          <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
+          <span>${escapeHtml(row.setting || row.runtime || row.workload || "-")}</span>
+          <span>${escapeHtml(formatBenchmarkMetric(row))}</span>
+          <span>${row.sourceUrl ? renderExternalLink("보기", row.sourceUrl) : "-"}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function collectReferenceBenchmarks() {
+  return OCR_MODELS
+    .filter((model) => model.reference?.pagesPerSecond)
+    .map((model) => {
+      const reference = getReferenceBenchmark(model);
+      return {
+        rowType: "참고 기준",
+        modelName: model.name,
+        gpuId: model.reference.gpuId,
+        gpu: reference.gpu,
+        workload: ocrTypeLabel(model.type),
+        setting: reference.setting,
+        pagesPerSecond: model.reference.pagesPerSecond,
+        peakVramGb: model.reference.peakVramGb,
+        sourceUrl: model.sourceUrl,
+      };
+    });
+}
+
+function getReferenceBenchmark(model) {
+  const reference = model.reference;
+  if (!reference?.pagesPerSecond) return null;
+  const gpu = GPU_PRESETS.find((item) => item.id === reference.gpuId);
+  const setting = [
+    reference.width && reference.height ? `${reference.width}x${reference.height}` : "",
+    reference.batch ? `batch ${reference.batch}` : "",
+  ].filter(Boolean).join(" · ");
+  return {
+    gpu: gpu?.name || reference.gpuId || "GPU 미기재",
+    setting: setting || ocrTypeLabel(model.type),
+    metric: `${formatThroughput(reference.pagesPerSecond, "page/s")}${reference.peakVramGb ? ` · ${formatGb(reference.peakVramGb)}` : ""}`,
+  };
+}
+
+function formatBenchmarkMetric(row) {
+  if (row.tokensPerSecond) return `${formatThroughput(row.tokensPerSecond, "tok/s")}${row.peakVramGb ? ` · ${formatGb(row.peakVramGb)}` : ""}`;
+  if (row.docsPerSecond) return `${formatThroughput(row.docsPerSecond, "doc/s")}${row.peakVramGb ? ` · ${formatGb(row.peakVramGb)}` : ""}`;
+  if (row.pairsPerSecond) return `${formatThroughput(row.pairsPerSecond, "pair/s")}${row.peakVramGb ? ` · ${formatGb(row.peakVramGb)}` : ""}`;
+  if (row.pagesPerSecond) return `${formatThroughput(row.pagesPerSecond, "page/s")}${row.peakVramGb ? ` · ${formatGb(row.peakVramGb)}` : ""}`;
+  if (row.metric) return row.metric;
+  return "-";
 }
 
 function closeModelDetail() {
@@ -2207,7 +2677,8 @@ function applyUrlState() {
   setSelectIfValid("providerFilter", params.get("provider"));
   setSelectIfValid("licenseFilter", params.get("license"));
   setSelectIfValid("gradeFilter", params.get("grade"));
-  setSelectIfValid("sortBy", params.get("sort"));
+  const sortParam = params.get("sort") === "vramAsc" ? "vramHeadroom" : params.get("sort");
+  setSelectIfValid("sortBy", sortParam);
 
   const fit = params.get("fit");
   if (SUMMARY_FILTERS.some((item) => item.id === fit)) activeSummaryFilter = fit;

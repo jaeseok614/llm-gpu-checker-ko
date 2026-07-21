@@ -359,11 +359,15 @@ button:focus-visible {
 }
 
 .summary-filterbar {
+  position: sticky;
+  top: 0;
+  z-index: 7;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 18px;
   padding-bottom: 0;
+  background: #ffffff;
 }
 
 .summary-chip {
@@ -401,11 +405,46 @@ button:focus-visible {
 }
 
 .result-toolbar-head {
+  position: sticky;
+  top: 48px;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 10px;
+  padding-top: 8px;
+  background: #ffffff;
+}
+
+.calculation-basis-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #f8fafc;
+}
+
+.calculation-basis-strip div {
+  min-width: 0;
+}
+
+.calculation-basis-strip span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.calculation-basis-strip strong {
+  display: block;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
 }
 
 .toolbar-actions {
@@ -425,6 +464,44 @@ button:focus-visible {
   gap: 9px;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.active-filter-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: -2px 0 12px;
+}
+
+.active-filter-chips > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.filter-chip,
+.filter-clear {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 9px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.filter-chip:hover,
+.filter-clear:hover {
+  background: var(--blue-soft);
+}
+
+.filter-clear {
+  border-color: transparent;
+  background: transparent;
+  color: var(--blue);
 }
 
 .search-wrap input {
@@ -451,6 +528,9 @@ button:focus-visible {
 }
 
 .model-list-head {
+  position: sticky;
+  top: 94px;
+  z-index: 5;
   min-height: 34px;
   padding: 0 10px;
   border-top: 1px solid var(--line);
@@ -476,6 +556,11 @@ button:focus-visible {
 
 .model-row:hover {
   background: #f8fafc;
+}
+
+.model-row.is-selected {
+  background: #f4f8fc;
+  box-shadow: inset 3px 0 0 var(--blue);
 }
 
 .model-cell {
@@ -530,6 +615,29 @@ button:focus-visible {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+.recommendation-line {
+  display: block;
+  margin-top: 6px;
+  color: #52606d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.estimate-speed-cell strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.estimate-speed-cell small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .grade-pill {
@@ -668,6 +776,8 @@ button:focus-visible {
 }
 
 .empty-state {
+  display: grid;
+  gap: 10px;
   border: 1px dashed var(--line-strong);
   border-radius: 6px;
   padding: 30px;
@@ -676,18 +786,35 @@ button:focus-visible {
   text-align: center;
 }
 
+.empty-state strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.empty-state span {
+  font-size: 13px;
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .drawer-backdrop {
   position: fixed;
   inset: 0;
   z-index: 20;
-  background: rgba(23, 32, 42, 0.36);
+  pointer-events: none;
+  background: transparent;
 }
 
 .model-detail {
   position: fixed;
   inset: 0 0 0 auto;
   z-index: 30;
-  width: min(720px, 100%);
+  width: min(680px, 100%);
   height: 100vh;
   overflow-y: auto;
   border-left: 1px solid var(--line);
@@ -736,6 +863,11 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+.detail-title .detail-description {
+  margin-top: 10px;
+  color: #3b4856;
+}
+
 .detail-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -770,6 +902,17 @@ button:focus-visible {
   margin-top: 5px;
   overflow-wrap: anywhere;
   font-size: 15px;
+}
+
+.detail-metric small,
+.evidence-card small,
+.benchmark-mini-table small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .detail-section {
@@ -853,10 +996,94 @@ button:focus-visible {
 
 .runtime-grid,
 .model-info-grid,
-.vram-budget-grid {
+.vram-budget-grid,
+.fit-rationale-grid,
+.evidence-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+}
+
+.fit-rationale-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.evidence-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.evidence-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.evidence-card > span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.evidence-card > strong {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.estimate-card {
+  background: #fbfcfd;
+}
+
+.benchmark-mini-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.benchmark-mini-table div {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.benchmark-mini-table span,
+.benchmark-mini-table strong {
+  display: block;
+  font-size: 12px;
+}
+
+.benchmark-mini-table span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.benchmark-mini-table strong {
+  margin-top: 3px;
+  color: var(--ink);
+}
+
+.evidence-links {
+  margin-top: 9px;
+}
+
+.reason-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.reason-list span {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .vram-budget-grid {
@@ -915,6 +1142,98 @@ button:focus-visible {
   background: var(--blue-soft);
 }
 
+.benchmark-panel {
+  width: min(1540px, calc(100vw - 48px));
+  margin: 0 auto 18px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 18px 22px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.benchmark-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.benchmark-head h2 {
+  font-size: 20px;
+}
+
+.benchmark-head p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.benchmark-meta {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.benchmark-table-wrap {
+  max-height: 520px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.benchmark-table {
+  min-width: 920px;
+}
+
+.benchmark-row {
+  display: grid;
+  grid-template-columns: 96px minmax(260px, 1.5fr) 180px 210px 140px 86px;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.benchmark-row:first-child {
+  border-top: 0;
+}
+
+.benchmark-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: 36px;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.data-kind {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.data-kind.is-measured {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.data-kind.is-reference {
+  background: #eef2f6;
+  color: #475569;
+}
+
 .app-footer {
   width: min(1540px, calc(100vw - 48px));
   margin: 0 auto 24px;
@@ -953,6 +1272,12 @@ button:focus-visible {
     flex-direction: column;
   }
 
+  .calculation-basis-strip,
+  .benchmark-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .toolbar-actions {
     width: 100%;
     justify-content: flex-end;
@@ -967,7 +1292,9 @@ button:focus-visible {
   .detail-summary-grid,
   .runtime-grid,
   .model-info-grid,
-  .vram-budget-grid {
+  .vram-budget-grid,
+  .fit-rationale-grid,
+  .evidence-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -983,7 +1310,8 @@ button:focus-visible {
   }
 
   .app-shell,
-  .app-footer {
+  .app-footer,
+  .benchmark-panel {
     width: 100%;
     margin-top: 12px;
     padding-right: 12px;
@@ -1043,8 +1371,21 @@ button:focus-visible {
   .detail-summary-grid,
   .runtime-grid,
   .model-info-grid,
-  .vram-budget-grid {
+  .vram-budget-grid,
+  .fit-rationale-grid,
+  .evidence-grid {
     grid-template-columns: 1fr;
+  }
+
+  .summary-filterbar,
+  .result-toolbar-head,
+  .model-list-head {
+    position: static;
+  }
+
+  .calculation-basis-strip {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .toolbar-actions {

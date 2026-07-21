@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 모델 실행 가능성 계산기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260721-ui4" />
+    <link rel="stylesheet" href="./styles.css?v=20260721-ui5" />
   </head>
   <body>
     <header class="app-header">
@@ -18,6 +18,7 @@
       <nav class="header-nav" aria-label="상단 메뉴">
         <a href="#calculationBasis">계산 기준</a>
         <a href="https://github.com/jaeseok614/llm-gpu-checker-ko#참고한-공식-자료" target="_blank" rel="noreferrer">데이터 출처</a>
+        <a href="#benchmarkSheet">벤치마크</a>
         <a href="https://github.com/jaeseok614/llm-gpu-checker-ko" target="_blank" rel="noreferrer">GitHub</a>
       </nav>
     </header>
@@ -338,15 +339,18 @@
 
       <section class="results-panel" aria-label="모델 검색 결과">
         <div class="summary-filterbar" id="summaryGrid"></div>
+        <div class="calculation-basis-strip" id="calculationBasisStrip"></div>
 
         <div class="result-toolbar-head">
           <div class="result-meta" id="resultMeta">모델 0개</div>
           <div class="toolbar-actions">
             <select id="sortBy" aria-label="정렬">
-              <option value="fit">추천순</option>
-              <option value="speed">예상 속도순</option>
-              <option value="quality">품질 우선</option>
-              <option value="vramAsc">필요 VRAM 낮은 순</option>
+              <option value="fit">종합 추천</option>
+              <option value="quality">최고 품질</option>
+              <option value="speed">가장 빠른 모델</option>
+              <option value="vramHeadroom">VRAM 여유 우선</option>
+              <option value="koreanFirst">한국어 모델 우선</option>
+              <option value="codingFirst">코딩 모델 우선</option>
               <option value="sizeDesc">파라미터 큰 순</option>
               <option value="latest">최신 모델순</option>
             </select>
@@ -387,10 +391,23 @@
             <option value="all">전체 라이선스</option>
           </select>
         </div>
+        <div class="active-filter-chips" id="activeFilterChips" hidden></div>
 
         <div class="model-results" id="modelResults"></div>
       </section>
     </main>
+
+    <section class="benchmark-panel" id="benchmarkSheet" aria-label="벤치마크 시트">
+      <div class="benchmark-head">
+        <div>
+          <span class="section-kicker">Benchmark Sheet</span>
+          <h2>모델별 성능지표 시트</h2>
+          <p>실측값은 출처가 있는 실행 결과만 표시하고, OCR/VLM reference 값은 참고 기준으로 분리합니다.</p>
+        </div>
+        <span class="benchmark-meta" id="benchmarkMeta">벤치마크 데이터 준비 중</span>
+      </div>
+      <div class="benchmark-table-wrap" id="benchmarkTable"></div>
+    </section>
 
     <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
     <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
@@ -399,13 +416,14 @@
       <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
     </footer>
 
-    <script src="./data/gpus.js?v=20260721-ui4" defer></script>
-    <script src="./data/quantizations.js?v=20260721-ui4" defer></script>
-    <script src="./data/precision-profiles.js?v=20260721-ui4" defer></script>
-    <script src="./data/models.js?v=20260721-ui4" defer></script>
-    <script src="./data/embedding-models.js?v=20260721-ui4" defer></script>
-    <script src="./data/reranker-models.js?v=20260721-ui4" defer></script>
-    <script src="./data/ocr-models.js?v=20260721-ui4" defer></script>
-    <script src="./app.js?v=20260721-ui4" defer></script>
+    <script src="./data/gpus.js?v=20260721-ui5" defer></script>
+    <script src="./data/quantizations.js?v=20260721-ui5" defer></script>
+    <script src="./data/precision-profiles.js?v=20260721-ui5" defer></script>
+    <script src="./data/models.js?v=20260721-ui5" defer></script>
+    <script src="./data/embedding-models.js?v=20260721-ui5" defer></script>
+    <script src="./data/reranker-models.js?v=20260721-ui5" defer></script>
+    <script src="./data/ocr-models.js?v=20260721-ui5" defer></script>
+    <script src="./data/benchmarks.js?v=20260721-ui5" defer></script>
+    <script src="./app.js?v=20260721-ui5" defer></script>
   </body>
 </html>

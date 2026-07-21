@@ -24,7 +24,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg?ui=professional-20260721-wide)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260721-trust)
 
 ## 빠른 사용법
 
@@ -64,6 +64,7 @@
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
 | 모델 공급사 | 56 |
 | 비전/멀티모달 모델 | 81 |
+| 실측 벤치마크 시트 | 실측 행 0 · OCR/VLM 참고 기준 45 |
 
 ## 주요 기능
 
@@ -78,12 +79,16 @@
 | 양자화 선택 | 자동 추천, IQ2_XXS, Q2_K, Q3_K_S/M, Q4_0/K_S/K_M, Q5_0/K_S/K_M, Q6_K, Q8_0, FP16 |
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
-| 빠른 목록 | 상태, 모델명, 공급사, 라이선스, 권장 설정, 필요 VRAM, 예상 속도, 컨텍스트를 표 형태로 비교 |
-| 상세 분석 | 모델 클릭 시 정밀도별 비교, VRAM 구성, 실행 방식별 속도, 계산 근거, 예시 명령어 표시 |
+| 현재 계산 기준 | 목록 바로 위에서 GPU, 가용 VRAM, 컨텍스트, 동시 요청, 런타임을 한 줄로 확인 |
+| 빠른 목록 | 상태, 모델명, 공급사, 라이선스, 권장 설정, 계산 VRAM, 추정 속도 범위, 컨텍스트를 표 형태로 비교 |
+| 상세 우측 패널 | 모델 클릭 시 목록을 유지한 채 판정 요약, 추천 이유, VRAM 근거, 실행 예시 확인 |
+| 추정/실측 분리 | 계산 추정값, 신뢰도, 출처 연결 실측값, OCR/VLM 참고 기준을 서로 다른 영역에 표시 |
+| 벤치마크 시트 | `data/benchmarks.js` 실측 행과 OCR/VLM reference benchmark를 전역 시트로 표시 |
 | 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
+| 적용 필터 칩 | 검색어, 등급, 상태, 작업, 공급사, 라이선스 필터를 칩으로 표시하고 개별 해제 |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
 | 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
-| 정렬 | 추천순, 예상 속도순, 품질 우선, 필요 VRAM 낮은 순, 파라미터 큰 순, 최신 모델순 |
+| 정렬 | 종합 추천, 최고 품질, 가장 빠른 모델, VRAM 여유 우선, 한국어 모델 우선, 코딩 모델 우선, 파라미터 큰 순, 최신 모델순 |
 | URL 상태 저장 | GPU, VRAM, RAM, 예약 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
 
 ## 계산 기준
@@ -542,16 +547,13 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 ## 실제 실행 검증
 
-계산기는 추정 도구입니다. 실제 벤치마크가 쌓일수록 정확도가 좋아집니다. 실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
+계산기는 추정 도구입니다. 앱은 계산 추정값과 실측 벤치마크를 UI에서 분리합니다.
 
-| GPU | 모델 | 설정 | 계산기 결과 | 실제 결과 |
-| --- | --- | --- | --- | --- |
-| RTX 4090 24GB | Qwen2.5 32B Instruct | Q4, 8K, 동시 1명 | 가능 | 제보 대기 |
-| RTX 3060 12GB | Llama 3.1 8B Instruct | Q4, 4K, 동시 1명 | 가능 | 제보 대기 |
-| A100 80GB x2 | Llama 3.3 70B Instruct | Q4, 16K, 동시 4명 | 잘 돌아감 | 제보 대기 |
-| RTX 4090 24GB | BAAI/bge-m3 | FP16, 384 tokens, batch 32 | 쾌적 | 제보 대기 |
-| A100 80GB | MinerU2.5-Pro-2604 1.2B | BF16, A4 300DPI, batch 1 | 쾌적 | 제보 대기 |
-| RTX 4090 24GB | PaddleOCR-VL-1.6 | BF16, A4 200DPI, batch 1 | 잘 돌아감 | 제보 대기 |
+- 계산 추정: 모델 파라미터, 양자화, KV cache, 런타임 오버헤드, GPU 대역폭을 기반으로 산출합니다.
+- 실측 벤치마크: `data/benchmarks.js`에 출처가 있는 측정 행만 추가합니다.
+- 참고 기준: OCR/VLM 모델 카드나 파이프라인 reference 값을 실측 행과 분리해 표시합니다.
+
+실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
 
 ## 로컬 실행
 
@@ -623,7 +625,7 @@ OCR/VLM 모델은 `data/ocr-models.js`에 아래 타입으로 추가합니다.
 | `document-vlm` | 문서 VLM | PDF→Markdown, 표·수식·레이아웃 복원 |
 | `general-vlm` | 범용 VLM | OCR-like 추출, 문서 질의응답, 화면 이해 |
 
-OCR/VLM은 모델별 activation 계수와 reference benchmark가 중요하므로, 실제 측정값이 있으면 `reference`에 함께 넣는 것이 좋습니다.
+OCR/VLM은 모델별 activation 계수와 reference benchmark가 중요합니다. 출처가 있는 실제 측정값은 `data/benchmarks.js`에 추가하고, 모델 카드나 파이프라인 기준값은 `reference`로 분리해 둡니다.
 
 ## 검증
 

@@ -14,6 +14,7 @@ for (const file of [
   "data/embedding-models.js",
   "data/reranker-models.js",
   "data/ocr-models.js",
+  "data/benchmarks.js",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   vm.runInContext(source, context, { filename: file });
@@ -28,6 +29,7 @@ assertArray(data.precisions.ocr, "ocr precisions");
 assertArray(data.embeddingModels, "embeddingModels");
 assertArray(data.rerankerModels, "rerankerModels");
 assertArray(data.ocrModels, "ocrModels");
+if (!Array.isArray(data.benchmarks)) throw new Error("benchmarks must be an array");
 
 const gpuIds = new Set();
 for (const gpu of data.gpus) {
@@ -113,7 +115,14 @@ for (const model of data.ocrModels) {
   validateTagsAndName(model, "ocr model");
 }
 
-console.log(`validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, ${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models`);
+for (const row of data.benchmarks) {
+  requireFields(row, ["modelName", "gpu", "workload", "sourceUrl"], "benchmark");
+  if (!row.tokensPerSecond && !row.docsPerSecond && !row.pairsPerSecond && !row.pagesPerSecond && !row.metric) {
+    throw new Error(`benchmark ${row.modelName} needs a measured metric`);
+  }
+}
+
+console.log(`validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, ${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, ${data.benchmarks.length} measured benchmarks`);
 
 function assertArray(value, name) {
   if (!Array.isArray(value) || value.length === 0) {
