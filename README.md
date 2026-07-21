@@ -24,7 +24,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg?ui=professional-20260721-ui7)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260721-ui8)
 
 ## 빠른 사용법
 
@@ -64,8 +64,8 @@
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
 | 모델 공급사 | 56 |
 | 비전/멀티모달 모델 | 81 |
-| 실측 벤치마크 시트 | 실측 행 0 · OCR/VLM 참고 기준 45 |
-| 출시/품질 메타데이터 | 출처 확인 53개 |
+| 실측 벤치마크 시트 | 실측 행 0 · 공개 품질 점수 87 · OCR/VLM 참고 기준 45 |
+| 출시/품질 메타데이터 | 출처 확인 286개 |
 
 ## 주요 기능
 
@@ -81,10 +81,10 @@
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 현재 계산 기준 | 목록 바로 위에서 GPU, 가용 VRAM, 컨텍스트, 동시 요청, 런타임을 한 줄로 확인 |
-| 빠른 목록 | 상태, 모델명, 공식 출시일/세대, 품질 벤치마크, 공급사/라이선스, 권장 설정, 계산 VRAM, 추정 속도 범위, 컨텍스트를 표 형태로 비교 |
+| 빠른 목록 | 상태, 모델명, 공식 출시일/세대, 공개 품질 점수, 공급사/라이선스, 권장 설정, 계산 VRAM, 추정 속도 범위, 컨텍스트를 표 형태로 비교 |
 | 상세 우측 패널 | 모델 클릭 시 목록을 유지한 채 판정 요약, 추천 이유, VRAM 근거, 실행 예시 확인 |
 | 추정/실측 분리 | 계산 추정값, 신뢰도, 출처 연결 실측값, OCR/VLM 참고 기준을 서로 다른 영역에 표시 |
-| 벤치마크 시트 | `data/benchmarks.js` 실측 행, `data/model-metadata.js` 품질 지표, OCR/VLM reference benchmark를 분리 표시 |
+| 벤치마크 시트 | `data/benchmarks.js` 실측 행, `data/model-metadata.js` 공개 품질 점수, OCR/VLM reference benchmark를 분리 표시 |
 | 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
 | 적용 필터 칩 | 검색어, 등급, 상태, 작업, 공급사, 라이선스 필터를 칩으로 표시하고 개별 해제 |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
@@ -548,12 +548,24 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 ## 실제 실행 검증
 
-계산기는 추정 도구입니다. 앱은 계산 추정값과 실측 벤치마크를 UI에서 분리합니다.
+계산기는 추정 도구입니다. 앱은 계산 추정값, 공개 품질 점수, 실측 벤치마크를 UI에서 분리합니다.
 
 - 계산 추정: 모델 파라미터, 양자화, KV cache, 런타임 오버헤드, GPU 대역폭을 기반으로 산출합니다.
 - 실측 벤치마크: `data/benchmarks.js`에 출처가 있는 측정 행만 추가합니다.
-- 품질 벤치마크: `data/model-metadata.js`에 공식 모델 카드, 기술 보고서, 또는 명시된 외부 평가 출처가 있는 값만 추가합니다.
+- 공개 품질 점수: `data/model-metadata.js`에 공식 모델 카드, 기술 보고서, 또는 명시된 외부 평가 출처가 있는 값만 추가합니다.
 - 참고 기준: OCR/VLM 모델 카드나 파이프라인 reference 값을 실측 행과 분리해 표시합니다.
+- 동일 기준이 없는 모델은 다른 벤치마크 점수를 섞지 않고 `—`와 `동일 기준 없음`으로 표시합니다.
+
+### 공개 품질 점수 기준
+
+| 탭 | 대표 기준 |
+| --- | --- |
+| 생성형 LLM | MMLU-Pro, AIME, HumanEval, LogicKor처럼 모델 카드가 명시한 용도별 평가 |
+| 임베딩 | MTEB 계열 평균 |
+| 리랭커 | BEIR 또는 MIRACL 계열 NDCG |
+| OCR | 문자 인식 정확도 또는 공식 OCR 테스트 점수 |
+| 문서 VLM | OmniDocBench 종합 점수 |
+| 범용 VLM | OCRBench v2 또는 모델 카드의 멀티모달 품질 지표 |
 
 실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
 
@@ -653,13 +665,19 @@ npm run check
 - [Meta Llama 3.1 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md)
 - [Meta Llama 3.2 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/MODEL_CARD.md)
 - [Meta Llama 3.3 70B model card](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)
+- [Meta Llama 4 model card](https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E)
 - [Google Gemma 3 model page](https://deepmind.google/models/gemma/gemma-3/)
 - [Google Gemma release notes](https://ai.google.dev/gemma/docs/releases)
+- [OpenAI gpt-oss release note](https://openai.com/index/introducing-gpt-oss/)
 - [Microsoft Phi-4 model card](https://huggingface.co/microsoft/phi-4)
 - [DeepSeek-R1 repository and evaluation table](https://github.com/deepseek-ai/DeepSeek-R1)
 - [DeepSeek-R1 release note](https://api-docs.deepseek.com/news/news250120)
+- [DeepSeek-V3.2 release note](https://api-docs.deepseek.com/news/news251201)
 - [Mistral Small 3.1 model card](https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503)
+- [Mistral model lifecycle](https://legal.mistral.ai/ai-governance/models)
+- [Mistral changelog](https://docs.mistral.ai/resources/changelogs)
 - [LG AI EXAONE 4.0 repository](https://github.com/LG-AI-EXAONE/EXAONE-4.0)
+- [EXAONE Deep model card](https://huggingface.co/LGAI-EXAONE/EXAONE-Deep-32B)
 - [Kakao Kanana repository](https://github.com/kakao/kanana)
 - [SK Telecom A.X 4.0 Light model card](https://huggingface.co/skt/A.X-4.0-Light)
 - [Google Gemma 4 model page](https://deepmind.google/models/gemma/gemma-4/)
@@ -676,7 +694,10 @@ npm run check
 - [Magistral Small 1.2 model card](https://huggingface.co/mistralai/Magistral-Small-2509)
 - [IBM Granite 4.1 3B model card](https://huggingface.co/ibm-granite/granite-4.1-3b)
 - [GLM-4.5 overview](https://docs.z.ai/guides/llm/glm-4.5)
-- [Kimi K2 model page](https://www.kimi.com/blog/kimi-k2)
+- [GLM-5.2 release note](https://docs.bigmodel.cn/cn/update/new-releases)
+- [Kimi K2 model card](https://huggingface.co/moonshotai/Kimi-K2-Instruct)
+- [Kimi K2 Thinking release note](https://platform.kimi.ai/blog/posts/Kimi_API_Newsletter)
+- [Liquid Foundation Models release](https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models)
 - [SK Telecom A.X LLM series](https://sktelecom.github.io/en/project/axllm/)
 - [A.X 4.0 model card](https://huggingface.co/skt/A.X-4.0)
 - [EXAONE 4.0 1.2B model card](https://huggingface.co/OpenLLM-Korea/EXAONE-4.0-1.2B)
@@ -713,7 +734,9 @@ npm run check
 - [Sentence Transformers inference efficiency docs](https://www.sbert.net/docs/sentence_transformer/usage/efficiency.html)
 - [PaddleOCR home and PP-OCRv6 release notes](https://www.paddleocr.ai/main/en/index.html)
 - [PaddleOCR PP-OCRv6 documentation](https://www.paddleocr.ai/latest/en/version3.x/algorithm/PP-OCRv6/PP-OCRv6.html)
+- [PaddleOCR-VL-1.6 documentation](https://www.paddleocr.ai/main/en/version3.x/algorithm/PaddleOCR-VL/PaddleOCR-VL-1.6.html)
 - [PaddleOCR-VL-1.6 model card](https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6)
+- [OmniDocBench leaderboard](https://github.com/opendatalab/OmniDocBench)
 - [MinerU2.5-Pro-2604-1.2B model card](https://huggingface.co/opendatalab/MinerU2.5-Pro-2604-1.2B)
 - [DeepSeek-OCR-2 model card](https://huggingface.co/deepseek-ai/DeepSeek-OCR-2)
 - [dots.ocr model card](https://huggingface.co/rednote-hilab/dots.ocr)

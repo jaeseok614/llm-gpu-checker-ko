@@ -132,6 +132,12 @@ const allModelNames = new Set([
   ...data.rerankerModels,
   ...data.ocrModels,
 ].map((model) => model.name));
+const allModelsByName = new Map([
+  ...data.models,
+  ...data.embeddingModels,
+  ...data.rerankerModels,
+  ...data.ocrModels,
+].map((model) => [model.name, model]));
 
 for (const [name, metadata] of Object.entries(data.modelMetadata)) {
   if (!name.includes(":") && !allModelNames.has(name)) {
@@ -143,7 +149,8 @@ for (const [name, metadata] of Object.entries(data.modelMetadata)) {
   if (metadata.releaseDate && !/^\d{4}(-\d{2}(-\d{2})?)?$/.test(metadata.releaseDate)) {
     throw new Error(`model metadata ${name} has invalid releaseDate: ${metadata.releaseDate}`);
   }
-  if (metadata.releaseDate && !metadata.sourceUrl) {
+  const existingModel = allModelsByName.get(name);
+  if (metadata.releaseDate && !(metadata.sourceUrl || existingModel?.sourceUrl)) {
     throw new Error(`model metadata ${name} with releaseDate needs sourceUrl`);
   }
   if (metadata.qualityBenchmark) {
