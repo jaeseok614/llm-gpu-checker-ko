@@ -8,10 +8,10 @@ const pixels = Buffer.alloc((width * 3 + 1) * height);
 const colors = {
   bg: [244, 246, 248],
   panel: [255, 255, 255],
-  line: [217, 225, 234],
-  ink: [23, 32, 42],
-  muted: [97, 112, 128],
-  blue: [34, 94, 168],
+  line: [217, 224, 231],
+  ink: [24, 33, 43],
+  muted: [102, 115, 130],
+  blue: [22, 74, 123],
   blueSoft: [232, 241, 251],
   green: [19, 121, 91],
   greenSoft: [229, 244, 238],
@@ -29,11 +29,11 @@ function main() {
   strokeRect(104, 98, 92, 92, colors.blue, 6);
   rect(130, 124, 40, 40, colors.greenSoft);
   strokeRect(130, 124, 40, 40, colors.green, 6);
-  text(230, 112, "KOREAN AI HARDWARE FIT", 4, colors.blue);
-  text(230, 166, "LLM GPU CHECKER", 8, colors.ink);
-  text(230, 252, "LLM RAG OCR GPU FIT CALCULATOR", 4, colors.muted);
+  text(230, 112, "AI HARDWARE FIT", 4, colors.blue);
+  text(230, 166, "AI MODEL FIT", 8, colors.ink);
+  text(230, 252, "LLM EMBEDDING RERANKER OCR VLM", 4, colors.muted);
   infoCard(104, 336, "86 GPUS", "RTX A100 H100", colors.greenSoft, colors.green);
-  infoCard(376, 336, "128 MODELS", "LLM RAG OCR", colors.blueSoft, colors.blue);
+  infoCard(376, 336, "286 MODELS", "147 LLMS", colors.blueSoft, colors.blue);
   infoCard(648, 336, "RAG FIT", "BATCH TOKENS", colors.violetSoft, colors.violet);
   infoCard(920, 336, "OCR FIT", "DPI PAGES", colors.yellowSoft, colors.yellow);
   rect(104, 496, 1058, 48, colors.ink);

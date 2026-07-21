@@ -1,12 +1,12 @@
-# LLM GPU Checker
+# AI 모델 실행 가능성 계산기
 
 <p align="center">
-  <img src="./assets/gpu-board.svg" alt="LLM GPU Checker" width="96" />
+  <img src="./assets/gpu-board.svg" alt="AI Hardware Fit" width="96" />
 </p>
 
 <p align="center">
   <strong>내 GPU에서 생성형 LLM, 임베딩, 리랭커, OCR/VLM 모델을 현실적으로 실행할 수 있는지 확인하세요.</strong><br />
-  Korean web-based AI model compatibility, VRAM, RAG, and OCR workload calculator.
+  AI Hardware Fit · Korean web-based AI model compatibility, VRAM, RAG, and OCR workload calculator.
 </p>
 
 <p align="center">
@@ -18,19 +18,19 @@
 </p>
 
 <p align="center">
-  <img alt="Static app" src="https://img.shields.io/badge/static-HTML%20%2B%20CSS%20%2B%20JS-225ea8" />
+  <img alt="Static app" src="https://img.shields.io/badge/static-HTML%20%2B%20CSS%20%2B%20JS-164a7b" />
   <img alt="GitHub Pages" src="https://img.shields.io/badge/demo-GitHub%20Pages-13795b" />
   <img alt="Korean UI" src="https://img.shields.io/badge/UI-Korean-5f4bb6" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260721)
 
 ## 빠른 사용법
 
-1. 웹 데모를 열고 GPU 프리셋을 선택합니다.
-2. VRAM, RAM, GPU 수, 이미 사용 중인 VRAM을 필요하면 직접 수정합니다.
-3. 생성형 LLM, 임베딩, 리랭커, OCR/VLM 탭에서 실행 가능한 모델을 확인합니다.
+1. 웹 데모를 열고 상단의 실행 환경 요약을 확인합니다.
+2. GPU, VRAM, RAM, 동시 요청, 컨텍스트를 바꿔야 할 때만 `설정 변경`을 엽니다.
+3. 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM 탭에서 실행 가능한 모델을 확인합니다.
 4. 모델을 클릭해 VRAM 구성, 속도 추정, 실행 예시를 확인합니다.
 
 ## 대표 사용 사례
@@ -44,7 +44,7 @@
 | LLM 서버가 이미 14GB를 쓰는 상태에서 임베딩/리랭커를 같이 띄울 수 있을까? | `이미 사용 중인 VRAM`, `안전 여유분` 입력 후 워크로드 탭별 확인 |
 | EmbeddingGemma, KURE, Granite R2, bge-m3 임베딩을 배치로 돌리면 얼마나 빠를까? | `임베딩` 탭, 모델명 검색 후 `평균 입력 길이`, `배치 크기` 변경 |
 | 한국어 RAG에서 bge-reranker, Qwen3 Reranker, mxbai-rerank 중 무엇이 맞을까? | `리랭커` 탭, `후보 수`, `문서 길이`, `배치 크기` 변경 |
-| OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `경량 OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
+| OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
 | PDF를 Markdown으로 복원하는 문서 VLM은 어떤 GPU가 필요할까? | `문서 VLM` 탭, `PaddleOCR-VL`, `MinerU`, `olmOCR` 검색 |
 | DeepSeek-VL2나 Qwen2.5-VL 같은 범용 VLM으로 문서 질의응답을 돌릴 수 있을까? | `범용 VLM` 탭, `DeepSeek-VL2`, `Qwen2.5-VL`, `Llama Vision` 검색 |
 
@@ -57,7 +57,7 @@
 | LLM 모델 | 147 |
 | 임베딩 모델 | 60 |
 | 리랭커 모델 | 34 |
-| 경량 OCR 모델 | 4 |
+| OCR 모델 | 4 |
 | 문서 VLM 모델 | 9 |
 | 범용 VLM 모델 | 32 |
 | 양자화 옵션 | 8 |
@@ -69,16 +69,16 @@
 
 | 기능 | 설명 |
 | --- | --- |
-| GPU 프리셋/검색 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
-| 직접 입력 | VRAM, GPU 수, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
-| 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, 경량 OCR, 문서 VLM, 범용 VLM을 분리 계산 |
+| GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
+| 설정 변경 패널 | VRAM, GPU 수, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
+| 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM을 분리 계산 |
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
 | RAG 조건 | 임베딩 입력 길이, 배치 크기, TEI 최대 배치 토큰, 리랭킹 후보 수를 프리셋 또는 직접 입력으로 조정 |
 | OCR/VLM 조건 | 문서 해상도, 이미지 너비/높이, 배치 페이지, 처리 기능 조정 |
 | 양자화 선택 | 자동 추천, Q2/Q3/Q4/Q5/Q6/Q8/FP16 |
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
-| 빠른 목록 | 모델명, 등급, 권장 양자화, 필요 VRAM, 예상 속도, 컨텍스트를 한 줄로 비교 |
+| 빠른 목록 | 상태, 모델명, 공급사, 권장 설정, 필요 VRAM, 예상 속도, 컨텍스트를 표 형태로 비교 |
 | 상세 분석 | 모델 클릭 시 정밀도별 비교, VRAM 구성, 실행 방식별 속도, 계산 근거, 예시 명령어 표시 |
 | 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
@@ -408,7 +408,7 @@ OCR workloads are separated into three model families because their peak memory 
 
 | Family | Calculator tab | Main memory driver |
 | --- | --- | --- |
-| Lightweight OCR pipeline | `경량 OCR` | Resident detection/recognition modules and image feature maps |
+| Lightweight OCR pipeline | `OCR` | Resident detection/recognition modules and image feature maps |
 | Document-specialized VLM | `문서 VLM` | Vision encoding, image tokens, decoder KV cache, structured output length |
 | General VLM | `범용 VLM` | Image/video tokens, conversation context, decoder KV cache, generated answer length |
 
@@ -613,7 +613,7 @@ OCR/VLM 모델은 `data/ocr-models.js`에 아래 타입으로 추가합니다.
 
 | 타입 | 표시 탭 | 용도 |
 | --- | --- | --- |
-| `ocr-pipeline` | 경량 OCR | PP-OCR처럼 검출/인식/좌표 추출 중심 |
+| `ocr-pipeline` | OCR | PP-OCR처럼 검출/인식/좌표 추출 중심 |
 | `document-vlm` | 문서 VLM | PDF→Markdown, 표·수식·레이아웃 복원 |
 | `general-vlm` | 범용 VLM | OCR-like 추출, 문서 질의응답, 화면 이해 |
 
