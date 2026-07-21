@@ -24,7 +24,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg?ui=professional-20260721-trust)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260721-ui6)
 
 ## 빠른 사용법
 

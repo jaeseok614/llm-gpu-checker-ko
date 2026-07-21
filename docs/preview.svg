@@ -1,5 +1,5 @@
-<svg width="1540" height="760" viewBox="0 0 1540 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI Hardware Fit professional calculator with right detail panel preview">
-  <rect width="1540" height="760" fill="#F4F6F8"/>
+<svg width="1540" height="860" viewBox="0 0 1540 860" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI Hardware Fit current UI preview with release, benchmark, and detail panel">
+  <rect width="1540" height="860" fill="#F4F6F8"/>
 
   <rect x="24" y="24" width="1492" height="60" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
   <rect x="48" y="37" width="34" height="34" rx="6" fill="#E8F1FB" stroke="#164A7B" stroke-width="3"/>
@@ -11,7 +11,7 @@
   <text x="1396" y="60" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#667382">벤치마크</text>
   <text x="1462" y="60" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#667382">GitHub</text>
 
-  <rect x="24" y="104" width="1492" height="132" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
+  <rect x="24" y="104" width="1492" height="176" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
   <text x="52" y="137" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#164A7B">내 실행 환경</text>
   <text x="52" y="168" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#18212B">GeForce RTX 4090 24GB</text>
   <text x="52" y="195" font-family="Arial, sans-serif" font-size="13" fill="#667382">가용 VRAM 22GB · RAM 64GB · GPU 1개</text>
@@ -21,127 +21,147 @@
 
   <line x1="24" y1="236" x2="1516" y2="236" stroke="#D9E0E7"/>
   <g font-family="Arial, sans-serif" font-size="14" font-weight="700">
-    <text x="52" y="271" fill="#164A7B">생성형 LLM</text>
-    <line x1="52" y1="288" x2="132" y2="288" stroke="#164A7B" stroke-width="2"/>
-    <text x="172" y="271" fill="#667382">임베딩</text>
-    <text x="250" y="271" fill="#667382">리랭커</text>
-    <text x="328" y="271" fill="#667382">OCR</text>
-    <text x="386" y="271" fill="#667382">문서 VLM</text>
-    <text x="484" y="271" fill="#667382">범용 VLM</text>
+    <text x="52" y="266" fill="#164A7B">생성형 LLM</text>
+    <line x1="52" y1="280" x2="132" y2="280" stroke="#164A7B" stroke-width="2"/>
+    <text x="172" y="266" fill="#667382">임베딩</text>
+    <text x="250" y="266" fill="#667382">리랭커</text>
+    <text x="328" y="266" fill="#667382">OCR</text>
+    <text x="386" y="266" fill="#667382">문서 VLM</text>
+    <text x="484" y="266" fill="#667382">범용 VLM</text>
   </g>
 
-  <rect x="24" y="304" width="1492" height="416" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
+  <rect x="24" y="300" width="988" height="482" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
   <g font-family="Arial, sans-serif" font-size="13" font-weight="700">
-    <rect x="52" y="326" width="76" height="30" rx="15" fill="#F1F5F9" stroke="#C9D5E1"/>
-    <text x="68" y="346" fill="#164A7B">전체 147</text>
-    <text x="146" y="346" fill="#667382">쾌적 58</text>
-    <text x="232" y="346" fill="#667382">잘 돌아감 23</text>
-    <text x="348" y="346" fill="#667382">가능 14</text>
-    <text x="430" y="346" fill="#667382">조건부 17</text>
-    <text x="528" y="346" fill="#667382">부적합 35</text>
+    <rect x="48" y="322" width="76" height="30" rx="15" fill="#F1F5F9" stroke="#C9D5E1"/>
+    <text x="64" y="342" fill="#164A7B">전체 147</text>
+    <text x="142" y="342" fill="#667382">쾌적 58</text>
+    <text x="226" y="342" fill="#667382">잘 돌아감 23</text>
+    <text x="340" y="342" fill="#667382">가능 14</text>
+    <text x="420" y="342" fill="#667382">조건부 17</text>
+    <text x="518" y="342" fill="#667382">부적합 35</text>
   </g>
 
-  <text x="52" y="390" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">모델 147개</text>
-  <rect x="1290" y="368" width="160" height="36" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
-  <text x="1314" y="391" font-family="Arial, sans-serif" font-size="13" fill="#18212B">종합 추천</text>
-  <rect x="1460" y="368" width="34" height="34" rx="6" fill="#E8F1FB" stroke="#164A7B"/>
-  <text x="1472" y="391" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#164A7B">≡</text>
+  <rect x="48" y="370" width="940" height="48" rx="6" fill="#F8FAFC" stroke="#D9E0E7"/>
+  <text x="66" y="392" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">현재 계산 기준</text>
+  <text x="66" y="410" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">RTX 4090 24GB · 가용 VRAM 22GB · 8K · 동시 1명 · llama.cpp / Ollama</text>
+  <rect x="878" y="376" width="92" height="34" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
+  <text x="898" y="398" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#18212B">조건 변경</text>
 
-  <rect x="52" y="418" width="330" height="36" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
-  <text x="68" y="441" font-family="Arial, sans-serif" font-size="13" fill="#667382">모델명, 제조사, 태그 검색</text>
-  <rect x="394" y="418" width="140" height="36" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
-  <text x="414" y="441" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 등급</text>
-  <rect x="546" y="418" width="150" height="36" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
-  <text x="566" y="441" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 작업</text>
-  <rect x="708" y="418" width="160" height="36" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
-  <text x="728" y="441" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 공급사</text>
-  <rect x="880" y="418" width="170" height="36" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
-  <text x="900" y="441" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 라이선스</text>
+  <text x="48" y="453" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">모델 147개</text>
+  <rect x="808" y="432" width="130" height="34" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
+  <text x="828" y="454" font-family="Arial, sans-serif" font-size="13" fill="#18212B">종합 추천</text>
+  <rect x="948" y="432" width="34" height="34" rx="6" fill="#E8F1FB" stroke="#164A7B"/>
+  <text x="960" y="455" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#164A7B">≡</text>
 
-  <text x="72" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382" text-anchor="middle">상태</text>
-  <text x="170" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">모델</text>
-  <text x="620" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">공급사</text>
-  <text x="760" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">라이선스</text>
-  <text x="900" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">권장 설정</text>
-  <text x="1082" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382" text-anchor="end">VRAM</text>
-  <text x="1240" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382" text-anchor="end">추정 속도</text>
-  <text x="1374" y="488" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382" text-anchor="end">CTX</text>
-  <line x1="52" y1="500" x2="1488" y2="500" stroke="#D9E0E7"/>
+  <rect x="48" y="482" width="260" height="34" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
+  <text x="64" y="504" font-family="Arial, sans-serif" font-size="13" fill="#667382">모델명, 제조사, 태그 검색</text>
+  <rect x="318" y="482" width="116" height="34" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
+  <text x="336" y="504" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 등급</text>
+  <rect x="444" y="482" width="120" height="34" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
+  <text x="462" y="504" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 작업</text>
+  <rect x="574" y="482" width="132" height="34" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
+  <text x="592" y="504" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 공급사</text>
+  <rect x="716" y="482" width="142" height="34" rx="6" fill="#FFFFFF" stroke="#CBD5DF"/>
+  <text x="734" y="504" font-family="Arial, sans-serif" font-size="13" fill="#18212B">전체 라이선스</text>
+
+  <g font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#667382">
+    <text x="70" y="550" text-anchor="middle">상태</text>
+    <text x="126" y="550">모델</text>
+    <text x="342" y="550">출시/세대</text>
+    <text x="428" y="550">벤치마크</text>
+    <text x="552" y="550">공급사/라이선스</text>
+    <text x="700" y="550">권장 설정</text>
+    <text x="810" y="550" text-anchor="end">VRAM</text>
+    <text x="940" y="550" text-anchor="end">추정 속도</text>
+  </g>
+  <line x1="48" y1="562" x2="988" y2="562" stroke="#D9E0E7"/>
 
   <g font-family="Arial, sans-serif">
-    <rect x="52" y="515" width="70" height="26" rx="13" fill="#E8F3EE"/>
-    <circle cx="68" cy="528" r="4" fill="#237655"/>
-    <text x="80" y="533" font-size="12" font-weight="700" fill="#237655">쾌적</text>
-    <text x="170" y="526" font-size="14" font-weight="700" fill="#18212B">Qwen3 30B A3B</text>
-    <rect x="170" y="538" width="34" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
-    <text x="178" y="551" font-size="10" font-weight="700" fill="#52606D">대화</text>
-    <rect x="210" y="538" width="44" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
-    <text x="218" y="551" font-size="10" font-weight="700" fill="#52606D">한국어</text>
-    <rect x="260" y="538" width="34" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
-    <text x="268" y="551" font-size="10" font-weight="700" fill="#52606D">추론</text>
-    <text x="620" y="532" font-size="13" font-weight="700" fill="#2F3C48">Alibaba</text>
-    <text x="760" y="532" font-size="13" font-weight="600" fill="#667382">Apache 2.0</text>
-    <text x="900" y="532" font-size="13" font-weight="700" fill="#2F3C48">Q3_K_M</text>
-    <text x="1082" y="532" font-size="13" font-weight="700" fill="#2F3C48" text-anchor="end">18.2 GB</text>
-    <text x="1240" y="532" font-size="13" font-weight="700" fill="#2F3C48" text-anchor="end">약 119~231 tok/s</text>
-    <text x="1374" y="532" font-size="13" font-weight="700" fill="#2F3C48" text-anchor="end">128K</text>
-    <text x="1468" y="532" font-size="18" fill="#667382">›</text>
-    <line x1="52" y1="572" x2="1488" y2="572" stroke="#D9E0E7"/>
+    <rect x="48" y="576" width="70" height="26" rx="13" fill="#E7F0F5"/>
+    <circle cx="64" cy="589" r="4" fill="#2F6687"/>
+    <text x="76" y="594" font-size="12" font-weight="700" fill="#2F6687">잘됨</text>
+    <text x="126" y="586" font-size="14" font-weight="700" fill="#18212B">Qwen3 30B A3B</text>
+    <rect x="126" y="598" width="44" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
+    <text x="134" y="611" font-size="10" font-weight="700" fill="#52606D">한국어</text>
+    <rect x="176" y="598" width="34" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
+    <text x="184" y="611" font-size="10" font-weight="700" fill="#52606D">추론</text>
+    <text x="342" y="586" font-size="12" font-weight="800" fill="#164A7B">2025 계열</text>
+    <text x="342" y="606" font-size="11" font-weight="700" fill="#667382">세대 추정</text>
+    <text x="428" y="586" font-size="12" font-weight="800" fill="#667382">실측 없음</text>
+    <text x="428" y="606" font-size="11" font-weight="700" fill="#667382">추정 낮음</text>
+    <text x="552" y="586" font-size="12" font-weight="800" fill="#2F3C48">Alibaba</text>
+    <text x="552" y="606" font-size="11" font-weight="700" fill="#667382">Apache 2.0</text>
+    <text x="700" y="594" font-size="12" font-weight="800" fill="#2F3C48">Q3_K_M</text>
+    <text x="810" y="594" font-size="12" font-weight="800" fill="#2F3C48" text-anchor="end">18.2 GB</text>
+    <text x="940" y="586" font-size="12" font-weight="800" fill="#2F3C48" text-anchor="end">약 119~231</text>
+    <text x="940" y="606" font-size="11" font-weight="700" fill="#667382" text-anchor="end">tok/s · 추정</text>
+    <line x1="48" y1="634" x2="988" y2="634" stroke="#D9E0E7"/>
 
-    <rect x="52" y="588" width="92" height="26" rx="13" fill="#E7F0F5"/>
-    <circle cx="68" cy="601" r="4" fill="#2F6687"/>
-    <text x="80" y="606" font-size="12" font-weight="700" fill="#2F6687">잘 돌아감</text>
-    <text x="170" y="600" font-size="14" font-weight="700" fill="#18212B">EXAONE 4.0 32B</text>
-    <rect x="170" y="612" width="44" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
-    <text x="178" y="625" font-size="10" font-weight="700" fill="#52606D">한국어</text>
-    <rect x="220" y="612" width="62" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
-    <text x="228" y="625" font-size="10" font-weight="700" fill="#52606D">RAG/검색</text>
-    <rect x="288" y="612" width="44" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
-    <text x="296" y="625" font-size="10" font-weight="700" fill="#52606D">긴 문서</text>
-    <text x="620" y="606" font-size="13" font-weight="700" fill="#2F3C48">LG AI</text>
-    <text x="760" y="606" font-size="13" font-weight="600" fill="#667382">EXAONE NC</text>
-    <text x="900" y="606" font-size="13" font-weight="700" fill="#2F3C48">Q4_K_M</text>
-    <text x="1082" y="606" font-size="13" font-weight="700" fill="#2F3C48" text-anchor="end">20.1 GB</text>
-    <text x="1240" y="606" font-size="13" font-weight="700" fill="#2F3C48" text-anchor="end">약 63~123 tok/s</text>
-    <text x="1374" y="606" font-size="13" font-weight="700" fill="#2F3C48" text-anchor="end">128K</text>
-    <text x="1468" y="606" font-size="18" fill="#667382">›</text>
+    <rect x="48" y="650" width="70" height="26" rx="13" fill="#E8F3EE"/>
+    <circle cx="64" cy="663" r="4" fill="#237655"/>
+    <text x="76" y="668" font-size="12" font-weight="700" fill="#237655">쾌적</text>
+    <text x="126" y="660" font-size="14" font-weight="700" fill="#18212B">EXAONE 4.0 32B</text>
+    <rect x="126" y="672" width="44" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
+    <text x="134" y="685" font-size="10" font-weight="700" fill="#52606D">한국어</text>
+    <rect x="176" y="672" width="62" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
+    <text x="184" y="685" font-size="10" font-weight="700" fill="#52606D">RAG/검색</text>
+    <text x="342" y="660" font-size="12" font-weight="800" fill="#13795B">2026 계열</text>
+    <text x="342" y="680" font-size="11" font-weight="700" fill="#667382">세대 추정</text>
+    <text x="428" y="660" font-size="12" font-weight="800" fill="#667382">실측 없음</text>
+    <text x="428" y="680" font-size="11" font-weight="700" fill="#667382">추정 낮음</text>
+    <text x="552" y="660" font-size="12" font-weight="800" fill="#2F3C48">LG AI</text>
+    <text x="552" y="680" font-size="11" font-weight="700" fill="#667382">EXAONE AI</text>
+    <text x="700" y="668" font-size="12" font-weight="800" fill="#2F3C48">Q4_K_M</text>
+    <text x="810" y="668" font-size="12" font-weight="800" fill="#2F3C48" text-anchor="end">20.1 GB</text>
+    <text x="940" y="660" font-size="12" font-weight="800" fill="#2F3C48" text-anchor="end">약 63~123</text>
+    <text x="940" y="680" font-size="11" font-weight="700" fill="#667382" text-anchor="end">tok/s · 추정</text>
   </g>
 
-  <rect x="1032" y="306" width="484" height="426" rx="6" fill="#FFFFFF" stroke="#B9C6D4"/>
-  <rect x="1032" y="306" width="484" height="44" rx="6" fill="#FFFFFF"/>
-  <line x1="1032" y1="350" x2="1516" y2="350" stroke="#D9E0E7"/>
-  <text x="1054" y="333" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">상세 닫기</text>
-  <text x="1488" y="334" font-family="Arial, sans-serif" font-size="20" fill="#18212B">×</text>
+  <rect x="1032" y="300" width="484" height="482" rx="6" fill="#FFFFFF" stroke="#B9C6D4"/>
+  <rect x="1032" y="300" width="484" height="44" rx="6" fill="#FFFFFF"/>
+  <line x1="1032" y1="344" x2="1516" y2="344" stroke="#D9E0E7"/>
+  <text x="1054" y="327" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">상세 닫기</text>
+  <text x="1488" y="328" font-family="Arial, sans-serif" font-size="20" fill="#18212B">×</text>
 
-  <rect x="1054" y="374" width="92" height="26" rx="13" fill="#E7F0F5"/>
-  <circle cx="1070" cy="387" r="4" fill="#2F6687"/>
-  <text x="1082" y="392" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#2F6687">잘 돌아감</text>
-  <text x="1054" y="428" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#18212B">Qwen3 30B A3B</text>
-  <text x="1054" y="452" font-family="Arial, sans-serif" font-size="13" fill="#667382">Alibaba · Apache 2.0 · 대화 · 한국어 · 추론</text>
-  <text x="1054" y="478" font-family="Arial, sans-serif" font-size="13" fill="#3B4856">활성 파라미터가 낮은 MoE 구조라 메모리 대비 응답 품질을 비교하기 좋습니다.</text>
+  <rect x="1054" y="368" width="92" height="26" rx="13" fill="#E7F0F5"/>
+  <circle cx="1070" cy="381" r="4" fill="#2F6687"/>
+  <text x="1082" y="386" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#2F6687">잘 돌아감</text>
+  <text x="1054" y="422" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#18212B">Qwen3 30B A3B</text>
+  <text x="1054" y="446" font-family="Arial, sans-serif" font-size="13" fill="#667382">Alibaba · Apache 2.0 · 대화 · 한국어 · 추론</text>
+  <text x="1054" y="472" font-family="Arial, sans-serif" font-size="13" fill="#3B4856">활성 파라미터가 낮은 MoE 구조라 메모리 대비 응답 품질을 비교하기 좋습니다.</text>
 
   <g font-family="Arial, sans-serif">
-    <rect x="1054" y="506" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
-    <text x="1066" y="528" font-size="11" font-weight="700" fill="#667382">실행 판정</text>
-    <text x="1066" y="552" font-size="15" font-weight="700" fill="#18212B">잘 돌아감</text>
-    <rect x="1170" y="506" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
-    <text x="1182" y="528" font-size="11" font-weight="700" fill="#667382">계산 VRAM</text>
-    <text x="1182" y="552" font-size="15" font-weight="700" fill="#18212B">18.2 GB</text>
-    <rect x="1286" y="506" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
-    <text x="1298" y="528" font-size="11" font-weight="700" fill="#667382">VRAM 여유</text>
-    <text x="1298" y="552" font-size="15" font-weight="700" fill="#18212B">3.8 GB</text>
-    <rect x="1402" y="506" width="92" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
-    <text x="1414" y="528" font-size="11" font-weight="700" fill="#667382">신뢰도</text>
-    <text x="1414" y="552" font-size="15" font-weight="700" fill="#18212B">낮음</text>
+    <rect x="1054" y="500" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
+    <text x="1066" y="522" font-size="11" font-weight="700" fill="#667382">실행 판정</text>
+    <text x="1066" y="546" font-size="15" font-weight="700" fill="#18212B">잘 돌아감</text>
+    <rect x="1170" y="500" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
+    <text x="1182" y="522" font-size="11" font-weight="700" fill="#667382">계산 VRAM</text>
+    <text x="1182" y="546" font-size="15" font-weight="700" fill="#18212B">18.2 GB</text>
+    <rect x="1286" y="500" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
+    <text x="1298" y="522" font-size="11" font-weight="700" fill="#667382">출시/세대</text>
+    <text x="1298" y="546" font-size="15" font-weight="700" fill="#164A7B">2025 계열</text>
+    <rect x="1402" y="500" width="92" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
+    <text x="1414" y="522" font-size="11" font-weight="700" fill="#667382">신뢰도</text>
+    <text x="1414" y="546" font-size="15" font-weight="700" fill="#18212B">낮음</text>
   </g>
 
-  <text x="1054" y="606" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">추정값과 실측값</text>
-  <rect x="1054" y="624" width="214" height="76" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
-  <text x="1070" y="648" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">계산 추정</text>
-  <text x="1070" y="672" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">18.2 GB · 약 119~231 tok/s</text>
-  <text x="1070" y="690" font-family="Arial, sans-serif" font-size="11" fill="#667382">파라미터/대역폭 기반</text>
-  <rect x="1280" y="624" width="214" height="76" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
-  <text x="1296" y="648" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">실측 벤치마크</text>
-  <text x="1296" y="672" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">등록된 실측값 없음</text>
-  <text x="1296" y="690" font-family="Arial, sans-serif" font-size="11" fill="#667382">추정값과 분리 표시</text>
+  <text x="1054" y="602" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">추천 이유</text>
+  <rect x="1054" y="620" width="92" height="30" rx="15" fill="#F8FAFC" stroke="#D9E0E7"/>
+  <text x="1070" y="640" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#334155">VRAM 여유</text>
+  <rect x="1154" y="620" width="86" height="30" rx="15" fill="#F8FAFC" stroke="#D9E0E7"/>
+  <text x="1170" y="640" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#334155">한국어 지원</text>
+  <rect x="1248" y="620" width="74" height="30" rx="15" fill="#F8FAFC" stroke="#D9E0E7"/>
+  <text x="1264" y="640" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#334155">속도 우수</text>
+
+  <text x="1054" y="684" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">추정값과 실측값</text>
+  <rect x="1054" y="702" width="214" height="58" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
+  <text x="1070" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">계산 추정</text>
+  <text x="1070" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">18.2 GB · 약 119~231 tok/s</text>
+  <rect x="1280" y="702" width="214" height="58" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
+  <text x="1296" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">실측 벤치마크</text>
+  <text x="1296" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#667382">등록된 실측값 없음</text>
+
+  <rect x="24" y="804" width="1492" height="40" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
+  <text x="52" y="829" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">모델별 성능지표 시트</text>
+  <text x="210" y="829" font-family="Arial, sans-serif" font-size="13" fill="#667382">실측 0개 · OCR/VLM 참고 기준 45개 · 추정값과 실측값 분리 표시</text>
 </svg>
