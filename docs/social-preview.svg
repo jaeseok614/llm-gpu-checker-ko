@@ -8,8 +8,8 @@
   <text x="230" y="268" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="#667382">LLM · Embedding · Reranker · OCR · VLM</text>
 
   <rect x="104" y="336" width="242" height="116" rx="6" fill="#E5F4EE"/>
-  <text x="130" y="382" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#13795B">86 GPUs</text>
-  <text x="130" y="420" font-family="Arial, sans-serif" font-size="22" fill="#18212B">RTX · A100 · H100</text>
+  <text x="130" y="382" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#13795B">87 GPUs</text>
+  <text x="130" y="420" font-family="Arial, sans-serif" font-size="22" fill="#18212B">RTX · GB10 · H100</text>
   <rect x="376" y="336" width="242" height="116" rx="6" fill="#E8F1FB"/>
   <text x="402" y="382" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#164A7B">286 Models</text>
   <text x="402" y="420" font-family="Arial, sans-serif" font-size="22" fill="#18212B">147 LLMs</text>

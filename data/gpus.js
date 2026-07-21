@@ -50,6 +50,7 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "quadrortx6000-24", name: "Quadro RTX 6000 24GB", vram: 24, ram: 96, bandwidth: 672 },
   { id: "titanrtx-24", name: "Titan RTX 24GB", vram: 24, ram: 64, bandwidth: 672 },
 
+  { id: "dgxspark-gb10-128", name: "NVIDIA GB10 / DGX Spark 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 273 },
   { id: "b200-192", name: "NVIDIA B200 192GB", vram: 192, ram: 512, bandwidth: 8000 },
   { id: "b100-192", name: "NVIDIA B100 192GB", vram: 192, ram: 512, bandwidth: 8000 },
   { id: "h200-141", name: "NVIDIA H200 SXM 141GB", vram: 141, ram: 384, bandwidth: 4800 },

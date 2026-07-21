@@ -52,7 +52,7 @@
 
 | 데이터 | 개수 |
 | --- | ---: |
-| GPU 프리셋 | 86 |
+| GPU 프리셋 | 87 |
 | 전체 AI 모델 | 286 |
 | LLM 모델 | 147 |
 | 임베딩 모델 | 60 |
@@ -71,7 +71,7 @@
 
 | 기능 | 설명 |
 | --- | --- |
-| GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
+| GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA GB10/DGX Spark, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
 | 설정 변경 패널 | VRAM, GPU 수, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
 | 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM을 분리 계산 |
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
@@ -659,6 +659,8 @@ npm run check
 
 ## 참고한 공식 자료
 
+- [NVIDIA DGX Spark specifications](https://www.nvidia.com/en-sg/products/workstations/dgx-spark/)
+- [NVIDIA DGX Spark hardware guide](https://docs.nvidia.com/dgx/dgx-spark/hardware.html)
 - [Qwen2.5 release blog](https://qwenlm.github.io/blog/qwen2.5/)
 - [Qwen3 release blog](https://qwenlm.github.io/blog/qwen3/)
 - [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388)
