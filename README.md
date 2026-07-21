@@ -24,7 +24,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg?ui=professional-20260721-ui6)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260721-ui7)
 
 ## 빠른 사용법
 
@@ -65,6 +65,7 @@
 | 모델 공급사 | 56 |
 | 비전/멀티모달 모델 | 81 |
 | 실측 벤치마크 시트 | 실측 행 0 · OCR/VLM 참고 기준 45 |
+| 출시/품질 메타데이터 | 출처 확인 53개 |
 
 ## 주요 기능
 
@@ -80,10 +81,10 @@
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 현재 계산 기준 | 목록 바로 위에서 GPU, 가용 VRAM, 컨텍스트, 동시 요청, 런타임을 한 줄로 확인 |
-| 빠른 목록 | 상태, 모델명, 출시/세대, 벤치마크 상태, 공급사/라이선스, 권장 설정, 계산 VRAM, 추정 속도 범위, 컨텍스트를 표 형태로 비교 |
+| 빠른 목록 | 상태, 모델명, 공식 출시일/세대, 품질 벤치마크, 공급사/라이선스, 권장 설정, 계산 VRAM, 추정 속도 범위, 컨텍스트를 표 형태로 비교 |
 | 상세 우측 패널 | 모델 클릭 시 목록을 유지한 채 판정 요약, 추천 이유, VRAM 근거, 실행 예시 확인 |
 | 추정/실측 분리 | 계산 추정값, 신뢰도, 출처 연결 실측값, OCR/VLM 참고 기준을 서로 다른 영역에 표시 |
-| 벤치마크 시트 | `data/benchmarks.js` 실측 행과 OCR/VLM reference benchmark를 전역 시트로 표시 |
+| 벤치마크 시트 | `data/benchmarks.js` 실측 행, `data/model-metadata.js` 품질 지표, OCR/VLM reference benchmark를 분리 표시 |
 | 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
 | 적용 필터 칩 | 검색어, 등급, 상태, 작업, 공급사, 라이선스 필터를 칩으로 표시하고 개별 해제 |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
@@ -551,6 +552,7 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 - 계산 추정: 모델 파라미터, 양자화, KV cache, 런타임 오버헤드, GPU 대역폭을 기반으로 산출합니다.
 - 실측 벤치마크: `data/benchmarks.js`에 출처가 있는 측정 행만 추가합니다.
+- 품질 벤치마크: `data/model-metadata.js`에 공식 모델 카드, 기술 보고서, 또는 명시된 외부 평가 출처가 있는 값만 추가합니다.
 - 참고 기준: OCR/VLM 모델 카드나 파이프라인 reference 값을 실측 행과 분리해 표시합니다.
 
 실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
@@ -645,6 +647,21 @@ npm run check
 
 ## 참고한 공식 자료
 
+- [Qwen2.5 release blog](https://qwenlm.github.io/blog/qwen2.5/)
+- [Qwen3 release blog](https://qwenlm.github.io/blog/qwen3/)
+- [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388)
+- [Meta Llama 3.1 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md)
+- [Meta Llama 3.2 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/MODEL_CARD.md)
+- [Meta Llama 3.3 70B model card](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)
+- [Google Gemma 3 model page](https://deepmind.google/models/gemma/gemma-3/)
+- [Google Gemma release notes](https://ai.google.dev/gemma/docs/releases)
+- [Microsoft Phi-4 model card](https://huggingface.co/microsoft/phi-4)
+- [DeepSeek-R1 repository and evaluation table](https://github.com/deepseek-ai/DeepSeek-R1)
+- [DeepSeek-R1 release note](https://api-docs.deepseek.com/news/news250120)
+- [Mistral Small 3.1 model card](https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503)
+- [LG AI EXAONE 4.0 repository](https://github.com/LG-AI-EXAONE/EXAONE-4.0)
+- [Kakao Kanana repository](https://github.com/kakao/kanana)
+- [SK Telecom A.X 4.0 Light model card](https://huggingface.co/skt/A.X-4.0-Light)
 - [Google Gemma 4 model page](https://deepmind.google/models/gemma/gemma-4/)
 - [Google Gemma 4 launch blog](https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/)
 - [Qwen3-Next 80B A3B model card](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct)

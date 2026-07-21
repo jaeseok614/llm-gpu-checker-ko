@@ -85,10 +85,10 @@
     <text x="134" y="611" font-size="10" font-weight="700" fill="#52606D">한국어</text>
     <rect x="176" y="598" width="34" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
     <text x="184" y="611" font-size="10" font-weight="700" fill="#52606D">추론</text>
-    <text x="342" y="586" font-size="12" font-weight="800" fill="#164A7B">2025 계열</text>
-    <text x="342" y="606" font-size="11" font-weight="700" fill="#667382">세대 추정</text>
-    <text x="428" y="586" font-size="12" font-weight="800" fill="#667382">실측 없음</text>
-    <text x="428" y="606" font-size="11" font-weight="700" fill="#667382">추정 낮음</text>
+    <text x="342" y="586" font-size="12" font-weight="800" fill="#164A7B">2025-04-29</text>
+    <text x="342" y="606" font-size="11" font-weight="700" fill="#667382">공식</text>
+    <text x="428" y="586" font-size="12" font-weight="800" fill="#164A7B">MMLU-Pro 61.49</text>
+    <text x="428" y="606" font-size="11" font-weight="700" fill="#667382">공식 품질</text>
     <text x="552" y="586" font-size="12" font-weight="800" fill="#2F3C48">Alibaba</text>
     <text x="552" y="606" font-size="11" font-weight="700" fill="#667382">Apache 2.0</text>
     <text x="700" y="594" font-size="12" font-weight="800" fill="#2F3C48">Q3_K_M</text>
@@ -105,10 +105,10 @@
     <text x="134" y="685" font-size="10" font-weight="700" fill="#52606D">한국어</text>
     <rect x="176" y="672" width="62" height="18" rx="4" fill="#F8FAFC" stroke="#D7DEE7"/>
     <text x="184" y="685" font-size="10" font-weight="700" fill="#52606D">RAG/검색</text>
-    <text x="342" y="660" font-size="12" font-weight="800" fill="#13795B">2026 계열</text>
-    <text x="342" y="680" font-size="11" font-weight="700" fill="#667382">세대 추정</text>
-    <text x="428" y="660" font-size="12" font-weight="800" fill="#667382">실측 없음</text>
-    <text x="428" y="680" font-size="11" font-weight="700" fill="#667382">추정 낮음</text>
+    <text x="342" y="660" font-size="12" font-weight="800" fill="#164A7B">2025-07-15</text>
+    <text x="342" y="680" font-size="11" font-weight="700" fill="#667382">공식</text>
+    <text x="428" y="660" font-size="12" font-weight="800" fill="#164A7B">MMLU-Pro 81.8</text>
+    <text x="428" y="680" font-size="11" font-weight="700" fill="#667382">공식 품질</text>
     <text x="552" y="660" font-size="12" font-weight="800" fill="#2F3C48">LG AI</text>
     <text x="552" y="680" font-size="11" font-weight="700" fill="#667382">EXAONE AI</text>
     <text x="700" y="668" font-size="12" font-weight="800" fill="#2F3C48">Q4_K_M</text>
@@ -139,7 +139,7 @@
     <text x="1182" y="546" font-size="15" font-weight="700" fill="#18212B">18.2 GB</text>
     <rect x="1286" y="500" width="104" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
     <text x="1298" y="522" font-size="11" font-weight="700" fill="#667382">출시/세대</text>
-    <text x="1298" y="546" font-size="15" font-weight="700" fill="#164A7B">2025 계열</text>
+    <text x="1298" y="546" font-size="15" font-weight="700" fill="#164A7B">2025-04-29</text>
     <rect x="1402" y="500" width="92" height="64" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
     <text x="1414" y="522" font-size="11" font-weight="700" fill="#667382">신뢰도</text>
     <text x="1414" y="546" font-size="15" font-weight="700" fill="#18212B">낮음</text>
@@ -158,10 +158,10 @@
   <text x="1070" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">계산 추정</text>
   <text x="1070" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">18.2 GB · 약 119~231 tok/s</text>
   <rect x="1280" y="702" width="214" height="58" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
-  <text x="1296" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">실측 벤치마크</text>
-  <text x="1296" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#667382">등록된 실측값 없음</text>
+  <text x="1296" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">품질/실측 벤치마크</text>
+  <text x="1296" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#164A7B">MMLU-Pro 61.49</text>
 
   <rect x="24" y="804" width="1492" height="40" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
   <text x="52" y="829" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">모델별 성능지표 시트</text>
-  <text x="210" y="829" font-family="Arial, sans-serif" font-size="13" fill="#667382">실측 0개 · OCR/VLM 참고 기준 45개 · 추정값과 실측값 분리 표시</text>
+  <text x="210" y="829" font-family="Arial, sans-serif" font-size="13" fill="#667382">출처 확인 53개 · OCR/VLM 참고 기준 45개 · 추정값과 품질/실측값 분리 표시</text>
 </svg>

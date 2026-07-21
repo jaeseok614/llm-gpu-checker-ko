@@ -1,10 +1,11 @@
 const DATA = window.LLM_GPU_CHECKER_DATA || {};
 const GPU_PRESETS = DATA.gpus || [];
 const QUANTS = DATA.quantizations || [];
-const GENERATIVE_MODELS = (DATA.models || []).map((model) => ({ ...model, type: "generative" }));
-const EMBEDDING_MODELS = (DATA.embeddingModels || []).map((model) => ({ ...model, type: "embedding" }));
-const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => ({ ...model, type: "reranker" }));
-const OCR_MODELS = (DATA.ocrModels || []).map((model) => ({ ...model, type: model.type || "ocr-pipeline" }));
+const MODEL_METADATA = DATA.modelMetadata || {};
+const GENERATIVE_MODELS = (DATA.models || []).map((model) => withModelMetadata(model, "generative"));
+const EMBEDDING_MODELS = (DATA.embeddingModels || []).map((model) => withModelMetadata(model, "embedding"));
+const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => withModelMetadata(model, "reranker"));
+const OCR_MODELS = (DATA.ocrModels || []).map((model) => withModelMetadata(model, model.type || "ocr-pipeline"));
 const ENCODER_PRECISIONS = DATA.precisions?.encoder || [];
 const OCR_PRECISIONS = DATA.precisions?.ocr || [];
 const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
@@ -18,6 +19,11 @@ const WORKLOAD_ALIASES = { ocr: "ocrPipeline" };
 const OCR_PIPELINE_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-pipeline");
 const DOCUMENT_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-vlm" || model.type === "document-vlm");
 const GENERAL_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "general-vlm");
+
+function withModelMetadata(model, type) {
+  const metadata = MODEL_METADATA[`${type}:${model.name}`] || MODEL_METADATA[model.name] || {};
+  return { ...model, ...metadata, type };
+}
 
 const MODEL_GROUPS = {
   generative: GENERATIVE_MODELS,
@@ -1354,6 +1360,19 @@ function findBenchmarksForModel(model) {
 }
 
 function getBenchmarkSummary(model, estimate, confidence) {
+  if (model.qualityBenchmark) {
+    return {
+      label: model.qualityBenchmark.label,
+      note: model.qualityBenchmark.note || "품질 지표",
+      className: model.qualityBenchmark.note === "외부 평가" ? "benchmark-external" : "benchmark-quality",
+      title: [
+        `${model.qualityBenchmark.metric || "품질 벤치마크"} 기준입니다.`,
+        "로컬 추론 속도 실측과 분리된 모델 품질 지표입니다.",
+        model.qualityBenchmark.sourceUrl ? `출처: ${model.qualityBenchmark.sourceUrl}` : "",
+      ].filter(Boolean).join(" "),
+    };
+  }
+
   const rows = findBenchmarksForModel(model);
   if (rows.length) {
     const exact = rows.find((row) => row.gpuId === getHardware().preset.id) || rows[0];
@@ -2255,8 +2274,11 @@ function renderRecommendationReasonList(reasons, estimate) {
 function renderEvidenceSection(model, estimate, hardware, confidence) {
   const measuredRows = findBenchmarksForModel(model);
   const reference = getReferenceBenchmark(model);
+  const qualityBenchmark = model.qualityBenchmark;
   const measuredLabel = measuredRows.length
     ? `${measuredRows.length}개 실측값`
+    : qualityBenchmark
+      ? "품질 지표 있음 · 실측값 없음"
     : reference
       ? "실측값 없음 · 참고 기준 있음"
       : "등록된 실측값 없음";
@@ -2272,16 +2294,16 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
           <small>${escapeHtml(shortGpuName(hardware.preset.name))} · ${escapeHtml(buildHardwareBasis(hardware))}</small>
         </div>
         <div class="evidence-card measured-card">
-          <span>실측 벤치마크</span>
+          <span>품질/실측 벤치마크</span>
           <strong>${escapeHtml(measuredLabel)}</strong>
-          ${renderBenchmarkMiniRows(measuredRows, reference)}
+          ${renderBenchmarkMiniRows(measuredRows, reference, qualityBenchmark)}
         </div>
       </div>
     </section>
   `;
 }
 
-function renderBenchmarkMiniRows(rows, reference) {
+function renderBenchmarkMiniRows(rows, reference, qualityBenchmark) {
   if (rows.length) {
     return `
       <div class="benchmark-mini-table">
@@ -2292,6 +2314,18 @@ function renderBenchmarkMiniRows(rows, reference) {
             <small>${escapeHtml(row.date || "날짜 미기재")}${row.sourceUrl ? " · 출처 링크 있음" : ""}</small>
           </div>
         `).join("")}
+      </div>
+    `;
+  }
+
+  if (qualityBenchmark) {
+    return `
+      <div class="benchmark-mini-table">
+        <div>
+          <span>${escapeHtml(qualityBenchmark.metric || "품질 벤치마크")} · ${escapeHtml(qualityBenchmark.note || "품질 지표")}</span>
+          <strong>${escapeHtml(qualityBenchmark.label)}</strong>
+          <small>${qualityBenchmark.sourceUrl ? "출처 링크 있음 · " : ""}속도 실측과 분리 표시</small>
+        </div>
       </div>
     `;
   }
@@ -2441,10 +2475,11 @@ function renderBenchmarkSheet() {
   const table = $("benchmarkTable");
   if (!table) return;
   const measuredRows = BENCHMARKS.map((row) => ({ ...row, rowType: "실측" }));
+  const qualityRows = collectQualityBenchmarks();
   const referenceRows = collectReferenceBenchmarks();
-  const rows = [...measuredRows, ...referenceRows];
+  const rows = [...qualityRows, ...measuredRows, ...referenceRows];
 
-  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 실측 ${measuredRows.length}개 · 참고 기준 ${referenceRows.length}개`;
+  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 품질 지표 ${qualityRows.length}개 · 실측 ${measuredRows.length}개 · 참고 기준 ${referenceRows.length}개`;
 
   if (!rows.length) {
     table.innerHTML = `
@@ -2467,7 +2502,7 @@ function renderBenchmarkSheet() {
       </div>
       ${rows.map((row) => `
         <div class="benchmark-row">
-          <span><span class="data-kind ${row.rowType === "실측" ? "is-measured" : "is-reference"}">${escapeHtml(row.rowType)}</span></span>
+          <span><span class="data-kind ${row.rowType === "실측" ? "is-measured" : row.rowType === "품질 지표" ? "is-quality" : "is-reference"}">${escapeHtml(row.rowType)}</span></span>
           <span>${escapeHtml(row.modelName)}</span>
           <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
           <span>${escapeHtml(row.setting || row.runtime || row.workload || "-")}</span>
@@ -2477,6 +2512,28 @@ function renderBenchmarkSheet() {
       `).join("")}
     </div>
   `;
+}
+
+function collectQualityBenchmarks() {
+  const seen = new Set();
+  return Object.values(MODEL_GROUPS)
+    .flat()
+    .filter((model) => model.qualityBenchmark)
+    .filter((model) => {
+      const key = modelKey(model);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((model) => ({
+      rowType: "품질 지표",
+      modelName: model.name,
+      gpu: "-",
+      workload: model.type === "generative" ? WORKLOAD_META.generative.label : model.type || "-",
+      setting: model.qualityBenchmark.note || "품질 벤치마크",
+      metric: model.qualityBenchmark.label,
+      sourceUrl: model.qualityBenchmark.sourceUrl,
+    }));
 }
 
 function collectReferenceBenchmarks() {

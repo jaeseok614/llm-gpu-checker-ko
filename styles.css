@@ -637,6 +637,14 @@ button:focus-visible {
   color: var(--green);
 }
 
+.benchmark-quality strong {
+  color: var(--blue);
+}
+
+.benchmark-external strong {
+  color: #5f6472;
+}
+
 .benchmark-reference strong {
   color: var(--blue);
 }
@@ -1276,6 +1284,11 @@ button:focus-visible {
 .data-kind.is-measured {
   background: var(--green-soft);
   color: var(--green);
+}
+
+.data-kind.is-quality {
+  background: var(--blue-soft);
+  color: var(--blue);
 }
 
 .data-kind.is-reference {

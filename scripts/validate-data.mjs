@@ -15,6 +15,7 @@ for (const file of [
   "data/reranker-models.js",
   "data/ocr-models.js",
   "data/benchmarks.js",
+  "data/model-metadata.js",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   vm.runInContext(source, context, { filename: file });
@@ -30,6 +31,9 @@ assertArray(data.embeddingModels, "embeddingModels");
 assertArray(data.rerankerModels, "rerankerModels");
 assertArray(data.ocrModels, "ocrModels");
 if (!Array.isArray(data.benchmarks)) throw new Error("benchmarks must be an array");
+if (!data.modelMetadata || typeof data.modelMetadata !== "object" || Array.isArray(data.modelMetadata)) {
+  throw new Error("modelMetadata must be an object");
+}
 
 const gpuIds = new Set();
 for (const gpu of data.gpus) {
@@ -122,7 +126,32 @@ for (const row of data.benchmarks) {
   }
 }
 
-console.log(`validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, ${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, ${data.benchmarks.length} measured benchmarks`);
+const allModelNames = new Set([
+  ...data.models,
+  ...data.embeddingModels,
+  ...data.rerankerModels,
+  ...data.ocrModels,
+].map((model) => model.name));
+
+for (const [name, metadata] of Object.entries(data.modelMetadata)) {
+  if (!name.includes(":") && !allModelNames.has(name)) {
+    throw new Error(`model metadata ${name} does not match a known model name`);
+  }
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    throw new Error(`model metadata ${name} must be an object`);
+  }
+  if (metadata.releaseDate && !/^\d{4}(-\d{2}(-\d{2})?)?$/.test(metadata.releaseDate)) {
+    throw new Error(`model metadata ${name} has invalid releaseDate: ${metadata.releaseDate}`);
+  }
+  if (metadata.releaseDate && !metadata.sourceUrl) {
+    throw new Error(`model metadata ${name} with releaseDate needs sourceUrl`);
+  }
+  if (metadata.qualityBenchmark) {
+    requireFields(metadata.qualityBenchmark, ["label", "metric", "sourceUrl"], `quality benchmark metadata ${name}`);
+  }
+}
+
+console.log(`validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, ${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, ${data.benchmarks.length} measured benchmarks, ${Object.keys(data.modelMetadata).length} model metadata rows`);
 
 function assertArray(value, name) {
   if (!Array.isArray(value) || value.length === 0) {

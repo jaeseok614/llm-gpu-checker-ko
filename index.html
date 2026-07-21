@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 모델 실행 가능성 계산기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260721-ui6" />
+    <link rel="stylesheet" href="./styles.css?v=20260721-ui7" />
   </head>
   <body>
     <header class="app-header">
@@ -402,7 +402,7 @@
         <div>
           <span class="section-kicker">Benchmark Sheet</span>
           <h2>모델별 성능지표 시트</h2>
-          <p>실측값은 출처가 있는 실행 결과만 표시하고, OCR/VLM reference 값은 참고 기준으로 분리합니다.</p>
+          <p>품질 지표, 출처 연결 실측값, OCR/VLM reference 값을 서로 다른 구분으로 분리합니다.</p>
         </div>
         <span class="benchmark-meta" id="benchmarkMeta">벤치마크 데이터 준비 중</span>
       </div>
@@ -416,14 +416,15 @@
       <span>계산값은 로컬 추정치입니다. 실제 결과는 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 달라집니다.</span>
     </footer>
 
-    <script src="./data/gpus.js?v=20260721-ui6" defer></script>
-    <script src="./data/quantizations.js?v=20260721-ui6" defer></script>
-    <script src="./data/precision-profiles.js?v=20260721-ui6" defer></script>
-    <script src="./data/models.js?v=20260721-ui6" defer></script>
-    <script src="./data/embedding-models.js?v=20260721-ui6" defer></script>
-    <script src="./data/reranker-models.js?v=20260721-ui6" defer></script>
-    <script src="./data/ocr-models.js?v=20260721-ui6" defer></script>
-    <script src="./data/benchmarks.js?v=20260721-ui6" defer></script>
-    <script src="./app.js?v=20260721-ui6" defer></script>
+    <script src="./data/gpus.js?v=20260721-ui7" defer></script>
+    <script src="./data/quantizations.js?v=20260721-ui7" defer></script>
+    <script src="./data/precision-profiles.js?v=20260721-ui7" defer></script>
+    <script src="./data/models.js?v=20260721-ui7" defer></script>
+    <script src="./data/embedding-models.js?v=20260721-ui7" defer></script>
+    <script src="./data/reranker-models.js?v=20260721-ui7" defer></script>
+    <script src="./data/ocr-models.js?v=20260721-ui7" defer></script>
+    <script src="./data/benchmarks.js?v=20260721-ui7" defer></script>
+    <script src="./data/model-metadata.js?v=20260721-ui7" defer></script>
+    <script src="./app.js?v=20260721-ui7" defer></script>
   </body>
 </html>
