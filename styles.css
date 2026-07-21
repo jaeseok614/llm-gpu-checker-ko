@@ -522,8 +522,8 @@ button:focus-visible {
 .model-list-head,
 .model-row {
   display: grid;
-  grid-template-columns: 92px minmax(340px, 2fr) 132px 132px 148px 98px 128px 82px 20px;
-  gap: 12px;
+  grid-template-columns: 82px minmax(270px, 1.8fr) 88px 116px 132px 126px 92px 126px 68px 18px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -572,9 +572,9 @@ button:focus-visible {
 }
 
 .numeric-cell,
-.model-list-head span:nth-child(6),
 .model-list-head span:nth-child(7),
-.model-list-head span:nth-child(8) {
+.model-list-head span:nth-child(8),
+.model-list-head span:nth-child(9) {
   text-align: right;
 }
 
@@ -591,9 +591,58 @@ button:focus-visible {
   font-weight: 600;
 }
 
+.provider-cell small,
+.release-cell small,
+.benchmark-cell small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
 .license-cell {
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+.release-cell strong,
+.benchmark-cell strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.release-new strong {
+  color: var(--green);
+}
+
+.release-recent strong {
+  color: var(--blue);
+}
+
+.release-current strong {
+  color: #475569;
+}
+
+.release-older strong,
+.release-unknown strong {
+  color: var(--muted);
+}
+
+.benchmark-measured strong {
+  color: var(--green);
+}
+
+.benchmark-reference strong {
+  color: var(--blue);
+}
+
+.benchmark-missing strong {
+  color: var(--muted);
 }
 
 .model-name-cell strong,
@@ -1285,8 +1334,8 @@ button:focus-visible {
 
   .model-list-head,
   .model-row {
-    grid-template-columns: 78px minmax(220px, 1.5fr) 110px 108px 118px 84px 104px 62px 18px;
-    gap: 10px;
+    grid-template-columns: 72px minmax(210px, 1.6fr) 78px 104px 116px 110px 78px 104px 56px 16px;
+    gap: 8px;
   }
 
   .detail-summary-grid,

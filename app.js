@@ -34,42 +34,42 @@ const WORKLOAD_META = {
     statusLabel: "LLM",
     modelCountLabel: "LLM 모델",
     searchPlaceholder: "모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "권장 설정", "계산 VRAM", "추정 속도", "CTX", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "벤치마크", "공급사/라이선스", "권장 설정", "계산 VRAM", "추정 속도", "CTX", ""],
   },
   embedding: {
     label: "임베딩",
     statusLabel: "임베딩",
     modelCountLabel: "임베딩 모델",
     searchPlaceholder: "임베딩 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "벤치마크", "공급사/라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
   },
   reranker: {
     label: "리랭커",
     statusLabel: "리랭커",
     modelCountLabel: "리랭커 모델",
     searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "벤치마크", "공급사/라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
   },
   ocrPipeline: {
     label: "OCR",
     statusLabel: "OCR",
     modelCountLabel: "OCR 모델",
     searchPlaceholder: "OCR 파이프라인, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "벤치마크", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
   documentVlm: {
     label: "문서 VLM",
     statusLabel: "문서 VLM",
     modelCountLabel: "문서 VLM 모델",
     searchPlaceholder: "문서 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "벤치마크", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
   generalVlm: {
     label: "범용 VLM",
     statusLabel: "범용 VLM",
     modelCountLabel: "범용 VLM 모델",
     searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "공급사", "라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "벤치마크", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
 };
 
@@ -1066,11 +1066,18 @@ function getFilteredEstimates() {
 
   if (search) {
     estimates = estimates.filter((estimate) => {
+      const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
+      const release = getModelReleaseInfo(estimate.model);
+      const benchmark = getBenchmarkSummary(estimate.model, estimate, confidence);
       const haystack = [
         estimate.model.name,
         estimate.model.maker,
         estimate.model.license,
         estimate.model.summary,
+        release.label,
+        release.note,
+        benchmark.label,
+        benchmark.note,
         formatParams(estimate.model.params || 0),
         estimate.settingLabel,
         estimate.limitLabel,
@@ -1275,9 +1282,105 @@ function getEstimateConfidence(model, estimate, hardware) {
   };
 }
 
+function getModelReleaseInfo(model) {
+  if (model.releaseDate) {
+    const year = Number(String(model.releaseDate).slice(0, 4));
+    return {
+      label: model.releaseDate,
+      note: "공식",
+      className: releaseClassName(year),
+      title: "모델 데이터에 등록된 출시일입니다.",
+    };
+  }
+
+  const year = inferModelYear(model);
+  if (!year) {
+    return {
+      label: "미기재",
+      note: "출시일 없음",
+      className: "release-unknown",
+      title: "정확한 출시일 메타데이터가 아직 없습니다.",
+    };
+  }
+
+  return {
+    label: `${year} 계열`,
+    note: "세대 추정",
+    className: releaseClassName(year),
+    title: "정확한 출시일이 아니라 모델명과 공개 세대 기준의 보수적 표시입니다.",
+  };
+}
+
+function inferModelYear(model) {
+  const text = `${model.name} ${model.maker}`.toLowerCase();
+  if (/\b2604\b/.test(text)) return 2026;
+  if (text.includes("qwen3.6") || text.includes("qwen3.5") || text.includes("deepseek v3.2")) return 2026;
+  if (text.includes("llama 4") || text.includes("gemma 4") || text.includes("exaone 4.0")) return 2026;
+  if (text.includes("glm-4.5") || text.includes("glm-4.1v") || text.includes("kimi k2")) return 2026;
+  if (text.includes("mistral medium 3.5") || text.includes("mistral large 3") || text.includes("mistral small 4")) return 2026;
+  if (text.includes("kanana 1.5") || text.includes("hyperclovax") || text.includes("trillion 7b")) return 2026;
+  if (text.includes("paddleocr-vl-1.6") || text.includes("deepseek-ocr-2")) return 2026;
+  if (text.includes("internvl3.5") || text.includes("minicpm-v-4.6")) return 2026;
+
+  if (text.includes("qwen3") || text.includes("gemma 3") || text.includes("phi-4")) return 2025;
+  if (text.includes("deepseek r1") || text.includes("devstral") || text.includes("gpt-oss")) return 2025;
+  if (text.includes("embeddinggemma") || text.includes("jina-embeddings-v5") || text.includes("jina-embeddings-v4")) return 2025;
+  if (text.includes("granite") && text.includes("r2")) return 2025;
+  if (text.includes("bge-reranker-v2.5") || text.includes("mxbai-rerank") && text.includes("-v2")) return 2025;
+  if (text.includes("qwen2.5-vl") || text.includes("olmocr-2") || text.includes("dots.ocr")) return 2025;
+  if (text.includes("aya-vision") || text.includes("smolvlm2")) return 2025;
+
+  if (text.includes("llama 3.3") || text.includes("llama 3.2") || text.includes("llama 3.1")) return 2024;
+  if (text.includes("qwen2.5") || text.includes("gemma 2") || text.includes("mistral small 3")) return 2024;
+  if (text.includes("mistral nemo") || text.includes("deepseek-vl2") || text.includes("qwen2-vl")) return 2024;
+  if (text.includes("exaone 3.5") || text.includes("pixtral") || text.includes("llava-onevision")) return 2024;
+  if (text.includes("molmo") || text.includes("bge-m3")) return 2024;
+
+  if (text.includes("mistral 7b") || text.includes("codellama") || text.includes("solar")) return 2023;
+  return null;
+}
+
+function releaseClassName(year) {
+  if (year >= 2026) return "release-new";
+  if (year >= 2025) return "release-recent";
+  if (year >= 2024) return "release-current";
+  if (year) return "release-older";
+  return "release-unknown";
+}
+
 function findBenchmarksForModel(model) {
   const key = modelKey(model);
   return BENCHMARKS.filter((row) => row.modelKey === key || row.modelName === model.name);
+}
+
+function getBenchmarkSummary(model, estimate, confidence) {
+  const rows = findBenchmarksForModel(model);
+  if (rows.length) {
+    const exact = rows.find((row) => row.gpuId === getHardware().preset.id) || rows[0];
+    return {
+      label: formatBenchmarkMetric(exact),
+      note: "실측",
+      className: "benchmark-measured",
+      title: exact.sourceUrl ? `출처 연결 실측값입니다. ${exact.sourceUrl}` : "출처 연결 실측값입니다.",
+    };
+  }
+
+  const reference = getReferenceBenchmark(model);
+  if (reference) {
+    return {
+      label: reference.metric,
+      note: "참고 기준",
+      className: "benchmark-reference",
+      title: "모델 카드 또는 파이프라인 reference 기준값이며 실측 제보 데이터와 분리됩니다.",
+    };
+  }
+
+  return {
+    label: "실측 없음",
+    note: `추정 ${confidence.label}`,
+    className: "benchmark-missing",
+    title: "출처가 연결된 실측 벤치마크가 아직 없습니다. 현재 속도는 계산식 기반 추정값입니다.",
+  };
 }
 
 function formatSpeedRange(estimate, confidence = getEstimateConfidence(estimate.model, estimate, getHardware())) {
@@ -1507,6 +1610,8 @@ function renderModelRow(estimate) {
   const tags = renderTags(estimate.model, 3);
   const key = modelKey(estimate.model);
   const confidence = getEstimateConfidence(estimate.model, estimate, getHardware());
+  const release = getModelReleaseInfo(estimate.model);
+  const benchmark = getBenchmarkSummary(estimate.model, estimate, confidence);
   const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
   const gradeTitle = buildGradeTooltip(estimate);
   const isSelected = selectedModelKey === key;
@@ -1519,17 +1624,25 @@ function renderModelRow(estimate) {
         <span class="tag-row compact-tags">${tags}</span>
         <span class="recommendation-line">${escapeHtml(recommendation)}</span>
       </span>
-      <span class="model-cell provider-cell" data-label="공급사">
-        <strong>${escapeHtml(estimate.model.maker)}</strong>
+      <span class="model-cell release-cell ${release.className}" data-label="출시/세대" title="${escapeAttr(release.title)}">
+        <strong>${escapeHtml(release.label)}</strong>
+        <small>${escapeHtml(release.note)}</small>
       </span>
-      <span class="model-cell license-cell" data-label="라이선스">${escapeHtml(estimate.model.license)}</span>
-      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[4])}">${escapeHtml(estimate.settingLabel)}</span>
-      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${formatGb(estimate.requiredGb)}</span>
-      <span class="model-cell numeric-cell estimate-speed-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">
+      <span class="model-cell benchmark-cell ${benchmark.className}" data-label="벤치마크" title="${escapeAttr(benchmark.title)}">
+        <strong>${escapeHtml(benchmark.label)}</strong>
+        <small>${escapeHtml(benchmark.note)}</small>
+      </span>
+      <span class="model-cell provider-cell" data-label="공급사/라이선스">
+        <strong>${escapeHtml(estimate.model.maker)}</strong>
+        <small>${escapeHtml(estimate.model.license)}</small>
+      </span>
+      <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.settingLabel)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${formatGb(estimate.requiredGb)}</span>
+      <span class="model-cell numeric-cell estimate-speed-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[7])}">
         <strong>${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
         <small>추정 · ${escapeHtml(confidence.label)}</small>
       </span>
-      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[7])}">${escapeHtml(estimate.limitLabel)}</span>
+      <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[8])}">${escapeHtml(estimate.limitLabel)}</span>
       <span class="row-chevron" aria-hidden="true">›</span>
     </button>
   `;
@@ -1540,6 +1653,8 @@ function renderModelCard(estimate) {
   const key = modelKey(estimate.model);
   const tags = renderTags(estimate.model, 4);
   const confidence = getEstimateConfidence(estimate.model, estimate, getHardware());
+  const release = getModelReleaseInfo(estimate.model);
+  const benchmark = getBenchmarkSummary(estimate.model, estimate, confidence);
   const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
 
   return `
@@ -1553,6 +1668,8 @@ function renderModelCard(estimate) {
       </span>
       <span class="compact-specs">
         <span>${escapeHtml(estimate.settingLabel)}</span>
+        <span>출시 ${escapeHtml(release.label)}</span>
+        <span>벤치마크 ${escapeHtml(benchmark.label)}</span>
         <span>VRAM ${formatGb(estimate.requiredGb)}</span>
         <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
         <span>${escapeHtml(estimate.limitLabel)}</span>
@@ -1604,6 +1721,8 @@ function renderDetail() {
   const estimate = estimateModel(model, $("quantization").value, hardware);
   const meta = GRADE_META[estimate.grade];
   const confidence = getEstimateConfidence(model, estimate, hardware);
+  const release = getModelReleaseInfo(model);
+  const benchmark = getBenchmarkSummary(model, estimate, confidence);
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
 
@@ -1692,6 +1811,8 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
         ${renderInfoItem("활성 파라미터", formatParams(model.active))}
         ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
         ${renderInfoItem("라이선스", model.license)}
+        ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
+        ${renderInfoItem("벤치마크", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
         ${renderInfoItem("실측 상태", findBenchmarksForModel(model).length ? "실측값 있음" : "실측값 없음")}
       </div>
@@ -1709,6 +1830,8 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
   const estimate = estimateAnyModel(model, hardware);
   const meta = GRADE_META[estimate.grade];
   const confidence = getEstimateConfidence(model, estimate, hardware);
+  const release = getModelReleaseInfo(model);
+  const benchmark = getBenchmarkSummary(model, estimate, confidence);
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
   const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
@@ -1800,6 +1923,8 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
         ${renderInfoItem(isVisionModel(model) ? "처리 유형" : "최대 입력", isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
         ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
         ${renderInfoItem("라이선스", model.license)}
+        ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
+        ${renderInfoItem("벤치마크", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
         ${renderInfoItem("실측 상태", findBenchmarksForModel(model).length ? "실측값 있음" : model.reference?.pagesPerSecond ? "참고 기준 있음" : "실측값 없음")}
       </div>
