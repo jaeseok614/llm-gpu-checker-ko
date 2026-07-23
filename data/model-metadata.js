@@ -770,7 +770,10 @@ mergeModelMetadata({
     qualityBenchmark: quality("NDCG@10 74.30", "TREC DL 2019 NDCG@10", 74.3, "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2", "공식 발표"),
   },
   "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1": cardDate("2022-06-01"),
-  "BAAI/bge-reranker-v2.5-gemma2-lightweight": cardDate("2024-07-25"),
+  "BAAI/bge-reranker-v2.5-gemma2-lightweight": {
+    ...cardDate("2024-07-25"),
+    qualityBenchmark: quality("BEIR 63.67", "BEIR 15개 데이터셋 nDCG@10 평균", 63.67, "https://huggingface.co/BAAI/bge-reranker-v2.5-gemma2-lightweight", "공식 발표"),
+  },
   "Alibaba-NLP/gte-reranker-modernbert-base": {
     ...cardDate("2025-01-20"),
     qualityBenchmark: quality("BEIR 56.73", "BEIR nDCG@10 15개 데이터셋 평균", 56.73, "https://huggingface.co/Alibaba-NLP/gte-reranker-modernbert-base", "공식 발표"),
@@ -787,7 +790,10 @@ mergeModelMetadata({
     ...cardDate("2024-04-15"),
     qualityBenchmark: quality("NDCG@10 49.60", "BEIR 17개 데이터셋 NDCG@10 평균", 49.6, "https://huggingface.co/jinaai/jina-reranker-v1-turbo-en", "공식 발표"),
   },
-  "maidalun1020/bce-reranker-base_v1": cardDate("2023-12-29"),
+  "maidalun1020/bce-reranker-base_v1": {
+    ...cardDate("2023-12-29"),
+    qualityBenchmark: quality("Avg 61.29", "MTEB Reranking 12개 데이터셋(다국어) 평균", 61.29, "https://huggingface.co/maidalun1020/bce-reranker-base_v1", "공식 발표"),
+  },
   "dragonkue/bge-reranker-v2-m3-ko": {
     ...cardDate("2024-10-16"),
     qualityBenchmark: quality("F1 91.23", "한국어 금융 벤치마크 Top-1 F1 (AutoRAG)", 91.23, "https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko", "공식 발표"),
@@ -816,9 +822,18 @@ mergeModelMetadata({
     ...cardDate("2022-03-02"),
     qualityBenchmark: quality("NDCG@10 71.99", "TREC DL 2019 NDCG@10", 71.99, "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2", "공식 발표"),
   },
-  "cross-encoder/stsb-roberta-large": cardDate("2022-03-02"),
-  "cross-encoder/nli-deberta-v3-base": cardDate("2022-03-02"),
-  "cross-encoder/quora-roberta-base": cardDate("2022-03-02"),
+  "cross-encoder/stsb-roberta-large": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality("STSb 91.47", "STSbenchmark 테스트 성능", 91.47, "https://www.sbert.net/docs/pretrained_cross-encoders.html", "공식 발표"),
+  },
+  "cross-encoder/nli-deberta-v3-base": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality("Acc 90.04", "MNLI mismatched 정확도", 90.04, "https://huggingface.co/cross-encoder/nli-deberta-v3-base", "공식 발표"),
+  },
+  "cross-encoder/quora-roberta-base": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality("AP 87.80", "Quora Duplicate Questions dev set Average Precision", 87.8, "https://www.sbert.net/docs/pretrained_cross-encoders.html", "공식 발표"),
+  },
   "cross-encoder/ms-marco-TinyBERT-L-2-v2": {
     ...cardDate("2022-03-02"),
     qualityBenchmark: quality("NDCG@10 69.84", "TREC DL 2019 NDCG@10", 69.84, "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2", "공식 발표"),
