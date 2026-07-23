@@ -24,7 +24,7 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-9a6700" />
 </p>
 
-![앱 미리보기](./docs/preview.svg?ui=professional-20260721-ui8)
+![앱 미리보기](./docs/preview.svg?ui=professional-20260723-release1)
 
 ## 빠른 사용법
 
@@ -32,6 +32,7 @@
 2. GPU, VRAM, RAM, 동시 요청, 컨텍스트를 바꿔야 할 때만 `설정 변경`을 엽니다.
 3. 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM 탭에서 실행 가능한 모델을 확인합니다.
 4. 모델을 클릭해 VRAM 구성, 속도 추정, 실행 예시를 확인합니다.
+5. 목록에 없는 공개 생성형 LLM은 `Hugging Face 공개 LLM 직접 계산`에 주소나 `owner/repo` ID를 넣어 계산 목록에 추가합니다.
 
 ## 대표 사용 사례
 
@@ -41,6 +42,8 @@
 | RTX 4090 24GB로 32B Q4 모델을 돌릴 수 있을까? | `GeForce RTX 4090 24GB`, `Q4_K_M`, `32B` 검색 |
 | Mac 32GB에서 로컬 LLM은 어느 정도까지 가능할까? | Apple Silicon 프리셋 선택 후 VRAM/RAM 직접 조정 |
 | A100 80GB 2장으로 동시 요청을 몇 개 처리할 수 있을까? | `A100 80GB`, `GPU 수 2`, `동시 요청` 변경 |
+| RTX 4090과 RTX 3090처럼 서로 다른 GPU를 함께 쓰면 어느 정도일까? | 기본 GPU를 고른 뒤 `보조 GPU`에서 두 번째 GPU 선택 |
+| 목록에 없는 Hugging Face 공개 LLM의 가중치가 내 GPU에 들어갈까? | `Hugging Face 공개 LLM 직접 계산`에 모델 주소 입력 |
 | LLM 서버가 이미 14GB를 쓰는 상태에서 임베딩/리랭커를 같이 띄울 수 있을까? | `이미 사용 중인 VRAM`, `안전 여유분` 입력 후 워크로드 탭별 확인 |
 | EmbeddingGemma, KURE, Granite R2, bge-m3 임베딩을 배치로 돌리면 얼마나 빠를까? | `임베딩` 탭, 모델명 검색 후 `평균 입력 길이`, `배치 크기` 변경 |
 | 한국어 RAG에서 bge-reranker, Qwen3 Reranker, mxbai-rerank 중 무엇이 맞을까? | `리랭커` 탭, `후보 수`, `문서 길이`, `배치 크기` 변경 |
@@ -52,7 +55,7 @@
 
 | 데이터 | 개수 |
 | --- | ---: |
-| GPU 프리셋 | 87 |
+| GPU 프리셋 | 90 |
 | 전체 AI 모델 | 286 |
 | LLM 모델 | 147 |
 | 임베딩 모델 | 60 |
@@ -64,20 +67,23 @@
 | 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
 | 모델 공급사 | 56 |
 | 비전/멀티모달 모델 | 81 |
-| 실측 벤치마크 시트 | 실측 행 0 · 공개 품질 점수 87 · OCR/VLM 참고 기준 45 |
-| 출시/품질 메타데이터 | 출처 확인 286개 |
+| 실측 벤치마크 시트 | 실측 행 0 · 출처 연결 공개 품질 점수 279 · OCR/VLM 참고 기준 45 |
+| 출시/품질 메타데이터 | 출시일 286/286 · 공개 품질 점수 279/286 |
+| 모델 라이선스 안내 | 286/286 · 상업 이용 가능/조건부/비상업·연구용/원문 확인 필요 |
 
 ## 주요 기능
 
 | 기능 | 설명 |
 | --- | --- |
-| GPU 프리셋 | GeForce RTX, RTX Pro/Quadro, NVIDIA GB10/DGX Spark, NVIDIA 데이터센터(H100/A100 포함), AMD, Intel, Apple Silicon 포함 |
-| 설정 변경 패널 | VRAM, GPU 수, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
+| GPU 프리셋 | GeForce RTX, P102-100 10GB, RTX Pro/Quadro, NVIDIA GB10/DGX Spark, NVIDIA 데이터센터, Radeon AI PRO R9700, RX 9070 XT, Intel, Apple Silicon 포함 |
+| 설정 변경 패널 | VRAM, 동일 GPU 수, 보조 GPU/수량, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
+| 이기종 GPU 병렬 | 서로 다른 두 GPU의 VRAM·대역폭·연산량을 합산하고 메모리 분할·통신 손실을 보수적으로 반영 |
 | 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM을 분리 계산 |
 | 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
 | RAG 조건 | 임베딩 입력 길이, 배치 크기, TEI 최대 배치 토큰, 리랭킹 후보 수를 프리셋 또는 직접 입력으로 조정 |
 | OCR/VLM 조건 | 문서 해상도, 이미지 너비/높이, 배치 페이지, 처리 기능 조정 |
 | 양자화 선택 | 자동 추천, IQ2_XXS, Q2_K, Q3_K_S/M, Q4_0/K_S/K_M, Q5_0/K_S/K_M, Q6_K, Q8_0, FP16 |
+| 양자화별 추천 | 자동 추천일 때 실행 가능한 모델을 권장 양자화별로 묶고 그룹별 대표 모델 표시 |
 | 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
 | 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
 | 현재 계산 기준 | 목록 바로 위에서 GPU, 가용 VRAM, 컨텍스트, 동시 요청, 런타임을 한 줄로 확인 |
@@ -86,11 +92,25 @@
 | 추정/실측 분리 | 계산 추정값, 신뢰도, 출처 연결 실측값, OCR/VLM 참고 기준을 서로 다른 영역에 표시 |
 | 벤치마크 시트 | `data/benchmarks.js` 실측 행, `data/model-metadata.js` 공개 품질 점수, OCR/VLM reference benchmark를 분리 표시 |
 | 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
-| 적용 필터 칩 | 검색어, 등급, 상태, 작업, 공급사, 라이선스 필터를 칩으로 표시하고 개별 해제 |
+| 적용 필터 칩 | 검색어, 등급, 상태, 작업, 공급사, 라이선스, 이용 조건 필터를 칩으로 표시하고 개별 해제 |
 | 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
-| 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 라이선스별 필터 |
+| 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 원문 라이선스와 한국어 이용 조건을 함께 표시하고 필터링 |
+| Hugging Face 직접 계산 | 공개 생성형 LLM의 safetensors 파라미터 수·config·라이선스를 읽어 사용자 브라우저의 LLM 목록에 추가 |
 | 정렬 | 종합 추천, 최고 품질, 가장 빠른 모델, VRAM 여유 우선, 한국어 모델 우선, 코딩 모델 우선, 파라미터 큰 순, 최신 모델순 |
-| URL 상태 저장 | GPU, VRAM, RAM, 예약 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
+| URL 상태 저장 | 기본/보조 GPU, VRAM, RAM, 예약 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
+
+## 모델 라이선스 안내
+
+각 모델의 원문 라이선스와 함께 아래 이용 조건을 한국어로 간단히 표시합니다. 목록의 `이용 조건` 필터로 원하는 범주만 볼 수 있고, 모델 상세 화면에서 요약과 원문 링크를 확인할 수 있습니다.
+
+| 표시 | 의미 |
+| --- | --- |
+| 상업 이용 가능 | 일반적인 상업 이용이 가능하지만 저작권 고지, 라이선스 사본 제공 같은 원문 의무는 지켜야 합니다. |
+| 상업 이용 조건부 | 매출·월간 사용자 수·서비스 형태·표시 의무·별도 등록 등 추가 조건이 있을 수 있습니다. |
+| 비상업·연구용 | 연구 또는 비상업 용도로 제한되며 상업 이용에는 별도 허가가 필요합니다. |
+| 원문 확인 필요 | 라이선스 명칭만으로 상업 이용 여부를 단정하기 어려워 배포처의 최신 원문을 직접 확인해야 합니다. |
+
+이 표시는 빠른 판단을 돕는 요약이며 법률 자문이 아닙니다. 모델을 배포하거나 유료 서비스에 사용할 때는 앱에 연결된 최신 라이선스 원문과 사용 제한 정책을 반드시 확인하세요. 이 저장소 코드의 [MIT License](./LICENSE)와 각 AI 모델의 라이선스는 서로 별개입니다.
 
 ## 계산 기준
 
@@ -110,10 +130,10 @@ This calculator uses a deterministic heuristic model. It estimates whether a loc
 | `N` | Concurrent requests |
 | `O` | Average generated output tokens per request |
 | `k` | KV cache precision factor |
-| `G` | Number of GPUs |
-| `V` | VRAM per GPU in GB |
+| `G_i` | Number of GPUs of type `i` |
+| `V_i` | VRAM per GPU of type `i`, in GB |
 | `R` | System RAM in GB |
-| `B` | Memory bandwidth in GB/s |
+| `B_i` | Memory bandwidth per GPU of type `i`, in GB/s |
 | `M_reserved` | VRAM already occupied by other running workloads |
 | `M_safety` | User-selected free VRAM buffer |
 | `M_budget` | VRAM budget available to the model being evaluated |
@@ -161,17 +181,23 @@ $$
 M_{required} = M_{weights} + M_{KV} + M_{runtime}
 $$
 
-Physical and sharding-adjusted GPU memory:
+Physical and sharding-adjusted GPU memory use the sum of every selected GPU type:
 
 $$
-M_{pool} =
-\begin{cases}
-V \cdot G, & G = 1 \\
-V \cdot G \cdot 0.92, & G > 1
-\end{cases}
+M_{physical}=\sum_i V_iG_i
 $$
 
-The multi-GPU `0.92` factor approximates memory loss from sharding, communication buffers, and uneven placement.
+$$
+M_{pool}=M_{physical}\cdot\eta_{shard}
+$$
+
+| GPU layout | `eta_shard` |
+| --- | ---: |
+| Single GPU | `1.00` |
+| Multiple identical GPUs | `0.92` |
+| Heterogeneous GPUs | `0.88` |
+
+These factors approximate memory loss from sharding, communication buffers, and uneven layer placement. Heterogeneous setups are intentionally penalized more heavily.
 
 Because production machines often run an LLM server, embedding worker, reranker, OCR worker, or monitoring process at the same time, the calculator separates the shared GPU memory budget:
 
@@ -216,7 +242,7 @@ The token throughput estimate is bandwidth-oriented:
 
 $$
 T_{raw} =
-\frac{B \cdot G \cdot m_G \cdot m_r}
+\frac{(\sum_i B_iG_i) \cdot m_G \cdot m_r}
 {\max(A \cdot b_q, 1)\cdot 4}
 $$
 
@@ -224,7 +250,7 @@ Runtime and multi-GPU multipliers:
 
 | Factor | Value |
 | --- | --- |
-| `m_G` | `1.00` for single GPU, `0.76` for multi-GPU |
+| `m_G` | `1.00` single GPU, `0.76` identical multi-GPU, `0.64` heterogeneous multi-GPU |
 | `m_r` | `1.00` llama.cpp/Ollama, `1.10` vLLM, `0.78` Transformers |
 
 Offload and tight-memory penalty:
@@ -569,6 +595,16 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
 
+### Hugging Face 공개 LLM 직접 계산
+
+브라우저는 전체 가중치 파일을 다운로드하지 않습니다. 공개 Hub API에서 `safetensors.total` 파라미터 수와 `config.json`의 컨텍스트·MoE 구조 정보를 읽어 계산용 모델 레코드만 만듭니다.
+
+- 공개 safetensors 정보가 있는 모델만 자동 계산할 수 있습니다.
+- 접근 승인이 필요한 gated 모델, 비공개 모델, safetensors 파라미터 수가 없는 저장소는 불러오지 않습니다.
+- Dense 모델은 전체 파라미터를 활성 파라미터로 사용합니다. MoE 모델은 expert 설정으로 활성 파라미터를 보수적으로 추정하므로 상세 화면의 추정값으로 표시합니다.
+- 불러온 모델은 최대 20개까지 해당 브라우저의 `localStorage`에만 저장되며 프로젝트의 정적 모델 데이터에는 자동 반영되지 않습니다.
+- 라이선스는 모델 카드 값을 표시하되, 알 수 없는 사용자 모델은 `원문 확인 필요`로 분류합니다.
+
 ## 로컬 실행
 
 브라우저에서 `index.html`을 직접 열면 됩니다. 로컬 서버로 확인하려면:
@@ -655,13 +691,17 @@ npm run check
 
 실제 실행 가능 여부와 속도는 드라이버, CUDA/ROCm, 런타임, 모델 구현, KV cache precision, 배치 크기, CPU/RAM 성능에 따라 달라질 수 있습니다.
 
+서로 다른 GPU를 병렬로 묶을 수 있는지는 런타임과 모델 구조에 따라 다릅니다. 앱의 이기종 GPU 결과는 VRAM 합산 가능성을 보는 보수적 추정이며, 실제 속도는 PCIe 연결, 가장 느린 GPU, 레이어 분할, CUDA/ROCm 혼용 가능 여부에 따라 더 낮아지거나 실행 자체가 불가능할 수 있습니다. 특히 NVIDIA와 AMD를 한 프로세스에서 함께 쓰는 구성은 일반적인 런타임에서 지원되지 않을 수 있습니다.
+
 임베딩·리랭커 처리량은 tokenizer, padding, dynamic batching, Flash Attention/xFormers 사용 여부에 따라 달라집니다. OCR 처리량은 PDF rasterization, DPI, 문서 레이아웃, 표/수식 모듈, 이미지 전처리 옵션의 영향을 크게 받습니다.
 
 ## 참고한 공식 자료
 
 - [NVIDIA DGX Spark specifications](https://www.nvidia.com/en-sg/products/workstations/dgx-spark/)
 - [NVIDIA DGX Spark hardware guide](https://docs.nvidia.com/dgx/dgx-spark/hardware.html)
+- [NVIDIA P102-100 10GB specifications](https://www.techpowerup.com/gpu-specs/zotac-p102-100.b5306)
 - [Qwen2.5 release blog](https://qwenlm.github.io/blog/qwen2.5/)
+- [Qwen2.5-Coder technical report](https://arxiv.org/abs/2409.12186)
 - [Qwen3 release blog](https://qwenlm.github.io/blog/qwen3/)
 - [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388)
 - [Meta Llama 3.1 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md)
@@ -676,6 +716,7 @@ npm run check
 - [DeepSeek-R1 release note](https://api-docs.deepseek.com/news/news250120)
 - [DeepSeek-V3.2 release note](https://api-docs.deepseek.com/news/news251201)
 - [Mistral Small 3.1 model card](https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503)
+- [Ministral 3B benchmark table](https://huggingface.co/mistralai/Ministral-8B-Instruct-2410)
 - [Mistral model lifecycle](https://legal.mistral.ai/ai-governance/models)
 - [Mistral changelog](https://docs.mistral.ai/resources/changelogs)
 - [LG AI EXAONE 4.0 repository](https://github.com/LG-AI-EXAONE/EXAONE-4.0)
@@ -711,6 +752,7 @@ npm run check
 - [BAAI/bge-m3 model card](https://huggingface.co/BAAI/bge-m3)
 - [Qwen3 Embedding model cards](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B)
 - [Qwen3 Reranker model cards](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B)
+- [MTEB 공식 벤치마크 논문](https://aclanthology.org/2023.eacl-main.148/)
 - [BAAI/bge-reranker-v2-m3 model card](https://huggingface.co/BAAI/bge-reranker-v2-m3)
 - [BAAI/bge-reranker-v2.5-gemma2-lightweight model card](https://huggingface.co/BAAI/bge-reranker-v2.5-gemma2-lightweight)
 - [BAAI/bge-multilingual-gemma2 model card](https://huggingface.co/BAAI/bge-multilingual-gemma2)
@@ -733,6 +775,7 @@ npm run check
 - [mixedbread rerank v2 release note](https://www.mixedbread.com/blog/mxbai-rerank-v2)
 - [maidalun1020/bce-reranker-base_v1 model card](https://huggingface.co/maidalun1020/bce-reranker-base_v1)
 - [Hugging Face Text Embeddings Inference docs](https://huggingface.co/docs/text-embeddings-inference/main/en/index)
+- [Hugging Face Hub model info API](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/hf_api#huggingface_hub.HfApi.model_info)
 - [Sentence Transformers inference efficiency docs](https://www.sbert.net/docs/sentence_transformer/usage/efficiency.html)
 - [PaddleOCR home and PP-OCRv6 release notes](https://www.paddleocr.ai/main/en/index.html)
 - [PaddleOCR PP-OCRv6 documentation](https://www.paddleocr.ai/latest/en/version3.x/algorithm/PP-OCRv6/PP-OCRv6.html)
@@ -753,16 +796,21 @@ npm run check
 - [Pixtral 12B model card](https://huggingface.co/mistralai/Pixtral-12B-Base-2409)
 - [Pixtral Large model card](https://huggingface.co/mistralai/Pixtral-Large-Instruct-2411)
 - [LLaVA-OneVision Qwen2 7B model card](https://huggingface.co/llava-hf/llava-onevision-qwen2-7b-ov-hf)
+- [LLaVA-OneVision 공식 논문](https://arxiv.org/abs/2408.03326)
 - [Molmo-7B-D model card](https://huggingface.co/allenai/Molmo-7B-D-0924)
 - [SmolVLM2 model release](https://huggingface.co/blog/smolvlm2)
 - [Phi-4 multimodal model card](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
 - [Aya Vision 8B model card](https://huggingface.co/CohereLabs/aya-vision-8b)
+- [Aya Vision 공식 기술 블로그](https://huggingface.co/blog/aya-vision)
 - [GLM-4.1V-9B-Thinking model card](https://huggingface.co/zai-org/GLM-4.1V-9B-Thinking)
+- [GLM-4.1V-Thinking 공식 기술 보고서](https://arxiv.org/abs/2507.01006)
 - [MiniCPM-V-4.6 model card](https://huggingface.co/openbmb/MiniCPM-V-4.6)
 - [InternVL3.5-4B model card](https://huggingface.co/OpenGVLab/InternVL3_5-4B)
+- [InternVL3.5 공식 논문](https://arxiv.org/abs/2508.18265)
 - [Kimi-VL-A3B-Instruct model card](https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct)
 - [PaddleOCR PP-StructureV3 benchmark](https://paddlepaddle.github.io/PaddleOCR/v3.0.1/en/version3.x/algorithm/PP-StructureV3/PP-StructureV3.html)
 - [GOT-OCR2 Transformers docs](https://huggingface.co/docs/transformers/model_doc/got_ocr2)
+- [GOT-OCR2 공식 논문](https://arxiv.org/abs/2409.01704)
 - [Surya OCR README](https://github.com/datalab-to/surya)
 
 ## 기여
@@ -773,13 +821,15 @@ npm run check
 
 자세한 방식은 [CONTRIBUTING.md](./CONTRIBUTING.md)를 참고하세요.
 
-## 라이선스
+## 저장소 라이선스
 
 [MIT License](./LICENSE)
 
+앱에 수록된 AI 모델은 각각 별도의 라이선스를 따릅니다. 한국어 이용 조건 요약은 `data/licenses.js`와 앱의 모델 상세 화면에서 확인할 수 있습니다.
+
 ## GPU 스펙 데이터
 
-GPU 목록과 스펙 원천 데이터는 **[gpu-specs-kr](https://github.com/jaeseok614/gpu-specs-kr)** 프로젝트에서 관리합니다.
+GPU 목록의 기본 스펙 데이터는 **[gpu-specs-kr](https://github.com/jaeseok614/gpu-specs-kr)** 프로젝트에서 관리하며, 사용자 요청으로 추가된 항목은 각 레코드의 확인 출처를 함께 보관합니다.
 
 > Wikipedia의 NVIDIA·AMD·Intel GPU 스펙을 정규화한 오픈소스 데이터셋·REST API
 

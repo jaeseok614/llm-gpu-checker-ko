@@ -2,6 +2,9 @@ const DATA = window.LLM_GPU_CHECKER_DATA || {};
 const GPU_PRESETS = DATA.gpus || [];
 const QUANTS = DATA.quantizations || [];
 const MODEL_METADATA = DATA.modelMetadata || {};
+const LICENSE_POLICIES = DATA.licensePolicies || {};
+const MODEL_LICENSE_POLICIES = DATA.modelLicensePolicies || {};
+const LICENSE_META = DATA.licenseMeta || {};
 const GENERATIVE_MODELS = (DATA.models || []).map((model) => withModelMetadata(model, "generative"));
 const EMBEDDING_MODELS = (DATA.embeddingModels || []).map((model) => withModelMetadata(model, "embedding"));
 const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => withModelMetadata(model, "reranker"));
@@ -12,7 +15,9 @@ const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
 const OCR_RESOLUTION_PRESETS = DATA.ocrResolutionPresets || {};
 const BENCHMARKS = DATA.benchmarks || [];
 const BENCHMARK_META = DATA.benchmarkMeta || {};
-const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-21";
+const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
+const HF_MODEL_STORAGE_KEY = "llm-gpu-checker-hf-models-v1";
+const MAX_IMPORTED_HF_MODELS = 20;
 const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm"]);
 const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm"]);
 const WORKLOAD_ALIASES = { ocr: "ocrPipeline" };
@@ -23,6 +28,18 @@ const GENERAL_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "general-
 function withModelMetadata(model, type) {
   const metadata = MODEL_METADATA[`${type}:${model.name}`] || MODEL_METADATA[model.name] || {};
   return { ...model, ...metadata, type };
+}
+
+function getLicensePolicy(modelOrLicense) {
+  const model = typeof modelOrLicense === "string" ? null : modelOrLicense;
+  const license = typeof modelOrLicense === "string" ? modelOrLicense : modelOrLicense?.license;
+  return MODEL_LICENSE_POLICIES[model?.name] || LICENSE_POLICIES[license] || {
+    commercialUse: "review",
+    commercialLabel: "약관 확인 필요",
+    opennessLabel: "공개 범위 확인 필요",
+    summary: "등록된 한국어 요약이 없습니다. 해당 모델 카드의 최신 LICENSE를 직접 확인하세요.",
+    sourceUrl: model?.sourceUrl || "",
+  };
 }
 
 const MODEL_GROUPS = {
@@ -124,9 +141,11 @@ let settingsExpanded = false;
 const $ = (id) => document.getElementById(id);
 
 function init() {
+  restoreImportedHfModels();
   populateSelects();
   applyUrlState();
   bindEvents();
+  refreshHfImportUi();
   render({ syncUrl: false });
 }
 
@@ -135,6 +154,13 @@ function populateSelects() {
     (gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`,
   ).join("");
   $("gpuPreset").value = "rtx4090-24";
+  $("secondaryGpuPreset").innerHTML = [
+    `<option value="none">사용 안 함</option>`,
+    ...GPU_PRESETS
+      .filter((gpu) => gpu.id !== "custom")
+      .map((gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`),
+  ].join("");
+  $("secondaryGpuPreset").value = "none";
 
   $("quantization").innerHTML = QUANTS.map(
     (quant) => `<option value="${escapeAttr(quant.id)}">${escapeHtml(quant.label)}</option>`,
@@ -148,6 +174,7 @@ function populateSelects() {
   refreshFilterOptions();
 
   applyPreset("rtx4090-24");
+  refreshSecondaryGpuUi();
 }
 
 function populatePrecisionSelect(id, options) {
@@ -157,6 +184,266 @@ function populatePrecisionSelect(id, options) {
     (option) => `<option value="${escapeAttr(option.id)}">${escapeHtml(option.label)}</option>`,
   ).join("");
   select.value = "auto";
+}
+
+function restoreImportedHfModels() {
+  try {
+    const stored = JSON.parse(window.localStorage?.getItem(HF_MODEL_STORAGE_KEY) || "[]");
+    if (!Array.isArray(stored)) return;
+    stored.slice(0, MAX_IMPORTED_HF_MODELS).forEach((record) => {
+      const repoId = parseHfRepoId(record?.name);
+      const params = Number(record?.params);
+      if (!repoId || !Number.isFinite(params) || params <= 0) return;
+      if (GENERATIVE_MODELS.some((model) => model.name === repoId)) return;
+      GENERATIVE_MODELS.push({
+        name: repoId,
+        maker: String(record.maker || repoId.split("/")[0]),
+        params,
+        active: Math.min(params, Math.max(0.01, Number(record.active) || params)),
+        context: Math.min(1024, Math.max(0.5, Number(record.context) || 8)),
+        license: String(record.license || "원문 확인 필요"),
+        tags: Array.isArray(record.tags) && record.tags.length ? record.tags.map(String) : ["general"],
+        summary: String(record.summary || "Hugging Face 공개 API에서 불러온 사용자 모델입니다."),
+        sourceUrl: `https://huggingface.co/${repoId}`,
+        releaseDate: /^\d{4}-\d{2}-\d{2}$/.test(record.releaseDate || "") ? record.releaseDate : "",
+        type: "generative",
+        hfImported: true,
+      });
+    });
+  } catch {
+    // localStorage를 사용할 수 없는 환경에서도 기본 계산기는 그대로 동작합니다.
+  }
+}
+
+function persistImportedHfModels() {
+  try {
+    const imported = GENERATIVE_MODELS.filter((model) => model.hfImported);
+    window.localStorage?.setItem(HF_MODEL_STORAGE_KEY, JSON.stringify(imported));
+  } catch {
+    // 저장이 차단된 브라우저에서는 현재 탭에서만 유지합니다.
+  }
+}
+
+function parseHfRepoId(input) {
+  let value = String(input || "").trim();
+  if (!value) return "";
+  try {
+    if (/^https?:\/\//i.test(value)) {
+      const url = new URL(value);
+      if (url.hostname !== "huggingface.co" && url.hostname !== "www.huggingface.co") return "";
+      value = url.pathname.replace(/^\/+/, "");
+    }
+  } catch {
+    return "";
+  }
+  value = value.replace(/^models\//, "").split(/[?#]/)[0];
+  const parts = value.split("/").filter(Boolean);
+  if (parts.length < 2) return "";
+  const repoId = `${parts[0]}/${parts[1]}`;
+  return /^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repoId) ? repoId : "";
+}
+
+function normalizeHfLicense(value) {
+  const raw = String(value || "").trim();
+  const key = raw.toLowerCase();
+  const known = {
+    "apache-2.0": "Apache 2.0",
+    apache2: "Apache 2.0",
+    mit: "MIT",
+    "gpl-3.0": "GPL-3.0",
+    "gpl-3.0-only": "GPL-3.0",
+    "gpl-3.0-or-later": "GPL-3.0",
+    "cc-by-nc-4.0": "CC BY-NC 4.0",
+    "cc-by-nc": "CC BY-NC",
+    gemma: "Gemma",
+    "gemma-terms-of-use": "Gemma",
+    "llama3.1": "Llama 3.1 Community",
+    "llama3.2": "Llama 3.2 Community",
+    "llama3.3": "Llama 3.3 Community",
+    "llama4": "Llama 4 Community",
+    qwen: "Qwen",
+    "qwen-research": "Qwen Research",
+    deepseek: "DeepSeek",
+    "glm-4": "GLM-4",
+    "openrail-m": "OpenRAIL-M",
+    "creativeml-openrail-m": "OpenRAIL-M",
+    "nvidia-open-model-license": "NVIDIA Open",
+    falcon: "Falcon",
+  };
+  if (known[key]) return known[key];
+  if (key.startsWith("llama")) return "Llama";
+  if (key === "other" || !raw) return "원문 확인 필요";
+  return raw;
+}
+
+function extractHfParameterCount(info) {
+  const total = Number(info?.safetensors?.total);
+  if (Number.isFinite(total) && total > 0) return total;
+  const byDtype = info?.safetensors?.parameters;
+  if (!byDtype || typeof byDtype !== "object") return 0;
+  return Object.values(byDtype).reduce((sum, value) => sum + (Number(value) || 0), 0);
+}
+
+function extractHfContextTokens(config) {
+  const candidates = [
+    config?.max_position_embeddings,
+    config?.max_seq_len,
+    config?.max_sequence_length,
+    config?.seq_length,
+    config?.n_positions,
+    config?.text_config?.max_position_embeddings,
+  ].map(Number).filter((value) => Number.isFinite(value) && value >= 512 && value <= 1048576);
+  return candidates[0] || 8192;
+}
+
+function estimateHfActiveParams(totalBillions, config) {
+  const expertCount = Number(config?.num_local_experts || config?.num_experts || config?.n_routed_experts);
+  const expertsPerToken = Number(config?.num_experts_per_tok || config?.num_experts_per_token || config?.num_selected_experts);
+  const sharedExperts = Number(config?.n_shared_experts || config?.num_shared_experts || 0);
+  if (!Number.isFinite(expertCount) || !Number.isFinite(expertsPerToken) || expertCount <= 1 || expertsPerToken <= 0) {
+    return { active: totalBillions, inferredMoe: false };
+  }
+  const routedRatio = Math.min(1, (expertsPerToken + Math.max(0, sharedExperts)) / expertCount);
+  const active = totalBillions * Math.min(1, 0.03 + routedRatio * 0.97);
+  return { active: Math.max(0.01, Math.round(active * 1000) / 1000), inferredMoe: true };
+}
+
+function buildHfTags(repoId, info, config, contextTokens, totalBillions) {
+  const text = [repoId, info?.pipeline_tag, ...(info?.tags || []), ...(config?.architectures || [])].join(" ").toLowerCase();
+  const tags = new Set(["general"]);
+  const languages = Array.isArray(info?.cardData?.language) ? info.cardData.language.map(String) : [String(info?.cardData?.language || "")];
+  if (languages.some((language) => /^(ko|kor|korean)$/i.test(language))) tags.add("korean");
+  if (/code|coder|fill-mask/.test(text)) tags.add("coding");
+  if (/reason|thinking|math/.test(text)) tags.add("reasoning");
+  if (/vision|visual|image|multimodal/.test(text)) tags.add("vision");
+  if (contextTokens >= 32768) tags.add("long");
+  if (totalBillions <= 4) tags.add("edge");
+  return [...tags];
+}
+
+async function importHfModel(event) {
+  event.preventDefault();
+  const repoId = parseHfRepoId($("hfModelInput").value);
+  if (!repoId) {
+    setHfImportStatus("owner/repo 형식의 모델 ID 또는 huggingface.co 모델 주소를 입력해 주세요.", "error");
+    return;
+  }
+
+  const existingImported = GENERATIVE_MODELS.find((model) => model.name === repoId && model.hfImported);
+  if (!existingImported && GENERATIVE_MODELS.filter((model) => model.hfImported).length >= MAX_IMPORTED_HF_MODELS) {
+    setHfImportStatus(`직접 불러온 모델은 최대 ${MAX_IMPORTED_HF_MODELS}개까지 저장할 수 있습니다.`, "error");
+    return;
+  }
+
+  const button = $("hfImportButton");
+  button.disabled = true;
+  setHfImportStatus("Hugging Face에서 safetensors와 config를 확인하는 중입니다…", "loading");
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const encodedRepo = repoId.split("/").map(encodeURIComponent).join("/");
+    const query = new URLSearchParams();
+    ["author", "cardData", "config", "createdAt", "pipeline_tag", "safetensors", "tags"].forEach((field) => query.append("expand", field));
+    const response = await fetch(`https://huggingface.co/api/models/${encodedRepo}?${query.toString()}`, { signal: controller.signal });
+    if (!response.ok) {
+      if ([401, 403].includes(response.status)) throw new Error("접근 승인이 필요한 모델이라 공개 API로 읽을 수 없습니다.");
+      if (response.status === 404) throw new Error("해당 Hugging Face 모델 저장소를 찾지 못했습니다.");
+      throw new Error(`Hugging Face API 오류 (${response.status})`);
+    }
+    const info = await response.json();
+    const supportedPipelines = new Set(["text-generation", "text2text-generation", "conversational"]);
+    if (info.pipeline_tag && !supportedPipelines.has(info.pipeline_tag)) {
+      throw new Error(`현재 직접 가져오기는 생성형 LLM만 지원합니다. 이 모델 유형은 ${info.pipeline_tag}입니다.`);
+    }
+    let config = info.config || {};
+    try {
+      const configResponse = await fetch(`https://huggingface.co/${encodedRepo}/resolve/main/config.json`, { signal: controller.signal });
+      if (configResponse.ok) config = await configResponse.json();
+    } catch {
+      // 일부 저장소는 config.json이 없지만 API의 기본 정보만으로도 가져올 수 있습니다.
+    }
+
+    const parameterCount = extractHfParameterCount(info);
+    if (!parameterCount) throw new Error("공개 safetensors 파라미터 수가 없어 자동 계산할 수 없습니다.");
+    const params = Math.round((parameterCount / 1e9) * 1000) / 1000;
+    const contextTokens = extractHfContextTokens(config);
+    const activeInfo = estimateHfActiveParams(params, config);
+    const releaseDate = /^\d{4}-\d{2}-\d{2}/.test(info.createdAt || "") ? info.createdAt.slice(0, 10) : "";
+    const license = normalizeHfLicense(info.cardData?.license);
+    const tags = buildHfTags(repoId, info, config, contextTokens, params);
+    const summary = activeInfo.inferredMoe
+      ? `Hugging Face 공개 API에서 불러온 모델입니다. 전체 ${params}B, MoE config 기반 활성 ${activeInfo.active}B 추정치입니다.`
+      : `Hugging Face 공개 API에서 불러온 모델입니다. safetensors 기준 ${params}B 파라미터를 사용합니다.`;
+    const importedModel = {
+      name: repoId,
+      maker: String(info.author || repoId.split("/")[0]),
+      params,
+      active: activeInfo.active,
+      context: Math.max(0.5, contextTokens / 1024),
+      license,
+      tags,
+      summary,
+      sourceUrl: `https://huggingface.co/${repoId}`,
+      releaseDate,
+      type: "generative",
+      hfImported: true,
+    };
+
+    const existingIndex = GENERATIVE_MODELS.findIndex((model) => model.name === repoId && model.hfImported);
+    if (existingIndex >= 0) GENERATIVE_MODELS.splice(existingIndex, 1, importedModel);
+    else GENERATIVE_MODELS.push(importedModel);
+    persistImportedHfModels();
+    activeWorkload = "generative";
+    activeSummaryFilter = "all";
+    $("searchInput").value = repoId;
+    refreshWorkloadUi();
+    refreshFilterOptions();
+    selectedModelKey = modelKey(importedModel);
+    refreshHfImportUi();
+    setHfImportStatus(`${repoId}: ${params}B · 최대 ${formatContext(contextTokens)} · ${license}로 계산 목록에 추가했습니다.`, "success");
+    render();
+  } catch (error) {
+    const message = error?.name === "AbortError" ? "요청 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요." : error?.message;
+    setHfImportStatus(message || "모델 정보를 가져오지 못했습니다.", "error");
+  } finally {
+    window.clearTimeout(timeoutId);
+    button.disabled = false;
+  }
+}
+
+function clearImportedHfModels() {
+  const importedNames = new Set(GENERATIVE_MODELS.filter((model) => model.hfImported).map((model) => model.name));
+  if (!importedNames.size) {
+    setHfImportStatus("현재 브라우저에 저장된 직접 불러오기 모델이 없습니다.", "neutral");
+    return;
+  }
+  for (let index = GENERATIVE_MODELS.length - 1; index >= 0; index -= 1) {
+    if (GENERATIVE_MODELS[index].hfImported) GENERATIVE_MODELS.splice(index, 1);
+  }
+  try {
+    window.localStorage?.removeItem(HF_MODEL_STORAGE_KEY);
+  } catch {
+    // 저장소 삭제가 막혀도 현재 목록에서는 제거됩니다.
+  }
+  if (selectedModelKey && !getModelByKey(selectedModelKey)) selectedModelKey = "";
+  if (importedNames.has($("searchInput").value)) $("searchInput").value = "";
+  refreshFilterOptions();
+  refreshHfImportUi();
+  setHfImportStatus(`${importedNames.size}개 모델을 현재 브라우저 목록에서 지웠습니다.`, "success");
+  render();
+}
+
+function refreshHfImportUi() {
+  const count = GENERATIVE_MODELS.filter((model) => model.hfImported).length;
+  $("hfClearButton").disabled = count === 0;
+  $("hfClearButton").textContent = count ? `불러온 모델 지우기 (${count})` : "불러온 모델 지우기";
+}
+
+function setHfImportStatus(message, type) {
+  const target = $("hfImportStatus");
+  target.textContent = message;
+  target.className = type ? `is-${type}` : "";
 }
 
 function refreshFilterOptions() {
@@ -174,7 +461,10 @@ function refreshFilterOptions() {
   ].join("");
   $("licenseFilter").innerHTML = [
     `<option value="all">전체 라이선스</option>`,
-    ...licenses.map((license) => `<option value="${escapeAttr(license)}">${escapeHtml(license)}</option>`),
+    ...licenses.map((license) => {
+      const policy = getLicensePolicy(license);
+      return `<option value="${escapeAttr(license)}">${escapeHtml(license)} · ${escapeHtml(policy.commercialLabel)}</option>`;
+    }),
   ].join("");
   $("taskFilter").innerHTML = [
     `<option value="all">전체 작업</option>`,
@@ -193,7 +483,7 @@ function bindEvents() {
     refreshWorkloadUi();
   });
 
-  ["vramGb", "gpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb"].forEach((id) => {
+  ["vramGb", "gpuCount", "secondaryGpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb"].forEach((id) => {
     $(id).addEventListener("input", () => {
       render();
     });
@@ -225,6 +515,7 @@ function bindEvents() {
     "taskFilter",
     "providerFilter",
     "licenseFilter",
+    "licenseUseFilter",
     "gradeFilter",
     "sortBy",
   ].forEach((id) => {
@@ -259,6 +550,22 @@ function bindEvents() {
 
   $("gpuPreset").addEventListener("change", (event) => {
     applyPreset(event.target.value);
+    refreshSecondaryGpuUi();
+    render();
+  });
+
+  $("secondaryGpuPreset").addEventListener("change", () => {
+    refreshSecondaryGpuUi();
+    render();
+  });
+
+  $("hfImportForm").addEventListener("submit", importHfModel);
+  $("hfClearButton").addEventListener("click", clearImportedHfModels);
+
+  $("quantRecommendations").addEventListener("click", (event) => {
+    const target = event.target.closest("[data-model-key]");
+    if (!target) return;
+    selectedModelKey = target.dataset.modelKey;
     render();
   });
 
@@ -340,6 +647,7 @@ function clearFilter(kind) {
     $("taskFilter").value = "all";
     $("providerFilter").value = "all";
     $("licenseFilter").value = "all";
+    $("licenseUseFilter").value = "all";
     $("searchInput").value = "";
     return;
   }
@@ -348,6 +656,7 @@ function clearFilter(kind) {
   if (kind === "task") $("taskFilter").value = "all";
   if (kind === "provider") $("providerFilter").value = "all";
   if (kind === "license") $("licenseFilter").value = "all";
+  if (kind === "licenseUse") $("licenseUseFilter").value = "all";
   if (kind === "search") $("searchInput").value = "";
 }
 
@@ -402,6 +711,28 @@ function applyPreset(id) {
   $("gpuCount").value = 1;
 }
 
+function refreshSecondaryGpuUi() {
+  const selectedId = $("secondaryGpuPreset").value;
+  const enabled = selectedId !== "none" && GPU_PRESETS.some((gpu) => gpu.id === selectedId);
+  $("secondaryGpuCount").disabled = !enabled;
+  const selected = GPU_PRESETS.find((gpu) => gpu.id === selectedId);
+  const primary = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value);
+  const crossVendor = selected && primary && gpuRuntimeFamily(selected) !== gpuRuntimeFamily(primary);
+  $("secondaryGpuNote").textContent = crossVendor
+    ? "GPU 제조사가 다릅니다. NVIDIA·AMD·Intel 혼용은 일반적인 단일 런타임에서 지원되지 않을 수 있으므로 메모리 참고값으로만 보세요."
+    : selected
+      ? `${selected.name}의 VRAM ${formatGb(selected.vram)}·대역폭 ${selected.bandwidth.toLocaleString("ko-KR")} GB/s를 더하고 이기종 통신 손실을 반영합니다.`
+    : "서로 다른 GPU를 함께 쓰는 경우 메모리 분할·통신 손실을 보수적으로 반영합니다.";
+}
+
+function gpuRuntimeFamily(gpu) {
+  const name = `${gpu?.id || ""} ${gpu?.name || ""}`.toLowerCase();
+  if (/radeon|amd|mi\d|w\d{4}/.test(name)) return "amd";
+  if (/intel|arc|flex|max\d/.test(name)) return "intel";
+  if (/apple|m\dultra|m\dmax/.test(name)) return "apple";
+  return "nvidia";
+}
+
 function syncPresetForInput(inputId) {
   const select = document.querySelector(`[data-preset-target="${inputId}"]`);
   if (!select) return;
@@ -422,7 +753,7 @@ function syncPresetControls() {
 
 function getHardware() {
   const vram = clampNumber($("vramGb").value, 2, 640, 24);
-  const count = clampNumber($("gpuCount").value, 1, 16, 1);
+  const primaryCount = clampNumber($("gpuCount").value, 1, 16, 1);
   const ram = clampNumber($("ramGb").value, 8, 2048, 64);
   const bandwidth = clampNumber($("bandwidth").value, 100, 12000, 1008);
   const reservedVram = clampNumber($("reservedVramGb").value, 0, 10240, 0);
@@ -434,14 +765,30 @@ function getHardware() {
   const kvMeta = KV_PRECISION_META[kvPrecision] || KV_PRECISION_META.fp16;
   const runtime = $("runtimeMode").value;
   const preset = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value) || GPU_PRESETS[0];
+  const secondaryPreset = GPU_PRESETS.find((gpu) => gpu.id === $("secondaryGpuPreset").value) || null;
+  const secondaryCount = secondaryPreset ? clampNumber($("secondaryGpuCount").value, 1, 16, 1) : 0;
+  const count = primaryCount + secondaryCount;
+  const heterogeneous = Boolean(secondaryPreset && secondaryPreset.id !== preset?.id);
+  const crossVendor = Boolean(secondaryPreset && gpuRuntimeFamily(secondaryPreset) !== gpuRuntimeFamily(preset));
 
   const compute = estimateHardwareCompute(preset, bandwidth);
-  const totalVram = vram * count;
-  const baseEffectiveVram = totalVram * (count > 1 ? 0.92 : 1);
+  const secondaryCompute = secondaryPreset ? estimateHardwareCompute(secondaryPreset, secondaryPreset.bandwidth) : null;
+  const computeTotal = Object.fromEntries(
+    ["fp32Tflops", "fp16Tflops", "bf16Tflops", "int8Tops"].map((key) => [
+      key,
+      compute[key] * primaryCount + (secondaryCompute?.[key] || 0) * secondaryCount,
+    ]),
+  );
+  const totalVram = vram * primaryCount + (secondaryPreset?.vram || 0) * secondaryCount;
+  const shardingEfficiency = count > 1 ? (heterogeneous ? 0.88 : 0.92) : 1;
+  const baseEffectiveVram = totalVram * shardingEfficiency;
   const availableVram = Math.max(0, baseEffectiveVram - reservedVram - safetyMarginGb);
+  const aggregateBandwidth = bandwidth * primaryCount + (secondaryPreset?.bandwidth || 0) * secondaryCount;
 
   return {
     vram,
+    primaryCount,
+    secondaryCount,
     count,
     ram,
     bandwidth,
@@ -457,7 +804,13 @@ function getHardware() {
     kvMeta,
     runtime,
     preset,
+    secondaryPreset,
+    heterogeneous,
+    crossVendor,
+    shardingEfficiency,
+    aggregateBandwidth,
     compute,
+    computeTotal,
   };
 }
 
@@ -799,15 +1152,15 @@ function estimateRerankerWithPrecision(model, hardware, workload, precision) {
 function estimateEncoderThroughput(model, hardware, runtime, precision, tokens, batchSize, weightsGb, activationGb, attentionGb, grade) {
   if (grade === "F") return { docsPerSecond: 0, tokensPerSecond: 0, batchSeconds: 0 };
 
-  const multiGpuPenalty = hardware.count > 1 ? 0.82 : 1;
-  const computeTflops = Math.max(1, hardware.compute[precision.computeKey] || hardware.compute.fp16Tflops) * hardware.count * multiGpuPenalty * precision.speedFactor;
+  const multiGpuPenalty = hardware.count > 1 ? (hardware.heterogeneous ? 0.72 : 0.82) : 1;
+  const computeTflops = Math.max(1, hardware.computeTotal[precision.computeKey] || hardware.computeTotal.fp16Tflops) * multiGpuPenalty * precision.speedFactor;
   const flops = model.layers * (
     24 * batchSize * tokens * model.hiddenSize * model.hiddenSize
     + 4 * batchSize * tokens * tokens * model.hiddenSize
   );
   const computeSeconds = flops / (computeTflops * 1e12 * runtime.computeEfficiency);
   const bytesRead = Math.max(0.05, weightsGb + activationGb + attentionGb) * 1e9;
-  const memorySeconds = bytesRead / (hardware.bandwidth * hardware.count * 1e9 * runtime.bandwidthEfficiency);
+  const memorySeconds = bytesRead / (hardware.aggregateBandwidth * 1e9 * runtime.bandwidthEfficiency * multiGpuPenalty);
   const pressurePenalty = grade === "D" ? 3.8 : grade === "C" ? 1.7 : 1;
   const batchSeconds = (Math.max(computeSeconds, memorySeconds) + runtime.fixedLatencyMs / 1000) * pressurePenalty;
   const docsPerSecond = batchSeconds > 0 ? batchSize / batchSeconds : 0;
@@ -889,7 +1242,8 @@ function estimateOcrThroughput(model, hardware, workload, precision, megapixels,
   const referenceMegapixels = reference.width && reference.height ? reference.width * reference.height / 1e6 : 3.87;
   const referenceBatch = reference.batch || 1;
   const basePps = reference.pagesPerSecond || 1;
-  const hardwareScale = Math.sqrt((hardware.bandwidth * hardware.count) / referenceBandwidth);
+  const multiGpuPenalty = hardware.count > 1 ? (hardware.heterogeneous ? 0.72 : 0.82) : 1;
+  const hardwareScale = Math.sqrt((hardware.aggregateBandwidth * multiGpuPenalty) / referenceBandwidth);
   const resolutionScale = Math.pow(referenceMegapixels / Math.max(0.2, megapixels), 0.85);
   const batchScale = referenceBatch > 1
     ? Math.log2(workload.batchSize + 1) / Math.log2(referenceBatch + 1)
@@ -932,7 +1286,7 @@ function resolvePrecision(model, precisionId, precisionOptions, estimateForPreci
 
 function getEffectiveVram(hardware) {
   if (Number.isFinite(hardware.availableVram)) return hardware.availableVram;
-  return hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
+  return hardware.baseEffectiveVram || hardware.vram * hardware.count * (hardware.count > 1 ? 0.92 : 1);
 }
 
 function getVramPressure(requiredGb, effectiveVram) {
@@ -999,12 +1353,12 @@ function gradeFromPressure(pressure, requiredGb, offloadRoom) {
 function estimateSpeed(model, quant, hardware, grade) {
   if (grade === "F") return { perRequest: 0, total: 0 };
 
-  const multiGpuPenalty = hardware.count > 1 ? 0.76 : 1;
+  const multiGpuPenalty = hardware.count > 1 ? (hardware.heterogeneous ? 0.64 : 0.76) : 1;
   const runtimePenalty = hardware.runtime === "vllm" ? 1.1 : hardware.runtime === "transformers" ? 0.78 : 1;
   const offloadPenalty = grade === "D" ? 0.22 : grade === "C" ? 0.55 : 1;
   const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const activeBytes = Math.max(model.active * quant.bytesPerB, 1);
-  const raw = (hardware.bandwidth * hardware.count * multiGpuPenalty * runtimePenalty) / (activeBytes * 4);
+  const raw = (hardware.aggregateBandwidth * multiGpuPenalty * runtimePenalty) / (activeBytes * 4);
   const total = raw * (1 + (hardware.concurrency - 1) * runtimeFactor.concurrencyEfficiency) * offloadPenalty;
 
   return {
@@ -1048,6 +1402,7 @@ function getFilteredEstimates() {
   const task = $("taskFilter").value;
   const provider = $("providerFilter").value;
   const license = $("licenseFilter").value;
+  const licenseUse = $("licenseUseFilter").value;
   const gradeChoice = $("gradeFilter").value;
   const search = $("searchInput").value.trim().toLowerCase();
   const summaryFilter = SUMMARY_FILTERS.find((item) => item.id === activeSummaryFilter) || SUMMARY_FILTERS[0];
@@ -1070,6 +1425,10 @@ function getFilteredEstimates() {
     estimates = estimates.filter((estimate) => estimate.model.license === license);
   }
 
+  if (licenseUse !== "all") {
+    estimates = estimates.filter((estimate) => getLicensePolicy(estimate.model).commercialUse === licenseUse);
+  }
+
   if (search) {
     estimates = estimates.filter((estimate) => {
       const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
@@ -1079,6 +1438,8 @@ function getFilteredEstimates() {
         estimate.model.name,
         estimate.model.maker,
         estimate.model.license,
+        getLicensePolicy(estimate.model).commercialLabel,
+        getLicensePolicy(estimate.model).opennessLabel,
         estimate.model.summary,
         release.label,
         release.note,
@@ -1247,7 +1608,8 @@ function buildRecommendationReasons(estimate) {
 function getEstimateConfidence(model, estimate, hardware) {
   const benchmarkRows = findBenchmarksForModel(model);
   const hasExactMeasured = benchmarkRows.some((row) => {
-    const sameGpu = !row.gpuId || row.gpuId === hardware.preset.id;
+    const sameGpu = !row.gpuId
+      || (row.gpuId === hardware.preset.id && hardware.primaryCount === 1 && !hardware.secondaryPreset);
     const sameRuntime = !row.runtime || row.runtime === hardware.runtime;
     const sameSetting = model.type === "generative" ? (!row.quantization || row.quantization === estimate.settingLabel || row.quantization === estimate.quant?.label) : true;
     return sameGpu && sameRuntime && sameSetting;
@@ -1468,6 +1830,7 @@ function render(options = {}) {
   renderHardware(hardware, allEstimates);
   renderSummary(allEstimates);
   renderCalculationBasisStrip(hardware);
+  renderQuantizationRecommendations(estimates);
   renderResults(estimates, allEstimates);
   renderActiveFilterChips(estimates, allEstimates);
   renderDetail();
@@ -1479,9 +1842,13 @@ function render(options = {}) {
 
 function renderHardware(hardware, allEstimates) {
   const basis = buildHardwareBasis(hardware);
-  const metaParts = [`가용 VRAM ${formatGb(hardware.availableVram)}`, `RAM ${formatGb(hardware.ram)}`, `GPU ${hardware.count}개`];
+  const metaParts = [
+    `가용 VRAM ${formatGb(hardware.availableVram)}`,
+    `RAM ${formatGb(hardware.ram)}`,
+    `GPU ${hardware.count}개${hardware.crossVendor ? " · 제조사 혼용 확인" : hardware.heterogeneous ? " · 이기종" : ""}`,
+  ];
 
-  $("hardwareHeadline").textContent = hardware.preset.name;
+  $("hardwareHeadline").textContent = formatHardwareName(hardware);
   $("hardwareMeta").innerHTML = metaParts
     .map((part, index) => `
       <span class="hardware-piece">
@@ -1491,6 +1858,12 @@ function renderHardware(hardware, allEstimates) {
     `)
     .join("");
   $("hardwareSubline").textContent = basis;
+  const sourceGpus = [hardware.preset, hardware.secondaryPreset].filter((gpu) => gpu?.sourceUrl);
+  const sourceTarget = $("gpuSourceLinks");
+  sourceTarget.hidden = sourceGpus.length === 0;
+  sourceTarget.innerHTML = sourceGpus
+    .map((gpu) => `<a href="${escapeAttr(gpu.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(shortGpuName(gpu.name))} 스펙 출처</a>`)
+    .join("");
 }
 
 function buildHardwareBasis(hardware) {
@@ -1522,10 +1895,18 @@ function renderCalculationBasisStrip(hardware) {
   $("calculationBasisStrip").innerHTML = `
     <div>
       <span>현재 계산 기준</span>
-      <strong>${escapeHtml(shortGpuName(hardware.preset.name))} · 가용 VRAM ${formatGb(hardware.availableVram)} · ${escapeHtml(basis)}</strong>
+      <strong>${escapeHtml(formatHardwareName(hardware, true))} · 가용 VRAM ${formatGb(hardware.availableVram)} · ${escapeHtml(basis)}</strong>
     </div>
     <button type="button" class="ghost-button" data-open-settings>조건 변경</button>
   `;
+}
+
+function formatHardwareName(hardware, compact = false) {
+  const primaryName = compact ? shortGpuName(hardware.preset.name) : hardware.preset.name;
+  const primary = `${primaryName}${hardware.primaryCount > 1 ? ` ×${hardware.primaryCount}` : ""}`;
+  if (!hardware.secondaryPreset) return primary;
+  const secondaryName = compact ? shortGpuName(hardware.secondaryPreset.name) : hardware.secondaryPreset.name;
+  return `${primary} + ${secondaryName}${hardware.secondaryCount > 1 ? ` ×${hardware.secondaryCount}` : ""}`;
 }
 
 function shortGpuName(name) {
@@ -1534,6 +1915,58 @@ function shortGpuName(name) {
     .replace(/^GeForce\s+/i, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function renderQuantizationRecommendations(estimates) {
+  const target = $("quantRecommendations");
+  if (activeWorkload !== "generative" || $("quantization").value !== "auto") {
+    target.hidden = true;
+    target.innerHTML = "";
+    return;
+  }
+
+  const runnable = estimates.filter((estimate) => estimate.grade !== "F" && estimate.quant);
+  const groups = new Map();
+  runnable.forEach((estimate) => {
+    const group = groups.get(estimate.quant.id) || { quant: estimate.quant, estimates: [] };
+    group.estimates.push(estimate);
+    groups.set(estimate.quant.id, group);
+  });
+  const recommendations = [...groups.values()]
+    .map((group) => ({
+      ...group,
+      best: [...group.estimates].sort((a, b) => recommendationScore(b) - recommendationScore(a))[0],
+    }))
+    .sort((a, b) => b.quant.rank - a.quant.rank);
+
+  if (!recommendations.length) {
+    target.hidden = true;
+    target.innerHTML = "";
+    return;
+  }
+
+  target.hidden = false;
+  target.innerHTML = `
+    <div class="quant-recommendation-head">
+      <div>
+        <span>양자화별 추천</span>
+        <strong>현재 조건에서 실행 가능한 모델을 권장 양자화로 묶었습니다.</strong>
+      </div>
+      <small>모델을 누르면 상세 계산을 엽니다.</small>
+    </div>
+    <div class="quant-recommendation-list">
+      ${recommendations.map(({ quant, estimates: groupEstimates, best }) => {
+        const grade = GRADE_META[best.grade];
+        return `
+          <button type="button" class="quant-recommendation-card" data-model-key="${escapeAttr(modelKey(best.model))}">
+            <span>${escapeHtml(quant.label)} · ${groupEstimates.length}개</span>
+            <strong>${escapeHtml(best.model.name)}</strong>
+            <small><span class="grade-dot ${grade.className}"></span>${escapeHtml(grade.label)} · ${formatGb(best.requiredGb)} · ${escapeHtml(formatSpeed(best.speed))}</small>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
 function renderSummary(estimates) {
@@ -1609,6 +2042,7 @@ function renderActiveFilterChips(estimates, allEstimates) {
   const taskValue = $("taskFilter").value;
   const providerValue = $("providerFilter").value;
   const licenseValue = $("licenseFilter").value;
+  const licenseUseValue = $("licenseUseFilter").value;
   const searchValue = $("searchInput").value.trim();
 
   if (summary && summary.id !== "all") chips.push({ key: "summary", label: `상태 ${summary.label}` });
@@ -1616,6 +2050,7 @@ function renderActiveFilterChips(estimates, allEstimates) {
   if (taskValue !== "all") chips.push({ key: "task", label: `작업 ${tagLabel(taskValue)}` });
   if (providerValue !== "all") chips.push({ key: "provider", label: `공급사 ${providerValue}` });
   if (licenseValue !== "all") chips.push({ key: "license", label: `라이선스 ${licenseValue}` });
+  if (licenseUseValue !== "all") chips.push({ key: "licenseUse", label: `이용 조건 ${selectedOptionLabel("licenseUseFilter")}` });
   if (searchValue) chips.push({ key: "search", label: `검색 ${searchValue}` });
 
   const target = $("activeFilterChips");
@@ -1649,6 +2084,7 @@ function renderModelRow(estimate) {
   const confidence = getEstimateConfidence(estimate.model, estimate, getHardware());
   const release = getModelReleaseInfo(estimate.model);
   const benchmark = getBenchmarkSummary(estimate.model, estimate, confidence);
+  const licensePolicy = getLicensePolicy(estimate.model);
   const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
   const gradeTitle = buildGradeTooltip(estimate);
   const isSelected = selectedModelKey === key;
@@ -1672,6 +2108,7 @@ function renderModelRow(estimate) {
       <span class="model-cell provider-cell" data-label="공급사/라이선스">
         <strong>${escapeHtml(estimate.model.maker)}</strong>
         <small>${escapeHtml(estimate.model.license)}</small>
+        <span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licensePolicy.commercialLabel)}</span>
       </span>
       <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.settingLabel)}</span>
       <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${formatGb(estimate.requiredGb)}</span>
@@ -1692,6 +2129,7 @@ function renderModelCard(estimate) {
   const confidence = getEstimateConfidence(estimate.model, estimate, getHardware());
   const release = getModelReleaseInfo(estimate.model);
   const benchmark = getBenchmarkSummary(estimate.model, estimate, confidence);
+  const licensePolicy = getLicensePolicy(estimate.model);
   const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
 
   return `
@@ -1699,7 +2137,7 @@ function renderModelCard(estimate) {
       <span class="compact-card-head">
         <span>
           <strong>${escapeHtml(estimate.model.name)}</strong>
-          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
+          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)} · ${escapeHtml(licensePolicy.commercialLabel)}</span>
         </span>
         <span class="grade-pill ${meta.className}">${meta.label}</span>
       </span>
@@ -1760,6 +2198,7 @@ function renderDetail() {
   const confidence = getEstimateConfidence(model, estimate, hardware);
   const release = getModelReleaseInfo(model);
   const benchmark = getBenchmarkSummary(model, estimate, confidence);
+  const licensePolicy = getLicensePolicy(model);
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
 
@@ -1774,7 +2213,7 @@ function renderDetail() {
     <div class="detail-title">
       <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
-      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licensePolicy.commercialLabel)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
       <p class="detail-description">${escapeHtml(model.summary)}</p>
     </div>
 
@@ -1841,13 +2280,15 @@ function renderDetail() {
 ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre>
     </section>
 
+    ${renderLicenseSection(model)}
+
     <section class="detail-section">
       <h3>모델 정보</h3>
       <div class="model-info-grid">
         ${renderInfoItem("파라미터", formatParams(model.params))}
         ${renderInfoItem("활성 파라미터", formatParams(model.active))}
         ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
-        ${renderInfoItem("라이선스", model.license)}
+        ${renderInfoItem("라이선스", `${model.license} · ${licensePolicy.commercialLabel}`)}
         ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
         ${renderInfoItem("공개 품질 점수", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
@@ -1869,6 +2310,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
   const confidence = getEstimateConfidence(model, estimate, hardware);
   const release = getModelReleaseInfo(model);
   const benchmark = getBenchmarkSummary(model, estimate, confidence);
+  const licensePolicy = getLicensePolicy(model);
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
   const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
@@ -1884,7 +2326,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
     <div class="detail-title">
       <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
-      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licensePolicy.commercialLabel)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
       <p class="detail-description">${escapeHtml(model.summary)}</p>
     </div>
 
@@ -1953,13 +2395,15 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
       <pre class="command-block"><code>${escapeHtml(buildNonGenerativeCommand(model, estimate))}</code></pre>
     </section>
 
+    ${renderLicenseSection(model)}
+
     <section class="detail-section">
       <h3>모델 정보</h3>
       <div class="model-info-grid">
         ${renderInfoItem("파라미터", formatParams(model.params || 0))}
         ${renderInfoItem(isVisionModel(model) ? "처리 유형" : "최대 입력", isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
         ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
-        ${renderInfoItem("라이선스", model.license)}
+        ${renderInfoItem("라이선스", `${model.license} · ${licensePolicy.commercialLabel}`)}
         ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
         ${renderInfoItem("공개 품질 점수", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
@@ -2309,7 +2753,7 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
           <span>계산 추정</span>
           <strong>${formatGb(estimate.requiredGb)} · ${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
           <small>신뢰도 ${escapeHtml(confidence.label)} · ${escapeHtml(confidence.reason)}</small>
-          <small>${escapeHtml(shortGpuName(hardware.preset.name))} · ${escapeHtml(buildHardwareBasis(hardware))}</small>
+          <small>${escapeHtml(formatHardwareName(hardware, true))} · ${escapeHtml(buildHardwareBasis(hardware))}</small>
         </div>
         <div class="evidence-card measured-card">
           <span>공개 품질/실측</span>
@@ -2440,7 +2884,11 @@ function renderVramBudget(hardware, estimate) {
   const remainder = hardware.availableVram - estimate.requiredGb;
   const deltaLabel = remainder >= 0 ? "실행 후 잔여" : "가용 대비 부족";
   const deltaValue = Math.abs(remainder);
-  const gpuPoolLabel = hardware.count > 1 ? "병렬 반영 VRAM" : "계산 기준 VRAM";
+  const gpuPoolLabel = hardware.heterogeneous
+    ? `이기종 병렬 반영 (${Math.round(hardware.shardingEfficiency * 100)}%)`
+    : hardware.count > 1
+      ? `병렬 반영 VRAM (${Math.round(hardware.shardingEfficiency * 100)}%)`
+      : "계산 기준 VRAM";
   return `
     <div class="vram-budget-grid">
       ${renderInfoItem("총 GPU VRAM", formatGb(hardware.totalVram))}
@@ -2449,6 +2897,7 @@ function renderVramBudget(hardware, estimate) {
       ${renderInfoItem("안전 여유분", formatGb(hardware.safetyMarginGb))}
       ${renderInfoItem("모델 가용 VRAM", formatGb(hardware.availableVram))}
       ${renderInfoItem(deltaLabel, formatGb(deltaValue))}
+      ${hardware.crossVendor ? renderInfoItem("런타임 호환성", "GPU 제조사 혼용 지원 확인 필요") : ""}
     </div>
   `;
 }
@@ -2482,6 +2931,26 @@ function renderInfoItem(label, value) {
       <span>${escapeHtml(label)}</span>
       <strong>${escapeHtml(value)}</strong>
     </div>
+  `;
+}
+
+function renderLicenseSection(model) {
+  const policy = getLicensePolicy(model);
+  const sourceUrl = model.hfImported ? model.sourceUrl : policy.sourceUrl || model.sourceUrl || "";
+  return `
+    <section class="detail-section license-section">
+      <h3>라이선스 및 상업 이용</h3>
+      <div class="license-summary-card">
+        <div class="license-badges">
+          <span class="license-badge license-${escapeAttr(policy.commercialUse)}">${escapeHtml(policy.commercialLabel)}</span>
+          <span class="license-badge license-openness">${escapeHtml(policy.opennessLabel)}</span>
+        </div>
+        <strong>${escapeHtml(model.license)}</strong>
+        <p>${escapeHtml(policy.summary)}</p>
+        <small>${escapeHtml(LICENSE_META.disclaimer || "참고용 요약입니다. 실제 배포 전 최신 원문 약관을 확인하세요.")}</small>
+        ${sourceUrl ? `<div class="external-links">${renderExternalLink("라이선스 원문 확인", sourceUrl)}</div>` : ""}
+      </div>
+    </section>
   `;
 }
 
@@ -2793,7 +3262,9 @@ function syncUrlState() {
   const hardware = getHardware();
   params.set("vram", String(hardware.vram));
   params.set("ram", String(hardware.ram));
-  params.set("count", String(hardware.count));
+  params.set("count", String(hardware.primaryCount));
+  params.set("gpu2", hardware.secondaryPreset?.id || "none");
+  params.set("count2", String(hardware.secondaryCount || 1));
   params.set("bandwidth", String(hardware.bandwidth));
   params.set("reserved", String(hardware.reservedVram));
   params.set("margin", String(hardware.safetyMarginGb));
@@ -2823,6 +3294,7 @@ function syncUrlState() {
   params.set("task", $("taskFilter").value);
   params.set("provider", $("providerFilter").value);
   params.set("license", $("licenseFilter").value);
+  params.set("licenseUse", $("licenseUseFilter").value);
   params.set("grade", $("gradeFilter").value);
   params.set("fit", activeSummaryFilter);
   params.set("sort", $("sortBy").value);
@@ -2847,6 +3319,9 @@ function applyUrlState() {
   setValueIfPresent("vramGb", params.get("vram"));
   setValueIfPresent("ramGb", params.get("ram"));
   setValueIfPresent("gpuCount", params.get("count"));
+  setSelectIfValid("secondaryGpuPreset", params.get("gpu2"));
+  setValueIfPresent("secondaryGpuCount", params.get("count2"));
+  refreshSecondaryGpuUi();
   setValueIfPresent("bandwidth", params.get("bandwidth"));
   setValueIfPresent("reservedVramGb", params.get("reserved"));
   setValueIfPresent("safetyMarginGb", params.get("margin"));
@@ -2876,6 +3351,7 @@ function applyUrlState() {
   setSelectIfValid("taskFilter", params.get("task"));
   setSelectIfValid("providerFilter", params.get("provider"));
   setSelectIfValid("licenseFilter", params.get("license"));
+  setSelectIfValid("licenseUseFilter", params.get("licenseUse"));
   setSelectIfValid("gradeFilter", params.get("grade"));
   const sortParam = params.get("sort") === "vramAsc" ? "vramHeadroom" : params.get("sort");
   setSelectIfValid("sortBy", sortParam);

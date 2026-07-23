@@ -389,7 +389,7 @@ mergeModelMetadata({
     releaseDate: "2024-11-12",
     sourceUrl: "https://qwenlm.github.io/blog/qwen2.5-coder-family/",
   },
-  "Qwen2.5 72B Coder": {
+  "Qwen2.5 Coder 3B Instruct": {
     releaseDate: "2024-11-12",
     sourceUrl: "https://qwenlm.github.io/blog/qwen2.5-coder-family/",
   },
@@ -587,6 +587,13 @@ mergeModelMetadata({
   "GOT-OCR2.0": {
     releaseDate: "2024-09-03",
     sourceUrl: "https://huggingface.co/docs/transformers/model_doc/got_ocr2",
+    qualityBenchmark: quality(
+      "문서 OCR F1 98.0",
+      "중국어 dense document OCR F1",
+      98,
+      "https://arxiv.org/abs/2409.01704",
+      "공식 논문",
+    ),
   },
   "Surya OCR 2": {
     releaseDate: "2025-02",
@@ -598,7 +605,10 @@ mergeModelMetadata({
     sourceUrl: "https://github.com/deepseek-ai/DeepSeek-VL2",
     qualityBenchmark: quality("OCRBench 811", "OCRBench", 811, "https://arxiv.org/pdf/2412.10302", "공식 논문"),
   },
-  "cross-encoder/mmarco-mMiniLMv2-L6-H384-v1": cardDate("2022-06-01"),
+  "nreimers/mmarco-mMiniLMv2-L6-H384-v1": {
+    ...cardDate("2022-05-20"),
+    sourceUrl: "https://huggingface.co/nreimers/mmarco-mMiniLMv2-L6-H384-v1",
+  },
 });
 
 mergeModelMetadata({
@@ -782,8 +792,26 @@ mergeModelMetadata({
     ...cardDate("2022-03-02"),
     qualityBenchmark: quality("MTEB 56.26", "MTEB English average (56)", 56.26, "https://huggingface.co/thenlper/gte-large", "외부 비교"),
   },
-  "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": cardDate("2022-03-02"),
-  "sentence-transformers/LaBSE": cardDate("2022-03-02"),
+  "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality(
+      "MTEB 52.44",
+      "MTEB 영어 56개 데이터셋 평균",
+      52.44,
+      "https://aclanthology.org/2023.eacl-main.148/",
+      "공식 벤치마크 논문",
+    ),
+  },
+  "sentence-transformers/LaBSE": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality(
+      "MTEB 45.21",
+      "MTEB 영어 56개 데이터셋 평균",
+      45.21,
+      "https://aclanthology.org/2023.eacl-main.148/",
+      "공식 벤치마크 논문",
+    ),
+  },
   "jinaai/jina-embeddings-v4": {
     ...cardDate("2025-05-07"),
     qualityBenchmark: quality("MMTEB 66.49", "MMTEB 평균", 66.49, "https://jina.ai/news/jina-embeddings-v4-universal-embeddings-for-multimodal-multilingual-retrieval/", "공식 발표"),
@@ -884,7 +912,16 @@ mergeModelMetadata({
     ...cardDate("2023-12-29"),
     qualityBenchmark: quality("MTEB 59.43", "MTEB 119개 이중/교차언어 데이터셋 평균", 59.43, "https://huggingface.co/maidalun1020/bce-embedding-base_v1", "공식 발표"),
   },
-  "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": cardDate("2022-03-02"),
+  "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality(
+      "MTEB 54.71",
+      "MTEB 영어 56개 데이터셋 평균",
+      54.71,
+      "https://aclanthology.org/2023.eacl-main.148/",
+      "공식 벤치마크 논문",
+    ),
+  },
   "sentence-transformers/multi-qa-mpnet-base-dot-v1": {
     ...cardDate("2022-03-02"),
     qualityBenchmark: quality("Avg 57.60", "Semantic Search 6개 데이터셋 평균", 57.6, "https://www.sbert.net/docs/sentence_transformer/pretrained_models.html", "공식 발표"),
@@ -1053,8 +1090,14 @@ mergeModelMetadata({
     ...cardDate("2024-11-14"),
     qualityBenchmark: quality("MathVista 69.4", "MathVista (CoT)", 69.4, "https://mistral.ai/news/pixtral-large/", "공식 발표"),
   },
-  "llava-hf/llava-onevision-qwen2-7b-ov-hf": cardDate("2024-08-13"),
-  "llava-hf/llava-onevision-qwen2-72b-ov-hf": cardDate("2024-08-13"),
+  "llava-hf/llava-onevision-qwen2-7b-ov-hf": {
+    ...cardDate("2024-08-13"),
+    qualityBenchmark: quality("MMMU 48.8", "MMMU (val)", 48.8, "https://arxiv.org/abs/2408.03326", "공식 논문"),
+  },
+  "llava-hf/llava-onevision-qwen2-72b-ov-hf": {
+    ...cardDate("2024-08-13"),
+    qualityBenchmark: quality("MMMU 56.8", "MMMU (val)", 56.8, "https://arxiv.org/abs/2408.03326", "공식 논문"),
+  },
   "allenai/Molmo-7B-D-0924": {
     ...cardDate("2024-09-25"),
     qualityBenchmark: quality("Avg 77.3", "학술 벤치마크 11종 평균", 77.3, "https://huggingface.co/allenai/Molmo-7B-D-0924", "공식 발표"),
@@ -1072,15 +1115,27 @@ mergeModelMetadata({
     ...cardDate("2025-02-24"),
     qualityBenchmark: quality("DocVQA 93.2", "DocVQA", 93.2, "https://huggingface.co/microsoft/Phi-4-multimodal-instruct", "공식 발표"),
   },
-  "CohereLabs/aya-vision-8b": cardDate("2025-03-02"),
-  "CohereLabs/aya-vision-32b": cardDate("2025-03-02"),
-  "zai-org/GLM-4.1V-9B-Thinking": cardDate("2025-06-28"),
+  "CohereLabs/aya-vision-8b": {
+    ...cardDate("2025-03-02"),
+    qualityBenchmark: quality("mWildVision 최대 승률 81%", "mWildVision 23개 언어 평균 pairwise win-rate (최대)", 81, "https://huggingface.co/blog/aya-vision", "공식 발표"),
+  },
+  "CohereLabs/aya-vision-32b": {
+    ...cardDate("2025-03-02"),
+    qualityBenchmark: quality("mWildVision 최대 승률 72%", "mWildVision 23개 언어 평균 pairwise win-rate (최대)", 72, "https://huggingface.co/blog/aya-vision", "공식 발표"),
+  },
+  "zai-org/GLM-4.1V-9B-Thinking": {
+    ...cardDate("2025-06-28"),
+    qualityBenchmark: quality("MMMU 68.0", "MMMU (val)", 68, "https://arxiv.org/abs/2507.01006", "공식 기술 보고서"),
+  },
   "zai-org/glm-4v-9b": {
     ...cardDate("2024-06-04"),
     qualityBenchmark: quality("OCRBench 786", "OCRBench", 786, "https://huggingface.co/zai-org/glm-4v-9b", "공식 발표"),
   },
   "openbmb/MiniCPM-V-4.6": cardDate("2026-04-13"),
-  "OpenGVLab/InternVL3_5-4B": cardDate("2025-08-25"),
+  "OpenGVLab/InternVL3_5-4B": {
+    ...cardDate("2025-08-25"),
+    qualityBenchmark: quality("Reasoning Avg 57.4", "멀티모달 추론 7개 벤치마크 평균", 57.4, "https://arxiv.org/abs/2508.18265", "공식 논문"),
+  },
   "OpenGVLab/InternVL3_5-8B": {
     ...cardDate("2025-08-25"),
     qualityBenchmark: quality("MMMU 73.4", "MMMU", 73.4, "https://arxiv.org/abs/2508.18265", "공식 논문"),
@@ -1095,6 +1150,13 @@ mergeModelMetadata({
   "Ministral 3B Instruct": {
     releaseDate: "2024-10-09",
     sourceUrl: "https://docs.mistral.ai/models/model-cards/ministral-3b-24-1",
+    qualityBenchmark: quality(
+      "HumanEval 77.4",
+      "HumanEval pass@1",
+      77.4,
+      "https://huggingface.co/mistralai/Ministral-8B-Instruct-2410",
+      "공식 모델 카드",
+    ),
   },
   "GLM-4 9B Chat": {
     releaseDate: "2024-06-05",
@@ -1328,5 +1390,163 @@ mergeModelMetadata({
     releaseDate: "2024-09-30",
     sourceUrl: "https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models",
     qualityBenchmark: quality("MMLU 78.76", "MMLU (5-shot, MoE)", 78.76, "https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models", "공식 발표"),
+  },
+});
+
+// 공식 모델 카드나 공식 발표에서 텍스트 수치로 직접 확인 가능한 추가 품질 지표입니다.
+// 이미지 차트에만 있는 수치는 전사 과정의 오류를 피하기 위해 포함하지 않습니다.
+mergeModelMetadata({
+  "Qwen2.5 Coder 1.5B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 70.7",
+      "HumanEval pass@1",
+      70.7,
+      "https://arxiv.org/abs/2409.12186",
+      "공식 기술 보고서",
+    ),
+  },
+  "Qwen2.5 Coder 3B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 84.1",
+      "HumanEval pass@1",
+      84.1,
+      "https://arxiv.org/abs/2409.12186",
+      "공식 기술 보고서",
+    ),
+  },
+  "Qwen2.5 Coder 7B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 88.4",
+      "HumanEval pass@1",
+      88.4,
+      "https://arxiv.org/abs/2409.12186",
+      "공식 기술 보고서",
+    ),
+  },
+  "Qwen2.5 Coder 14B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 89.6",
+      "HumanEval pass@1",
+      89.6,
+      "https://arxiv.org/abs/2409.12186",
+      "공식 기술 보고서",
+    ),
+  },
+  "Qwen2.5 Coder 32B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 92.7",
+      "HumanEval pass@1",
+      92.7,
+      "https://arxiv.org/abs/2409.12186",
+      "공식 기술 보고서",
+    ),
+  },
+  "Codestral 22B": {
+    qualityBenchmark: quality(
+      "HumanEval 81.1",
+      "HumanEval pass@1",
+      81.1,
+      "https://arxiv.org/abs/2409.12186",
+      "공식 기술 보고서 비교",
+    ),
+  },
+  "CodeLlama 7B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 34.76",
+      "HumanEval pass@1",
+      34.756,
+      "https://arxiv.org/abs/2308.12950",
+      "공식 논문",
+    ),
+  },
+  "CodeLlama 13B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 42.68",
+      "HumanEval pass@1",
+      42.683,
+      "https://arxiv.org/abs/2308.12950",
+      "공식 논문",
+    ),
+  },
+  "CodeLlama 34B Instruct": {
+    qualityBenchmark: quality(
+      "HumanEval 41.5",
+      "HumanEval pass@1",
+      41.5,
+      "https://arxiv.org/abs/2308.12950",
+      "공식 논문",
+    ),
+  },
+  "OLMoE 1B-7B Instruct": {
+    qualityBenchmark: quality(
+      "MMLU 51.9",
+      "MMLU",
+      51.9,
+      "https://huggingface.co/allenai/OLMoE-1B-7B-0924-Instruct",
+      "공식 카드",
+    ),
+  },
+  "Alibaba-NLP/gte-multilingual-base": {
+    qualityBenchmark: quality(
+      "MLDR-ko 46.73",
+      "MLDR Korean nDCG@10",
+      46.733,
+      "https://huggingface.co/Alibaba-NLP/gte-multilingual-base",
+      "공식 카드",
+    ),
+  },
+  "BAAI/bge-multilingual-gemma2": {
+    qualityBenchmark: quality(
+      "AskUbuntu MAP 64.59",
+      "MTEB AskUbuntu MAP",
+      64.5946,
+      "https://huggingface.co/BAAI/bge-multilingual-gemma2",
+      "공식 카드",
+    ),
+  },
+  "Salesforce/SFR-Embedding-2_R": {
+    qualityBenchmark: quality(
+      "STSBenchmark 83.60",
+      "STSBenchmark cosine Spearman",
+      83.6037,
+      "https://huggingface.co/Salesforce/SFR-Embedding-2_R",
+      "공식 카드",
+    ),
+  },
+  "NovaSearch/stella_en_1.5B_v5": {
+    qualityBenchmark: quality(
+      "STSBenchmark 88.23",
+      "STSBenchmark cosine Spearman",
+      88.2303,
+      "https://huggingface.co/NovaSearch/stella_en_1.5B_v5",
+      "공식 카드",
+    ),
+  },
+  "NovaSearch/stella_en_400M_v5": {
+    qualityBenchmark: quality(
+      "STSBenchmark 87.74",
+      "STSBenchmark cosine Spearman",
+      87.736,
+      "https://huggingface.co/NovaSearch/stella_en_400M_v5",
+      "공식 카드",
+    ),
+  },
+  "HuggingFaceTB/SmolVLM2-500M-Video-Instruct": {
+    qualityBenchmark: quality(
+      "Video-MME 42.2",
+      "Video-MME",
+      42.2,
+      "https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+      "공식 카드",
+    ),
+  },
+  "openbmb/MiniCPM-V-4.6": {
+    qualityBenchmark: quality(
+      "AA Index 13",
+      "Artificial Analysis Intelligence Index",
+      13,
+      "https://huggingface.co/openbmb/MiniCPM-V-4.6",
+      "공식 카드",
+    ),
   },
 });

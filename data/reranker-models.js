@@ -478,7 +478,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     summary: "중복 질문/문장쌍 매칭에 맞춘 RoBERTa base cross-encoder입니다.",
   }),
   rerankerModel({
-    name: "cross-encoder/mmarco-mMiniLMv2-L6-H384-v1",
+    name: "nreimers/mmarco-mMiniLMv2-L6-H384-v1",
     maker: "Sentence Transformers",
     params: 0.023,
     hiddenSize: 384,
@@ -486,11 +486,11 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     attentionHeads: 12,
     maxTokens: 512,
     recommendedTokens: 512,
-    license: "Apache 2.0",
+    license: "원문 확인 필요",
     tags: ["reranker", "retrieval", "korean", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
-    sourceUrl: "https://huggingface.co/cross-encoder/mmarco-mMiniLMv2-L6-H384-v1",
-    summary: "다국어 MS MARCO L6 기반의 빠른 리랭커입니다. 한국어 RAG 기준선으로 비교하기 좋습니다.",
+    sourceUrl: "https://huggingface.co/nreimers/mmarco-mMiniLMv2-L6-H384-v1",
+    summary: "다국어 MS MARCO L6 기반의 빠른 리랭커입니다. 원 저장소에 모델 카드와 라이선스 표기가 없어 사용 전 확인이 필요합니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-TinyBERT-L-2-v2",

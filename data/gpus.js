@@ -35,7 +35,14 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "rtx2080ti-11", name: "GeForce RTX 2080 Ti 11GB", vram: 11, ram: 32, bandwidth: 616 },
   { id: "rtx2080super-8", name: "GeForce RTX 2080 SUPER 8GB", vram: 8, ram: 32, bandwidth: 496 },
   { id: "rtx2060super-8", name: "GeForce RTX 2060 SUPER 8GB", vram: 8, ram: 32, bandwidth: 448 },
-  { id: "p102-100-10", name: "NVIDIA P102-100 10GB (채굴카드·GP102)", vram: 10, ram: 32, bandwidth: 440 },
+  {
+    id: "p102-100-10",
+    name: "NVIDIA P102-100 10GB (채굴카드·GP102)",
+    vram: 10,
+    ram: 16,
+    bandwidth: 440.3,
+    sourceUrl: "https://www.techpowerup.com/gpu-specs/zotac-p102-100.b5306",
+  },
 
   { id: "rtxpro6000blackwell-96", name: "RTX PRO 6000 Blackwell 96GB", vram: 96, ram: 256, bandwidth: 1792 },
   { id: "rtx6000ada-48", name: "RTX 6000 Ada 48GB", vram: 48, ram: 128, bandwidth: 960 },

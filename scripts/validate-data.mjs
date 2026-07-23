@@ -16,6 +16,7 @@ for (const file of [
   "data/ocr-models.js",
   "data/benchmarks.js",
   "data/model-metadata.js",
+  "data/licenses.js",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   vm.runInContext(source, context, { filename: file });
@@ -33,6 +34,9 @@ assertArray(data.ocrModels, "ocrModels");
 if (!Array.isArray(data.benchmarks)) throw new Error("benchmarks must be an array");
 if (!data.modelMetadata || typeof data.modelMetadata !== "object" || Array.isArray(data.modelMetadata)) {
   throw new Error("modelMetadata must be an object");
+}
+if (!data.licensePolicies || typeof data.licensePolicies !== "object" || Array.isArray(data.licensePolicies)) {
+  throw new Error("licensePolicies must be an object");
 }
 
 const gpuIds = new Set();
@@ -139,6 +143,15 @@ const allModelsByName = new Map([
   ...data.ocrModels,
 ].map((model) => [model.name, model]));
 
+for (const model of allModelsByName.values()) {
+  const policy = data.modelLicensePolicies?.[model.name] || data.licensePolicies[model.license];
+  if (!policy) throw new Error(`model ${model.name} has no license policy for ${model.license}`);
+  requireFields(policy, ["commercialUse", "commercialLabel", "opennessLabel", "summary", "sourceUrl"], `license policy ${model.license}`);
+  if (!["allowed", "conditional", "noncommercial", "review"].includes(policy.commercialUse)) {
+    throw new Error(`license policy ${model.license} has invalid commercialUse: ${policy.commercialUse}`);
+  }
+}
+
 for (const [name, metadata] of Object.entries(data.modelMetadata)) {
   if (!name.includes(":") && !allModelNames.has(name)) {
     throw new Error(`model metadata ${name} does not match a known model name`);
@@ -158,7 +171,17 @@ for (const [name, metadata] of Object.entries(data.modelMetadata)) {
   }
 }
 
-console.log(`validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, ${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, ${data.benchmarks.length} measured benchmarks, ${Object.keys(data.modelMetadata).length} model metadata rows`);
+const metadataRows = Object.values(data.modelMetadata);
+const releaseDateCount = metadataRows.filter((metadata) => metadata.releaseDate).length;
+const qualityBenchmarkCount = metadataRows.filter((metadata) => metadata.qualityBenchmark).length;
+
+console.log(
+  `validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, `
+  + `${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, `
+  + `${data.benchmarks.length} measured benchmarks, ${metadataRows.length} metadata rows `
+  + `(${releaseDateCount} release dates, ${qualityBenchmarkCount} quality benchmarks), `
+  + `${allModelsByName.size} license policies`,
+);
 
 function assertArray(value, name) {
   if (!Array.isArray(value) || value.length === 0) {
