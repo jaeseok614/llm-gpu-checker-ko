@@ -637,6 +637,19 @@ function bindEvents() {
 
   $("addGpuInventoryButton").addEventListener("click", addGpuInventoryRow);
   $("runPlacementButton").addEventListener("click", runGpuPlacement);
+  $("gpuPlacementExport").addEventListener("click", (event) => {
+    const copyButton = event.target.closest("[data-copy-target]");
+    if (copyButton) {
+      const source = $(copyButton.dataset.copyTarget);
+      if (source) copyTextToClipboard(source.textContent, copyButton);
+      return;
+    }
+    const downloadButton = event.target.closest("[data-download-target]");
+    if (downloadButton) {
+      const source = $(downloadButton.dataset.downloadTarget);
+      if (source) downloadTextFile(source.textContent, downloadButton.dataset.downloadFilename || "download.txt");
+    }
+  });
   $("gpuInventoryList").addEventListener("click", (event) => {
     const removeButton = event.target.closest(".gpu-inventory-remove");
     if (removeButton) removeGpuInventoryRow(removeButton.dataset.rowId);
@@ -1226,6 +1239,7 @@ function runGpuPlacement() {
   const modelKeys = [...placementSelectedKeys];
   const result = $("gpuPlacementResult");
   const baselineEl = $("gpuPlacementBaseline");
+  const exportEl = $("gpuPlacementExport");
   if (!result) return;
 
   if (!modelKeys.length) {
@@ -1234,11 +1248,16 @@ function runGpuPlacement() {
       baselineEl.hidden = true;
       baselineEl.textContent = "";
     }
+    if (exportEl) {
+      exportEl.hidden = true;
+      exportEl.innerHTML = "";
+    }
     return;
   }
 
   const placement = computeGpuPlacement(gpuInventoryRows, modelKeys);
   result.innerHTML = renderGpuPlacementResult(placement);
+  renderPlacementExport(placement);
 
   if (baselineEl) {
     const text = renderPlacementBaseline(computePlacementBaseline(placement));
@@ -1338,6 +1357,218 @@ function renderGpuPlacementResult(placement) {
     : "";
 
   return gpuCards + unplacedBlock;
+}
+
+// 배치 계산 결과를 실제로 복사/붙여넣기 할 수 있는 실행 명령어와 docker-compose 초안으로 만듭니다.
+// 모델 상세 화면에서 이미 검증된 커맨드 빌더(buildOllamaCommand 등)를 그대로 재사용해
+// 개별 모델 페이지의 실행 예시와 항상 같은 명령어를 보여줍니다.
+function buildPlacementDeploymentScript(placement) {
+  const hardware = getHardware();
+  const lines = [
+    "#!/usr/bin/env bash",
+    "# AI Hardware Fit — 배치 계산 결과 기반 실행 명령어 초안",
+    "# 추정 배치입니다. 실제 배포 전 각 모델의 라이선스와 최신 실행 옵션을 다시 확인하세요.",
+    "",
+  ];
+
+  placement.gpus.forEach((gpu) => {
+    if (!gpu.placements.length) return;
+    lines.push(`# ===== GPU ${gpu.index + 1} · ${gpu.preset.name}${gpu.count > 1 ? ` × ${gpu.count}` : ""} =====`);
+    lines.push(`export CUDA_VISIBLE_DEVICES=${gpu.index}`);
+    lines.push("");
+    gpu.placements.forEach((item) => {
+      lines.push(`# ${item.model.name} (${item.label})`);
+      if (!item.model.type || item.model.type === "generative") {
+        lines.push(buildOllamaCommand(item.model, item.setting, hardware));
+        lines.push(buildLlamaCppCommand(item.model, item.setting, hardware));
+      } else {
+        const defaultBatchSize = PLACEMENT_DEFAULT_WORKLOADS[item.model.type]?.batchSize
+          ?? PLACEMENT_DEFAULT_WORKLOADS.vision.batchSize;
+        lines.push(buildNonGenerativeCommand(item.model, { precision: item.setting }, defaultBatchSize));
+      }
+      lines.push("");
+    });
+  });
+
+  if (placement.unplaced.length) {
+    lines.push("# ===== 배치하지 못한 모델 (GPU 여유 부족) =====");
+    placement.unplaced.forEach((item) => {
+      lines.push(`# ${item.model.name} — 최소 ${formatGb(item.minRequiredGb)} 필요`);
+    });
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+// Ollama(생성형)와 TEI(임베딩/리랭커)만 표준 docker 서비스 패턴이 일정해서 compose로 생성합니다.
+// OCR/VLM은 모델마다 vLLM, Transformers, 전용 CLI 등 실행 방식이 제각각이라 잘못된 서비스 정의를
+// 만들지 않도록 compose에는 안내 주석만 남기고, 정확한 명령어는 위 .sh 스크립트를 참고하게 합니다.
+function buildPlacementDockerCompose(placement) {
+  const services = [];
+  const volumeNames = [];
+  let hostPort = 8081;
+
+  placement.gpus.forEach((gpu) => {
+    if (!gpu.placements.length) return;
+
+    const generativeItems = gpu.placements.filter((item) => !item.model.type || item.model.type === "generative");
+    const encoderItems = gpu.placements.filter((item) => item.model.type === "embedding" || item.model.type === "reranker");
+    const visionItems = gpu.placements.filter((item) => item.model.type && !["generative", "embedding", "reranker"].includes(item.model.type));
+
+    if (generativeItems.length) {
+      const serviceName = `ollama-gpu${gpu.index + 1}`;
+      const volumeName = `${serviceName}_data`;
+      volumeNames.push(volumeName);
+      const pullHint = generativeItems
+        .map((item) => `    #   docker exec ${serviceName} ollama pull ${buildOllamaModelName(item.model)}  # ${item.model.name} (${item.label})`)
+        .join("\n");
+      services.push(`  ${serviceName}:
+    image: ollama/ollama:latest
+    container_name: ${serviceName}
+    restart: unless-stopped
+    ports:
+      - "${hostPort}:11434"
+    volumes:
+      - ${volumeName}:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${gpu.index}"]
+              capabilities: [gpu]
+    # 최초 기동 후 아래 명령으로 모델을 내려받으세요:
+${pullHint}`);
+      hostPort += 1;
+    }
+
+    encoderItems.forEach((item) => {
+      const serviceName = `tei-${toSlug(item.model.name)}`;
+      services.push(`  ${serviceName}:
+    image: ghcr.io/huggingface/text-embeddings-inference:cuda-latest
+    container_name: ${serviceName}
+    restart: unless-stopped
+    ports:
+      - "${hostPort}:80"
+    environment:
+      - MODEL_ID=${item.model.name}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${gpu.index}"]
+              capabilities: [gpu]`);
+      hostPort += 1;
+    });
+
+    if (visionItems.length) {
+      services.push(`  # GPU ${gpu.index + 1}에 배치된 OCR/VLM 모델 ${visionItems.length}개(${visionItems.map((item) => item.model.name).join(", ")})는
+  # 모델마다 실행 방식(vLLM, Transformers, 전용 CLI 등)이 달라 표준 서비스로 자동 생성하지 않습니다.
+  # 실행 명령어(.sh) 또는 앱의 모델 상세 화면 "실행 예시"를 참고해 직접 구성하세요.`);
+    }
+  });
+
+  const volumesBlock = volumeNames.length
+    ? `\n\nvolumes:\n${volumeNames.map((name) => `  ${name}:`).join("\n")}`
+    : "";
+
+  return `# AI Hardware Fit — 배치 계산 결과 기반 docker-compose 초안 (참고용)
+# 추정 배치이며 nvidia-container-toolkit 설치가 필요합니다.
+# 실제 운영 전 리소스 한도, 포트 충돌, 각 모델 라이선스를 반드시 다시 확인하세요.
+services:
+${services.join("\n\n")}${volumesBlock}
+`;
+}
+
+function renderPlacementExport(placement) {
+  const target = $("gpuPlacementExport");
+  if (!target) return;
+
+  const hasPlacements = placement.gpus.some((gpu) => gpu.placements.length);
+  if (!hasPlacements) {
+    target.hidden = true;
+    target.innerHTML = "";
+    return;
+  }
+
+  const script = buildPlacementDeploymentScript(placement);
+  const compose = buildPlacementDockerCompose(placement);
+
+  target.hidden = false;
+  target.innerHTML = `
+    <details class="gpu-placement-export-panel">
+      <summary>실행 설정 내보내기 (실행 명령어 · docker-compose 초안)</summary>
+      <div class="gpu-placement-export-body">
+        <p>배치 계산 결과를 기준으로 만든 초안입니다. 실제 배포 전 각 모델의 라이선스, 최신 실행 옵션, GPU 리소스를 다시 확인하세요.</p>
+
+        <div class="export-block-head">
+          <span>실행 명령어 (.sh)</span>
+          <div class="export-block-actions">
+            <button type="button" class="ghost-button" data-copy-target="placementExportScript">복사</button>
+            <button type="button" class="ghost-button" data-download-target="placementExportScript" data-download-filename="ai-hardware-fit-run.sh">다운로드</button>
+          </div>
+        </div>
+        <pre class="command-block" id="placementExportScript"><code>${escapeHtml(script)}</code></pre>
+
+        <div class="export-block-head">
+          <span>docker-compose.yml 초안 (Ollama · TEI)</span>
+          <div class="export-block-actions">
+            <button type="button" class="ghost-button" data-copy-target="placementExportCompose">복사</button>
+            <button type="button" class="ghost-button" data-download-target="placementExportCompose" data-download-filename="docker-compose.yml">다운로드</button>
+          </div>
+        </div>
+        <pre class="command-block" id="placementExportCompose"><code>${escapeHtml(compose)}</code></pre>
+      </div>
+    </details>
+  `;
+}
+
+function copyTextToClipboard(text, button) {
+  const restoreLabel = () => {
+    if (!button) return;
+    const original = button.dataset.label || button.textContent;
+    button.dataset.label = original;
+    button.textContent = "복사됨";
+    setTimeout(() => {
+      button.textContent = original;
+    }, 1500);
+  };
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(restoreLabel).catch(() => fallbackCopyToClipboard(text, restoreLabel));
+  } else {
+    fallbackCopyToClipboard(text, restoreLabel);
+  }
+}
+
+function fallbackCopyToClipboard(text, done) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand("copy");
+  } catch (error) {
+    // 클립보드 API를 사용할 수 없는 환경에서는 조용히 무시합니다.
+  }
+  document.body.removeChild(textarea);
+  done();
+}
+
+function downloadTextFile(text, filename) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function syncPresetForInput(inputId) {
@@ -3461,16 +3692,17 @@ function buildFormulaText(type) {
   ].join("\n");
 }
 
-function buildNonGenerativeCommand(model, estimate) {
+function buildNonGenerativeCommand(model, estimate, batchSizeOverride) {
   const lowerName = model.name.toLowerCase();
   if (model.type === "embedding") {
     const torchDtype = ["fp16", "bf16", "fp32"].includes(estimate.precision.id)
       ? estimate.precision.id.replace("fp", "float").replace("bf", "bfloat")
       : "float16";
+    const batchSize = batchSizeOverride ?? getWorkloadSettings().batchSize ?? PLACEMENT_DEFAULT_WORKLOADS.embedding.batchSize;
     return `from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer("${model.name}", model_kwargs={"torch_dtype": "${torchDtype}"})
-embeddings = model.encode(texts, batch_size=${getWorkloadSettings().batchSize}, normalize_embeddings=True)
+embeddings = model.encode(texts, batch_size=${batchSize}, normalize_embeddings=True)
 
 docker run --gpus all -p 8080:80 \\
   -e MODEL_ID=${model.name} \\

@@ -662,6 +662,60 @@ button:focus-visible {
   padding: 0 13px 13px;
 }
 
+.gpu-placement-export {
+  margin-top: 12px;
+}
+
+.gpu-placement-export-panel {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.gpu-placement-export-panel summary {
+  padding: 10px 12px;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.gpu-placement-export-body {
+  padding: 0 12px 12px;
+}
+
+.gpu-placement-export-body > p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.export-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+
+.export-block-head span {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.export-block-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.export-block-actions .ghost-button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
 .gpu-placement-body p {
   margin: 0 0 10px;
   color: var(--muted);
