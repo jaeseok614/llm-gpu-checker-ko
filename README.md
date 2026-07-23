@@ -78,7 +78,7 @@
 
 | 기능 | 설명 |
 | --- | --- |
-| GPU 프리셋 | 모델명 타이핑 검색·자동완성 지원. GeForce RTX, P102-100 10GB, RTX Pro/Quadro, NVIDIA GB10/DGX Spark, NVIDIA 데이터센터, Radeon AI PRO R9700, RX 9070 XT, Intel, Apple Silicon 포함 |
+| GPU 프리셋 | 기본 드롭다운과 선택형 모델명 검색·자동완성 지원. GeForce RTX, P102-100 10GB, RTX Pro/Quadro, NVIDIA GB10/DGX Spark, NVIDIA 데이터센터, Radeon AI PRO R9700, RX 9070 XT, Intel, Apple Silicon 포함 |
 | 설정 변경 패널 | VRAM, 동일 GPU 수, 보조 GPU/수량, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
 | 이기종 GPU 병렬 | 서로 다른 두 GPU의 VRAM·대역폭·연산량을 합산하고 메모리 분할·통신 손실을 보수적으로 반영 |
 | 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM을 분리 계산 |

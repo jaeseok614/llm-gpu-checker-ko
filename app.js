@@ -647,8 +647,8 @@ function bindEvents() {
       if (preset) {
         gpuInventorySearchRows.delete(rowId);
         updateGpuInventoryRow(rowId, "presetId", preset.id);
+        renderGpuInventory();
       }
-      renderGpuInventory();
     } else if (target.classList.contains("gpu-inventory-count")) {
       updateGpuInventoryRow(rowId, "count", target.value);
     }
