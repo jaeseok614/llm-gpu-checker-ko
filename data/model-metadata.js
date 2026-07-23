@@ -624,23 +624,62 @@ function qualityOnly(label, metric, value, sourceUrl, note = "공식 품질") {
 }
 
 mergeModelMetadata({
-  "BAAI/bge-large-en-v1.5": cardDate("2023-09-12"),
-  "BAAI/bge-base-en-v1.5": cardDate("2023-09-11"),
-  "BAAI/bge-small-en-v1.5": cardDate("2023-09-12"),
-  "intfloat/multilingual-e5-base": cardDate("2023-05-19"),
-  "intfloat/multilingual-e5-small": cardDate("2023-06-30"),
-  "intfloat/e5-large-v2": cardDate("2023-05-19"),
-  "intfloat/e5-base-v2": cardDate("2023-05-19"),
-  "intfloat/e5-small-v2": cardDate("2023-05-19"),
+  "BAAI/bge-large-en-v1.5": {
+    ...cardDate("2023-09-12"),
+    qualityBenchmark: quality("MTEB 64.23", "MTEB English average (56)", 64.23, "https://huggingface.co/BAAI/bge-large-en-v1.5"),
+  },
+  "BAAI/bge-base-en-v1.5": {
+    ...cardDate("2023-09-11"),
+    qualityBenchmark: quality("MTEB 63.55", "MTEB English average (56)", 63.55, "https://huggingface.co/BAAI/bge-base-en-v1.5"),
+  },
+  "BAAI/bge-small-en-v1.5": {
+    ...cardDate("2023-09-12"),
+    qualityBenchmark: quality("MTEB 62.17", "MTEB English average (56)", 62.17, "https://huggingface.co/BAAI/bge-small-en-v1.5"),
+  },
+  "intfloat/multilingual-e5-base": {
+    ...cardDate("2023-05-19"),
+    qualityBenchmark: quality("Mr.TyDi 65.9", "Mr. TyDi MRR@10 average", 65.9, "https://huggingface.co/intfloat/multilingual-e5-base", "공식 발표"),
+  },
+  "intfloat/multilingual-e5-small": {
+    ...cardDate("2023-06-30"),
+    qualityBenchmark: quality("Mr.TyDi 64.4", "Mr. TyDi MRR@10 average", 64.4, "https://huggingface.co/intfloat/multilingual-e5-base", "공식 발표"),
+  },
+  "intfloat/e5-large-v2": {
+    ...cardDate("2023-05-19"),
+    qualityBenchmark: quality("MTEB 62.25", "MTEB English average (56)", 62.25, "https://huggingface.co/intfloat/e5-large-v2", "공식 발표"),
+  },
+  "intfloat/e5-base-v2": {
+    ...cardDate("2023-05-19"),
+    qualityBenchmark: quality("MTEB 61.5", "MTEB English average (56)", 61.5, "https://huggingface.co/intfloat/e5-base-v2", "공식 발표"),
+  },
+  "intfloat/e5-small-v2": {
+    ...cardDate("2023-05-19"),
+    qualityBenchmark: quality("MTEB 59.93", "MTEB English average (56)", 59.93, "https://huggingface.co/intfloat/e5-small-v2", "공식 발표"),
+  },
   "Alibaba-NLP/gte-multilingual-base": cardDate("2024-07-20"),
-  "thenlper/gte-large": cardDate("2023-07-27"),
-  "thenlper/gte-base": cardDate("2023-07-27"),
+  "thenlper/gte-large": {
+    ...cardDate("2023-07-27"),
+    qualityBenchmark: quality("MTEB 63.13", "MTEB English average (56)", 63.13, "https://huggingface.co/thenlper/gte-large"),
+  },
+  "thenlper/gte-base": {
+    ...cardDate("2023-07-27"),
+    qualityBenchmark: quality("MTEB 62.39", "MTEB English average (56)", 62.39, "https://huggingface.co/thenlper/gte-base"),
+  },
   "jinaai/jina-embeddings-v5-text-small": cardDate("2026-01-22"),
   "jinaai/jina-embeddings-v5-text-nano": cardDate("2026-01-22"),
-  "Snowflake/snowflake-arctic-embed-l-v2.0": cardDate("2024-11-08"),
+  "Snowflake/snowflake-arctic-embed-l-v2.0": {
+    ...cardDate("2024-11-08"),
+    qualityBenchmark: quality("BEIR 55.6", "BEIR nDCG@10 average (15)", 55.6, "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0"),
+  },
   "Snowflake/snowflake-arctic-embed-m-v2.0": cardDate("2024-11-08"),
-  "nomic-ai/nomic-embed-text-v1.5": cardDate("2024-02-10"),
-  "mixedbread-ai/mxbai-embed-large-v1": cardDate("2024-03-07"),
+  "nomic-ai/nomic-embed-text-v1.5": {
+    ...cardDate("2024-02-10"),
+    qualityBenchmark: quality("MTEB 62.28", "MTEB English average (768d)", 62.28, "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5"),
+  },
+  "mixedbread-ai/mxbai-embed-large-v1": {
+    ...cardDate("2024-03-07"),
+    qualityBenchmark: quality("MTEB 64.68", "MTEB English average (56)", 64.68, "https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1"),
+  },
   "sentence-transformers/all-mpnet-base-v2": cardDate("2022-03-02"),
   "sentence-transformers/all-MiniLM-L6-v2": cardDate("2022-03-02"),
   "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": cardDate("2022-03-02"),
@@ -864,6 +903,7 @@ mergeModelMetadata({
   "Qwen3-Next 80B A3B Instruct": {
     releaseDate: "2025-09-10",
     sourceUrl: "https://qwen.ai/blog?from=research.latest-&id=4074cca80393150c248e508aa62983f9cb7d27cd",
+    qualityBenchmark: quality("MMLU-Pro 80.6", "MMLU-Pro", 80.6, "https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct"),
   },
   "Qwen3.5 27B": {
     releaseDate: "2026-02-24",
