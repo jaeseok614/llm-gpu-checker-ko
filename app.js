@@ -2711,7 +2711,10 @@ function renderDetail() {
       ${renderDetailMetric("추정 속도", formatSpeedRange(estimate, confidence), `신뢰도 ${confidence.label}`)}
       ${renderDetailMetric("첫 응답", formatDuration(estimate.firstTokenSeconds))}
     </div>
-    <p class="detail-note">추정 속도는 대역폭 대비 활성 파라미터 기준 단순 계산이라 실제와 다를 수 있습니다. 특히 오프로딩이 걸리는 경우, 양자화 방식(IQ 계열 vs K 계열)이 다른 경우, 매우 긴 컨텍스트를 쓰는 경우 실측과 몇 배 차이가 날 수 있으니 참고용으로만 사용하세요.</p>
+    <section class="detail-section">
+      <h3>실측과 차이가 나는 이유</h3>
+      <p class="detail-note">추정 속도는 대역폭 대비 활성 파라미터 기준 단순 계산이라 실제와 다를 수 있습니다. 특히 오프로딩이 걸리는 경우, 양자화 방식(IQ 계열 vs K 계열)이 다른 경우, 매우 긴 컨텍스트를 쓰는 경우 실측과 몇 배 차이가 날 수 있으니 참고용으로만 사용하세요.</p>
+    </section>
 
     <section class="detail-section">
       <h3>추천 이유</h3>
