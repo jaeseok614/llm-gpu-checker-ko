@@ -26,83 +26,57 @@
 
 ![앱 미리보기](./docs/preview.svg?ui=professional-20260723-release1)
 
-## 빠른 사용법
+## 무엇을 알려주나요
 
-1. 웹 데모를 열고 상단의 실행 환경 요약을 확인합니다.
-2. GPU, VRAM, RAM, 동시 요청, 컨텍스트를 바꿔야 할 때만 `설정 변경`을 엽니다.
-3. 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM 탭에서 실행 가능한 모델을 확인합니다.
-4. 모델을 클릭해 VRAM 구성, 속도 추정, 실행 예시를 확인합니다.
-5. 목록에 없는 공개 생성형 LLM은 `Hugging Face 공개 LLM 직접 계산`에 주소나 `owner/repo` ID를 넣어 계산 목록에 추가합니다.
-6. 모델 상세의 `동시 처리 용량 (베타)`에서 권장·최대 동시 인원과 처리량을 확인하거나, 결과 상단의 `여러 GPU에 모델 동시 배치 추천 (베타)`에서 검색·체크 방식으로 LLM·임베딩·리랭커·OCR/VLM을 섞어 배치합니다.
+설치나 회원가입 없이 브라우저에서 GPU와 사용 조건을 입력하면, 생성형 LLM·임베딩·리랭커·OCR·문서 VLM·범용 VLM 286개 모델 중 실제로 돌아갈 모델을 등급(쾌적/잘 돌아감/가능/빡빡함/오프로딩/부적합)과 함께 보여줍니다. 모델을 클릭하면 VRAM 계산 근거, 추정 속도, 신뢰도, 실행 명령어까지 확인할 수 있습니다.
+
+## 기존 계산기와 다른 점
+
+계산 추정값과 실측값을 UI에서 명확히 분리해 보여줍니다. 모델 상세에는 항상 추정 신뢰도(높음/보통/낮음)가 함께 표시되고, 동일 조건 실측 벤치마크가 있으면 "예상 vs 실측 · 추정 오차 %"가 바로 붙습니다. 직접 로그를 정리하지 않아도 `scripts/benchmark-cli.mjs`가 실행 중인 Ollama/llama.cpp 서버를 측정해 제보용 JSON을 만들어 주므로, 실측 데이터가 누구나 쉽게 쌓일 수 있는 구조입니다. 단일 GPU 판정뿐 아니라 이기종 GPU 병렬 배치, 여러 모델의 동시 배치(베타)까지 계산합니다.
+
+## 30초 사용법
+
+1. 웹 데모를 열고 GPU를 선택합니다. 목록에 없으면 GPU 선택창에서 `직접 입력`으로 검색·자동완성할 수 있습니다.
+2. 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM 탭에서 실행 가능한 모델을 확인합니다.
+3. 모델을 클릭해 VRAM 구성, 속도 추정, 실행 명령어를 확인합니다.
+4. 여러 모델을 한 GPU(들)에 함께 올릴 계획이면 `여러 GPU에 모델 동시 배치 추천 (베타)`에서 체크박스로 선택해 병목과 공통 동시 처리 기준을 확인합니다.
 
 ## 대표 사용 사례
 
 | 질문 | 앱에서 확인할 값 |
 | --- | --- |
-| RTX 3060 12GB에서 Qwen 계열 모델은 어디까지 가능할까? | `GeForce RTX 3060 12GB`, `한국어`, `Qwen` 검색 |
 | RTX 4090 24GB로 32B Q4 모델을 돌릴 수 있을까? | `GeForce RTX 4090 24GB`, `Q4_K_M`, `32B` 검색 |
-| Mac 32GB에서 로컬 LLM은 어느 정도까지 가능할까? | Apple Silicon 프리셋 선택 후 VRAM/RAM 직접 조정 |
-| A100 80GB 2장으로 동시 요청을 몇 개 처리할 수 있을까? | `A100 80GB`, `GPU 수 2`를 선택하고 모델 상세의 `동시 처리 용량` 확인 |
-| RTX 4090과 RTX 3090처럼 서로 다른 GPU를 함께 쓰면 어느 정도일까? | 기본 GPU를 고른 뒤 `보조 GPU`에서 두 번째 GPU 선택 |
-| 24GB·12GB GPU에 14B와 70B 모델을 동시에 어떻게 나눠 올릴까? | `여러 GPU에 모델 동시 배치 추천`에서 GPU와 모델을 복수 선택 |
-| LLM·임베딩·OCR 서버를 여러 GPU에 함께 띄우면 처리량이 어느 정도일까? | 배치 추천의 종류 탭에서 모델을 섞어 선택한 뒤 GPU별 동시 인원·`doc/s`·`page/s` 확인 |
+| A100 80GB 2장으로 동시 요청을 몇 개 처리할 수 있을까? | `A100 80GB`, `GPU 수 2` 선택 후 모델 상세의 `동시 처리 용량` 확인 |
+| 24GB·12GB GPU에 14B와 70B 모델을 동시에 어떻게 나눠 올릴까? | `여러 GPU에 모델 동시 배치 추천`에서 GPU와 모델 복수 선택 |
+| LLM·임베딩·OCR 서버를 여러 GPU에 함께 띄우면 처리량이 어느 정도일까? | 배치 추천에서 종류를 섞어 선택 후 GPU별 동시 인원·`doc/s`·`page/s` 확인 |
 | 목록에 없는 Hugging Face 공개 LLM의 가중치가 내 GPU에 들어갈까? | `Hugging Face 공개 LLM 직접 계산`에 모델 주소 입력 |
-| LLM 서버가 이미 14GB를 쓰는 상태에서 임베딩/리랭커를 같이 띄울 수 있을까? | `이미 사용 중인 VRAM`, `안전 여유분` 입력 후 워크로드 탭별 확인 |
-| EmbeddingGemma, KURE, Granite R2, bge-m3 임베딩을 배치로 돌리면 얼마나 빠를까? | `임베딩` 탭, 모델명 검색 후 `평균 입력 길이`, `배치 크기` 변경 |
 | 한국어 RAG에서 bge-reranker, Qwen3 Reranker, mxbai-rerank 중 무엇이 맞을까? | `리랭커` 탭, `후보 수`, `문서 길이`, `배치 크기` 변경 |
-| OCR로 A4 300DPI 문서를 처리하려면 VRAM이 얼마나 필요할까? | `OCR` 탭, `A4 300 DPI`, `PP-OCRv6 Medium` 선택 |
 | PDF를 Markdown으로 복원하는 문서 VLM은 어떤 GPU가 필요할까? | `문서 VLM` 탭, `PaddleOCR-VL`, `MinerU`, `olmOCR` 검색 |
-| DeepSeek-VL2나 Qwen2.5-VL 같은 범용 VLM으로 문서 질의응답을 돌릴 수 있을까? | `범용 VLM` 탭, `DeepSeek-VL2`, `Qwen2.5-VL`, `Llama Vision` 검색 |
 
 ## 지원 규모
 
 | 데이터 | 개수 |
 | --- | ---: |
 | GPU 프리셋 | 90 |
-| 전체 AI 모델 | 286 |
-| LLM 모델 | 147 |
-| 임베딩 모델 | 60 |
-| 리랭커 모델 | 34 |
-| OCR 모델 | 4 |
-| 문서 VLM 모델 | 9 |
-| 범용 VLM 모델 | 32 |
+| 전체 AI 모델 | 286 (LLM 147 · 임베딩 60 · 리랭커 34 · OCR 4 · 문서 VLM 9 · 범용 VLM 32) |
 | 양자화 옵션 | 14 |
-| 임베딩/OCR 정밀도 옵션 | FP32, FP16, BF16, INT8, INT4 |
 | 모델 공급사 | 56 |
-| 비전/멀티모달 모델 | 81 |
 | 실측 벤치마크 시트 | 실측 행 0 · 출처 연결 공개 품질 점수 279 · OCR/VLM 참고 기준 45 |
-| 출시/품질 메타데이터 | 출시일 286/286 · 공개 품질 점수 279/286 |
 | 모델 라이선스 안내 | 286/286 · 상업 이용 가능/조건부/비상업·연구용/원문 확인 필요 |
 
 ## 주요 기능
 
 | 기능 | 설명 |
 | --- | --- |
-| GPU 프리셋 | 기본 드롭다운과 선택형 모델명 검색·자동완성 지원. GeForce RTX, P102-100 10GB, RTX Pro/Quadro, NVIDIA GB10/DGX Spark, NVIDIA 데이터센터, Radeon AI PRO R9700, RX 9070 XT, Intel, Apple Silicon 포함 |
-| 설정 변경 패널 | VRAM, 동일 GPU 수, 보조 GPU/수량, 시스템 RAM, 대역폭, 이미 사용 중인 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 출력 토큰, 배치 크기 직접 조정 |
-| 이기종 GPU 병렬 | 서로 다른 두 GPU의 VRAM·대역폭·연산량을 합산하고 메모리 분할·통신 손실을 보수적으로 반영 |
+| GPU 프리셋 | 기본 드롭다운 + 선택형 모델명 검색·자동완성. GeForce, RTX Pro/Quadro, DGX Spark, 데이터센터 GPU, Radeon, Intel, Apple Silicon 포함 |
 | 워크로드 탭 | 생성형 LLM, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM을 분리 계산 |
-| 서빙 조건 | 컨텍스트 길이, 동시 요청 수, 평균 출력 토큰을 프리셋 또는 직접 입력으로 조정 |
-| 동시 처리 용량 (베타) | 현재 GPU·모델·양자화·컨텍스트 조합의 권장/이론적 최대 동시 인원과 총·1인당 처리량을 KV cache 기준으로 역산 |
-| 여러 GPU 모델 배치 (베타) | 검색 가능한 체크리스트에서 LLM·임베딩·리랭커·OCR/VLM을 섞어 선택하면 GPU별 모델·정밀도 배치, 병목 없는 동시 인원·처리량, 배치 불가 모델을 계산 |
-| RAG 조건 | 임베딩 입력 길이, 배치 크기, TEI 최대 배치 토큰, 리랭킹 후보 수를 프리셋 또는 직접 입력으로 조정 |
-| OCR/VLM 조건 | 문서 해상도, 이미지 너비/높이, 배치 페이지, 처리 기능 조정 |
-| 양자화 선택 | 자동 추천, IQ2_XXS, Q2_K, Q3_K_S/M, Q4_0/K_S/K_M, Q5_0/K_S/K_M, Q6_K, Q8_0, FP16 |
-| 양자화별 추천 | 자동 추천일 때 실행 가능한 모델을 권장 양자화별로 묶고 그룹별 대표 모델 표시 |
-| 정밀도 선택 | 임베딩·리랭커·OCR용 FP32/FP16/BF16/INT8/INT4 분리 |
-| 실행 등급 | 쾌적, 잘 돌아감, 가능, 빡빡함, 오프로딩, 부적합 |
-| 현재 계산 기준 | 목록 바로 위에서 GPU, 가용 VRAM, 컨텍스트, 동시 요청, 런타임을 한 줄로 확인 |
-| 빠른 목록 | 상태, 모델명, 공식 출시일/세대, 공개 품질 점수, 공급사/라이선스, 권장 설정, 계산 VRAM, 추정 속도 범위, 컨텍스트를 표 형태로 비교 |
-| 상세 우측 패널 | 모델 클릭 시 목록을 유지한 채 판정 요약, 추천 이유, VRAM 근거, 실행 예시 확인 |
-| 추정/실측 분리 | 계산 추정값, 신뢰도, 출처 연결 실측값, OCR/VLM 참고 기준을 서로 다른 영역에 표시 |
-| 벤치마크 시트 | `data/benchmarks.js` 실측 행, `data/model-metadata.js` 공개 품질 점수, OCR/VLM reference benchmark를 분리 표시 |
-| 모델 필터 | 한국어, RAG/검색, 코딩, 추론, 긴 문서, 비전/멀티모달, 임베딩, 리랭커, OCR, 문서 VLM, 범용 VLM |
-| 적용 필터 칩 | 검색어, 등급, 상태, 작업, 공급사, 라이선스, 이용 조건 필터를 칩으로 표시하고 개별 해제 |
-| 공급사 필터 | Meta, Google, Alibaba, DeepSeek, Mistral AI, Microsoft 등 공급사별 필터 |
-| 라이선스 필터 | Apache 2.0, MIT, Llama, Gemma, MRL 등 원문 라이선스와 한국어 이용 조건을 함께 표시하고 필터링 |
-| Hugging Face 직접 계산 | 공개 생성형 LLM의 safetensors 파라미터 수·config·라이선스를 읽어 사용자 브라우저의 LLM 목록에 추가 |
-| 정렬 | 종합 추천, 최고 품질, 가장 빠른 모델, VRAM 여유 우선, 한국어 모델 우선, 코딩 모델 우선, 파라미터 큰 순, 최신 모델순 |
-| URL 상태 저장 | 기본/보조 GPU, VRAM, RAM, 예약 VRAM, 안전 여유분, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
+| 이기종 GPU 병렬 | 서로 다른 두 GPU의 VRAM·대역폭·연산량을 합산하고 메모리 분할·통신 손실을 보수적으로 반영 |
+| 동시 처리 용량 (베타) | 현재 조합의 권장/이론적 최대 동시 인원과 총·1인당 처리량을 KV cache 기준으로 역산 |
+| 여러 GPU 모델 배치 (베타) | LLM·임베딩·리랭커·OCR/VLM을 섞어 선택하면 GPU별 배치와 공통 병목(동시 인원·처리량)을 계산 |
+| 추정/실측 분리 | 계산 추정값, 신뢰도, 출처 연결 실측값, 추정 오차를 서로 다른 영역에 표시 |
+| 로컬 벤치마크 CLI | `scripts/benchmark-cli.mjs`로 실행 중인 서버를 측정해 제보용 JSON 생성 |
+| Hugging Face 직접 계산 | 공개 생성형 LLM의 safetensors 파라미터·config·라이선스를 읽어 사용자 브라우저의 목록에 추가 |
+| URL 상태 저장 | GPU, VRAM, RAM, 컨텍스트, 동시 요청, 필터, 선택 모델을 쿼리 파라미터로 공유 |
 
 ## 모델 라이선스 안내
 
@@ -115,492 +89,13 @@
 | 비상업·연구용 | 연구 또는 비상업 용도로 제한되며 상업 이용에는 별도 허가가 필요합니다. |
 | 원문 확인 필요 | 라이선스 명칭만으로 상업 이용 여부를 단정하기 어려워 배포처의 최신 원문을 직접 확인해야 합니다. |
 
-이 표시는 빠른 판단을 돕는 요약이며 법률 자문이 아닙니다. 모델을 배포하거나 유료 서비스에 사용할 때는 앱에 연결된 최신 라이선스 원문과 사용 제한 정책을 반드시 확인하세요. 이 저장소 코드의 [MIT License](./LICENSE)와 각 AI 모델의 라이선스는 서로 별개입니다.
+이 표시는 빠른 판단을 돕는 요약이며 법률 자문이 아닙니다. 모델을 배포하거나 유료 서비스에 사용할 때는 앱에 연결된 최신 라이선스 원문을 반드시 확인하세요. 이 저장소 코드의 [MIT License](./LICENSE)와 각 AI 모델의 라이선스는 서로 별개입니다.
 
 ## 계산 기준
 
-### Methodology, Formula-Oriented
+계산기는 파라미터 크기, 양자화, KV cache, 런타임 오버헤드, GPU 대역폭을 바탕으로 한 결정론적 휴리스틱 모델을 사용합니다. 표기법, 메모리 모델, 등급 산출식, 처리량/응답시간 모델, 자동 양자화 정책, 임베딩·리랭커·OCR/VLM 계산식의 전체 수식과 쉬운 설명은 [docs/methodology.md](./docs/methodology.md)에 정리되어 있습니다.
 
-This calculator uses a deterministic heuristic model. It estimates whether a local LLM can fit into the selected hardware budget under a given quantization, context length, concurrency, output length, KV cache precision, and runtime backend.
-
-#### Notation
-
-| Symbol | Meaning |
-| --- | --- |
-| `P` | Total model parameters in billions |
-| `A` | Active parameters per token in billions, especially relevant for MoE models |
-| `b_q` | Bytes per parameter for quantization `q` |
-| `C` | Selected context length in tokens |
-| `C_max` | Model maximum context length in tokens |
-| `N` | Concurrent requests |
-| `O` | Average generated output tokens per request |
-| `k` | KV cache precision factor |
-| `G_i` | Number of GPUs of type `i` |
-| `V_i` | VRAM per GPU of type `i`, in GB |
-| `R` | System RAM in GB |
-| `B_i` | Memory bandwidth per GPU of type `i`, in GB/s |
-| `M_reserved` | VRAM already occupied by other running workloads |
-| `M_safety` | User-selected free VRAM buffer |
-| `M_budget` | VRAM budget available to the model being evaluated |
-
-#### Memory Model
-
-The model weight footprint is approximated as:
-
-$$
-M_{weights} = P \cdot b_q \cdot 1.08
-$$
-
-The `1.08` multiplier covers metadata, tensor layout overhead, and practical loader overhead. The calculator uses decimal GB-style estimation, where 1B parameters at 1 byte per parameter is treated as roughly 1 GB.
-
-The KV cache grows with active parameters, context length, concurrency, and KV precision:
-
-$$
-M_{KV} = A \cdot 0.09 \cdot \frac{C}{4096} \cdot N \cdot k
-$$
-
-KV precision factors:
-
-| KV precision | `k` |
-| --- | ---: |
-| FP16/BF16 | `1.00` |
-| FP8 | `0.55` |
-| Q8 | `0.60` |
-| Q4 | `0.35` |
-
-Runtime overhead is modeled per backend:
-
-$$
-M_{runtime} = base_r + \min(cap_r,\alpha_r \cdot M_{weights}) + \max(0,N-1)\cdot \beta_r
-$$
-
-| Runtime | `base_r` | `cap_r` | `alpha_r` | `beta_r` |
-| --- | ---: | ---: | ---: | ---: |
-| llama.cpp / Ollama | `1.2` | `3.0` | `0.06` | `0.08` |
-| vLLM | `2.6` | `5.5` | `0.10` | `0.12` |
-| Transformers | `2.2` | `4.5` | `0.09` | `0.18` |
-
-Total estimated model VRAM:
-
-$$
-M_{required} = M_{weights} + M_{KV} + M_{runtime}
-$$
-
-Physical and sharding-adjusted GPU memory use the sum of every selected GPU type:
-
-$$
-M_{physical}=\sum_i V_iG_i
-$$
-
-$$
-M_{pool}=M_{physical}\cdot\eta_{shard}
-$$
-
-| GPU layout | `eta_shard` |
-| --- | ---: |
-| Single GPU | `1.00` |
-| Multiple identical GPUs | `0.92` |
-| Heterogeneous GPUs | `0.88` |
-
-These factors approximate memory loss from sharding, communication buffers, and uneven layer placement. Heterogeneous setups are intentionally penalized more heavily.
-
-Because production machines often run an LLM server, embedding worker, reranker, OCR worker, or monitoring process at the same time, the calculator separates the shared GPU memory budget:
-
-$$
-M_{budget}=\max(0,\ M_{pool}-M_{reserved}-M_{safety})
-$$
-
-where `M_reserved` is VRAM already used by other workloads and `M_safety` is the user-selected buffer left empty to avoid OOM spikes.
-
-#### Fit Grade
-
-First, the selected context must fit the model limit:
-
-$$
-C \le C_{max}
-$$
-
-Then the memory pressure ratio is:
-
-$$
-\rho = \frac{M_{required}}{\max(M_{budget},\epsilon)}
-$$
-
-Offload room includes partial use of system RAM:
-
-$$
-M_{offload} = M_{budget} + 0.45R
-$$
-
-| Grade | Condition |
-| --- | --- |
-| `S` 쾌적 | `rho <= 0.70` |
-| `A` 잘 돌아감 | `0.70 < rho <= 0.85` |
-| `B` 가능 | `0.85 < rho <= 1.00` |
-| `C` 빡빡함 | `1.00 < rho <= 1.12` |
-| `D` 오프로딩 | `M_required <= M_offload` |
-| `F` 부적합 | Context overflow or memory exceeds offload room |
-
-#### Throughput and Response-Time Model
-
-The token throughput estimate is bandwidth-oriented:
-
-$$
-T_{raw} =
-\frac{(\sum_i B_iG_i) \cdot m_G \cdot m_r}
-{\max(A \cdot b_q, 1)\cdot 4}
-$$
-
-Runtime and multi-GPU multipliers:
-
-| Factor | Value |
-| --- | --- |
-| `m_G` | `1.00` single GPU, `0.76` identical multi-GPU, `0.64` heterogeneous multi-GPU |
-| `m_r` | `1.00` llama.cpp/Ollama, `1.10` vLLM, `0.78` Transformers |
-
-Offload and tight-memory penalty:
-
-| Grade | `p_fit` |
-| --- | ---: |
-| `S/A/B` | `1.00` |
-| `C` | `0.55` |
-| `D` | `0.22` |
-| `F` | `0.00` |
-
-Backend concurrency efficiency:
-
-| Runtime | `eta_r` |
-| --- | ---: |
-| llama.cpp / Ollama | `0.55` |
-| vLLM | `0.78` |
-| Transformers | `0.38` |
-
-Total and per-request throughput:
-
-$$
-T_{total}=T_{raw}\cdot(1+(N-1)\eta_r)\cdot p_{fit}
-$$
-
-$$
-T_{request}=\frac{T_{total}}{N}
-$$
-
-Average generation latency is derived from output length:
-
-$$
-L_{generation}=\frac{O}{T_{request}}
-$$
-
-Estimated time to first token:
-
-$$
-L_{first}=
-\left(0.18+\min(5,0.025A)+0.08\frac{C}{8192}+0.025\max(0,N-1)\right)
-\cdot u_r \cdot u_{fit}
-$$
-
-| Runtime | `u_r` |
-| --- | ---: |
-| llama.cpp / Ollama | `1.00` |
-| vLLM | `0.85` |
-| Transformers | `1.20` |
-
-| Grade | `u_fit` |
-| --- | ---: |
-| `S/A/B` | `1.00` |
-| `C` | `1.60` |
-| `D` | `2.40` |
-
-#### Auto Quantization Policy
-
-When quantization is set to `자동 추천`, the calculator searches practical GGUF quantization presets from higher quality to lower quality:
-
-| Priority | Quantization |
-| ---: | --- |
-| 1 | `Q6_K` |
-| 2 | `Q5_K_M` |
-| 3 | `Q5_K_S` |
-| 4 | `Q5_0` |
-| 5 | `Q4_K_M` |
-| 6 | `Q4_K_S` |
-| 7 | `Q4_0` |
-| 8 | `Q3_K_M` |
-| 9 | `Q3_K_S` |
-| 10 | `Q2_K` |
-| 11 | `IQ2_XXS` |
-
-The first quantization that satisfies the memory budget is selected:
-
-$$
-M_{\mathrm{required}}(q) \le 0.85M_{\mathrm{budget}}
-$$
-
-If no option satisfies that comfortable threshold, the calculator tries:
-
-$$
-M_{\mathrm{required}}(q) \le M_{\mathrm{budget}}
-$$
-
-and then:
-
-$$
-M_{\mathrm{required}}(q) \le M_{\mathrm{offload}}
-$$
-
-If all checks fail, `IQ2_XXS` is used as the last possible comparison baseline.
-
-### Encoder, Reranker, And OCR/VLM Methodology
-
-Embedding and reranker models are encoder-style workloads. They do not keep a decoder KV cache across generated tokens, so the calculator uses an activation/attention workspace model instead of the LLM decoder model.
-
-All workload families use the same shared GPU budget `M_budget`; only the model-specific `M_required` formula changes.
-
-#### Embedding Encoder Memory
-
-For an embedding model with batch size `B_e`, input length `T`, hidden size `H`, layers `L`, attention heads `A_h`, and precision byte width `s`:
-
-$$
-M_{weights}=P\cdot s\cdot1.08
-$$
-
-$$
-M_{state}=\frac{B_e\cdot T\cdot H\cdot s}{10^9}
-$$
-
-$$
-M_{activation}\approx M_{state}\cdot f_{hidden,r}
-$$
-
-If Flash Attention or a similarly memory-efficient kernel is assumed:
-
-$$
-M_{attention}\approx M_{state}\cdot f_{attn,r}
-$$
-
-Otherwise:
-
-$$
-M_{attention}\approx
-\frac{B_e\cdot A_h\cdot T^2\cdot s\cdot f_{attn,r}}{10^9}
-$$
-
-The total peak memory is:
-
-$$
-M_{required}=M_{weights}+M_{activation}+M_{attention}+M_{output}+M_{runtime}
-$$
-
-Hugging Face Text Embeddings Inference uses token-based dynamic batching, so the effective micro-batch is:
-
-$$
-B_{micro}=\min\left(B_e,\left\lfloor\frac{T_{batch,max}}{T}\right\rfloor\right)
-$$
-
-The encoder compute estimate is:
-
-$$
-F_{encoder}\approx
-L\cdot\left(24B_{micro}TH^2+4B_{micro}T^2H\right)
-$$
-
-Batch time is estimated from the slower side of compute and memory movement:
-
-$$
-t_{batch}\approx
-\max\left(
-\frac{F_{encoder}}{TFLOPS_{eff}\cdot \eta_{compute,r}},
-\frac{bytes_{read}}{BW\cdot \eta_{mem,r}}
-\right)+\delta_r
-$$
-
-Then:
-
-$$
-docs/s=\frac{B_{micro}}{t_{batch}}
-$$
-
-$$
-tokens/s=docs/s\cdot T
-$$
-
-#### Cross-Encoder Reranker
-
-For reranking, the input is a query-document pair:
-
-$$
-T_{pair}=T_{query}+T_{document}+T_{special}
-$$
-
-The same encoder memory and FLOPs formula is applied with `T = T_pair`. A single user query usually reranks `K` candidate documents:
-
-$$
-passes=\left\lceil\frac{K}{B_r}\right\rceil
-$$
-
-$$
-latency_{query}\approx passes\cdot t_{batch}
-$$
-
-$$
-pairs/s=\frac{B_r}{t_{batch}}
-$$
-
-#### OCR And VLM Categories
-
-OCR workloads are separated into three model families because their peak memory drivers are different.
-
-| Family | Calculator tab | Main memory driver |
-| --- | --- | --- |
-| Lightweight OCR pipeline | `OCR` | Resident detection/recognition modules and image feature maps |
-| Document-specialized VLM | `문서 VLM` | Vision encoding, image tokens, decoder KV cache, structured output length |
-| General VLM | `범용 VLM` | Image/video tokens, conversation context, decoder KV cache, generated answer length |
-
-#### Lightweight OCR Pipeline
-
-OCR models are image workloads, so the first-order driver is image size:
-
-$$
-MP=\frac{W\cdot H}{10^6}
-$$
-
-For a classical OCR pipeline such as PP-OCR:
-
-$$
-M_{peak}\approx
-M_{resident}+B_o\cdot MP\cdot \alpha_{model}+M_{image}+M_{runtime}
-$$
-
-The image buffer is:
-
-$$
-M_{image}=\frac{B_o\cdot W\cdot H\cdot channels\cdot s\cdot bufferFactor}{10^9}
-$$
-
-For sequential detection, recognition, and layout modules, the peak activation term counts the largest active stage rather than summing every stage:
-
-$$
-M_{activation,peak}\approx
-\max(M_{det}, M_{rec}, M_{layout}, M_{table}, M_{formula})
-$$
-
-#### Document VLM And General VLM
-
-For document-specialized VLMs and general VLMs used as OCR engines, decoder KV cache is added:
-
-$$
-M_{KV}= \frac{
-2\cdot L_d\cdot B_o\cdot T_{total}\cdot H_{kv}\cdot D_{head}\cdot s
-}{10^9}
-$$
-
-where:
-
-$$
-T_{total}=T_{image}+T_{prompt}+T_{output}
-$$
-
-Image token count is approximated as a model profile, not a single universal rule:
-
-$$
-T_{image}\approx
-\min\left(
-T_{image,max},
-\frac{\left\lceil W/patch\right\rceil\cdot\left\lceil H/patch\right\rceil}{merge^2}
-\right)
-$$
-
-OCR throughput is anchored to a reference benchmark when available:
-
-$$
-pages/s\approx
-pps_{ref}\cdot
-\sqrt{\frac{BW}{BW_{ref}}}\cdot
-\left(\frac{MP_{ref}}{MP}\right)^{0.85}\cdot
-f_{precision}\cdot
-f_{batch}\cdot
-f_{feature}^{-1}
-$$
-
-This is intentionally shown as an estimate, not a measured guarantee. OCR accuracy and speed vary heavily with preprocessing, layout complexity, language, table/formula modules, and PDF rasterization settings.
-
-### 쉬운 설명
-
-| 항목 | 의미 |
-| --- | --- |
-| 모델 가중치 | 모델 자체를 GPU에 올리는 데 필요한 메모리입니다. 모델이 클수록 커지고, Q4/Q5/Q6 같은 양자화가 낮을수록 줄어듭니다. |
-| 컨텍스트 길이 | 한 번에 읽을 수 있는 텍스트 길이입니다. 8K보다 32K가 더 많은 메모리를 씁니다. 긴 문서/RAG를 돌릴수록 이 값이 중요합니다. |
-| 동시 요청 수 | 동시에 몇 명이 쓰는지입니다. 1명보다 4명, 8명이 훨씬 많은 KV cache를 씁니다. |
-| KV cache | 모델이 긴 대화와 문맥을 기억하기 위해 잡아두는 작업 메모리입니다. 컨텍스트 길이, 동시 요청 수, KV 정밀도에 비례해서 커집니다. |
-| 평균 출력 토큰 | 답변을 평균 몇 토큰까지 생성할지입니다. VRAM 적합도보다는 “답변이 몇 초 걸릴지” 계산에 사용됩니다. |
-| 런타임 오버헤드 | Ollama, llama.cpp, vLLM, Transformers가 모델 외에 추가로 쓰는 여유 메모리입니다. vLLM은 동시 처리에 강하지만 기본 오버헤드가 더 큽니다. |
-| 이미 사용 중인 VRAM | 같은 GPU에서 이미 떠 있는 LLM 서버, 임베딩 서버, 리랭커, OCR 작업 등이 차지한다고 보는 메모리입니다. 모든 탭의 실행 가능 여부에서 먼저 제외합니다. |
-| 안전 여유분 | 순간적인 메모리 증가와 드라이버/런타임 변동을 피하려고 일부러 비워 두는 VRAM입니다. 값이 클수록 계산 결과가 보수적으로 바뀝니다. |
-| 시스템 RAM 보조 | VRAM에 딱 안 들어가도 RAM 오프로딩으로 가능할 수 있습니다. 대신 속도는 크게 느려질 수 있습니다. |
-| 임베딩 입력 길이 | 문서 하나를 몇 토큰으로 임베딩할지입니다. 길수록 처리량은 줄고 activation/attention 메모리는 늘어납니다. |
-| 임베딩 배치 | 한 번에 몇 문서를 임베딩할지입니다. 배치가 커지면 처리량은 좋아질 수 있지만 peak VRAM도 증가합니다. |
-| 리랭커 후보 수 | 검색된 후보 문서 몇 개를 다시 점수화할지입니다. 후보가 많을수록 질의당 지연시간이 늘어납니다. |
-| OCR 해상도 | A4 300DPI처럼 이미지가 커질수록 중간 feature map과 이미지 버퍼가 커져 VRAM 사용량이 증가합니다. |
-| OCR 처리 기능 | 텍스트만 읽는 것보다 레이아웃, 표, 수식, 전체 문서 파싱을 켜면 더 많은 모델/작업공간이 필요합니다. |
-| 문서 VLM | PDF를 Markdown/JSON으로 복원하는 모델입니다. 이미지 토큰, 출력 토큰, decoder KV cache까지 함께 계산합니다. |
-| 범용 VLM | DeepSeek-VL2, Qwen2.5-VL, Llama Vision, Pixtral, InternVL처럼 이미지 이해와 질의응답을 같이 하는 모델입니다. OCR 전용 모델보다 목적이 넓어 출력 길이에 따른 지연시간 차이가 큽니다. |
-
-쉽게 보면 계산기는 아래 순서로 판단합니다.
-
-```text
-1. 선택한 텍스트/이미지 입력 길이가 모델 한도를 넘는지 확인
-2. 전체 GPU VRAM에서 이미 사용 중인 VRAM과 안전 여유분을 빼서 모델 가용 VRAM 계산
-3. 모델 가중치 + KV cache/activation/image buffer + 런타임 오버헤드를 더해 필요 VRAM 계산
-4. 필요 VRAM을 모델 가용 VRAM과 비교
-5. 부족하면 시스템 RAM 오프로딩 가능성 확인
-6. 메모리 여유와 예상 속도를 같이 보고 등급 결정
-```
-
-가장 많이 영향을 주는 값은 보통 아래 항목들입니다.
-
-| 사용자가 바꾸는 값 | 결과에 미치는 영향 |
-| --- | --- |
-| 양자화 | Q6/Q5는 품질이 좋지만 VRAM을 더 쓰고, Q4/Q3/Q2는 더 가볍지만 품질 손실이 커질 수 있습니다. |
-| 컨텍스트 길이 | 길수록 긴 문서를 잘 다루지만 KV cache가 커져 VRAM을 더 씁니다. |
-| 동시 요청 수 | 동시에 여러 명이 쓰면 요청당 속도는 줄고 KV cache는 커집니다. |
-| 이미 사용 중인 VRAM | 같은 GPU에 여러 모델/서버를 함께 띄운 상황을 반영합니다. 값이 커질수록 실행 가능한 모델 수가 줄어듭니다. |
-| 안전 여유분 | OOM을 피하기 위한 빈 공간입니다. 운영 서버처럼 안정성이 중요하면 2~4GB 이상을 잡는 편이 안전합니다. |
-| 실행 방식 | Ollama/llama.cpp는 가볍고 단순한 편이고, vLLM은 서버형 동시 처리에 유리하며, Transformers는 범용성이 높지만 오버헤드가 다를 수 있습니다. |
-| 임베딩 정밀도 | FP16/BF16은 GPU 기본 추천이고, INT8/INT4는 메모리를 줄이지만 모델과 런타임 지원 여부를 확인해야 합니다. |
-| OCR/VLM DPI·배치 | DPI와 배치를 낮추면 속도와 안정성이 좋아지고, 문서 품질이 낮으면 정확도는 떨어질 수 있습니다. 문서 VLM은 출력 토큰도 길어질수록 느려집니다. |
-
-| 등급 | 의미 |
-| --- | --- |
-| 쾌적 | 여유 VRAM이 커서 안정적 |
-| 잘 돌아감 | 일반적인 로컬 추론에 적합 |
-| 가능 | 실행 가능하지만 설정 여유가 작음 |
-| 빡빡함 | 컨텍스트/동시 요청/배치 축소 권장 |
-| 오프로딩 | RAM 보조가 필요하고 속도 저하 예상 |
-| 부적합 | 현재 입력 조건으로는 권장하지 않음 |
-
-## 실제 실행 검증
-
-계산기는 추정 도구입니다. 앱은 계산 추정값, 공개 품질 점수, 실측 벤치마크를 UI에서 분리합니다.
-
-- 계산 추정: 모델 파라미터, 양자화, KV cache, 런타임 오버헤드, GPU 대역폭을 기반으로 산출합니다.
-- 실측 벤치마크: `data/benchmarks.js`에 출처가 있는 측정 행만 추가합니다.
-- 공개 품질 점수: `data/model-metadata.js`에 공식 모델 카드, 기술 보고서, 또는 명시된 외부 평가 출처가 있는 값만 추가합니다.
-- 참고 기준: OCR/VLM 모델 카드나 파이프라인 reference 값을 실측 행과 분리해 표시합니다.
-- 동일 기준이 없는 모델은 다른 벤치마크 점수를 섞지 않고 `—`와 `동일 기준 없음`으로 표시합니다.
-
-### 공개 품질 점수 기준
-
-| 탭 | 대표 기준 |
-| --- | --- |
-| 생성형 LLM | MMLU-Pro, AIME, HumanEval, LogicKor처럼 모델 카드가 명시한 용도별 평가 |
-| 임베딩 | MTEB 계열 평균 |
-| 리랭커 | BEIR 또는 MIRACL 계열 NDCG |
-| OCR | 문자 인식 정확도 또는 공식 OCR 테스트 점수 |
-| 문서 VLM | OmniDocBench 종합 점수 |
-| 범용 VLM | OCRBench v2 또는 모델 카드의 멀티모달 품질 지표 |
-
-실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
-
-### 로컬 벤치마크 자동 수집 (`scripts/benchmark-cli.mjs`)
+## 실측 벤치마크 참여
 
 실측 행이 늘어날수록 계산 추정값의 신뢰도가 올라갑니다. 직접 로그를 정리하지 않아도 되도록, 실행 중인 Ollama/llama.cpp 서버에 짧은 프롬프트를 보내 prefill/decode 속도, TTFT, peak VRAM을 측정하고 `data/benchmarks.js` 형식의 JSON을 바로 만들어 주는 CLI를 제공합니다.
 
@@ -614,20 +109,14 @@ node scripts/benchmark-cli.mjs --runtime llamacpp --url http://localhost:8080 --
 ```
 
 - 이 GPU와 루프백 로컬 서버(`localhost`, `127.0.0.0/8`, `[::1]`)에만 접속합니다. 외부 호스트와 HTTP 리다이렉트는 차단하며, 출력된 JSON을 제보할지는 직접 선택합니다.
-- NVIDIA GPU에서 `nvidia-smi`가 있으면 GPU 이름·VRAM·드라이버·CUDA 버전을 자동으로 채우고 실행 중 VRAM을 주기적으로 샘플링합니다. 여러 GPU가 있으면 `--gpu-index`로 측정할 GPU를 지정합니다. 없으면 `--gpu`로 직접 입력하고 VRAM은 다른 도구로 확인해 JSON에 채워 넣으면 됩니다.
+- NVIDIA GPU에서 `nvidia-smi`가 있으면 GPU 이름·VRAM·드라이버·CUDA 버전을 자동으로 채우고 실행 중 VRAM을 주기적으로 샘플링합니다. 없으면 `--gpu`로 직접 입력합니다.
 - 출력된 JSON을 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml) 이슈의 "CLI 측정 결과 (JSON)" 칸에 붙여넣으면 됩니다. `sourceUrl`은 이슈를 올린 뒤 이슈 자신의 링크로 바꿔주세요.
-- `--model-key`, `--gpu-id`, `--quantization`, `--context`가 현재 화면과 정확히 일치하는 실측 행이 등록되면, 상세 화면에 "예상 X vs 실측 Y · 추정 오차 ±Z%"가 함께 표시됩니다. 조건이 빠지거나 다르면 같은 모델의 참고 실측으로만 취급합니다.
+- `--model-key`, `--gpu-id`, `--quantization`, `--context`가 현재 화면과 정확히 일치하는 실측 행이 등록되면, 상세 화면에 "예상 vs 실측 · 추정 오차 ±Z%"가 함께 표시됩니다.
 - `--help`로 전체 옵션을 확인할 수 있습니다.
 
-### Hugging Face 공개 LLM 직접 계산
+## 정확도와 한계
 
-브라우저는 전체 가중치 파일을 다운로드하지 않습니다. 공개 Hub API에서 `safetensors.total` 파라미터 수와 `config.json`의 컨텍스트·MoE 구조 정보를 읽어 계산용 모델 레코드만 만듭니다.
-
-- 공개 safetensors 정보가 있는 모델만 자동 계산할 수 있습니다.
-- 접근 승인이 필요한 gated 모델, 비공개 모델, safetensors 파라미터 수가 없는 저장소는 불러오지 않습니다.
-- Dense 모델은 전체 파라미터를 활성 파라미터로 사용합니다. MoE 모델은 expert 설정으로 활성 파라미터를 보수적으로 추정하므로 상세 화면의 추정값으로 표시합니다.
-- 불러온 모델은 최대 20개까지 해당 브라우저의 `localStorage`에만 저장되며 프로젝트의 정적 모델 데이터에는 자동 반영되지 않습니다.
-- 라이선스는 모델 카드 값을 표시하되, 알 수 없는 사용자 모델은 `원문 확인 필요`로 분류합니다.
+계산기는 추정 도구입니다. 브라우저는 보안상 `nvidia-smi`처럼 정확한 VRAM·드라이버 상태를 직접 읽을 수 없어 GPU 프리셋과 직접 입력값을 기준으로 계산하며, 실제 속도는 드라이버·런타임·모델 구현·배치 크기에 따라 추정치와 몇 배 차이가 날 수 있습니다. 상세 화면은 항상 추정 신뢰도와 근거를 함께 보여주고, 동일 조건 실측값이 있으면 오차율을 표시합니다. 이기종 GPU 병렬, 임베딩/리랭커/OCR 처리량에 영향을 주는 요인 등 자세한 내용은 [docs/accuracy-and-limits.md](./docs/accuracy-and-limits.md)를 참고하세요.
 
 ## 로컬 실행
 
@@ -641,208 +130,15 @@ python3 -m http.server 8787
 http://127.0.0.1:8787
 ```
 
-## 데이터 추가
+검증은 `npm run check`로 문법, 데이터 구조, 테스트 스위트를 확인합니다.
 
-생성형 LLM은 `data/models.js`에 아래 형식으로 항목을 추가하면 됩니다.
+## 문서
 
-```js
-{
-  name: "Example 14B Instruct",
-  maker: "Example",
-  params: 14,
-  active: 14,
-  context: 32,
-  license: "Apache 2.0",
-  tags: ["general", "korean"],
-  summary: "모델 카드에 표시될 한국어 설명입니다.",
-}
-```
-
-지원 태그:
-
-```text
-general, korean, coding, reasoning, long, edge, vision,
-embedding, reranker, retrieval, sparse, dense, multilingual,
-matryoshka, ocr, document, document-vlm, general-vlm, vlm,
-layout, table, math, handwriting, pdf, markdown, chart, video,
-grounding, audio, gui, seal, spotting, coordinate, screen, mobile, agent, legacy,
-classification, clustering, matching, codeRetrieval
-```
-
-임베딩 모델은 `data/embedding-models.js`에 추가합니다.
-
-```js
-{
-  type: "embedding",
-  name: "Example embedding model",
-  maker: "Example",
-  params: 0.3,
-  hiddenSize: 768,
-  layers: 12,
-  attentionHeads: 12,
-  maxTokens: 8192,
-  embeddingDim: 768,
-  pooling: "CLS",
-  license: "Apache 2.0",
-  tags: ["embedding", "retrieval", "korean"],
-  precisions: ["fp32", "fp16", "bf16", "int8"],
-  supportsFlashAttention: true,
-  summary: "모델 카드에 표시될 한국어 설명입니다.",
-}
-```
-
-OCR/VLM 모델은 `data/ocr-models.js`에 아래 타입으로 추가합니다.
-
-| 타입 | 표시 탭 | 용도 |
-| --- | --- | --- |
-| `ocr-pipeline` | OCR | PP-OCR처럼 검출/인식/좌표 추출 중심 |
-| `document-vlm` | 문서 VLM | PDF→Markdown, 표·수식·레이아웃 복원 |
-| `general-vlm` | 범용 VLM | OCR-like 추출, 문서 질의응답, 화면 이해 |
-
-OCR/VLM은 모델별 activation 계수와 reference benchmark가 중요합니다. 출처가 있는 실제 측정값은 `data/benchmarks.js`에 추가하고, 모델 카드나 파이프라인 기준값은 `reference`로 분리해 둡니다.
-
-## 검증
-
-Node.js가 있으면 문법과 데이터 구조를 확인할 수 있습니다.
-
-```bash
-npm run check
-```
-
-## 정확도와 한계
-
-브라우저는 보안상 `nvidia-smi`처럼 정확한 VRAM, 드라이버, GPU 점유율을 직접 읽을 수 없습니다. 그래서 이 계산기는 자동 감지 대신 GPU 프리셋 선택과 직접 입력값을 기준으로 계산합니다.
-
-실제 실행 가능 여부와 속도는 드라이버, CUDA/ROCm, 런타임, 모델 구현, KV cache precision, 배치 크기, CPU/RAM 성능에 따라 달라질 수 있습니다.
-
-**"추정 속도"가 실측과 크게 다른 경우**: 이 계산기의 추정 속도는 대역폭 대비 활성 파라미터(MoE는 total이 아닌 active 기준) 크기로 계산하는 단순화된 모델입니다. 다음 요소는 반영하지 않으므로 실측과 몇 배 차이가 날 수 있습니다.
-- 양자화 방식별 커널 연산 효율 차이 (같은 크기라도 IQ-계열과 K-계열 quant는 실제 디코딩 속도가 다릅니다.)
-- VRAM을 넘어서는 부분을 CPU/RAM으로 오프로딩할 때의 속도 저하 폭 (수 배~십수 배까지 떨어질 수 있습니다.)
-- 매우 긴 컨텍스트(수십~수백K 토큰)에서 attention 연산 비용이 비선형으로 늘어나는 부분
-
-그래서 모델 상세 화면의 "추정 속도"에는 항상 신뢰도(높음/보통/낮음)와 근거를 함께 표시하며, 출처가 확인된 실측값이 있으면 `data/benchmarks.js`에 실측 행으로 별도 표시합니다. 실행 가능 여부의 1차 필터로 참고하시고, 정확한 tok/s는 실제 환경에서 직접 실행해 확인하는 것을 권장합니다.
-
-서로 다른 GPU를 병렬로 묶을 수 있는지는 런타임과 모델 구조에 따라 다릅니다. 앱의 이기종 GPU 결과는 VRAM 합산 가능성을 보는 보수적 추정이며, 실제 속도는 PCIe 연결, 가장 느린 GPU, 레이어 분할, CUDA/ROCm 혼용 가능 여부에 따라 더 낮아지거나 실행 자체가 불가능할 수 있습니다. 특히 NVIDIA와 AMD를 한 프로세스에서 함께 쓰는 구성은 일반적인 런타임에서 지원되지 않을 수 있습니다.
-
-임베딩·리랭커 처리량은 tokenizer, padding, dynamic batching, Flash Attention/xFormers 사용 여부에 따라 달라집니다. OCR 처리량은 PDF rasterization, DPI, 문서 레이아웃, 표/수식 모듈, 이미지 전처리 옵션의 영향을 크게 받습니다.
-
-## 참고한 공식 자료
-
-- [NVIDIA DGX Spark specifications](https://www.nvidia.com/en-sg/products/workstations/dgx-spark/)
-- [NVIDIA DGX Spark hardware guide](https://docs.nvidia.com/dgx/dgx-spark/hardware.html)
-- [NVIDIA P102-100 10GB specifications](https://www.techpowerup.com/gpu-specs/zotac-p102-100.b5306)
-- [Qwen2.5 release blog](https://qwenlm.github.io/blog/qwen2.5/)
-- [Qwen2.5-Coder technical report](https://arxiv.org/abs/2409.12186)
-- [Qwen3 release blog](https://qwenlm.github.io/blog/qwen3/)
-- [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388)
-- [Meta Llama 3.1 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md)
-- [Meta Llama 3.2 model card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/MODEL_CARD.md)
-- [Meta Llama 3.3 70B model card](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)
-- [Meta Llama 4 model card](https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E)
-- [Google Gemma 3 model page](https://deepmind.google/models/gemma/gemma-3/)
-- [Google Gemma release notes](https://ai.google.dev/gemma/docs/releases)
-- [OpenAI gpt-oss release note](https://openai.com/index/introducing-gpt-oss/)
-- [Microsoft Phi-4 model card](https://huggingface.co/microsoft/phi-4)
-- [DeepSeek-R1 repository and evaluation table](https://github.com/deepseek-ai/DeepSeek-R1)
-- [DeepSeek-R1 release note](https://api-docs.deepseek.com/news/news250120)
-- [DeepSeek-V3.2 release note](https://api-docs.deepseek.com/news/news251201)
-- [Mistral Small 3.1 model card](https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503)
-- [Ministral 3B benchmark table](https://huggingface.co/mistralai/Ministral-8B-Instruct-2410)
-- [Mistral model lifecycle](https://legal.mistral.ai/ai-governance/models)
-- [Mistral changelog](https://docs.mistral.ai/resources/changelogs)
-- [LG AI EXAONE 4.0 repository](https://github.com/LG-AI-EXAONE/EXAONE-4.0)
-- [EXAONE Deep model card](https://huggingface.co/LGAI-EXAONE/EXAONE-Deep-32B)
-- [Kakao Kanana repository](https://github.com/kakao/kanana)
-- [SK Telecom A.X 4.0 Light model card](https://huggingface.co/skt/A.X-4.0-Light)
-- [Google Gemma 4 model page](https://deepmind.google/models/gemma/gemma-4/)
-- [Google Gemma 4 launch blog](https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/)
-- [Qwen3-Next 80B A3B model card](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct)
-- [Qwen3-Coder repository](https://github.com/QwenLM/Qwen3-Coder)
-- [Qwen3.5 model card](https://huggingface.co/Qwen/Qwen3.5-397B-A17B)
-- [Qwen3.6 repository](https://github.com/QwenLM/Qwen3.6)
-- [Mistral Small 3.2 model card](https://docs.mistral.ai/models/model-cards/mistral-small-3-2-25-06)
-- [Mistral Small 4 model card](https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03)
-- [Mistral Medium 3.5 model card](https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04)
-- [Mistral Large 3 model card](https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12)
-- [Ministral 3 14B model card](https://docs.mistral.ai/models/model-cards/ministral-3-14b-25-12)
-- [Magistral Small 1.2 model card](https://huggingface.co/mistralai/Magistral-Small-2509)
-- [IBM Granite 4.1 3B model card](https://huggingface.co/ibm-granite/granite-4.1-3b)
-- [GLM-4.5 overview](https://docs.z.ai/guides/llm/glm-4.5)
-- [GLM-5.2 release note](https://docs.bigmodel.cn/cn/update/new-releases)
-- [Kimi K2 model card](https://huggingface.co/moonshotai/Kimi-K2-Instruct)
-- [Kimi K2 Thinking release note](https://platform.kimi.ai/blog/posts/Kimi_API_Newsletter)
-- [Liquid Foundation Models release](https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models)
-- [SK Telecom A.X LLM series](https://sktelecom.github.io/en/project/axllm/)
-- [A.X 4.0 model card](https://huggingface.co/skt/A.X-4.0)
-- [EXAONE 4.0 1.2B model card](https://huggingface.co/OpenLLM-Korea/EXAONE-4.0-1.2B)
-- [EXAONE 4.0 32B model card](https://huggingface.co/OpenLLM-Korea/EXAONE-4.0-32B)
-- [HyperCLOVAX SEED Think 14B model card](https://huggingface.co/naver-hyperclovax/HyperCLOVAX-SEED-Think-14B)
-- [Kanana 1.5 8B Instruct model card](https://huggingface.co/OpenLLM-Korea/kanana-1.5-8b-instruct-2505)
-- [Trillion 7B Preview model card](https://huggingface.co/trillionlabs/Trillion-7B-preview)
-- [Llama-3-Korean-Bllossom-70B model card](https://huggingface.co/Bllossom/llama-3-Korean-Bllossom-70B)
-- [BAAI/bge-m3 model card](https://huggingface.co/BAAI/bge-m3)
-- [Qwen3 Embedding model cards](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B)
-- [Qwen3 Reranker model cards](https://huggingface.co/Qwen/Qwen3-Reranker-0.6B)
-- [MTEB 공식 벤치마크 논문](https://aclanthology.org/2023.eacl-main.148/)
-- [BAAI/bge-reranker-v2-m3 model card](https://huggingface.co/BAAI/bge-reranker-v2-m3)
-- [BAAI/bge-reranker-v2.5-gemma2-lightweight model card](https://huggingface.co/BAAI/bge-reranker-v2.5-gemma2-lightweight)
-- [BAAI/bge-multilingual-gemma2 model card](https://huggingface.co/BAAI/bge-multilingual-gemma2)
-- [BAAI/bge-code-v1 model card](https://huggingface.co/BAAI/bge-code-v1)
-- [Google EmbeddingGemma model card](https://huggingface.co/google/embeddinggemma-300m)
-- [Jina Embeddings v4 model card](https://huggingface.co/jinaai/jina-embeddings-v4)
-- [Alibaba-NLP/gte-multilingual-base model card](https://huggingface.co/Alibaba-NLP/gte-multilingual-base)
-- [Alibaba-NLP/gte-multilingual-reranker-base model card](https://huggingface.co/Alibaba-NLP/gte-multilingual-reranker-base)
-- [Alibaba-NLP/gte-Qwen2-1.5B-instruct model card](https://huggingface.co/Alibaba-NLP/gte-Qwen2-1.5B-instruct)
-- [Alibaba-NLP/gte-Qwen2-7B-instruct model card](https://huggingface.co/Alibaba-NLP/gte-Qwen2-7B-instruct)
-- [Alibaba-NLP/gte-reranker-modernbert-base model card](https://huggingface.co/Alibaba-NLP/gte-reranker-modernbert-base)
-- [jina-embeddings-v5-text-small model card](https://huggingface.co/jinaai/jina-embeddings-v5-text-small)
-- [intfloat/e5-mistral-7b-instruct model card](https://huggingface.co/intfloat/e5-mistral-7b-instruct)
-- [Salesforce/SFR-Embedding-2_R model card](https://huggingface.co/Salesforce/SFR-Embedding-2_R)
-- [IBM Granite Embedding models](https://www.ibm.com/granite/docs/models/embedding)
-- [IBM Granite reranker R2 model card](https://huggingface.co/ibm-granite/granite-embedding-reranker-english-r2)
-- [nlpai-lab/KURE-v1 model card](https://huggingface.co/nlpai-lab/KURE-v1)
-- [dragonkue/BGE-m3-ko model card](https://huggingface.co/dragonkue/BGE-m3-ko)
-- [dragonkue/bge-reranker-v2-m3-ko model card](https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko)
-- [mixedbread rerank v2 release note](https://www.mixedbread.com/blog/mxbai-rerank-v2)
-- [maidalun1020/bce-reranker-base_v1 model card](https://huggingface.co/maidalun1020/bce-reranker-base_v1)
-- [Hugging Face Text Embeddings Inference docs](https://huggingface.co/docs/text-embeddings-inference/main/en/index)
-- [Hugging Face Hub model info API](https://huggingface.co/docs/huggingface_hub/main/en/package_reference/hf_api#huggingface_hub.HfApi.model_info)
-- [Sentence Transformers inference efficiency docs](https://www.sbert.net/docs/sentence_transformer/usage/efficiency.html)
-- [PaddleOCR home and PP-OCRv6 release notes](https://www.paddleocr.ai/main/en/index.html)
-- [PaddleOCR PP-OCRv6 documentation](https://www.paddleocr.ai/latest/en/version3.x/algorithm/PP-OCRv6/PP-OCRv6.html)
-- [PaddleOCR-VL-1.6 documentation](https://www.paddleocr.ai/main/en/version3.x/algorithm/PaddleOCR-VL/PaddleOCR-VL-1.6.html)
-- [PaddleOCR-VL-1.6 model card](https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6)
-- [OmniDocBench leaderboard](https://github.com/opendatalab/OmniDocBench)
-- [MinerU2.5-Pro-2604-1.2B model card](https://huggingface.co/opendatalab/MinerU2.5-Pro-2604-1.2B)
-- [DeepSeek-OCR-2 model card](https://huggingface.co/deepseek-ai/DeepSeek-OCR-2)
-- [dots.ocr model card](https://huggingface.co/rednote-hilab/dots.ocr)
-- [dots.mocr model card](https://huggingface.co/rednote-hilab/dots.mocr)
-- [olmOCR-2-7B-1025 model card](https://huggingface.co/allenai/olmOCR-2-7B-1025)
-- [Qwen3-VL-2B-Instruct model card](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct)
-- [DeepSeek-VL2 repository](https://github.com/deepseek-ai/DeepSeek-VL2)
-- [DeepSeek-VL2 Small model card](https://huggingface.co/deepseek-ai/deepseek-vl2-small)
-- [Qwen2.5-VL-7B-Instruct model card](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct)
-- [Qwen2-VL-2B-Instruct model card](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)
-- [Llama 3.2 11B Vision model card](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct)
-- [Pixtral 12B model card](https://huggingface.co/mistralai/Pixtral-12B-Base-2409)
-- [Pixtral Large model card](https://huggingface.co/mistralai/Pixtral-Large-Instruct-2411)
-- [LLaVA-OneVision Qwen2 7B model card](https://huggingface.co/llava-hf/llava-onevision-qwen2-7b-ov-hf)
-- [LLaVA-OneVision 공식 논문](https://arxiv.org/abs/2408.03326)
-- [Molmo-7B-D model card](https://huggingface.co/allenai/Molmo-7B-D-0924)
-- [SmolVLM2 model release](https://huggingface.co/blog/smolvlm2)
-- [Phi-4 multimodal model card](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
-- [Aya Vision 8B model card](https://huggingface.co/CohereLabs/aya-vision-8b)
-- [Aya Vision 공식 기술 블로그](https://huggingface.co/blog/aya-vision)
-- [GLM-4.1V-9B-Thinking model card](https://huggingface.co/zai-org/GLM-4.1V-9B-Thinking)
-- [GLM-4.1V-Thinking 공식 기술 보고서](https://arxiv.org/abs/2507.01006)
-- [MiniCPM-V-4.6 model card](https://huggingface.co/openbmb/MiniCPM-V-4.6)
-- [InternVL3.5-4B model card](https://huggingface.co/OpenGVLab/InternVL3_5-4B)
-- [InternVL3.5 공식 논문](https://arxiv.org/abs/2508.18265)
-- [Kimi-VL-A3B-Instruct model card](https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct)
-- [PaddleOCR PP-StructureV3 benchmark](https://paddlepaddle.github.io/PaddleOCR/v3.0.1/en/version3.x/algorithm/PP-StructureV3/PP-StructureV3.html)
-- [GOT-OCR2 Transformers docs](https://huggingface.co/docs/transformers/model_doc/got_ocr2)
-- [GOT-OCR2 공식 논문](https://arxiv.org/abs/2409.01704)
-- [Surya OCR README](https://github.com/datalab-to/surya)
+- [docs/methodology.md](./docs/methodology.md) — 계산 수식 전체 (Notation, 메모리 모델, 등급, 처리량 모델, 임베딩/리랭커/OCR)
+- [docs/accuracy-and-limits.md](./docs/accuracy-and-limits.md) — 정확도, 한계, 공개 품질 점수 기준
+- [docs/data-sources.md](./docs/data-sources.md) — 모델·GPU 메타데이터 출처 목록
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — 모델/GPU 데이터 추가 형식, PR 기준
+- [CHANGELOG.md](./CHANGELOG.md) — 버전별 변경 이력
 
 ## 기여
 
@@ -850,7 +146,7 @@ npm run check
 - GPU 추가: [GPU request](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml)
 - 벤치마크 제보: [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)
 
-자세한 방식은 [CONTRIBUTING.md](./CONTRIBUTING.md)를 참고하세요.
+자세한 데이터 형식은 [CONTRIBUTING.md](./CONTRIBUTING.md)를 참고하세요.
 
 ## 저장소 라이선스
 
