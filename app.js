@@ -3648,6 +3648,50 @@ function renderExternalLink(label, href) {
   return `<a href="${escapeAttr(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`;
 }
 
+function estimateBenchmarkRow(model, row, preset) {
+  const baseHardware = getHardware();
+  const gpu = { preset, count: 1, capacityGb: preset.vram * 0.92 };
+  const hardware = buildGpuPlacementHardware(baseHardware, gpu, gpu.capacityGb);
+  hardware.context = Number(row.context) || baseHardware.context;
+  hardware.concurrency = Number(row.concurrency) || 1;
+  hardware.outputTokens = Number(row.outputTokens) || baseHardware.outputTokens;
+  hardware.runtime = row.runtime === "llama.cpp" ? "llamacpp" : (row.runtime || baseHardware.runtime);
+
+  if (!model.type || model.type === "generative") {
+    const quant = QUANTS.find((q) => q.label === row.quantization || q.id === row.quantization);
+    if (!quant) return null;
+    return normalizeGenerativeEstimate(estimateModel(model, quant.id, hardware));
+  }
+  if (model.type === "embedding") return estimateEncoderModel(model, hardware, PLACEMENT_DEFAULT_WORKLOADS.embedding);
+  if (model.type === "reranker") return estimateRerankerModel(model, hardware, PLACEMENT_DEFAULT_WORKLOADS.reranker);
+  if (isVisionModel(model)) return estimateOcrModel(model, hardware, PLACEMENT_DEFAULT_WORKLOADS.vision);
+  return null;
+}
+
+// 실측 행마다 같은 조건으로 추정치를 다시 계산해 |오차|를 모으고 평균을 냅니다.
+// 실측이 없으면(현재 0건) null을 돌려주고, 있으면 실측 대시보드 문구에 반영됩니다.
+function computeBenchmarkErrorStats() {
+  const samples = [];
+  for (const row of BENCHMARKS) {
+    const metric = getBenchmarkNumericValue(row);
+    if (!metric || !row.gpuId) continue;
+    const model = (row.modelKey && getModelByKey(row.modelKey)) || getAllModels().find((item) => item.name === row.modelName);
+    if (!model) continue;
+    const preset = GPU_PRESETS.find((item) => item.id === row.gpuId);
+    if (!preset) continue;
+    const estimate = estimateBenchmarkRow(model, row, preset);
+    if (!estimate || !estimate.speed) continue;
+    samples.push({ errorPct: ((estimate.speed - metric.value) / metric.value) * 100, gpuId: row.gpuId });
+  }
+  if (!samples.length) return null;
+  const avgAbsErrorPct = samples.reduce((sum, sample) => sum + Math.abs(sample.errorPct), 0) / samples.length;
+  return {
+    avgAbsErrorPct,
+    sampleCount: samples.length,
+    gpuCoverage: new Set(samples.map((sample) => sample.gpuId)).size,
+  };
+}
+
 function renderBenchmarkSheet() {
   const table = $("benchmarkTable");
   if (!table) return;
@@ -3655,8 +3699,9 @@ function renderBenchmarkSheet() {
   const qualityRows = collectQualityBenchmarks();
   const referenceRows = collectReferenceBenchmarks();
   const rows = [...qualityRows, ...measuredRows, ...referenceRows];
+  const errorStats = computeBenchmarkErrorStats();
 
-  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 품질 지표 ${qualityRows.length}개 · 실측 ${measuredRows.length}개 · 참고 기준 ${referenceRows.length}개`;
+  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 품질 지표 ${qualityRows.length}개 · 실측 ${measuredRows.length}개 · 참고 기준 ${referenceRows.length}개${errorStats ? ` · 평균 추정 오차 ${errorStats.avgAbsErrorPct.toFixed(1)}% (GPU ${errorStats.gpuCoverage}종 · ${errorStats.sampleCount}건 기준)` : ""}`;
 
   if (!rows.length) {
     table.innerHTML = `

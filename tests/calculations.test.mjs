@@ -39,6 +39,7 @@ const DATA_FILES = [
 const BRIDGED_NAMES = [
   "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS",
   "QUANTS", "KV_PRECISION_META", "GPU_PRESETS", "ENCODER_PRECISIONS", "OCR_PRECISIONS",
+  "BENCHMARKS",
 ];
 
 function loadApp(url = "https://example.com/") {
@@ -206,5 +207,54 @@ describe("URL state save / restore", () => {
     assert.equal(hardware.context, 32768);
     assert.equal(hardware.concurrency, 4);
     assert.equal(hardware.runtime, "vllm");
+  });
+});
+
+describe("benchmark estimate-error aggregate stats", () => {
+  test("returns null when there are no measured rows (current live state)", () => {
+    const stats = win.eval("computeBenchmarkErrorStats()");
+    assert.equal(stats, null);
+  });
+
+  test("averages |error%| across measured rows once they exist", () => {
+    const fresh = loadApp();
+    const model = fresh.eval(`GENERATIVE_MODELS.find((m) => m.params < 10 && m.params > 3)`);
+    const gpuId = "rtx4090-24";
+    fresh.eval(`
+      $("gpuPreset").value = "${gpuId}";
+      applyPreset("${gpuId}");
+    `);
+    const estimate = fresh.eval(`estimateModel(GENERATIVE_MODELS.find((m) => m.name === ${JSON.stringify(model.name)}), "auto", getHardware())`);
+
+    // one row 10% below the estimate, one row 10% above -> average |error| should land near 10%
+    fresh.eval(`
+      BENCHMARKS.push({
+        modelName: ${JSON.stringify(model.name)},
+        gpu: "${gpuId}",
+        gpuId: "${gpuId}",
+        workload: "generative",
+        runtime: "llamacpp",
+        quantization: ${JSON.stringify(estimate.quant.label)},
+        tokensPerSecond: ${estimate.speed} * 0.9,
+        sourceUrl: "https://example.com/1",
+      });
+      BENCHMARKS.push({
+        modelName: ${JSON.stringify(model.name)},
+        gpu: "${gpuId}",
+        gpuId: "${gpuId}",
+        workload: "generative",
+        runtime: "llamacpp",
+        quantization: ${JSON.stringify(estimate.quant.label)},
+        tokensPerSecond: ${estimate.speed} * 1.1,
+        sourceUrl: "https://example.com/2",
+      });
+    `);
+
+    const stats = fresh.eval("computeBenchmarkErrorStats()");
+    assert.ok(stats, "expected non-null stats once rows exist");
+    assert.equal(stats.sampleCount, 2);
+    assert.equal(stats.gpuCoverage, 1);
+    // 0.9x -> ~+11.1% abs error, 1.1x -> ~-9.1% abs error, average ~10.1%
+    assert.ok(stats.avgAbsErrorPct > 8 && stats.avgAbsErrorPct < 13, `expected avg abs error near 10%, got ${stats.avgAbsErrorPct}`);
   });
 });
