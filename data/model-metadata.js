@@ -244,16 +244,32 @@ window.LLM_GPU_CHECKER_DATA.modelMetadata = {
   ),
 
   "Mistral 7B Instruct": meta("2023-09-27", MODEL_METADATA_SOURCES.mistral7b),
-  "Mixtral 8x7B Instruct": meta("2023-12-11", MODEL_METADATA_SOURCES.mixtral),
+  "Mixtral 8x7B Instruct": meta(
+    "2023-12-11",
+    MODEL_METADATA_SOURCES.mixtral,
+    quality("MT-Bench 8.30", "MT-Bench", 8.3, MODEL_METADATA_SOURCES.mixtral, "공식 발표"),
+  ),
   "Mistral Nemo 12B Instruct": meta("2024-07-18", MODEL_METADATA_SOURCES.mistralNemo),
-  "Mistral Large 2 123B": meta("2024-07-24", MODEL_METADATA_SOURCES.mistralLarge2),
+  "Mistral Large 2 123B": meta(
+    "2024-07-24",
+    MODEL_METADATA_SOURCES.mistralLarge2,
+    quality("MMLU 84.0", "MMLU (pretrained)", 84, MODEL_METADATA_SOURCES.mistralLarge2, "공식 발표"),
+  ),
   "Mistral Small 3.1 24B": meta(
     "2025-03-17",
     MODEL_METADATA_SOURCES.mistralSmall31News,
     quality("MMLU-Pro 66.76", "MMLU Pro (5-shot CoT)", 66.76, MODEL_METADATA_SOURCES.mistralSmall31),
   ),
-  "Mistral Small 3.2 24B": meta("2025-06-20", MODEL_METADATA_SOURCES.mistralChangelog),
-  "Devstral Small 24B": meta("2025-05-21", MODEL_METADATA_SOURCES.mistralChangelog),
+  "Mistral Small 3.2 24B": meta(
+    "2025-06-20",
+    MODEL_METADATA_SOURCES.mistralChangelog,
+    quality("MMLU 80.50", "MMLU", 80.5, "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506", "공식 카드"),
+  ),
+  "Devstral Small 24B": meta(
+    "2025-05-21",
+    MODEL_METADATA_SOURCES.mistralChangelog,
+    quality("SWE-bench 46.8", "SWE-bench Verified", 46.8, "https://huggingface.co/mistralai/Devstral-Small-2505", "공식 카드"),
+  ),
 
   "EXAONE 3.5 2.4B Instruct": meta(
     "2024-12-09",
@@ -941,14 +957,17 @@ mergeModelMetadata({
   "GLM-4 9B Chat": {
     releaseDate: "2024-06-05",
     sourceUrl: "https://github.com/zai-org/GLM-4",
+    qualityBenchmark: quality("MMLU 72.4", "MMLU", 72.4, "https://huggingface.co/THUDM/glm-4-9b-chat", "공식 발표"),
   },
   "Yi 1.5 9B Chat": {
     releaseDate: "2024-05",
     sourceUrl: "https://huggingface.co/01-ai/Yi-1.5-9B",
+    qualityBenchmark: quality("MMLU-Pro 45.95", "MMLU-Pro (Open LLM Leaderboard 연동)", 45.95, "https://huggingface.co/01-ai/Yi-1.5-9B-Chat", "공식 카드"),
   },
   "Yi 1.5 34B Chat": {
     releaseDate: "2024-05",
     sourceUrl: "https://huggingface.co/01-ai/Yi-1.5-9B",
+    qualityBenchmark: quality("MMLU-Pro 52.29", "MMLU-Pro (Open LLM Leaderboard 연동)", 52.29, "https://huggingface.co/01-ai/Yi-1.5-34B-Chat", "공식 카드"),
   },
   "EEVE Korean 10.8B": {
     releaseDate: "2024-02-22",
@@ -998,10 +1017,12 @@ mergeModelMetadata({
   "Devstral 2 123B": {
     releaseDate: "2025-12-09",
     sourceUrl: "https://docs.mistral.ai/resources/changelogs",
+    qualityBenchmark: quality("SWE-bench 72.2", "SWE-bench Verified", 72.2, "https://mistral.ai/news/devstral-2-vibe-cli/", "공식 발표"),
   },
   "DeepSeek V3.2": {
     releaseDate: "2025-12-01",
     sourceUrl: "https://api-docs.deepseek.com/news/news251201",
+    qualityBenchmark: quality("GPQA-D 82.4", "GPQA Diamond", 82.4, "https://huggingface.co/deepseek-ai/DeepSeek-V3.2", "공식 카드"),
   },
   "Kimi K2": {
     releaseDate: "2025-07-11",
@@ -1011,18 +1032,22 @@ mergeModelMetadata({
   "Kimi K2 Thinking": {
     releaseDate: "2025-11-08",
     sourceUrl: "https://platform.kimi.ai/blog/posts/Kimi_API_Newsletter",
+    qualityBenchmark: quality("MMLU-Pro 84.6", "MMLU-Pro (no tools)", 84.6, "https://huggingface.co/moonshotai/Kimi-K2-Thinking", "공식 카드"),
   },
   "GLM-5.2": {
     releaseDate: "2026-06-16",
     sourceUrl: "https://docs.bigmodel.cn/cn/update/new-releases",
+    qualityBenchmark: quality("GPQA-D 91.2", "GPQA Diamond", 91.2, "https://z.ai/blog/glm-5.2", "공식 발표"),
   },
   "GPT-OSS 20B": {
     releaseDate: "2025-08-05",
     sourceUrl: "https://openai.com/index/introducing-gpt-oss/",
+    qualityBenchmark: quality("MMLU 85.3", "MMLU (high reasoning effort)", 85.3, "https://arxiv.org/abs/2508.10925", "공식 모델 카드"),
   },
   "GPT-OSS 120B": {
     releaseDate: "2025-08-05",
     sourceUrl: "https://openai.com/index/introducing-gpt-oss/",
+    qualityBenchmark: quality("MMLU 90.0", "MMLU (high reasoning effort)", 90, "https://arxiv.org/abs/2508.10925", "공식 모델 카드"),
   },
   "Llama 4 Scout 17B Active": {
     releaseDate: "2025-04-05",
@@ -1047,6 +1072,7 @@ mergeModelMetadata({
   "Gemma 4 12B IT Thinking": {
     releaseDate: "2026-06-03",
     sourceUrl: "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-gemma-4-12B/",
+    qualityBenchmark: quality("MMLU-Pro 77.2", "MMLU-Pro", 77.2, "https://huggingface.co/google/gemma-4-12B-it", "공식 카드"),
   },
   "Gemma 4 26B A4B IT Thinking": {
     releaseDate: "2026-03-31",
@@ -1066,26 +1092,32 @@ mergeModelMetadata({
   "Qwen3.5 27B": {
     releaseDate: "2026-02-24",
     sourceUrl: "https://github.com/QwenLM/Qwen3.6/blob/main/README.md",
+    qualityBenchmark: quality("MMLU-Pro 86.1", "MMLU-Pro", 86.1, "https://huggingface.co/Qwen/Qwen3.5-35B-A3B", "공식 비교표"),
   },
   "Qwen3.5 35B A3B": {
     releaseDate: "2026-02-24",
     sourceUrl: "https://github.com/QwenLM/Qwen3.6/blob/main/README.md",
+    qualityBenchmark: quality("MMLU-Pro 85.3", "MMLU-Pro", 85.3, "https://huggingface.co/Qwen/Qwen3.5-35B-A3B", "공식 카드"),
   },
   "Qwen3.5 122B A10B": {
     releaseDate: "2026-02-24",
     sourceUrl: "https://github.com/QwenLM/Qwen3.6/blob/main/README.md",
+    qualityBenchmark: quality("MMLU-Pro 86.7", "MMLU-Pro", 86.7, "https://huggingface.co/Qwen/Qwen3.5-35B-A3B", "공식 비교표"),
   },
   "Qwen3.5 397B A17B": {
     releaseDate: "2026-02-16",
     sourceUrl: "https://home.alibabagroup.com/en-US/document-1960233590314762240",
+    qualityBenchmark: quality("MMLU-Pro 87.8", "MMLU-Pro", 87.8, "https://huggingface.co/Qwen/Qwen3.6-27B", "공식 비교표"),
   },
   "Qwen3.6 27B": {
     releaseDate: "2026-04-22",
     sourceUrl: "https://github.com/QwenLM/Qwen3.6/blob/main/README.md",
+    qualityBenchmark: quality("MMLU-Pro 86.2", "MMLU-Pro", 86.2, "https://huggingface.co/Qwen/Qwen3.6-27B", "공식 카드"),
   },
   "Qwen3.6 35B A3B": {
     releaseDate: "2026-04-16",
     sourceUrl: "https://github.com/QwenLM/Qwen3.6/blob/main/README.md",
+    qualityBenchmark: quality("MMLU-Pro 85.2", "MMLU-Pro", 85.2, "https://huggingface.co/Qwen/Qwen3.6-35B-A3B", "공식 카드"),
   },
   "Mistral Small 4 119B A6B": {
     releaseDate: "2026-03-16",
@@ -1094,6 +1126,7 @@ mergeModelMetadata({
   "Mistral Medium 3.5 128B": {
     releaseDate: "2026-04-29",
     sourceUrl: "https://legal.mistral.ai/ai-governance/models/mistral-medium-3",
+    qualityBenchmark: quality("SWE-bench 77.6", "SWE-bench Verified", 77.6, "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5", "공식 발표"),
   },
   "Mistral Large 3 675B A41B": {
     releaseDate: "2025-12-02",
@@ -1102,26 +1135,32 @@ mergeModelMetadata({
   "Ministral 3 3B": {
     releaseDate: "2025-12-02",
     sourceUrl: "https://legal.mistral.ai/ai-governance/models/ministral-3-3b",
+    qualityBenchmark: quality("MATH 83.0", "MATH maj@1 (Instruct)", 83, "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512", "공식 카드"),
   },
   "Ministral 3 8B": {
     releaseDate: "2025-12-02",
     sourceUrl: "https://docs.mistral.ai/resources/changelogs",
+    qualityBenchmark: quality("MATH 87.6", "MATH maj@1 (Instruct)", 87.6, "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512", "공식 카드"),
   },
   "Ministral 3 14B": {
     releaseDate: "2025-12-02",
     sourceUrl: "https://docs.mistral.ai/resources/changelogs",
+    qualityBenchmark: quality("MATH 90.4", "MATH maj@1 (Instruct)", 90.4, "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512", "공식 카드"),
   },
   "Magistral Small 1.2 24B": {
     releaseDate: "2025-09-18",
     sourceUrl: "https://docs.mistral.ai/models/model-cards/magistral-small-1-2-25-09",
+    qualityBenchmark: quality("AIME24 86.14", "AIME 2024 pass@1", 86.14, "https://huggingface.co/mistralai/Magistral-Small-2509", "공식 카드"),
   },
   "Granite 4.1 3B": {
     releaseDate: "2026-04-29",
     sourceUrl: "https://huggingface.co/ibm-granite/granite-4.1-3b",
+    qualityBenchmark: quality("MMLU 67.02", "MMLU (5-shot)", 67.02, "https://huggingface.co/ibm-granite/granite-4.1-3b", "공식 카드"),
   },
   "Granite 4.1 8B": {
     releaseDate: "2026-04-29",
     sourceUrl: "https://research.ibm.com/blog/granite-4-1-ai-foundation-models",
+    qualityBenchmark: quality("MMLU 73.84", "MMLU (5-shot)", 73.84, "https://huggingface.co/ibm-granite/granite-4.1-8b", "공식 카드"),
   },
   "GLM-4.5 Air 106B A12B": {
     releaseDate: "2025-07-28",
@@ -1131,17 +1170,21 @@ mergeModelMetadata({
   "LLaVA 1.6 Mistral 7B": {
     releaseDate: "2024-01-30",
     sourceUrl: "https://huggingface.co/llava-hf/llava-v1.6-mistral-7b-hf",
+    qualityBenchmark: quality("MMMU 35.3", "MMMU (val)", 35.3, "https://llava-vl.github.io/blog/2024-01-30-llava-next/", "공식 발표"),
   },
   "LLaVA-NeXT 34B": {
     releaseDate: "2024-01-30",
     sourceUrl: "https://huggingface.co/llava-hf/llava-v1.6-34b-hf",
+    qualityBenchmark: quality("MMMU 51.1", "MMMU (val)", 51.1, "https://llava-vl.github.io/blog/2024-01-30-llava-next/", "공식 발표"),
   },
   "Liquid LFM 3B": {
     releaseDate: "2024-09-30",
     sourceUrl: "https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models",
+    qualityBenchmark: quality("MMLU 66.16", "MMLU (5-shot)", 66.16, "https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models", "공식 발표"),
   },
   "Liquid LFM 40B": {
     releaseDate: "2024-09-30",
     sourceUrl: "https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models",
+    qualityBenchmark: quality("MMLU 78.76", "MMLU (5-shot, MoE)", 78.76, "https://www.liquid.ai/blog/liquid-foundation-models-our-first-series-of-generative-ai-models", "공식 발표"),
   },
 });
