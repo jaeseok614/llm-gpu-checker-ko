@@ -582,6 +582,7 @@ mergeModelMetadata({
   "PP-StructureV3 Basic": {
     releaseDate: "2025-06-26",
     sourceUrl: "https://paddlepaddle.github.io/PaddleOCR/v3.0.1/en/version3.x/algorithm/PP-StructureV3/PP-StructureV3.html",
+    qualityBenchmark: quality("OmniDocBench Edit 0.145", "OmniDocBench OverallEdit(EN, 낮을수록 우수)", 0.145, "https://github.com/PaddlePaddle/PaddleOCR/blob/main/docs/version3.x/algorithm/PP-StructureV3/PP-StructureV3.md", "공식 발표"),
   },
   "GOT-OCR2.0": {
     releaseDate: "2024-09-03",
@@ -590,10 +591,12 @@ mergeModelMetadata({
   "Surya OCR 2": {
     releaseDate: "2025-02",
     sourceUrl: "https://github.com/datalab-to/surya",
+    qualityBenchmark: quality("olmOCR-bench 83.3", "olmOCR-bench", 83.3, "https://huggingface.co/datalab-to/surya-ocr-2", "공식 발표"),
   },
   "deepseek-ai/deepseek-vl2": {
     releaseDate: "2024-12-13",
     sourceUrl: "https://github.com/deepseek-ai/DeepSeek-VL2",
+    qualityBenchmark: quality("OCRBench 811", "OCRBench", 811, "https://arxiv.org/pdf/2412.10302", "공식 논문"),
   },
   "cross-encoder/mmarco-mMiniLMv2-L6-H384-v1": cardDate("2022-06-01"),
 });
@@ -990,36 +993,102 @@ mergeModelMetadata({
     qualityBenchmark: quality("NDCG@10 69.84", "TREC DL 2019 NDCG@10", 69.84, "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2", "공식 발표"),
   },
 
-  "rednote-hilab/dots.mocr": cardDate("2026-03-19"),
-  "allenai/olmOCR-2-7B-1025": cardDate("2025-10-06"),
-  "Qwen/Qwen3-VL-2B-Instruct": cardDate("2025-10-19"),
-  "Qwen/Qwen3-VL-8B-Instruct": cardDate("2025-10-11"),
-  "deepseek-ai/deepseek-vl2-tiny": cardDate("2024-12-13"),
-  "deepseek-ai/deepseek-vl2-small": cardDate("2024-12-13"),
-  "deepseek-ai/deepseek-vl-7b-chat": cardDate("2024-03-07"),
-  "Qwen/Qwen2.5-VL-3B-Instruct": cardDate("2025-01-26"),
-  "Qwen/Qwen2.5-VL-7B-Instruct": cardDate("2025-01-26"),
-  "Qwen/Qwen2-VL-2B-Instruct": cardDate("2024-08-28"),
-  "Qwen/Qwen2-VL-7B-Instruct": cardDate("2024-08-28"),
-  "meta-llama/Llama-3.2-11B-Vision-Instruct": cardDate("2024-09-18"),
-  "meta-llama/Llama-3.2-90B-Vision-Instruct": cardDate("2024-09-19"),
-  "mistralai/Pixtral-12B-Base-2409": cardDate("2024-10-17"),
-  "mistralai/Pixtral-Large-Instruct-2411": cardDate("2024-11-14"),
+  "rednote-hilab/dots.mocr": {
+    ...cardDate("2026-03-19"),
+    qualityBenchmark: quality("olmOCR-bench 83.9", "olmOCR-bench Overall", 83.9, "https://huggingface.co/rednote-hilab/dots.mocr", "공식 발표"),
+  },
+  "allenai/olmOCR-2-7B-1025": {
+    ...cardDate("2025-10-06"),
+    qualityBenchmark: quality("olmOCR-bench 82.3", "olmOCR-bench Overall", 82.3, "https://huggingface.co/allenai/olmOCR-2-7B-1025", "공식 발표"),
+  },
+  "Qwen/Qwen3-VL-2B-Instruct": {
+    ...cardDate("2025-10-19"),
+    qualityBenchmark: quality("DocVQA 93.3", "DocVQA (test)", 93.3, "https://arxiv.org/pdf/2511.21631", "공식 논문"),
+  },
+  "Qwen/Qwen3-VL-8B-Instruct": {
+    ...cardDate("2025-10-11"),
+    qualityBenchmark: quality("OCRBench 896", "OCRBench", 896, "https://arxiv.org/pdf/2511.21631", "공식 논문"),
+  },
+  "deepseek-ai/deepseek-vl2-tiny": {
+    ...cardDate("2024-12-13"),
+    qualityBenchmark: quality("OCRBench 809", "OCRBench", 809, "https://arxiv.org/pdf/2412.10302", "공식 논문"),
+  },
+  "deepseek-ai/deepseek-vl2-small": {
+    ...cardDate("2024-12-13"),
+    qualityBenchmark: quality("OCRBench 834", "OCRBench", 834, "https://arxiv.org/pdf/2412.10302", "공식 논문"),
+  },
+  "deepseek-ai/deepseek-vl-7b-chat": {
+    ...cardDate("2024-03-07"),
+    qualityBenchmark: quality("OCRBench 456", "OCRBench", 456, "https://arxiv.org/pdf/2412.10302", "공식 논문(DeepSeek-VL2 비교표)"),
+  },
+  "Qwen/Qwen2.5-VL-3B-Instruct": {
+    ...cardDate("2025-01-26"),
+    qualityBenchmark: quality("DocVQA 93.9", "DocVQA (test)", 93.9, "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct", "공식 발표"),
+  },
+  "Qwen/Qwen2.5-VL-7B-Instruct": {
+    ...cardDate("2025-01-26"),
+    qualityBenchmark: quality("OCRBench 864", "OCRBench", 864, "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct", "공식 발표"),
+  },
+  "Qwen/Qwen2-VL-2B-Instruct": {
+    ...cardDate("2024-08-28"),
+    qualityBenchmark: quality("OCRBench 794", "OCRBench", 794, "https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct", "공식 발표"),
+  },
+  "Qwen/Qwen2-VL-7B-Instruct": {
+    ...cardDate("2024-08-28"),
+    qualityBenchmark: quality("OCRBench 845", "OCRBench", 845, "https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct", "공식 발표"),
+  },
+  "meta-llama/Llama-3.2-11B-Vision-Instruct": {
+    ...cardDate("2024-09-18"),
+    qualityBenchmark: quality("DocVQA(ANLS) 88.4", "DocVQA (test, ANLS)", 88.4, "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct", "공식 발표"),
+  },
+  "meta-llama/Llama-3.2-90B-Vision-Instruct": {
+    ...cardDate("2024-09-19"),
+    qualityBenchmark: quality("DocVQA(ANLS) 90.1", "DocVQA (test, ANLS)", 90.1, "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct", "공식 비교표"),
+  },
+  "mistralai/Pixtral-12B-Base-2409": {
+    ...cardDate("2024-10-17"),
+    qualityBenchmark: quality("DocVQA(ANLS) 90.7", "DocVQA (ANLS)", 90.7, "https://mistral.ai/news/pixtral-12b/", "공식 발표"),
+  },
+  "mistralai/Pixtral-Large-Instruct-2411": {
+    ...cardDate("2024-11-14"),
+    qualityBenchmark: quality("MathVista 69.4", "MathVista (CoT)", 69.4, "https://mistral.ai/news/pixtral-large/", "공식 발표"),
+  },
   "llava-hf/llava-onevision-qwen2-7b-ov-hf": cardDate("2024-08-13"),
   "llava-hf/llava-onevision-qwen2-72b-ov-hf": cardDate("2024-08-13"),
-  "allenai/Molmo-7B-D-0924": cardDate("2024-09-25"),
-  "allenai/Molmo-72B-0924": cardDate("2024-09-25"),
-  "HuggingFaceTB/SmolVLM2-2.2B-Instruct": cardDate("2025-02-08"),
+  "allenai/Molmo-7B-D-0924": {
+    ...cardDate("2024-09-25"),
+    qualityBenchmark: quality("Avg 77.3", "학술 벤치마크 11종 평균", 77.3, "https://huggingface.co/allenai/Molmo-7B-D-0924", "공식 발표"),
+  },
+  "allenai/Molmo-72B-0924": {
+    ...cardDate("2024-09-25"),
+    qualityBenchmark: quality("Avg 81.2", "학술 벤치마크 11종 평균", 81.2, "https://huggingface.co/allenai/Molmo-72B-0924", "공식 발표"),
+  },
+  "HuggingFaceTB/SmolVLM2-2.2B-Instruct": {
+    ...cardDate("2025-02-08"),
+    qualityBenchmark: quality("DocVQA 79.98", "DocVQA (val)", 79.98, "https://huggingface.co/HuggingFaceTB/SmolVLM2-2.2B-Instruct", "공식 발표"),
+  },
   "HuggingFaceTB/SmolVLM2-500M-Video-Instruct": cardDate("2025-02-11"),
-  "microsoft/Phi-4-multimodal-instruct": cardDate("2025-02-24"),
+  "microsoft/Phi-4-multimodal-instruct": {
+    ...cardDate("2025-02-24"),
+    qualityBenchmark: quality("DocVQA 93.2", "DocVQA", 93.2, "https://huggingface.co/microsoft/Phi-4-multimodal-instruct", "공식 발표"),
+  },
   "CohereLabs/aya-vision-8b": cardDate("2025-03-02"),
   "CohereLabs/aya-vision-32b": cardDate("2025-03-02"),
   "zai-org/GLM-4.1V-9B-Thinking": cardDate("2025-06-28"),
-  "zai-org/glm-4v-9b": cardDate("2024-06-04"),
+  "zai-org/glm-4v-9b": {
+    ...cardDate("2024-06-04"),
+    qualityBenchmark: quality("OCRBench 786", "OCRBench", 786, "https://huggingface.co/zai-org/glm-4v-9b", "공식 발표"),
+  },
   "openbmb/MiniCPM-V-4.6": cardDate("2026-04-13"),
   "OpenGVLab/InternVL3_5-4B": cardDate("2025-08-25"),
-  "OpenGVLab/InternVL3_5-8B": cardDate("2025-08-25"),
-  "moonshotai/Kimi-VL-A3B-Instruct": cardDate("2025-04-09"),
+  "OpenGVLab/InternVL3_5-8B": {
+    ...cardDate("2025-08-25"),
+    qualityBenchmark: quality("MMMU 73.4", "MMMU", 73.4, "https://arxiv.org/abs/2508.18265", "공식 논문"),
+  },
+  "moonshotai/Kimi-VL-A3B-Instruct": {
+    ...cardDate("2025-04-09"),
+    qualityBenchmark: quality("OCRBench 867", "OCRBench", 867, "https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct", "공식 발표"),
+  },
 });
 
 mergeModelMetadata({
