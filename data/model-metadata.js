@@ -771,8 +771,14 @@ mergeModelMetadata({
   },
   "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1": cardDate("2022-06-01"),
   "BAAI/bge-reranker-v2.5-gemma2-lightweight": cardDate("2024-07-25"),
-  "Alibaba-NLP/gte-reranker-modernbert-base": cardDate("2025-01-20"),
-  "ibm-granite/granite-embedding-reranker-english-r2": cardDate("2025-08-04"),
+  "Alibaba-NLP/gte-reranker-modernbert-base": {
+    ...cardDate("2025-01-20"),
+    qualityBenchmark: quality("BEIR 56.73", "BEIR nDCG@10 15개 데이터셋 평균", 56.73, "https://huggingface.co/Alibaba-NLP/gte-reranker-modernbert-base", "공식 발표"),
+  },
+  "ibm-granite/granite-embedding-reranker-english-r2": {
+    ...cardDate("2025-08-04"),
+    qualityBenchmark: quality("BEIR 55.8", "BEIR 평균 (granite-embedding-english-r2 retriever)", 55.8, "https://huggingface.co/ibm-granite/granite-embedding-reranker-english-r2", "공식 발표"),
+  },
   "jinaai/jina-reranker-v1-tiny-en": {
     ...cardDate("2024-04-15"),
     qualityBenchmark: quality("NDCG@10 48.54", "BEIR 17개 데이터셋 NDCG@10 평균", 48.54, "https://huggingface.co/jinaai/jina-reranker-v1-turbo-en", "공식 발표"),
@@ -782,10 +788,22 @@ mergeModelMetadata({
     qualityBenchmark: quality("NDCG@10 49.60", "BEIR 17개 데이터셋 NDCG@10 평균", 49.6, "https://huggingface.co/jinaai/jina-reranker-v1-turbo-en", "공식 발표"),
   },
   "maidalun1020/bce-reranker-base_v1": cardDate("2023-12-29"),
-  "dragonkue/bge-reranker-v2-m3-ko": cardDate("2024-10-16"),
-  "upskyy/ko-reranker-8k": cardDate("2024-08-16"),
-  "upskyy/ko-reranker": cardDate("2024-08-16"),
-  "Dongjin-kr/ko-reranker": cardDate("2023-12-22"),
+  "dragonkue/bge-reranker-v2-m3-ko": {
+    ...cardDate("2024-10-16"),
+    qualityBenchmark: quality("F1 91.23", "한국어 금융 벤치마크 Top-1 F1 (AutoRAG)", 91.23, "https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko", "공식 발표"),
+  },
+  "upskyy/ko-reranker-8k": {
+    ...cardDate("2024-08-16"),
+    qualityBenchmark: quality("F1 86.84", "한국어 금융 벤치마크 Top-1 F1 (AutoRAG)", 86.84, "https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko", "외부 비교"),
+  },
+  "upskyy/ko-reranker": {
+    ...cardDate("2024-08-16"),
+    qualityBenchmark: quality("F1 83.33", "한국어 금융 벤치마크 Top-1 F1 (AutoRAG)", 83.33, "https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko", "외부 비교"),
+  },
+  "Dongjin-kr/ko-reranker": {
+    ...cardDate("2023-12-22"),
+    qualityBenchmark: quality("F1 85.09", "한국어 금융 벤치마크 Top-1 F1 (AutoRAG)", 85.09, "https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko", "외부 비교"),
+  },
   "cross-encoder/ms-marco-MiniLM-L-4-v2": {
     ...cardDate("2022-03-02"),
     qualityBenchmark: quality("NDCG@10 73.04", "TREC DL 2019 NDCG@10", 73.04, "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2", "공식 발표"),
