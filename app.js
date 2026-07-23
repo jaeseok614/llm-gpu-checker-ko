@@ -164,6 +164,7 @@ function populateSelects() {
       .map((gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`),
   ].join("");
   $("secondaryGpuPreset").value = "none";
+  populateGpuPresetDatalist();
 
   $("quantization").innerHTML = QUANTS.map(
     (quant) => `<option value="${escapeAttr(quant.id)}">${escapeHtml(quant.label)}</option>`,
@@ -178,6 +179,29 @@ function populateSelects() {
 
   applyPreset("rtx4090-24");
   refreshSecondaryGpuUi();
+}
+
+function populateGpuPresetDatalist() {
+  const list = $("gpuPresetOptions");
+  if (!list) return;
+  list.innerHTML = GPU_PRESETS.map((gpu) => `<option value="${escapeAttr(gpu.name)}"></option>`).join("");
+}
+
+function findGpuPresetByName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return null;
+  return (
+    GPU_PRESETS.find((gpu) => gpu.name === trimmed) ||
+    GPU_PRESETS.find((gpu) => gpu.name.toLowerCase() === trimmed.toLowerCase()) ||
+    null
+  );
+}
+
+function syncGpuPresetSearchDisplay() {
+  const primary = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value);
+  if ($("gpuPresetSearch")) $("gpuPresetSearch").value = primary ? primary.name : "";
+  const secondary = GPU_PRESETS.find((gpu) => gpu.id === $("secondaryGpuPreset").value);
+  if ($("secondaryGpuPresetSearch")) $("secondaryGpuPresetSearch").value = secondary ? secondary.name : "";
 }
 
 function populatePrecisionSelect(id, options) {
@@ -562,6 +586,32 @@ function bindEvents() {
     render();
   });
 
+  $("gpuPresetSearch").addEventListener("change", () => {
+    const preset = findGpuPresetByName($("gpuPresetSearch").value);
+    if (preset) {
+      $("gpuPreset").value = preset.id;
+      $("gpuPreset").dispatchEvent(new Event("change"));
+    } else {
+      syncGpuPresetSearchDisplay();
+    }
+  });
+
+  $("secondaryGpuPresetSearch").addEventListener("change", () => {
+    const raw = $("secondaryGpuPresetSearch").value.trim();
+    if (!raw) {
+      $("secondaryGpuPreset").value = "none";
+      $("secondaryGpuPreset").dispatchEvent(new Event("change"));
+      return;
+    }
+    const preset = findGpuPresetByName(raw);
+    if (preset) {
+      $("secondaryGpuPreset").value = preset.id;
+      $("secondaryGpuPreset").dispatchEvent(new Event("change"));
+    } else {
+      syncGpuPresetSearchDisplay();
+    }
+  });
+
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
 
@@ -573,8 +623,12 @@ function bindEvents() {
   });
   $("gpuInventoryList").addEventListener("change", (event) => {
     const target = event.target;
-    if (target.classList.contains("gpu-inventory-preset")) {
-      updateGpuInventoryRow(target.dataset.rowId, "presetId", target.value);
+    if (target.classList.contains("gpu-inventory-preset-search")) {
+      const preset = findGpuPresetByName(target.value);
+      if (preset) {
+        updateGpuInventoryRow(target.dataset.rowId, "presetId", preset.id);
+      }
+      renderGpuInventory();
     } else if (target.classList.contains("gpu-inventory-count")) {
       updateGpuInventoryRow(target.dataset.rowId, "count", target.value);
     }
@@ -762,6 +816,7 @@ function refreshSecondaryGpuUi() {
     : selected
       ? `${selected.name}의 VRAM ${formatGb(selected.vram)}·대역폭 ${selected.bandwidth.toLocaleString("ko-KR")} GB/s를 더하고 이기종 통신 손실을 반영합니다.`
     : "서로 다른 GPU를 함께 쓰는 경우 메모리 분할·통신 손실을 보수적으로 반영합니다.";
+  syncGpuPresetSearchDisplay();
 }
 
 function gpuRuntimeFamily(gpu) {
@@ -796,13 +851,7 @@ function renderGpuInventory() {
     .map(
       (row) => `
         <div class="gpu-inventory-row">
-          <select class="gpu-inventory-preset" data-row-id="${escapeAttr(row.id)}" aria-label="GPU 종류">
-            ${GPU_PRESETS.filter((gpu) => gpu.id !== "custom")
-              .map(
-                (gpu) => `<option value="${escapeAttr(gpu.id)}" ${gpu.id === row.presetId ? "selected" : ""}>${escapeHtml(gpu.name)}</option>`,
-              )
-              .join("")}
-          </select>
+          <input type="text" class="gpu-inventory-preset-search" list="gpuPresetOptions" data-row-id="${escapeAttr(row.id)}" value="${escapeAttr(GPU_PRESETS.find((gpu) => gpu.id === row.presetId)?.name || "")}" autocomplete="off" aria-label="GPU 종류 검색" placeholder="GPU 모델명 검색" />
           <input type="number" class="gpu-inventory-count" data-row-id="${escapeAttr(row.id)}" min="1" max="8" step="1" value="${row.count}" aria-label="이 GPU 개수" />
           <button type="button" class="icon-button gpu-inventory-remove" data-row-id="${escapeAttr(row.id)}" aria-label="GPU 제거" ${gpuInventoryRows.length <= 1 ? "disabled" : ""}>×</button>
         </div>
