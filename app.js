@@ -140,14 +140,34 @@ let settingsExpanded = false;
 let compareKeys = [];
 let compareModalOpen = false;
 const MAX_COMPARE_MODELS = 3;
+let appMode = "expert";
 
 const $ = (id) => document.getElementById(id);
+
+function setAppMode(mode) {
+  if (mode !== "simple" && mode !== "expert") return;
+  appMode = mode;
+  refreshAppModeUi();
+  render();
+}
+
+function refreshAppModeUi() {
+  const isSimple = appMode === "simple";
+  $("simpleModePanel").hidden = !isSimple;
+  $("expertModeSection").hidden = isSimple;
+  document.querySelectorAll("[data-app-mode]").forEach((button) => {
+    const active = button.dataset.appMode === appMode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+}
 
 function init() {
   restoreImportedHfModels();
   populateSelects();
   applyUrlState();
   bindEvents();
+  refreshAppModeUi();
   refreshHfImportUi();
   renderGpuInventory();
   renderPlacementModelList();
@@ -705,6 +725,10 @@ function bindEvents() {
     if (!target) return;
     selectedModelKey = target.dataset.modelKey;
     render();
+  });
+
+  document.querySelectorAll("[data-app-mode]").forEach((button) => {
+    button.addEventListener("click", () => setAppMode(button.dataset.appMode));
   });
 
   document.querySelectorAll("[data-workload-tab]").forEach((button) => {

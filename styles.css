@@ -227,6 +227,37 @@ h3 {
   flex-wrap: wrap;
 }
 
+.app-mode-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 12px 22px;
+  background: #f8fafc;
+  border-top: 1px solid var(--line);
+}
+
+.app-mode-tab {
+  flex: 1 1 0;
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app-mode-tab:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.app-mode-tab.is-active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #ffffff;
+}
+
 .workload-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -453,17 +484,38 @@ button:focus-visible {
   color: var(--blue);
 }
 
-.result-toolbar-head {
+.result-toolbar {
   position: sticky;
   top: 48px;
   z-index: 6;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 10px;
+  gap: 8px 10px;
+  margin-bottom: 12px;
   padding-top: 8px;
   background: #ffffff;
+}
+
+.result-toolbar .result-meta {
+  flex: 0 0 auto;
+  margin-right: 2px;
+}
+
+.result-toolbar .search-wrap {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.result-toolbar select {
+  flex: 1 1 130px;
+  min-width: 110px;
+  max-width: 170px;
+}
+
+.result-toolbar .view-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .calculation-basis-strip {
@@ -515,6 +567,21 @@ button:focus-visible {
   padding: 0 13px 13px;
 }
 
+.advanced-tools-panel {
+  margin-top: 18px;
+}
+
+.advanced-tools-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 13px 13px;
+}
+
+.advanced-tools-body > .hf-import-panel {
+  margin-bottom: 0;
+}
+
 .hf-import-form > label {
   display: block;
   margin-bottom: 6px;
@@ -554,12 +621,14 @@ button:focus-visible {
 }
 
 .simple-mode-panel {
-  border-color: var(--blue);
+  margin-bottom: 16px;
+  border: 1px solid var(--blue);
+  border-radius: 8px;
   background: var(--blue-soft);
 }
 
 .simple-mode-body {
-  padding: 0 13px 13px;
+  padding: 16px;
 }
 
 .simple-mode-body p {
@@ -570,9 +639,9 @@ button:focus-visible {
 }
 
 .simple-mode-hint {
-  margin-top: 10px !important;
-  color: var(--muted) !important;
-  font-size: 11px !important;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .simple-mode-questions {
@@ -1021,25 +1090,6 @@ button:focus-visible {
 .grade-dot.grade-b { color: #5f6472; }
 .grade-dot.grade-c,
 .grade-dot.grade-d { color: var(--yellow); }
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-
-.toolbar-actions select {
-  width: 160px;
-}
-
-.toolbar {
-  display: grid;
-  grid-template-columns: minmax(240px, 1.6fr) 125px 140px 145px 155px 155px;
-  gap: 9px;
-  align-items: center;
-  margin-bottom: 12px;
-}
 
 .active-filter-chips {
   display: flex;
@@ -2242,29 +2292,18 @@ button:focus-visible {
   }
 
   .settings-panel,
-  .advanced-panel,
-  .toolbar {
+  .advanced-panel {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .search-wrap {
-    grid-column: 1 / -1;
-  }
-
-  .result-toolbar-head {
-    align-items: flex-start;
-    flex-direction: column;
+  .simple-mode-questions {
+    grid-template-columns: 1fr;
   }
 
   .calculation-basis-strip,
   .benchmark-head {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .toolbar-actions {
-    width: 100%;
-    justify-content: flex-end;
   }
 
   .model-list-head,
@@ -2351,7 +2390,6 @@ button:focus-visible {
 
   .settings-panel,
   .advanced-panel,
-  .toolbar,
   .detail-summary-grid,
   .runtime-grid,
   .model-info-grid,
@@ -2362,7 +2400,7 @@ button:focus-visible {
   }
 
   .summary-filterbar,
-  .result-toolbar-head,
+  .result-toolbar,
   .model-list-head {
     position: static;
   }
@@ -2372,12 +2410,19 @@ button:focus-visible {
     flex-direction: column;
   }
 
-  .toolbar-actions {
-    justify-content: flex-start;
+  .result-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .toolbar-actions select {
-    width: min(180px, 100%);
+  .result-toolbar .search-wrap,
+  .result-toolbar select {
+    max-width: none;
+    width: 100%;
+  }
+
+  .result-toolbar .view-toggle {
+    margin-left: 0;
   }
 
   .field-wide {

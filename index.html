@@ -90,6 +90,11 @@
           </div>
         </div>
 
+        <div class="app-mode-toggle" role="tablist" aria-label="사용 모드">
+          <button type="button" class="app-mode-tab" data-app-mode="simple" aria-selected="false">🎯 빠른 추천</button>
+          <button type="button" class="app-mode-tab is-active" data-app-mode="expert" aria-selected="true">📋 전체 모델 탐색</button>
+        </div>
+
         <div class="workload-tabs" role="tablist" aria-label="모델 종류">
           <button type="button" class="workload-tab is-active" data-workload-tab="generative" aria-selected="true">생성형 LLM</button>
           <button type="button" class="workload-tab" data-workload-tab="embedding" aria-selected="false">임베딩</button>
@@ -361,10 +366,9 @@
         <div class="summary-filterbar" id="summaryGrid"></div>
         <div class="calculation-basis-strip" id="calculationBasisStrip"></div>
 
-        <details class="hf-import-panel simple-mode-panel" id="simpleModePanel" open>
-          <summary>🎯 3단계로 모델 추천받기 (초보자 모드)</summary>
+        <div class="simple-mode-panel" id="simpleModePanel" hidden>
           <div class="simple-mode-body">
-            <p>아래 목록은 <strong>전문가 모드</strong>로, 조건에 맞는 모든 모델을 직접 비교합니다. 처음이라 뭘 골라야 할지 모르겠다면 GPU·용도·우선순위 3가지만 고르세요. 지금 탭 기준 최적 모델 3개를 바로 추천합니다.</p>
+            <p>GPU·용도·우선순위 3가지만 고르면 지금 탭 기준 최적 모델 3개를 바로 추천합니다. 조건에 맞는 모델을 전부 직접 비교하려면 위의 <strong>전체 모델 탐색</strong>을 눌러주세요.</p>
             <div class="simple-mode-questions">
               <label class="field">
                 <span>1. 사용할 GPU</span>
@@ -394,58 +398,48 @@
             <p class="simple-mode-hint">GPU를 바꾸려면 위쪽의 <strong>설정 변경</strong>에서 GPU를 먼저 선택하세요.</p>
             <div class="simple-mode-result" id="simpleModeResult"></div>
           </div>
-        </details>
+        </div>
 
-        <details class="hf-import-panel" id="hfImportPanel">
-          <summary>Hugging Face 공개 LLM 직접 계산</summary>
-          <form class="hf-import-form" id="hfImportForm">
-            <label for="hfModelInput">모델 주소 또는 ID</label>
-            <div class="hf-import-controls">
-              <input id="hfModelInput" type="text" inputmode="url" autocomplete="off" placeholder="예: Qwen/Qwen2.5-1.5B-Instruct" />
-              <button type="submit" class="primary-button" id="hfImportButton">가중치 정보 가져오기</button>
-              <button type="button" class="ghost-button" id="hfClearButton">불러온 모델 지우기</button>
+        <div id="expertModeSection">
+          <div class="quant-recommendations" id="quantRecommendations" hidden></div>
+
+          <div class="result-toolbar">
+            <div class="result-meta" id="resultMeta">모델 0개</div>
+            <div class="search-wrap">
+              <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" />
             </div>
-            <p>Hugging Face 공개 API의 생성형 LLM safetensors 파라미터 수와 config를 사용합니다. 비공개·접근 승인 필요 모델은 불러올 수 없습니다.</p>
-            <output id="hfImportStatus" aria-live="polite"></output>
-          </form>
-        </details>
-
-        <details class="hf-import-panel gpu-placement-panel" id="gpuPlacementPanel">
-          <summary>여러 GPU에 모델 동시 배치 추천 (베타)</summary>
-          <div class="gpu-placement-body">
-            <p>보유한 GPU 여러 대에 LLM·임베딩·리랭커·OCR/VLM 모델을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 기본 부하(동시 1명 또는 기본 배치) 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.</p>
-
-            <span class="gpu-placement-label">보유 GPU 목록</span>
-            <div class="gpu-inventory-list" id="gpuInventoryList"></div>
-            <button type="button" class="ghost-button" id="addGpuInventoryButton">+ GPU 추가</button>
-
-            <span class="gpu-placement-label">동시에 띄울 모델 검색 후 클릭해서 선택 (여러 종류 섞어서 선택 가능)</span>
-            <div class="workload-tabs placement-type-tabs" role="tablist" aria-label="배치할 모델 종류">
-              <button type="button" class="workload-tab is-active" data-placement-type="generative" aria-selected="true">생성형 LLM</button>
-              <button type="button" class="workload-tab" data-placement-type="embedding" aria-selected="false">임베딩</button>
-              <button type="button" class="workload-tab" data-placement-type="reranker" aria-selected="false">리랭커</button>
-              <button type="button" class="workload-tab" data-placement-type="vision" aria-selected="false">OCR·VLM</button>
-            </div>
-            <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" autocomplete="off" />
-            <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>
-            <span class="gpu-placement-label">선택된 모델</span>
-            <div class="placement-model-selected" id="placementModelSelected"></div>
-
-            <div class="gpu-placement-actions">
-              <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
-              <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
-            </div>
-
-            <div class="gpu-placement-result" id="gpuPlacementResult"></div>
-            <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
-          </div>
-        </details>
-
-        <div class="quant-recommendations" id="quantRecommendations" hidden></div>
-
-        <div class="result-toolbar-head">
-          <div class="result-meta" id="resultMeta">모델 0개</div>
-          <div class="toolbar-actions">
+            <select id="gradeFilter" aria-label="실행 등급">
+              <option value="all">전체 등급</option>
+              <option value="fit">가능 이상</option>
+              <option value="S">쾌적</option>
+              <option value="A">잘 돌아감</option>
+              <option value="B">가능</option>
+              <option value="C">빡빡함</option>
+              <option value="D">오프로딩</option>
+              <option value="F">부적합</option>
+            </select>
+            <select id="taskFilter" aria-label="작업 유형">
+              <option value="all">전체 작업</option>
+              <option value="general">일반 챗봇</option>
+              <option value="korean">한국어</option>
+              <option value="coding">코딩</option>
+              <option value="reasoning">추론</option>
+              <option value="long">긴 문서</option>
+              <option value="vision">비전/멀티모달</option>
+            </select>
+            <select id="providerFilter" aria-label="공급사">
+              <option value="all">전체 공급사</option>
+            </select>
+            <select id="licenseFilter" aria-label="라이선스">
+              <option value="all">전체 라이선스</option>
+            </select>
+            <select id="licenseUseFilter" aria-label="상업 이용 조건">
+              <option value="all">전체 이용 조건</option>
+              <option value="allowed">상업 이용 가능</option>
+              <option value="conditional">조건부 상업 이용</option>
+              <option value="noncommercial">비상업·연구용</option>
+              <option value="review">약관 확인 필요</option>
+            </select>
             <select id="sortBy" aria-label="정렬">
               <option value="fit">종합 추천</option>
               <option value="quality">최고 품질</option>
@@ -461,49 +455,62 @@
               <button type="button" id="cardViewButton" class="toggle-button" aria-label="카드 보기" title="카드 보기" aria-pressed="false">▦</button>
             </div>
           </div>
+
+          <div class="active-filter-chips" id="activeFilterChips" hidden></div>
+          <div class="compare-bar" id="compareBar" hidden></div>
+
+          <div class="model-results" id="modelResults"></div>
         </div>
 
-        <div class="toolbar">
-          <div class="search-wrap">
-            <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" />
+        <details class="hf-import-panel advanced-tools-panel" id="advancedToolsPanel">
+          <summary>🛠 고급 도구 (Hugging Face 직접 계산 · 여러 GPU 배치)</summary>
+          <div class="advanced-tools-body">
+            <details class="hf-import-panel" id="hfImportPanel">
+              <summary>Hugging Face 공개 LLM 직접 계산</summary>
+              <form class="hf-import-form" id="hfImportForm">
+                <label for="hfModelInput">모델 주소 또는 ID</label>
+                <div class="hf-import-controls">
+                  <input id="hfModelInput" type="text" inputmode="url" autocomplete="off" placeholder="예: Qwen/Qwen2.5-1.5B-Instruct" />
+                  <button type="submit" class="primary-button" id="hfImportButton">가중치 정보 가져오기</button>
+                  <button type="button" class="ghost-button" id="hfClearButton">불러온 모델 지우기</button>
+                </div>
+                <p>Hugging Face 공개 API의 생성형 LLM safetensors 파라미터 수와 config를 사용합니다. 비공개·접근 승인 필요 모델은 불러올 수 없습니다.</p>
+                <output id="hfImportStatus" aria-live="polite"></output>
+              </form>
+            </details>
+
+            <details class="hf-import-panel gpu-placement-panel" id="gpuPlacementPanel">
+              <summary>여러 GPU에 모델 동시 배치 추천 (베타)</summary>
+              <div class="gpu-placement-body">
+                <p>보유한 GPU 여러 대에 LLM·임베딩·리랭커·OCR/VLM 모델을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 기본 부하(동시 1명 또는 기본 배치) 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.</p>
+
+                <span class="gpu-placement-label">보유 GPU 목록</span>
+                <div class="gpu-inventory-list" id="gpuInventoryList"></div>
+                <button type="button" class="ghost-button" id="addGpuInventoryButton">+ GPU 추가</button>
+
+                <span class="gpu-placement-label">동시에 띄울 모델 검색 후 클릭해서 선택 (여러 종류 섞어서 선택 가능)</span>
+                <div class="workload-tabs placement-type-tabs" role="tablist" aria-label="배치할 모델 종류">
+                  <button type="button" class="workload-tab is-active" data-placement-type="generative" aria-selected="true">생성형 LLM</button>
+                  <button type="button" class="workload-tab" data-placement-type="embedding" aria-selected="false">임베딩</button>
+                  <button type="button" class="workload-tab" data-placement-type="reranker" aria-selected="false">리랭커</button>
+                  <button type="button" class="workload-tab" data-placement-type="vision" aria-selected="false">OCR·VLM</button>
+                </div>
+                <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" autocomplete="off" />
+                <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>
+                <span class="gpu-placement-label">선택된 모델</span>
+                <div class="placement-model-selected" id="placementModelSelected"></div>
+
+                <div class="gpu-placement-actions">
+                  <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
+                  <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
+                </div>
+
+                <div class="gpu-placement-result" id="gpuPlacementResult"></div>
+                <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
+              </div>
+            </details>
           </div>
-          <select id="gradeFilter" aria-label="실행 등급">
-            <option value="all">전체 등급</option>
-            <option value="fit">가능 이상</option>
-            <option value="S">쾌적</option>
-            <option value="A">잘 돌아감</option>
-            <option value="B">가능</option>
-            <option value="C">빡빡함</option>
-            <option value="D">오프로딩</option>
-            <option value="F">부적합</option>
-          </select>
-          <select id="taskFilter" aria-label="작업 유형">
-            <option value="all">전체 작업</option>
-            <option value="general">일반 챗봇</option>
-            <option value="korean">한국어</option>
-            <option value="coding">코딩</option>
-            <option value="reasoning">추론</option>
-            <option value="long">긴 문서</option>
-            <option value="vision">비전/멀티모달</option>
-          </select>
-          <select id="providerFilter" aria-label="공급사">
-            <option value="all">전체 공급사</option>
-          </select>
-          <select id="licenseFilter" aria-label="라이선스">
-            <option value="all">전체 라이선스</option>
-          </select>
-          <select id="licenseUseFilter" aria-label="상업 이용 조건">
-            <option value="all">전체 이용 조건</option>
-            <option value="allowed">상업 이용 가능</option>
-            <option value="conditional">조건부 상업 이용</option>
-            <option value="noncommercial">비상업·연구용</option>
-            <option value="review">약관 확인 필요</option>
-          </select>
-        </div>
-        <div class="active-filter-chips" id="activeFilterChips" hidden></div>
-        <div class="compare-bar" id="compareBar" hidden></div>
-
-        <div class="model-results" id="modelResults"></div>
+        </details>
       </section>
     </main>
 
