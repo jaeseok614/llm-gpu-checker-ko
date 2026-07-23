@@ -362,6 +362,21 @@ select:disabled {
   border-top: 1px solid var(--line);
 }
 
+.advanced-tools-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+
+.advanced-tools-inline > .gpu-placement-label {
+  margin: 4px 0 0;
+}
+
+.advanced-tools-inline > .hf-import-panel {
+  margin-bottom: 0;
+}
+
 .settings-group-title {
   grid-column: 1 / -1;
   margin-top: 2px;
@@ -565,21 +580,6 @@ button:focus-visible {
 
 .hf-import-form {
   padding: 0 13px 13px;
-}
-
-.advanced-tools-panel {
-  margin-top: 18px;
-}
-
-.advanced-tools-body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 13px 13px;
-}
-
-.advanced-tools-body > .hf-import-panel {
-  margin-bottom: 0;
 }
 
 .hf-import-form > label {

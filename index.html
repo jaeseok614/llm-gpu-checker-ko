@@ -88,6 +88,55 @@
               <input id="safetyMarginGb" type="number" min="0" max="256" step="0.5" value="2" />
             </label>
           </div>
+
+          <div class="advanced-tools-inline">
+            <span class="gpu-placement-label">고급 도구</span>
+
+            <details class="hf-import-panel" id="hfImportPanel">
+              <summary>Hugging Face 공개 LLM 직접 계산</summary>
+              <form class="hf-import-form" id="hfImportForm">
+                <label for="hfModelInput">모델 주소 또는 ID</label>
+                <div class="hf-import-controls">
+                  <input id="hfModelInput" type="text" inputmode="url" autocomplete="off" placeholder="예: Qwen/Qwen2.5-1.5B-Instruct" />
+                  <button type="submit" class="primary-button" id="hfImportButton">가중치 정보 가져오기</button>
+                  <button type="button" class="ghost-button" id="hfClearButton">불러온 모델 지우기</button>
+                </div>
+                <p>Hugging Face 공개 API의 생성형 LLM safetensors 파라미터 수와 config를 사용합니다. 비공개·접근 승인 필요 모델은 불러올 수 없습니다.</p>
+                <output id="hfImportStatus" aria-live="polite"></output>
+              </form>
+            </details>
+
+            <details class="hf-import-panel gpu-placement-panel" id="gpuPlacementPanel">
+              <summary>여러 GPU에 모델 동시 배치 추천 (베타)</summary>
+              <div class="gpu-placement-body">
+                <p>보유한 GPU 여러 대에 LLM·임베딩·리랭커·OCR/VLM 모델을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 기본 부하(동시 1명 또는 기본 배치) 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.</p>
+
+                <span class="gpu-placement-label">보유 GPU 목록</span>
+                <div class="gpu-inventory-list" id="gpuInventoryList"></div>
+                <button type="button" class="ghost-button" id="addGpuInventoryButton">+ GPU 추가</button>
+
+                <span class="gpu-placement-label">동시에 띄울 모델 검색 후 클릭해서 선택 (여러 종류 섞어서 선택 가능)</span>
+                <div class="workload-tabs placement-type-tabs" role="tablist" aria-label="배치할 모델 종류">
+                  <button type="button" class="workload-tab is-active" data-placement-type="generative" aria-selected="true">생성형 LLM</button>
+                  <button type="button" class="workload-tab" data-placement-type="embedding" aria-selected="false">임베딩</button>
+                  <button type="button" class="workload-tab" data-placement-type="reranker" aria-selected="false">리랭커</button>
+                  <button type="button" class="workload-tab" data-placement-type="vision" aria-selected="false">OCR·VLM</button>
+                </div>
+                <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" autocomplete="off" />
+                <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>
+                <span class="gpu-placement-label">선택된 모델</span>
+                <div class="placement-model-selected" id="placementModelSelected"></div>
+
+                <div class="gpu-placement-actions">
+                  <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
+                  <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
+                </div>
+
+                <div class="gpu-placement-result" id="gpuPlacementResult"></div>
+                <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
+              </div>
+            </details>
+          </div>
         </div>
 
         <div class="app-mode-toggle" role="tablist" aria-label="사용 모드">
@@ -461,56 +510,6 @@
 
           <div class="model-results" id="modelResults"></div>
         </div>
-
-        <details class="hf-import-panel advanced-tools-panel" id="advancedToolsPanel">
-          <summary>🛠 고급 도구 (Hugging Face 직접 계산 · 여러 GPU 배치)</summary>
-          <div class="advanced-tools-body">
-            <details class="hf-import-panel" id="hfImportPanel">
-              <summary>Hugging Face 공개 LLM 직접 계산</summary>
-              <form class="hf-import-form" id="hfImportForm">
-                <label for="hfModelInput">모델 주소 또는 ID</label>
-                <div class="hf-import-controls">
-                  <input id="hfModelInput" type="text" inputmode="url" autocomplete="off" placeholder="예: Qwen/Qwen2.5-1.5B-Instruct" />
-                  <button type="submit" class="primary-button" id="hfImportButton">가중치 정보 가져오기</button>
-                  <button type="button" class="ghost-button" id="hfClearButton">불러온 모델 지우기</button>
-                </div>
-                <p>Hugging Face 공개 API의 생성형 LLM safetensors 파라미터 수와 config를 사용합니다. 비공개·접근 승인 필요 모델은 불러올 수 없습니다.</p>
-                <output id="hfImportStatus" aria-live="polite"></output>
-              </form>
-            </details>
-
-            <details class="hf-import-panel gpu-placement-panel" id="gpuPlacementPanel">
-              <summary>여러 GPU에 모델 동시 배치 추천 (베타)</summary>
-              <div class="gpu-placement-body">
-                <p>보유한 GPU 여러 대에 LLM·임베딩·리랭커·OCR/VLM 모델을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 기본 부하(동시 1명 또는 기본 배치) 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.</p>
-
-                <span class="gpu-placement-label">보유 GPU 목록</span>
-                <div class="gpu-inventory-list" id="gpuInventoryList"></div>
-                <button type="button" class="ghost-button" id="addGpuInventoryButton">+ GPU 추가</button>
-
-                <span class="gpu-placement-label">동시에 띄울 모델 검색 후 클릭해서 선택 (여러 종류 섞어서 선택 가능)</span>
-                <div class="workload-tabs placement-type-tabs" role="tablist" aria-label="배치할 모델 종류">
-                  <button type="button" class="workload-tab is-active" data-placement-type="generative" aria-selected="true">생성형 LLM</button>
-                  <button type="button" class="workload-tab" data-placement-type="embedding" aria-selected="false">임베딩</button>
-                  <button type="button" class="workload-tab" data-placement-type="reranker" aria-selected="false">리랭커</button>
-                  <button type="button" class="workload-tab" data-placement-type="vision" aria-selected="false">OCR·VLM</button>
-                </div>
-                <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" autocomplete="off" />
-                <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>
-                <span class="gpu-placement-label">선택된 모델</span>
-                <div class="placement-model-selected" id="placementModelSelected"></div>
-
-                <div class="gpu-placement-actions">
-                  <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
-                  <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
-                </div>
-
-                <div class="gpu-placement-result" id="gpuPlacementResult"></div>
-                <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
-              </div>
-            </details>
-          </div>
-        </details>
       </section>
     </main>
 
