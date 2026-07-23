@@ -147,7 +147,8 @@ function init() {
   bindEvents();
   refreshHfImportUi();
   renderGpuInventory();
-  populatePlacementModelSelect();
+  renderPlacementModelList();
+  renderPlacementSelectedChips();
   render({ syncUrl: false });
 }
 
@@ -579,6 +580,27 @@ function bindEvents() {
     }
   });
 
+  document.querySelectorAll("[data-placement-type]").forEach((button) => {
+    button.addEventListener("click", () => setPlacementActiveType(button.dataset.placementType));
+  });
+
+  $("placementModelSearch").addEventListener("input", (event) => {
+    placementSearchQuery = event.target.value;
+    renderPlacementModelList();
+  });
+
+  $("placementModelList").addEventListener("change", (event) => {
+    const checkbox = event.target.closest("[data-model-key]");
+    if (!checkbox) return;
+    togglePlacementModel(checkbox.dataset.modelKey);
+  });
+
+  $("placementModelSelected").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-placement-key]");
+    if (!button) return;
+    togglePlacementModel(button.dataset.removePlacementKey);
+  });
+
   $("quantRecommendations").addEventListener("click", (event) => {
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
@@ -757,6 +779,15 @@ let gpuInventoryRows = [
   { id: "gpu-row-2", presetId: "rtx4090-24", count: 1 },
 ];
 let gpuInventoryIdCounter = 2;
+let placementActiveType = "generative";
+let placementSearchQuery = "";
+let placementSelectedKeys = new Set();
+
+const PLACEMENT_DEFAULT_WORKLOADS = {
+  embedding: { type: "embedding", inputTokens: 384, batchSize: 32, maxBatchTokens: 16384, runtime: "tei" },
+  reranker: { type: "reranker", queryTokens: 64, docTokens: 512, candidates: 40, batchSize: 16, runtime: "tei" },
+  vision: { width: 1654, height: 2339, batchSize: 1, featureSet: "basic" },
+};
 
 function renderGpuInventory() {
   const container = $("gpuInventoryList");
@@ -799,12 +830,141 @@ function updateGpuInventoryRow(rowId, field, value) {
   if (field === "count") row.count = clampNumber(value, 1, 8, 1);
 }
 
-function populatePlacementModelSelect() {
-  const select = $("placementModelSelect");
-  if (!select) return;
-  select.innerHTML = GENERATIVE_MODELS.map(
-    (model) => `<option value="${escapeAttr(modelKey(model))}">${escapeHtml(model.name)} (${model.params}B)</option>`,
-  ).join("");
+function getModelsForPlacementType(type) {
+  if (type === "embedding") return EMBEDDING_MODELS;
+  if (type === "reranker") return RERANKER_MODELS;
+  if (type === "vision") return OCR_MODELS;
+  return GENERATIVE_MODELS;
+}
+
+function renderPlacementModelList() {
+  const container = $("placementModelList");
+  if (!container) return;
+  const query = placementSearchQuery.trim().toLowerCase();
+  const pool = getModelsForPlacementType(placementActiveType);
+  const filtered = query
+    ? pool.filter((model) =>
+        `${model.name} ${model.maker || ""} ${(model.tags || []).join(" ")}`.toLowerCase().includes(query),
+      )
+    : pool;
+
+  if (!filtered.length) {
+    container.innerHTML = `<p class="gpu-placement-empty">검색 결과가 없습니다.</p>`;
+    return;
+  }
+
+  container.innerHTML = filtered
+    .slice(0, 150)
+    .map((model) => {
+      const key = modelKey(model);
+      const checked = placementSelectedKeys.has(key);
+      return `
+        <label class="placement-model-item ${checked ? "is-checked" : ""}">
+          <input type="checkbox" data-model-key="${escapeAttr(key)}" ${checked ? "checked" : ""} />
+          <span>${escapeHtml(model.name)}</span>
+          <small>${escapeHtml(model.maker || "")}${model.params ? ` · ${model.params}B` : ""}</small>
+        </label>
+      `;
+    })
+    .join("");
+}
+
+function renderPlacementSelectedChips() {
+  const container = $("placementModelSelected");
+  if (!container) return;
+  if (!placementSelectedKeys.size) {
+    container.innerHTML = `<p class="gpu-placement-empty">아직 선택된 모델이 없습니다.</p>`;
+    return;
+  }
+  container.innerHTML = [...placementSelectedKeys]
+    .map((key) => {
+      const model = getModelByKey(key);
+      if (!model) return "";
+      return `
+        <span class="placement-chip">
+          ${escapeHtml(model.name)}
+          <button type="button" data-remove-placement-key="${escapeAttr(key)}" aria-label="선택 해제">×</button>
+        </span>
+      `;
+    })
+    .join("");
+}
+
+function togglePlacementModel(key) {
+  if (placementSelectedKeys.has(key)) placementSelectedKeys.delete(key);
+  else placementSelectedKeys.add(key);
+  renderPlacementModelList();
+  renderPlacementSelectedChips();
+}
+
+function setPlacementActiveType(type) {
+  placementActiveType = type;
+  document.querySelectorAll("[data-placement-type]").forEach((button) => {
+    const isActive = button.dataset.placementType === type;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  renderPlacementModelList();
+}
+
+function getPlacementBaselineOptions(model, hardware) {
+  if (model.type === "embedding") {
+    const workload = PLACEMENT_DEFAULT_WORKLOADS.embedding;
+    return ENCODER_PRECISIONS
+      .map((precision) => ({
+        setting: precision,
+        label: precision.label,
+        requiredGb: estimateEncoderWithPrecision(model, hardware, workload, precision).requiredGb,
+      }))
+      .sort((a, b) => a.requiredGb - b.requiredGb);
+  }
+  if (model.type === "reranker") {
+    const workload = PLACEMENT_DEFAULT_WORKLOADS.reranker;
+    return ENCODER_PRECISIONS
+      .map((precision) => ({
+        setting: precision,
+        label: precision.label,
+        requiredGb: estimateRerankerWithPrecision(model, hardware, workload, precision).requiredGb,
+      }))
+      .sort((a, b) => a.requiredGb - b.requiredGb);
+  }
+  if (isVisionModel(model)) {
+    const workload = { type: model.type, ...PLACEMENT_DEFAULT_WORKLOADS.vision };
+    return OCR_PRECISIONS
+      .map((precision) => ({
+        setting: precision,
+        label: precision.label,
+        requiredGb: estimateOcrWithPrecision(model, hardware, workload, precision).requiredGb,
+      }))
+      .sort((a, b) => a.requiredGb - b.requiredGb);
+  }
+  const singleUserHardware = { ...hardware, concurrency: 1 };
+  return QUANTS
+    .filter((quant) => quant.id !== "auto")
+    .map((quant) => ({
+      setting: quant,
+      label: quant.label,
+      requiredGb: estimateWithQuant(model, quant, singleUserHardware).requiredGb,
+    }))
+    .sort((a, b) => a.requiredGb - b.requiredGb);
+}
+
+function getPlacementCapacity(model, setting, hardware, budgetGb) {
+  if (!model.type || model.type === "generative") {
+    return { kind: "concurrency", ...computeConcurrencyBounds(model, setting, { ...hardware, concurrency: 1 }, budgetGb) };
+  }
+  const budgetHardware = { ...hardware, availableVram: budgetGb, baseEffectiveVram: budgetGb };
+  if (model.type === "embedding") {
+    const estimate = estimateEncoderWithPrecision(model, budgetHardware, PLACEMENT_DEFAULT_WORKLOADS.embedding, setting);
+    return { kind: "throughput", unit: "doc/s", value: estimate.speed, tokenUnit: "tok/s", tokenValue: estimate.throughput };
+  }
+  if (model.type === "reranker") {
+    const estimate = estimateRerankerWithPrecision(model, budgetHardware, PLACEMENT_DEFAULT_WORKLOADS.reranker, setting);
+    return { kind: "throughput", unit: "pair/s", value: estimate.speed };
+  }
+  const workload = { type: model.type, ...PLACEMENT_DEFAULT_WORKLOADS.vision };
+  const estimate = estimateOcrWithPrecision(model, budgetHardware, workload, setting);
+  return { kind: "throughput", unit: "page/s", value: estimate.speed };
 }
 
 function computeGpuPlacement(gpuRows, modelKeys) {
@@ -825,15 +985,10 @@ function computeGpuPlacement(gpuRows, modelKeys) {
     };
   });
 
-  const models = modelKeys
-    .map((key) => GENERATIVE_MODELS.find((model) => modelKey(model) === key))
-    .filter(Boolean);
+  const models = modelKeys.map((key) => getModelByKey(key)).filter(Boolean);
 
   const modelOptions = models.map((model) => {
-    const options = QUANTS
-      .filter((quant) => quant.id !== "auto")
-      .map((quant) => ({ quant, requiredGb: estimateWithQuant(model, quant, singleUserHardware).requiredGb }))
-      .sort((a, b) => a.requiredGb - b.requiredGb);
+    const options = getPlacementBaselineOptions(model, singleUserHardware);
     return { model, options, bestRequiredGb: options[0]?.requiredGb ?? Infinity };
   });
 
@@ -848,14 +1003,23 @@ function computeGpuPlacement(gpuRows, modelKeys) {
       if (!fit) continue;
       const leftover = gpu.remaining - fit.requiredGb;
       if (!bestChoice || leftover < bestChoice.leftover) {
-        bestChoice = { gpu, quant: fit.quant, requiredGb: fit.requiredGb, leftover };
+        bestChoice = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, leftover };
       }
     }
     if (bestChoice) {
       bestChoice.gpu.remaining -= bestChoice.requiredGb;
-      bestChoice.gpu.placements.push({ model, quant: bestChoice.quant, requiredGb: bestChoice.requiredGb });
+      bestChoice.gpu.placements.push({ model, setting: bestChoice.setting, label: bestChoice.label, requiredGb: bestChoice.requiredGb });
     } else {
       unplaced.push({ model, minRequiredGb: options[0]?.requiredGb ?? 0 });
+    }
+  }
+
+  // 배치가 끝난 뒤: 같은 GPU를 공유하는 다른 모델은 기본 부하 그대로 두고,
+  // 이 모델에게 GPU의 남은 여유를 몰아줬을 때 병목 없이 어디까지 처리할 수 있는지 계산합니다.
+  for (const gpu of gpus) {
+    for (const placement of gpu.placements) {
+      const budgetGb = gpu.remaining + placement.requiredGb;
+      placement.capacity = getPlacementCapacity(placement.model, placement.setting, singleUserHardware, budgetGb);
     }
   }
 
@@ -863,8 +1027,7 @@ function computeGpuPlacement(gpuRows, modelKeys) {
 }
 
 function runGpuPlacement() {
-  const select = $("placementModelSelect");
-  const modelKeys = select ? [...select.selectedOptions].map((option) => option.value) : [];
+  const modelKeys = [...placementSelectedKeys];
   const result = $("gpuPlacementResult");
   if (!result) return;
 
@@ -877,6 +1040,14 @@ function runGpuPlacement() {
   result.innerHTML = renderGpuPlacementResult(placement);
 }
 
+function renderPlacementCapacityLine(capacity) {
+  if (!capacity) return "";
+  if (capacity.kind === "concurrency") {
+    return `동시 처리 여유: 권장 ${capacity.recommendedN}명 · 최대 ${capacity.maxN}명 (최대 시 ${formatThroughput(capacity.speedAtMax.total, "tok/s")})`;
+  }
+  return `처리량 여유: 약 ${formatThroughput(capacity.value, capacity.unit)}${capacity.tokenValue ? ` · ${formatThroughput(capacity.tokenValue, capacity.tokenUnit)}` : ""}`;
+}
+
 function renderGpuPlacementResult(placement) {
   const gpuCards = placement.gpus
     .map((gpu) => {
@@ -885,9 +1056,10 @@ function renderGpuPlacementResult(placement) {
             .map(
               (item) => `
                 <div class="gpu-placement-model-row">
-                  <span>${escapeHtml(item.model.name)} · ${escapeHtml(item.quant.label)}</span>
+                  <span>${escapeHtml(item.model.name)} · ${escapeHtml(item.label)}</span>
                   <span>${escapeHtml(formatGb(item.requiredGb))}</span>
                 </div>
+                <div class="gpu-placement-capacity-line">${escapeHtml(renderPlacementCapacityLine(item.capacity))}</div>
               `,
             )
             .join("")
@@ -1567,7 +1739,7 @@ function estimateFirstTokenSeconds(model, hardware, grade) {
   return (0.18 + modelSeconds + contextSeconds + concurrencySeconds) * runtimeMultiplier * pressureMultiplier;
 }
 
-function estimateConcurrencyCapacity(model, quant, hardware) {
+function computeConcurrencyBounds(model, quant, hardware, effectiveVramOverride) {
   // requiredGb(N) = A + N * B for N >= 1 (KV cache와 요청당 오버헤드가 선형이라는 전제 하의 역산)
   const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const weightsGb = model.params * quant.bytesPerB * 1.08;
@@ -1577,7 +1749,7 @@ function estimateConcurrencyCapacity(model, quant, hardware) {
   const requestOverhead = runtimeFactor.requestOverhead;
   const a = weightsGb + fixedOverhead - requestOverhead;
   const b = kvPerUnit + requestOverhead;
-  const effectiveVram = getEffectiveVram(hardware);
+  const effectiveVram = effectiveVramOverride ?? getEffectiveVram(hardware);
 
   const solveN = (pressureThreshold) => {
     if (b <= 0) return 256;
@@ -1599,6 +1771,10 @@ function estimateConcurrencyCapacity(model, quant, hardware) {
     speedAtRecommended: speedAt(recommendedN),
     speedAtMax: speedAt(maxN),
   };
+}
+
+function estimateConcurrencyCapacity(model, quant, hardware) {
+  return computeConcurrencyBounds(model, quant, hardware);
 }
 
 function renderConcurrencySection(model, quant, hardware) {
