@@ -45,6 +45,7 @@
               <select id="gpuPreset" hidden></select>
             </label>
             <datalist id="gpuPresetOptions"></datalist>
+            <datalist id="gpuFixedPresetOptions"></datalist>
             <label class="field">
               <span>VRAM</span>
               <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
@@ -60,7 +61,7 @@
             <div class="settings-group-title">이기종 병렬 GPU (선택)</div>
             <label class="field field-wide">
               <span>보조 GPU</span>
-              <input type="text" id="secondaryGpuPresetSearch" list="gpuPresetOptions" autocomplete="off" placeholder="검색해서 선택 (비워두면 사용 안 함)" />
+              <input type="text" id="secondaryGpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="검색해서 선택 (비워두면 사용 안 함)" />
               <select id="secondaryGpuPreset" aria-label="보조 GPU" hidden>
                 <option value="none">사용 안 함</option>
               </select>
@@ -492,6 +493,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260723-estimate-guide1" defer></script>
+    <script src="./app.js?v=20260723-gpu-search1" defer></script>
   </body>
 </html>

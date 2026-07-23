@@ -183,16 +183,25 @@ function populateSelects() {
 
 function populateGpuPresetDatalist() {
   const list = $("gpuPresetOptions");
-  if (!list) return;
-  list.innerHTML = GPU_PRESETS.map((gpu) => `<option value="${escapeAttr(gpu.name)}"></option>`).join("");
+  const fixedList = $("gpuFixedPresetOptions");
+  if (list) {
+    list.innerHTML = GPU_PRESETS.map((gpu) => `<option value="${escapeAttr(gpu.name)}"></option>`).join("");
+  }
+  if (fixedList) {
+    fixedList.innerHTML = GPU_PRESETS
+      .filter((gpu) => gpu.id !== "custom")
+      .map((gpu) => `<option value="${escapeAttr(gpu.name)}"></option>`)
+      .join("");
+  }
 }
 
-function findGpuPresetByName(name) {
+function findGpuPresetByName(name, allowCustom = true) {
   const trimmed = String(name || "").trim();
   if (!trimmed) return null;
+  const presets = allowCustom ? GPU_PRESETS : GPU_PRESETS.filter((gpu) => gpu.id !== "custom");
   return (
-    GPU_PRESETS.find((gpu) => gpu.name === trimmed) ||
-    GPU_PRESETS.find((gpu) => gpu.name.toLowerCase() === trimmed.toLowerCase()) ||
+    presets.find((gpu) => gpu.name === trimmed) ||
+    presets.find((gpu) => gpu.name.toLowerCase() === trimmed.toLowerCase()) ||
     null
   );
 }
@@ -603,7 +612,7 @@ function bindEvents() {
       $("secondaryGpuPreset").dispatchEvent(new Event("change"));
       return;
     }
-    const preset = findGpuPresetByName(raw);
+    const preset = findGpuPresetByName(raw, false);
     if (preset) {
       $("secondaryGpuPreset").value = preset.id;
       $("secondaryGpuPreset").dispatchEvent(new Event("change"));
@@ -624,7 +633,7 @@ function bindEvents() {
   $("gpuInventoryList").addEventListener("change", (event) => {
     const target = event.target;
     if (target.classList.contains("gpu-inventory-preset-search")) {
-      const preset = findGpuPresetByName(target.value);
+      const preset = findGpuPresetByName(target.value, false);
       if (preset) {
         updateGpuInventoryRow(target.dataset.rowId, "presetId", preset.id);
       }
@@ -851,7 +860,7 @@ function renderGpuInventory() {
     .map(
       (row) => `
         <div class="gpu-inventory-row">
-          <input type="text" class="gpu-inventory-preset-search" list="gpuPresetOptions" data-row-id="${escapeAttr(row.id)}" value="${escapeAttr(GPU_PRESETS.find((gpu) => gpu.id === row.presetId)?.name || "")}" autocomplete="off" aria-label="GPU 종류 검색" placeholder="GPU 모델명 검색" />
+          <input type="text" class="gpu-inventory-preset-search" list="gpuFixedPresetOptions" data-row-id="${escapeAttr(row.id)}" value="${escapeAttr(GPU_PRESETS.find((gpu) => gpu.id === row.presetId)?.name || "")}" autocomplete="off" aria-label="GPU 종류 검색" placeholder="GPU 모델명 검색" />
           <input type="number" class="gpu-inventory-count" data-row-id="${escapeAttr(row.id)}" min="1" max="8" step="1" value="${row.count}" aria-label="이 GPU 개수" />
           <button type="button" class="icon-button gpu-inventory-remove" data-row-id="${escapeAttr(row.id)}" aria-label="GPU 제거" ${gpuInventoryRows.length <= 1 ? "disabled" : ""}>×</button>
         </div>
