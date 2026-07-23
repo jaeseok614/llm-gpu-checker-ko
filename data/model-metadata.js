@@ -747,13 +747,22 @@ mergeModelMetadata({
     ...cardDate("2023-07-27"),
     qualityBenchmark: quality("MTEB 62.39", "MTEB English average (56)", 62.39, "https://huggingface.co/thenlper/gte-base"),
   },
-  "jinaai/jina-embeddings-v5-text-small": cardDate("2026-01-22"),
-  "jinaai/jina-embeddings-v5-text-nano": cardDate("2026-01-22"),
+  "jinaai/jina-embeddings-v5-text-small": {
+    ...cardDate("2026-01-22"),
+    qualityBenchmark: quality("MTEB(en-v2) 71.7", "MTEB English v2 평균", 71.7, "https://huggingface.co/jinaai/jina-embeddings-v5-text-small", "공식 발표"),
+  },
+  "jinaai/jina-embeddings-v5-text-nano": {
+    ...cardDate("2026-01-22"),
+    qualityBenchmark: quality("MTEB(en-v2) 71.0", "MTEB English v2 평균", 71, "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano", "공식 발표"),
+  },
   "Snowflake/snowflake-arctic-embed-l-v2.0": {
     ...cardDate("2024-11-08"),
     qualityBenchmark: quality("BEIR 55.6", "BEIR nDCG@10 average (15)", 55.6, "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0"),
   },
-  "Snowflake/snowflake-arctic-embed-m-v2.0": cardDate("2024-11-08"),
+  "Snowflake/snowflake-arctic-embed-m-v2.0": {
+    ...cardDate("2024-11-08"),
+    qualityBenchmark: quality("BEIR 55.4", "BEIR nDCG@10 average (15)", 55.4, "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0", "공식 발표"),
+  },
   "nomic-ai/nomic-embed-text-v1.5": {
     ...cardDate("2024-02-10"),
     qualityBenchmark: quality("MTEB 62.28", "MTEB English average (768d)", 62.28, "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5"),
@@ -772,10 +781,19 @@ mergeModelMetadata({
   },
   "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": cardDate("2022-03-02"),
   "sentence-transformers/LaBSE": cardDate("2022-03-02"),
-  "jinaai/jina-embeddings-v4": cardDate("2025-05-07"),
+  "jinaai/jina-embeddings-v4": {
+    ...cardDate("2025-05-07"),
+    qualityBenchmark: quality("MMTEB 66.49", "MMTEB 평균", 66.49, "https://jina.ai/news/jina-embeddings-v4-universal-embeddings-for-multimodal-multilingual-retrieval/", "공식 발표"),
+  },
   "BAAI/bge-multilingual-gemma2": cardDate("2024-07-25"),
-  "BAAI/bge-en-icl": cardDate("2024-07-25"),
-  "BAAI/bge-code-v1": cardDate("2025-05-15"),
+  "BAAI/bge-en-icl": {
+    ...cardDate("2024-07-25"),
+    qualityBenchmark: quality("AIR-Bench 54.36", "AIR-Bench QA 8개 도메인 평균 nDCG@10 (few-shot)", 54.36, "https://huggingface.co/BAAI/bge-en-icl", "공식 발표"),
+  },
+  "BAAI/bge-code-v1": {
+    ...cardDate("2025-05-15"),
+    qualityBenchmark: quality("CoIR 81.77", "CoIR 평균", 81.77, "https://huggingface.co/BAAI/bge-code-v1", "공식 발표"),
+  },
   "Alibaba-NLP/gte-large-en-v1.5": {
     ...cardDate("2024-04-20"),
     qualityBenchmark: quality("MTEB-en 65.39", "MTEB English average (56)", 65.39, "https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5"),
@@ -784,39 +802,90 @@ mergeModelMetadata({
     ...cardDate("2024-04-20"),
     qualityBenchmark: quality("MTEB-en 64.11", "MTEB English average (56)", 64.11, "https://huggingface.co/Alibaba-NLP/gte-base-en-v1.5"),
   },
-  "intfloat/e5-mistral-7b-instruct": cardDate("2023-12-20"),
-  "Salesforce/SFR-Embedding-Mistral": cardDate("2024-01-24"),
+  "intfloat/e5-mistral-7b-instruct": {
+    ...cardDate("2023-12-20"),
+    qualityBenchmark: quality("MTEB 66.6", "MTEB 영어 56개 데이터셋 평균", 66.6, "https://arxiv.org/abs/2401.00368", "공식 논문"),
+  },
+  "Salesforce/SFR-Embedding-Mistral": {
+    ...cardDate("2024-01-24"),
+    qualityBenchmark: quality("MTEB 67.6", "MTEB 영어 56개 데이터셋 평균", 67.6, "https://www.salesforce.com/blog/sfr-embedding/", "공식 발표"),
+  },
   "Salesforce/SFR-Embedding-2_R": cardDate("2024-06-14"),
-  "GritLM/GritLM-7B": cardDate("2024-02-11"),
+  "GritLM/GritLM-7B": {
+    ...cardDate("2024-02-11"),
+    qualityBenchmark: quality("MTEB 66.8", "MTEB 영어 평균", 66.8, "https://arxiv.org/abs/2402.09906", "공식 논문"),
+  },
   "WhereIsAI/UAE-Large-V1": {
     ...cardDate("2023-12-04"),
     qualityBenchmark: quality("MTEB 64.64", "MTEB Leaderboard average", 64.64, "https://huggingface.co/WhereIsAI/UAE-Large-V1", "공식 발표"),
   },
   "NovaSearch/stella_en_1.5B_v5": cardDate("2024-07-12"),
   "NovaSearch/stella_en_400M_v5": cardDate("2024-07-12"),
-  "nomic-ai/nomic-embed-text-v2-moe": cardDate("2025-04-30"),
-  "nomic-ai/modernbert-embed-base": cardDate("2024-12-29"),
-  "ibm-granite/granite-embedding-311m-multilingual-r2": cardDate("2026-04-20"),
-  "ibm-granite/granite-embedding-97m-multilingual-r2": cardDate("2026-04-20"),
+  "nomic-ai/nomic-embed-text-v2-moe": {
+    ...cardDate("2025-04-30"),
+    qualityBenchmark: quality("BEIR 52.86", "BEIR 평균", 52.86, "https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe", "공식 발표"),
+  },
+  "nomic-ai/modernbert-embed-base": {
+    ...cardDate("2024-12-29"),
+    qualityBenchmark: quality("MTEB 62.62", "MTEB 평균(56개 데이터셋)", 62.62, "https://huggingface.co/nomic-ai/modernbert-embed-base", "공식 발표"),
+  },
+  "ibm-granite/granite-embedding-311m-multilingual-r2": {
+    ...cardDate("2026-04-20"),
+    qualityBenchmark: quality("MTEB-Retrieval 65.2", "MTEB 다국어 검색(18개 태스크) 평균", 65.2, "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2", "공식 발표"),
+  },
+  "ibm-granite/granite-embedding-97m-multilingual-r2": {
+    ...cardDate("2026-04-20"),
+    qualityBenchmark: quality("MTEB-Retrieval 60.3", "MTEB 다국어 검색(18개 태스크) 평균", 60.3, "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2", "공식 발표"),
+  },
   "ibm-granite/granite-embedding-english-r2": {
     ...cardDate("2025-07-17"),
     qualityBenchmark: quality("Avg 59.5", "MTEB-v2 Retrieval/CoIR/MLDR/LongEmbed/TableIR/MTRAG average", 59.5, "https://huggingface.co/ibm-granite/granite-embedding-english-r2"),
   },
-  "ibm-granite/granite-embedding-small-english-r2": cardDate("2025-07-17"),
-  "ibm-granite/granite-embedding-278m-multilingual": cardDate("2024-12-04"),
-  "ibm-granite/granite-embedding-107m-multilingual": cardDate("2024-12-04"),
+  "ibm-granite/granite-embedding-small-english-r2": {
+    ...cardDate("2025-07-17"),
+    qualityBenchmark: quality("MTEB-v2 61.1", "MTEB-v2 영어(41개 태스크) 평균", 61.1, "https://huggingface.co/ibm-granite/granite-embedding-small-english-r2", "공식 발표"),
+  },
+  "ibm-granite/granite-embedding-278m-multilingual": {
+    ...cardDate("2024-12-04"),
+    qualityBenchmark: quality("MTEB-Retrieval 52.2", "MTEB 다국어 검색(18개 태스크) 평균", 52.2, "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2", "공식 비교표"),
+  },
+  "ibm-granite/granite-embedding-107m-multilingual": {
+    ...cardDate("2024-12-04"),
+    qualityBenchmark: quality("MTEB-Retrieval 48.1", "MTEB 다국어 검색(18개 태스크) 평균", 48.1, "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2", "공식 비교표"),
+  },
   "nlpai-lab/KURE-v1": {
     ...cardDate("2024-12-18"),
     qualityBenchmark: quality("NDCG@10 69.47", "한국어 검색 벤치마크 평균 NDCG@10 (top-k10)", 69.47, "https://huggingface.co/nlpai-lab/KURE-v1", "공식 발표"),
   },
-  "nlpai-lab/KoE5": cardDate("2024-09-24"),
-  "dragonkue/BGE-m3-ko": cardDate("2024-09-17"),
-  "dragonkue/snowflake-arctic-embed-l-v2.0-ko": cardDate("2025-03-07"),
-  "dragonkue/multilingual-e5-small-ko-v2": cardDate("2025-06-10"),
-  "dragonkue/colbert-ko-0.1b": cardDate("2026-01-25"),
-  "maidalun1020/bce-embedding-base_v1": cardDate("2023-12-29"),
+  "nlpai-lab/KoE5": {
+    ...cardDate("2024-09-24"),
+    qualityBenchmark: quality("NDCG@10 66.01", "한국어 검색 8개 벤치마크 평균 NDCG@10", 66.01, "https://huggingface.co/nlpai-lab/KoE5", "공식 발표"),
+  },
+  "dragonkue/BGE-m3-ko": {
+    ...cardDate("2024-09-17"),
+    qualityBenchmark: quality("NDCG@10 68.33", "MIRACL-ko cosine NDCG@10", 68.33, "https://huggingface.co/dragonkue/BGE-m3-ko", "공식 발표"),
+  },
+  "dragonkue/snowflake-arctic-embed-l-v2.0-ko": {
+    ...cardDate("2025-03-07"),
+    qualityBenchmark: quality("NDCG@10 74.04", "한국어 검색 벤치마크(7개) 평균 NDCG@10", 74.04, "https://huggingface.co/dragonkue/snowflake-arctic-embed-l-v2.0-ko", "공식 발표"),
+  },
+  "dragonkue/multilingual-e5-small-ko-v2": {
+    ...cardDate("2025-06-10"),
+    qualityBenchmark: quality("NDCG@10 69.25", "한국어 검색 벤치마크 평균 NDCG@10", 69.25, "https://huggingface.co/dragonkue/multilingual-e5-small-ko-v2", "공식 발표"),
+  },
+  "dragonkue/colbert-ko-0.1b": {
+    ...cardDate("2026-01-25"),
+    qualityBenchmark: quality("NDCG@10 73.7", "AutoRAG/Ko-StrategyQA/NanoBEIR-Ko 평균 NDCG@10 (dim128)", 73.7, "https://huggingface.co/dragonkue/colbert-ko-0.1b", "공식 발표"),
+  },
+  "maidalun1020/bce-embedding-base_v1": {
+    ...cardDate("2023-12-29"),
+    qualityBenchmark: quality("MTEB 59.43", "MTEB 119개 이중/교차언어 데이터셋 평균", 59.43, "https://huggingface.co/maidalun1020/bce-embedding-base_v1", "공식 발표"),
+  },
   "sentence-transformers/paraphrase-multilingual-mpnet-base-v2": cardDate("2022-03-02"),
-  "sentence-transformers/multi-qa-mpnet-base-dot-v1": cardDate("2022-03-02"),
+  "sentence-transformers/multi-qa-mpnet-base-dot-v1": {
+    ...cardDate("2022-03-02"),
+    qualityBenchmark: quality("Avg 57.60", "Semantic Search 6개 데이터셋 평균", 57.6, "https://www.sbert.net/docs/sentence_transformer/pretrained_models.html", "공식 발표"),
+  },
 
   "Qwen/Qwen3-Reranker-0.6B": {
     ...cardDate("2025-05-29"),
