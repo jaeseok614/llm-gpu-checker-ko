@@ -2223,14 +2223,38 @@ function buildRecommendationReasons(estimate) {
   return [...new Set(reasons)].slice(0, 4);
 }
 
+function normalizeBenchmarkRuntime(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized.includes("ollama") || normalized.includes("llama.cpp") || normalized === "llamacpp") return "llamacpp";
+  if (normalized.includes("vllm")) return "vllm";
+  if (normalized.includes("transformers")) return "transformers";
+  return normalized;
+}
+
+function normalizeBenchmarkSetting(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+}
+
 function findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware) {
   return (
     benchmarkRows.find((row) => {
-      const sameGpu = !row.gpuId
-        || (row.gpuId === hardware.preset.id && hardware.primaryCount === 1 && !hardware.secondaryPreset);
-      const sameRuntime = !row.runtime || row.runtime === hardware.runtime;
-      const sameSetting = model.type === "generative" ? (!row.quantization || row.quantization === estimate.settingLabel || row.quantization === estimate.quant?.label) : true;
-      return sameGpu && sameRuntime && sameSetting;
+      const singleGpu = hardware.primaryCount === 1 && !hardware.secondaryPreset;
+      const sameGpu = Boolean(row.gpuId) && row.gpuId === hardware.preset.id && singleGpu;
+      const sameRuntime = Boolean(row.runtime)
+        && normalizeBenchmarkRuntime(row.runtime) === normalizeBenchmarkRuntime(hardware.runtime);
+      const estimateSettings = [estimate.settingLabel, estimate.quant?.label]
+        .filter(Boolean)
+        .map(normalizeBenchmarkSetting);
+      const sameSetting = model.type === "generative"
+        ? Boolean(row.quantization) && estimateSettings.includes(normalizeBenchmarkSetting(row.quantization))
+        : true;
+      const sameContext = model.type === "generative"
+        ? Number.isFinite(Number(row.context)) && Number(row.context) === hardware.context
+        : true;
+      const sameConcurrency = model.type === "generative"
+        ? Number(row.concurrency ?? 1) === hardware.concurrency
+        : true;
+      return sameGpu && sameRuntime && sameSetting && sameContext && sameConcurrency;
     }) || null
   );
 }
@@ -3423,13 +3447,21 @@ function renderEstimateErrorLine(estimateValue, measuredValue, unit) {
   `;
 }
 
+function formatBenchmarkRuntime(row) {
+  const tool = String(row.runtimeTool || "").toLowerCase();
+  if (tool === "ollama") return "Ollama";
+  if (tool === "llamacpp") return "llama.cpp";
+  const normalized = normalizeBenchmarkRuntime(row.runtime);
+  return RUNTIME_LABELS[normalized] || row.runtime || row.workload || "runtime";
+}
+
 function renderBenchmarkMiniRows(rows, reference, qualityBenchmark) {
   if (rows.length) {
     return `
       <div class="benchmark-mini-table">
         ${rows.slice(0, 3).map((row) => `
           <div>
-            <span>${escapeHtml(row.gpu || row.gpuId || "GPU 미기재")} · ${escapeHtml(row.runtime || row.workload || "runtime")}</span>
+            <span>${escapeHtml(row.gpu || row.gpuId || "GPU 미기재")} · ${escapeHtml(formatBenchmarkRuntime(row))}</span>
             <strong>${escapeHtml(formatBenchmarkMetric(row))}</strong>
             <small>${escapeHtml(row.date || "날짜 미기재")}${row.sourceUrl ? " · 출처 링크 있음" : ""}</small>
           </div>

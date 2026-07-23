@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- 로컬 실측 벤치마크 자동 수집 CLI(`scripts/benchmark-cli.mjs`) 추가: Ollama/llama.cpp에 실제 프롬프트를 보내 prefill/decode 속도·TTFT·peak VRAM을 측정하고 제보용 JSON 생성
+- 루프백 전용 로컬 실측 벤치마크 CLI(`scripts/benchmark-cli.mjs`) 추가: Ollama/llama.cpp에 실제 프롬프트를 보내 prefill/decode 속도·TTFT·peak VRAM을 측정하고 제보용 JSON 생성
 - Benchmark report 이슈 템플릿에 CLI 출력 JSON을 바로 붙여넣는 칸 추가
 - 모델 상세에 동일 조건 실측값이 있을 때 "예상 vs 실측 · 추정 오차 %"를 표시
 - 배치 계산 버튼 옆에 배치된 모델 전체의 공통 병목 기준(동시 접속 인원·처리량) 요약 뱃지 추가

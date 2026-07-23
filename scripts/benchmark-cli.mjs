@@ -6,8 +6,9 @@
 // prints a JSON row in the exact shape data/benchmarks.js expects, plus a ready
 // to paste GitHub issue body.
 //
-// This script only talks to your local runtime (Ollama / llama.cpp) and to
-// `nvidia-smi` if present. It does not read, upload, or transmit anything.
+// This script only talks to a loopback runtime (Ollama / llama.cpp) and to
+// `nvidia-smi` if present. Remote hosts and HTTP redirects are rejected.
+// It does not read, upload, or transmit benchmark results.
 // You choose whether to share the printed result.
 //
 // Usage:
@@ -24,12 +25,14 @@
 //   --url          Server base URL (default http://localhost:11434 for ollama,
 //                  http://localhost:8080 for llamacpp)
 //   --gpu          GPU display name, e.g. "GeForce RTX 4090 24GB" (auto-detected if nvidia-smi is available)
-//   --gpu-id       GPU preset id from this app's data/gpus.js, e.g. rtx4090-24 (optional, improves match confidence)
-//   --quantization Quantization label, e.g. Q4_K_M (optional but recommended)
+//   --gpu-index    NVIDIA GPU index to monitor (default 0)
+//   --gpu-id       GPU preset id from this app's data/gpus.js, e.g. rtx4090-24 (needed for exact UI match)
+//   --model-key    Model key used by the web app (needed for exact UI match)
+//   --quantization Quantization label, e.g. Q4_K_M (needed for exact UI match)
 //   --out          Write the JSON row to this file (default: benchmark-result.json)
 //   --repeat       Number of runs to average (default 1)
 
-import { execSync } from "node:child_process";
+import { execFile, execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
 function parseArgs(argv) {
@@ -63,10 +66,12 @@ Options:
   --context       context length in tokens (default 8192)
   --prompt        custom prompt (default: built-in short prompt)
   --predict       max tokens to generate (default 256)
-  --url           server base URL
+  --url           loopback server base URL
   --gpu           GPU display name (auto-detected via nvidia-smi if omitted)
-  --gpu-id        GPU preset id from data/gpus.js (optional)
-  --quantization  quantization label, e.g. Q4_K_M (optional)
+  --gpu-index     NVIDIA GPU index to monitor (default 0)
+  --gpu-id        GPU preset id from data/gpus.js (needed for exact UI match)
+  --model-key     model key used by the web app (needed for exact UI match)
+  --quantization  quantization label, e.g. Q4_K_M (needed for exact UI match)
   --out           output JSON file (default benchmark-result.json)
   --repeat        number of runs to average (default 1)
 `);
@@ -75,23 +80,72 @@ Options:
 const DEFAULT_PROMPT =
   "Explain in three short sentences why memory bandwidth matters more than raw compute for local LLM decoding speed.";
 
-function detectGpuInfo() {
-  try {
-    const out = execSync(
-      "nvidia-smi --query-gpu=name,memory.used,memory.total,driver_version --format=csv,noheader,nounits",
-      { encoding: "utf8" },
-    ).trim();
-    const [name, usedMb, totalMb, driver] = out.split(",").map((part) => part.trim());
-    return {
-      name,
-      usedMb: Number(usedMb),
-      totalMb: Number(totalMb),
-      driver,
-      available: true,
-    };
-  } catch {
-    return { available: false };
+function parsePositiveInteger(value, fallback, option, maximum) {
+  const parsed = value === undefined ? fallback : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > maximum) {
+    throw new Error(`--${option} must be an integer between 1 and ${maximum}`);
   }
+  return parsed;
+}
+
+function parseGpuIndex(value) {
+  const parsed = value === undefined ? 0 : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 255) {
+    throw new Error("--gpu-index must be an integer between 0 and 255");
+  }
+  return parsed;
+}
+
+function resolveLocalRuntimeUrl(rawUrl, runtime) {
+  const fallback = runtime === "ollama" ? "http://localhost:11434" : "http://localhost:8080";
+  let parsed;
+  try {
+    parsed = new URL(rawUrl || fallback);
+  } catch {
+    throw new Error(`Invalid --url "${rawUrl}"`);
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const isLoopback = hostname === "localhost"
+    || hostname.endsWith(".localhost")
+    || hostname === "::1"
+    || hostname === "[::1]"
+    || /^127(?:\.\d{1,3}){3}$/.test(hostname);
+  if (parsed.protocol !== "http:" || !isLoopback) {
+    throw new Error("--url must use http://localhost, 127.0.0.0/8, or [::1]. Remote hosts are blocked to prevent accidental data transfer.");
+  }
+  parsed.username = "";
+  parsed.password = "";
+  return parsed.toString().replace(/\/+$/, "");
+}
+
+function detectGpuInfo(gpuIndex) {
+  return new Promise((resolve) => {
+    execFile(
+      "nvidia-smi",
+      [
+        `--id=${gpuIndex}`,
+        "--query-gpu=name,memory.used,memory.total,driver_version",
+        "--format=csv,noheader,nounits",
+      ],
+      { encoding: "utf8", timeout: 5000 },
+      (error, stdout) => {
+        if (error) {
+          resolve({ available: false });
+          return;
+        }
+        const line = String(stdout || "").trim().split(/\r?\n/)[0] || "";
+        const [name, usedMb, totalMb, driver] = line.split(",").map((part) => part.trim());
+        const used = Number(usedMb);
+        const total = Number(totalMb);
+        if (!name || !Number.isFinite(used) || !Number.isFinite(total)) {
+          resolve({ available: false });
+          return;
+        }
+        resolve({ name, usedMb: used, totalMb: total, driver, available: true });
+      },
+    );
+  });
 }
 
 function detectCudaVersion() {
@@ -105,14 +159,14 @@ function detectCudaVersion() {
 }
 
 async function runOllama({ url, model, context, prompt, predict }) {
-  const base = url || "http://localhost:11434";
   const start = performance.now();
   let firstTokenAt = null;
   let finalPayload = null;
   let text = "";
 
-  const response = await fetch(`${base}/api/generate`, {
+  const response = await fetch(`${url}/api/generate`, {
     method: "POST",
+    redirect: "error",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       model,
@@ -162,11 +216,11 @@ async function runOllama({ url, model, context, prompt, predict }) {
 }
 
 async function runLlamaCpp({ url, context, prompt, predict }) {
-  const base = url || "http://localhost:8080";
   const start = performance.now();
 
-  const response = await fetch(`${base}/completion`, {
+  const response = await fetch(`${url}/completion`, {
     method: "POST",
+    redirect: "error",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       prompt,
@@ -216,26 +270,54 @@ async function main() {
     return;
   }
 
-  const context = args.context || 8192;
-  const predict = args.predict || 256;
+  const context = parsePositiveInteger(args.context, 8192, "context", 1048576);
+  const predict = parsePositiveInteger(args.predict, 256, "predict", 65536);
   const prompt = args.prompt || DEFAULT_PROMPT;
-  const repeat = Math.max(1, Number(args.repeat) || 1);
+  const repeat = parsePositiveInteger(args.repeat, 1, "repeat", 100);
+  const gpuIndex = parseGpuIndex(args["gpu-index"]);
+  const serverUrl = resolveLocalRuntimeUrl(args.url, args.runtime);
 
-  const gpuBefore = detectGpuInfo();
+  const gpuBefore = await detectGpuInfo(gpuIndex);
   const cudaVersion = detectCudaVersion();
+  let latestGpu = gpuBefore;
+  let peakUsedMb = gpuBefore.available ? gpuBefore.usedMb : null;
+  let sampleInFlight = null;
+  const sampleGpu = () => {
+    if (sampleInFlight) return;
+    sampleInFlight = detectGpuInfo(gpuIndex)
+      .then((info) => {
+        if (!info.available) return;
+        latestGpu = info;
+        peakUsedMb = Math.max(peakUsedMb ?? 0, info.usedMb);
+      })
+      .finally(() => {
+        sampleInFlight = null;
+      });
+  };
+  const monitor = setInterval(sampleGpu, 200);
+  monitor.unref?.();
 
-  console.log(`Running ${repeat} pass(es) against ${args.runtime}: ${args.model} (context ${context})...`);
+  console.log(`Running ${repeat} pass(es) against ${args.runtime}: ${args.model} (context ${context}, ${serverUrl})...`);
 
   const runs = [];
-  for (let i = 0; i < repeat; i += 1) {
-    console.log(`  pass ${i + 1}/${repeat}...`);
-    const runFn = args.runtime === "ollama" ? runOllama : runLlamaCpp;
-    // eslint-disable-next-line no-await-in-loop
-    const result = await runFn({ url: args.url, model: args.model, context, prompt, predict });
-    runs.push(result);
+  try {
+    for (let i = 0; i < repeat; i += 1) {
+      console.log(`  pass ${i + 1}/${repeat}...`);
+      const runFn = args.runtime === "ollama" ? runOllama : runLlamaCpp;
+      // eslint-disable-next-line no-await-in-loop
+      const result = await runFn({ url: serverUrl, model: args.model, context, prompt, predict });
+      runs.push(result);
+    }
+  } finally {
+    clearInterval(monitor);
+    if (sampleInFlight) await sampleInFlight;
   }
 
-  const gpuAfter = detectGpuInfo();
+  const gpuAfter = await detectGpuInfo(gpuIndex);
+  if (gpuAfter.available) {
+    latestGpu = gpuAfter;
+    peakUsedMb = Math.max(peakUsedMb ?? 0, gpuAfter.usedMb);
+  }
 
   const avg = (values) => {
     const filtered = values.filter((value) => typeof value === "number" && Number.isFinite(value));
@@ -246,27 +328,31 @@ async function main() {
   const prefillTokensPerSecond = avg(runs.map((run) => run.prefillTokensPerSecond));
   const ttftMs = avg(runs.map((run) => run.ttftMs));
 
-  const gpuName = args.gpu || (gpuAfter.available ? gpuAfter.name : "GPU 미기재 (--gpu로 직접 입력하세요)");
-  const peakVramGb = gpuAfter.available ? Math.round((gpuAfter.usedMb / 1024) * 100) / 100 : undefined;
+  const gpuName = args.gpu || (latestGpu.available ? latestGpu.name : "GPU 미기재 (--gpu로 직접 입력하세요)");
+  const peakVramGb = Number.isFinite(peakUsedMb) ? Math.round((peakUsedMb / 1024) * 100) / 100 : undefined;
   const idleVramGb = gpuBefore.available ? Math.round((gpuBefore.usedMb / 1024) * 100) / 100 : undefined;
 
   const row = {
     modelName: args["model-name"] || args.model,
-    modelKey: undefined, // 저장소의 실제 모델과 매칭하려면 data/models.js의 slug 규칙에 맞는 modelKey를 직접 채워주세요 (선택)
+    modelKey: args["model-key"] || undefined,
     gpu: gpuName,
     gpuId: args["gpu-id"] || undefined,
+    gpuIndex,
+    gpuVramGb: latestGpu.available ? Math.round((latestGpu.totalMb / 1024) * 100) / 100 : undefined,
     workload: "generative",
-    runtime: args.runtime === "ollama" ? "llama.cpp" : "llama.cpp", // 앱의 런타임 분류 기준 (Ollama/llama.cpp는 같은 그룹)
+    runtime: "llamacpp",
     runtimeTool: args.runtime,
     quantization: args.quantization || undefined,
-    context: Number(context),
+    context,
+    concurrency: 1,
+    outputTokens: predict,
     tokensPerSecond: decodeTokensPerSecond ? Math.round(decodeTokensPerSecond * 100) / 100 : undefined,
     prefillTokensPerSecond: prefillTokensPerSecond ? Math.round(prefillTokensPerSecond * 100) / 100 : undefined,
     ttftMs: ttftMs ? Math.round(ttftMs) : undefined,
     peakVramGb,
     idleVramGb,
     cudaVersion: cudaVersion || undefined,
-    driverVersion: gpuAfter.available ? gpuAfter.driver : undefined,
+    driverVersion: latestGpu.available ? latestGpu.driver : undefined,
     passes: repeat,
     date: new Date().toISOString().slice(0, 10),
     sourceUrl: "<이 결과를 올린 GitHub 이슈/댓글 URL을 여기에 붙여넣으세요>",
@@ -289,7 +375,7 @@ async function main() {
   console.log(`Peak VRAM        ${cleanRow.peakVramGb ?? "측정 안 됨"}${cleanRow.peakVramGb !== undefined ? " GB" : ""}${typeof cleanRow.idleVramGb === "number" ? ` (유휴 상태 ${cleanRow.idleVramGb} GB 포함)` : ""}`);
   console.log(`\n결과를 ${outPath} 에 저장했습니다.`);
 
-  if (!gpuAfter.available) {
+  if (!latestGpu.available) {
     console.log(
       "\n참고: nvidia-smi를 찾을 수 없어 VRAM을 자동으로 측정하지 못했습니다. AMD/Intel/Apple GPU를 쓰거나 nvidia-smi가 PATH에 없다면, --gpu로 GPU 이름을 직접 넣고 VRAM은 작업관리자/nvtop 등에서 확인해 JSON 파일에 peakVramGb를 직접 채워주세요.",
     );

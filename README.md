@@ -606,16 +606,17 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 ```bash
 # Ollama
-node scripts/benchmark-cli.mjs --runtime ollama --model qwen3:8b --context 8192
+node scripts/benchmark-cli.mjs --runtime ollama --model qwen3:8b --model-name "Qwen3 8B" \
+  --model-key qwen3-8b --gpu-id rtx4090-24 --quantization Q4_K_M --context 8192
 
 # llama.cpp 서버
 node scripts/benchmark-cli.mjs --runtime llamacpp --url http://localhost:8080 --model "Qwen3 8B Q4_K_M" --context 8192
 ```
 
-- 이 GPU와 로컬 서버에만 접속합니다. 아무것도 자동으로 전송하지 않으며, 출력된 JSON을 제보할지는 직접 선택합니다.
-- NVIDIA GPU에서 `nvidia-smi`가 있으면 GPU 이름·VRAM·드라이버·CUDA 버전을 자동으로 채웁니다. 없으면 `--gpu`로 직접 입력하고 VRAM은 다른 도구로 확인해 JSON에 채워 넣으면 됩니다.
+- 이 GPU와 루프백 로컬 서버(`localhost`, `127.0.0.0/8`, `[::1]`)에만 접속합니다. 외부 호스트와 HTTP 리다이렉트는 차단하며, 출력된 JSON을 제보할지는 직접 선택합니다.
+- NVIDIA GPU에서 `nvidia-smi`가 있으면 GPU 이름·VRAM·드라이버·CUDA 버전을 자동으로 채우고 실행 중 VRAM을 주기적으로 샘플링합니다. 여러 GPU가 있으면 `--gpu-index`로 측정할 GPU를 지정합니다. 없으면 `--gpu`로 직접 입력하고 VRAM은 다른 도구로 확인해 JSON에 채워 넣으면 됩니다.
 - 출력된 JSON을 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml) 이슈의 "CLI 측정 결과 (JSON)" 칸에 붙여넣으면 됩니다. `sourceUrl`은 이슈를 올린 뒤 이슈 자신의 링크로 바꿔주세요.
-- 모델·GPU·조건이 현재 화면과 정확히 일치하는 실측 행이 등록되면, 상세 화면에 "예상 X vs 실측 Y · 추정 오차 ±Z%"가 함께 표시됩니다.
+- `--model-key`, `--gpu-id`, `--quantization`, `--context`가 현재 화면과 정확히 일치하는 실측 행이 등록되면, 상세 화면에 "예상 X vs 실측 Y · 추정 오차 ±Z%"가 함께 표시됩니다. 조건이 빠지거나 다르면 같은 모델의 참고 실측으로만 취급합니다.
 - `--help`로 전체 옵션을 확인할 수 있습니다.
 
 ### Hugging Face 공개 LLM 직접 계산

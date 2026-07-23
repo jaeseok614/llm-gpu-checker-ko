@@ -7,12 +7,12 @@ body:
     attributes:
       value: |
         `node scripts/benchmark-cli.mjs --runtime ollama --model <모델> --context <길이>` (llama.cpp는 `--runtime llamacpp`)로 실행하면
-        아래 JSON 칸에 그대로 붙여넣을 수 있는 결과가 출력됩니다. CLI 없이 수동으로 제보해도 괜찮습니다.
+        아래 JSON 칸에 그대로 붙여넣을 수 있는 결과가 출력됩니다. **CLI JSON 또는 아래 수동 입력 항목 중 한쪽**을 채워 주세요.
   - type: textarea
     id: cli_json
     attributes:
       label: CLI 측정 결과 (JSON)
-      description: scripts/benchmark-cli.mjs 출력의 JSON 블록을 그대로 붙여넣어 주세요. CLI를 쓰지 않았다면 비워두고 아래 항목을 채워 주세요.
+      description: scripts/benchmark-cli.mjs 출력의 JSON 블록을 그대로 붙여넣어 주세요. CLI JSON을 넣었다면 아래 수동 항목은 비워도 됩니다.
       render: json
     validations:
       required: false
@@ -22,35 +22,35 @@ body:
       label: GPU
       placeholder: RTX 4090 24GB
     validations:
-      required: true
+      required: false
   - type: input
     id: model
     attributes:
       label: 모델
       placeholder: Qwen2.5 32B Instruct
     validations:
-      required: true
+      required: false
   - type: input
     id: runtime
     attributes:
       label: 런타임
       placeholder: Ollama, llama.cpp, vLLM, Transformers
     validations:
-      required: true
+      required: false
   - type: input
     id: settings
     attributes:
       label: 실행 설정
       placeholder: Q4_K_M, 8K context, concurrency 1
     validations:
-      required: true
+      required: false
   - type: input
     id: result
     attributes:
       label: 실제 결과
       placeholder: OOM 없음, 32 tok/s
     validations:
-      required: true
+      required: false
   - type: textarea
     id: logs
     attributes:
