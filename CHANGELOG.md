@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.1.0 - Multi-workload AI Hardware Planner - 2026-07-24
+
 - 루프백 전용 로컬 실측 벤치마크 CLI(`scripts/benchmark-cli.mjs`) 추가: Ollama/llama.cpp에 실제 프롬프트를 보내 prefill/decode 속도·TTFT·peak VRAM을 측정하고 제보용 JSON 생성
 - Benchmark report 이슈 템플릿에 CLI 출력 JSON을 바로 붙여넣는 칸 추가
 - 모델 상세에 동일 조건 실측값이 있을 때 "예상 vs 실측 · 추정 오차 %"를 표시

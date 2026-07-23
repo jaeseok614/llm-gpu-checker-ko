@@ -34,6 +34,7 @@
 
 import { execFile, execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
+import { createInterface } from "node:readline/promises";
 
 function parseArgs(argv) {
   const args = {};
@@ -56,6 +57,7 @@ function printHelp() {
   console.log(`AI Hardware Fit - local benchmark collector
 
 Usage:
+  node scripts/benchmark-cli.mjs                 (no args, TTY: interactive prompts)
   node scripts/benchmark-cli.mjs --runtime ollama --model qwen3:8b --context 8192
   node scripts/benchmark-cli.mjs --runtime llamacpp --url http://localhost:8080 --model "Qwen3 8B Q4_K_M" --context 8192
 
@@ -249,12 +251,66 @@ async function runLlamaCpp({ url, context, prompt, predict }) {
   };
 }
 
+async function runInteractive() {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = async (question, fallback) => {
+    const answer = (await rl.question(fallback ? `${question} [${fallback}] ` : `${question} `)).trim();
+    return answer || fallback || "";
+  };
+
+  console.log("AI Hardware Fit - 로컬 벤치마크 대화형 모드 (인자 없이 실행하면 나타납니다)\n");
+
+  const gpuGuess = await detectGpuInfo(0);
+  if (gpuGuess.available) {
+    console.log(`GPU 감지: ${gpuGuess.name} (VRAM ${Math.round(gpuGuess.totalMb / 1024)}GB 중 ${Math.round(gpuGuess.usedMb / 1024)}GB 사용 중)\n`);
+  } else {
+    console.log("nvidia-smi로 GPU를 자동 감지하지 못했습니다. 이름을 직접 입력해 주세요.\n");
+  }
+
+  const runtimeAnswer = (await ask("런타임 (ollama / llamacpp)", "ollama")).toLowerCase();
+  const runtime = runtimeAnswer === "llamacpp" ? "llamacpp" : "ollama";
+  const model = await ask(runtime === "ollama" ? "실행 모델 태그 (예: qwen3:8b)" : "모델 이름 (예: Qwen3 8B Q4_K_M)", "");
+  const context = await ask("컨텍스트 길이", "8192");
+  const quantization = await ask("양자화 라벨 (선택, 예: Q4_K_M)", "");
+  const url = await ask(
+    "서버 주소",
+    runtime === "ollama" ? "http://localhost:11434" : "http://localhost:8080",
+  );
+  const repeat = await ask("반복 측정 횟수", "1");
+
+  rl.close();
+
+  if (!model) {
+    console.error("\n모델을 입력하지 않아 종료합니다.");
+    process.exitCode = 1;
+    return null;
+  }
+
+  console.log("\n측정을 시작합니다...\n");
+
+  return {
+    runtime,
+    model,
+    context,
+    quantization: quantization || undefined,
+    url,
+    repeat,
+    gpu: gpuGuess.available ? gpuGuess.name : undefined,
+  };
+}
+
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  let args = parseArgs(process.argv.slice(2));
 
   if (args.help || args.h) {
     printHelp();
     return;
+  }
+
+  if ((!args.runtime || !args.model) && process.argv.length <= 2 && process.stdin.isTTY) {
+    const interactiveArgs = await runInteractive();
+    if (!interactiveArgs) return;
+    args = interactiveArgs;
   }
 
   if (!args.runtime || !args.model) {

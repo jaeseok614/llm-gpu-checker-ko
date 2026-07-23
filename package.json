@@ -1,12 +1,20 @@
 {
-  "name": "llm-gpu-checker-ko",
-  "version": "1.0.0",
+  "name": "ai-hardware-fit",
+  "version": "1.1.0",
   "private": false,
-  "description": "Korean static web app for estimating which LLM, embedding, reranker, and OCR models can run on a selected GPU.",
+  "description": "Korean static web app for estimating which LLM, embedding, reranker, OCR, and VLM models can run on a selected GPU, plus a local benchmark CLI.",
   "type": "module",
+  "bin": {
+    "ai-hardware-fit": "./scripts/benchmark-cli.mjs"
+  },
   "scripts": {
-    "check": "node --check app.js && node --check scripts/benchmark-cli.mjs && node scripts/validate-data.mjs",
+    "check": "node --check app.js && node --check scripts/benchmark-cli.mjs && node scripts/validate-data.mjs && node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "benchmark": "node scripts/benchmark-cli.mjs",
     "social-preview": "node scripts/generate-social-preview.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
   },
   "keywords": [
     "llm",

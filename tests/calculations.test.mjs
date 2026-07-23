@@ -1,0 +1,210 @@
+// Core calculation regression tests. Uses jsdom to load the app exactly the
+// way a browser would (single <script> globals, no bundler), then calls the
+// app's own functions directly. Run with `npm test` or `node --test tests/`.
+//
+// jsdom is a devDependency (`npm install`) — it is not shipped to the
+// browser build, only used here for testing.
+
+import { test, describe, before } from "node:test";
+import assert from "node:assert/strict";
+import { JSDOM } from "jsdom";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const rootDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const read = (relativePath) => fs.readFileSync(path.join(rootDir, relativePath), "utf8");
+
+const DATA_FILES = [
+  "data/gpus.js",
+  "data/quantizations.js",
+  "data/precision-profiles.js",
+  "data/models.js",
+  "data/embedding-models.js",
+  "data/reranker-models.js",
+  "data/ocr-models.js",
+  "data/model-metadata.js",
+  "data/benchmarks.js",
+  "data/licenses.js",
+];
+
+// Loads the app into a fresh jsdom window and returns that window. Each
+// call gets an independent global scope so tests can't leak state into
+// each other through top-level `let`/`const` bindings in app.js.
+// Names app.js declares with `const` at the top level. A single window.eval()
+// call keeps these as live lexical bindings, but a *separate*, later
+// window.eval() call cannot see them (only function declarations and `var`
+// attach to the global object and survive across eval calls). So after the
+// initial load we copy everything tests need onto `window` explicitly.
+const BRIDGED_NAMES = [
+  "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS",
+  "QUANTS", "KV_PRECISION_META", "GPU_PRESETS", "ENCODER_PRECISIONS", "OCR_PRECISIONS",
+];
+
+function loadApp(url = "https://example.com/") {
+  const dom = new JSDOM(read("index.html"), { url, runScripts: "outside-only" });
+  const { window } = dom;
+  let combined = DATA_FILES.map(read).join("\n;\n");
+  combined += "\n;\n" + read("app.js");
+  combined += "\n;\ninit();\n";
+  combined += BRIDGED_NAMES.map((name) => `window.${name} = ${name};`).join("\n");
+  window.eval(combined);
+  return window;
+}
+
+let win;
+
+before(() => {
+  win = loadApp();
+});
+
+describe("weights: dense vs MoE (active vs total params)", () => {
+  test("KV cache scales with active params, not total params", () => {
+    const dense = win.eval(`GENERATIVE_MODELS.find((m) => m.params === m.active && m.params > 3 && m.params < 40)`);
+    const moe = win.eval(`GENERATIVE_MODELS.find((m) => m.active < m.params * 0.5 && m.params > 20)`);
+    assert.ok(dense, "expected at least one dense model in the catalog");
+    assert.ok(moe, "expected at least one MoE model in the catalog");
+
+    const hardware = win.eval(`({ ...getHardware(), context: 8192, concurrency: 1, kvMeta: KV_PRECISION_META.fp16 })`);
+    win.denseModel = dense;
+    win.moeModel = moe;
+    win.testHardware = hardware;
+
+    const denseKv = win.eval("estimateKvCacheGb(denseModel, testHardware)");
+    const moeKv = win.eval("estimateKvCacheGb(moeModel, testHardware)");
+
+    // KV cache should track active params: a MoE model with far fewer active
+    // params than a similarly-sized dense model must report smaller KV cache
+    // per token, even though its total (loaded) weight is comparable or larger.
+    const denseActiveRatio = denseKv / dense.active;
+    const moeActiveRatio = moeKv / moe.active;
+    assert.ok(
+      Math.abs(denseActiveRatio - moeActiveRatio) < 0.01,
+      `KV cache should be proportional to active params for both dense and MoE (dense ratio ${denseActiveRatio}, moe ratio ${moeActiveRatio})`,
+    );
+  });
+
+  test("weight footprint scales with total params (quant bytes * params * 1.08)", () => {
+    const model = win.eval(`GENERATIVE_MODELS.find((m) => m.params > 5)`);
+    const quant = win.eval(`QUANTS.find((q) => q.id === "fp16")`);
+    const hardware = win.eval(`({ ...getHardware(), concurrency: 1 })`);
+    win.wModel = model;
+    win.wQuant = quant;
+    win.wHardware = hardware;
+    const estimate = win.eval("estimateWithQuant(wModel, wQuant, wHardware)");
+    const expectedWeightsGb = model.params * quant.bytesPerB * 1.08;
+    assert.ok(
+      estimate.requiredGb >= expectedWeightsGb,
+      `required VRAM (${estimate.requiredGb}) should be at least the raw weight footprint (${expectedWeightsGb})`,
+    );
+  });
+});
+
+describe("auto quantization selection", () => {
+  test("recommends a smaller quant on a tighter VRAM budget than on a roomy one", () => {
+    const model = win.eval(`GENERATIVE_MODELS.find((m) => m.params > 20 && m.params < 40)`);
+    win.qModel = model;
+    const tight = win.eval(`(() => { const h = { ...getHardware(), vram: 10, totalVram: 10, baseEffectiveVram: 10, availableVram: 9, count: 1, primaryCount: 1 }; return recommendQuant(qModel, h); })()`);
+    const roomy = win.eval(`(() => { const h = { ...getHardware(), vram: 80, totalVram: 80, baseEffectiveVram: 80, availableVram: 78, count: 1, primaryCount: 1 }; return recommendQuant(qModel, h); })()`);
+    assert.ok(tight, "expected a recommendation even under a tight budget");
+    assert.ok(roomy, "expected a recommendation under a roomy budget");
+    const quantOrder = win.eval("QUANTS.map((q) => q.id)");
+    const tightIndex = quantOrder.indexOf(tight.id);
+    const roomyIndex = quantOrder.indexOf(roomy.id);
+    assert.ok(
+      tightIndex >= roomyIndex,
+      `tighter budget (${tight.id}) should not recommend a larger quant than the roomy budget (${roomy.id})`,
+    );
+  });
+});
+
+describe("fit grading / offload threshold", () => {
+  test("grade boundaries follow the documented pressure thresholds", () => {
+    assert.equal(win.eval("gradeFromPressure(0.5, 10, 0)"), "S");
+    assert.equal(win.eval("gradeFromPressure(0.8, 10, 0)"), "A");
+    assert.equal(win.eval("gradeFromPressure(0.95, 10, 0)"), "B");
+    assert.equal(win.eval("gradeFromPressure(1.10, 10, 0)"), "C");
+    assert.equal(win.eval("gradeFromPressure(1.10, 10, 0)"), "C");
+  });
+
+  test("beyond grade C, RAM offload room determines D vs F", () => {
+    const withRoom = win.eval("gradeFromPressure(1.5, 10, 20)");
+    const withoutRoom = win.eval("gradeFromPressure(1.5, 10, 0)");
+    assert.equal(withRoom, "D");
+    assert.equal(withoutRoom, "F");
+  });
+});
+
+describe("heterogeneous GPU sharding loss", () => {
+  test("identical multi-GPU pooling applies a smaller loss than mixed-vendor pooling", () => {
+    const identical = win.eval(`(() => {
+      $("gpuPreset").value = "rtx4090-24";
+      $("gpuCount").value = "2";
+      $("secondaryGpuPreset").value = "none";
+      return getHardware().shardingEfficiency;
+    })()`);
+    const heterogeneous = win.eval(`(() => {
+      $("gpuPreset").value = "rtx4090-24";
+      $("gpuCount").value = "1";
+      $("secondaryGpuPreset").value = "rtx3090-24";
+      $("secondaryGpuCount").value = "1";
+      return getHardware().shardingEfficiency;
+    })()`);
+    assert.equal(identical, 0.92);
+    assert.equal(heterogeneous, 0.88);
+    assert.ok(heterogeneous < identical, "mixed-GPU pooling should be penalized more than same-GPU pooling");
+
+    // reset shared window state for later tests
+    win.eval(`$("gpuCount").value = "1"; $("secondaryGpuPreset").value = "none";`);
+  });
+});
+
+describe("embedding batch memory", () => {
+  test("required VRAM increases with batch size", () => {
+    const model = win.eval("EMBEDDING_MODELS[0]");
+    win.eModel = model;
+    const hardware = win.eval("getHardware()");
+    win.eHardware = hardware;
+    const small = win.eval(`estimateEncoderModel(eModel, eHardware, { inputTokens: 256, batchSize: 4, maxBatchTokens: 16384, runtime: "tei" }, "auto")`);
+    const large = win.eval(`estimateEncoderModel(eModel, eHardware, { inputTokens: 256, batchSize: 64, maxBatchTokens: 16384, runtime: "tei" }, "auto")`);
+    assert.ok(large.requiredGb > small.requiredGb, `batch 64 (${large.requiredGb}GB) should need more VRAM than batch 4 (${small.requiredGb}GB)`);
+  });
+});
+
+describe("OCR resolution scaling", () => {
+  test("required VRAM increases with image resolution", () => {
+    const model = win.eval("OCR_MODELS.find((m) => m.type === 'ocr-pipeline')");
+    win.oModel = model;
+    const hardware = win.eval("getHardware()");
+    win.oHardware = hardware;
+    const small = win.eval(`estimateOcrModel(oModel, oHardware, { width: 800, height: 600, batchSize: 1, featureSet: "basic" }, "auto")`);
+    const large = win.eval(`estimateOcrModel(oModel, oHardware, { width: 2480, height: 3508, batchSize: 1, featureSet: "basic" }, "auto")`);
+    assert.ok(large.requiredGb > small.requiredGb, `A4 300DPI (${large.requiredGb}GB) should need more VRAM than a small thumbnail (${small.requiredGb}GB)`);
+  });
+});
+
+describe("URL state save / restore", () => {
+  test("share URL encodes the current GPU and context settings", () => {
+    win.eval(`
+      $("gpuPreset").value = "h100-sxm-80";
+      applyPreset("h100-sxm-80");
+      $("contextSize").value = "32768";
+      $("concurrency").value = "4";
+    `);
+    win.eval("syncUrlState()");
+    const search = win.location.search;
+    const params = new URLSearchParams(search);
+    assert.equal(params.get("gpu"), "h100-sxm-80");
+    assert.equal(params.get("ctx"), "32768");
+    assert.equal(params.get("con"), "4");
+  });
+
+  test("loading a URL with query params restores the same settings on a fresh session", () => {
+    const restored = loadApp("https://example.com/?gpu=h100-sxm-80&vram=80&ram=128&count=1&ctx=32768&con=4&out=512&kv=fp16&runtime=vllm");
+    const hardware = restored.eval("getHardware()");
+    assert.equal(hardware.preset.id, "h100-sxm-80");
+    assert.equal(hardware.context, 32768);
+    assert.equal(hardware.concurrency, 4);
+    assert.equal(hardware.runtime, "vllm");
+  });
+});
