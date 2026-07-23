@@ -608,8 +608,9 @@ button:focus-visible {
 }
 
 .placement-model-item {
-  display: flex;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
   gap: 6px;
   padding: 7px 10px;
   font-size: 12px;
@@ -630,12 +631,24 @@ button:focus-visible {
 }
 
 .placement-model-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
   margin: 0;
+  accent-color: var(--blue);
+}
+
+.placement-model-item > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .placement-model-item small {
+  max-width: 240px;
+  overflow: hidden;
   color: var(--muted);
-  margin-left: auto;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .placement-model-selected {

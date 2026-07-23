@@ -837,6 +837,35 @@ function getModelsForPlacementType(type) {
   return GENERATIVE_MODELS;
 }
 
+function getPlacementPrecisions(model, precisionOptions) {
+  const supportedIds = new Set(model.precisions || []);
+  return precisionOptions.filter(
+    (precision) => precision.id !== "auto" && (!supportedIds.size || supportedIds.has(precision.id)),
+  );
+}
+
+function getPlacementWorkload(model) {
+  if (model.type === "embedding") {
+    return {
+      ...PLACEMENT_DEFAULT_WORKLOADS.embedding,
+      inputTokens: Math.min(PLACEMENT_DEFAULT_WORKLOADS.embedding.inputTokens, model.maxTokens || Infinity),
+    };
+  }
+  if (model.type === "reranker") {
+    const maxPairTokens = Math.max(2, (model.maxTokens || 579) - 3);
+    const queryTokens = Math.max(1, Math.min(64, Math.floor(maxPairTokens * 0.12)));
+    return {
+      ...PLACEMENT_DEFAULT_WORKLOADS.reranker,
+      queryTokens,
+      docTokens: Math.max(1, maxPairTokens - queryTokens),
+    };
+  }
+  if (isVisionModel(model)) {
+    return { type: model.type, ...PLACEMENT_DEFAULT_WORKLOADS.vision };
+  }
+  return null;
+}
+
 function renderPlacementModelList() {
   const container = $("placementModelList");
   if (!container) return;
@@ -909,8 +938,8 @@ function setPlacementActiveType(type) {
 
 function getPlacementBaselineOptions(model, hardware) {
   if (model.type === "embedding") {
-    const workload = PLACEMENT_DEFAULT_WORKLOADS.embedding;
-    return ENCODER_PRECISIONS
+    const workload = getPlacementWorkload(model);
+    return getPlacementPrecisions(model, ENCODER_PRECISIONS)
       .map((precision) => ({
         setting: precision,
         label: precision.label,
@@ -919,8 +948,8 @@ function getPlacementBaselineOptions(model, hardware) {
       .sort((a, b) => a.requiredGb - b.requiredGb);
   }
   if (model.type === "reranker") {
-    const workload = PLACEMENT_DEFAULT_WORKLOADS.reranker;
-    return ENCODER_PRECISIONS
+    const workload = getPlacementWorkload(model);
+    return getPlacementPrecisions(model, ENCODER_PRECISIONS)
       .map((precision) => ({
         setting: precision,
         label: precision.label,
@@ -929,8 +958,8 @@ function getPlacementBaselineOptions(model, hardware) {
       .sort((a, b) => a.requiredGb - b.requiredGb);
   }
   if (isVisionModel(model)) {
-    const workload = { type: model.type, ...PLACEMENT_DEFAULT_WORKLOADS.vision };
-    return OCR_PRECISIONS
+    const workload = getPlacementWorkload(model);
+    return getPlacementPrecisions(model, OCR_PRECISIONS)
       .map((precision) => ({
         setting: precision,
         label: precision.label,
@@ -955,16 +984,47 @@ function getPlacementCapacity(model, setting, hardware, budgetGb) {
   }
   const budgetHardware = { ...hardware, availableVram: budgetGb, baseEffectiveVram: budgetGb };
   if (model.type === "embedding") {
-    const estimate = estimateEncoderWithPrecision(model, budgetHardware, PLACEMENT_DEFAULT_WORKLOADS.embedding, setting);
+    const estimate = estimateEncoderWithPrecision(model, budgetHardware, getPlacementWorkload(model), setting);
     return { kind: "throughput", unit: "doc/s", value: estimate.speed, tokenUnit: "tok/s", tokenValue: estimate.throughput };
   }
   if (model.type === "reranker") {
-    const estimate = estimateRerankerWithPrecision(model, budgetHardware, PLACEMENT_DEFAULT_WORKLOADS.reranker, setting);
+    const estimate = estimateRerankerWithPrecision(model, budgetHardware, getPlacementWorkload(model), setting);
     return { kind: "throughput", unit: "pair/s", value: estimate.speed };
   }
-  const workload = { type: model.type, ...PLACEMENT_DEFAULT_WORKLOADS.vision };
+  const workload = getPlacementWorkload(model);
   const estimate = estimateOcrWithPrecision(model, budgetHardware, workload, setting);
   return { kind: "throughput", unit: "page/s", value: estimate.speed };
+}
+
+function buildGpuPlacementHardware(baseHardware, gpu, availableVram) {
+  const { preset, count, capacityGb } = gpu;
+  const compute = estimateHardwareCompute(preset, preset.bandwidth);
+  const computeTotal = Object.fromEntries(
+    Object.entries(compute).map(([key, value]) => [key, value * count]),
+  );
+
+  return {
+    ...baseHardware,
+    vram: preset.vram,
+    primaryCount: count,
+    secondaryCount: 0,
+    count,
+    ram: preset.ram,
+    bandwidth: preset.bandwidth,
+    reservedVram: 0,
+    safetyMarginGb: 0,
+    totalVram: preset.vram * count,
+    baseEffectiveVram: capacityGb,
+    availableVram,
+    preset,
+    secondaryPreset: null,
+    heterogeneous: false,
+    crossVendor: false,
+    shardingEfficiency: count > 1 ? 0.92 : 1,
+    aggregateBandwidth: preset.bandwidth * count,
+    compute,
+    computeTotal,
+  };
 }
 
 function computeGpuPlacement(gpuRows, modelKeys) {
@@ -1019,7 +1079,8 @@ function computeGpuPlacement(gpuRows, modelKeys) {
   for (const gpu of gpus) {
     for (const placement of gpu.placements) {
       const budgetGb = gpu.remaining + placement.requiredGb;
-      placement.capacity = getPlacementCapacity(placement.model, placement.setting, singleUserHardware, budgetGb);
+      const placementHardware = buildGpuPlacementHardware(singleUserHardware, gpu, budgetGb);
+      placement.capacity = getPlacementCapacity(placement.model, placement.setting, placementHardware, budgetGb);
     }
   }
 
