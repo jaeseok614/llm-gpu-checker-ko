@@ -4,9 +4,11 @@
 
 ## 제보 방식
 
-- 새 모델 추가: GitHub Issue의 `Model request`
-- 새 GPU 추가: GitHub Issue의 `GPU request`
-- 실제 실행 결과: `scripts/benchmark-cli.mjs`로 측정 후 GitHub Issue의 `Benchmark report`에 JSON 붙여넣기 (자세한 사용법은 [README](./README.md#실측-벤치마크-참여))
+> GitHub의 외부 계정 Issue 생성 제한을 확인 중입니다. README의 제보 일시 중단 표시가 사라지기 전까지는 새 제보를 로컬에 보관해 주세요.
+
+- 새 모델 추가: 접수 재개 후 GitHub Issue의 `Model request`
+- 새 GPU 추가: 접수 재개 후 GitHub Issue의 `GPU request`
+- 실제 실행 결과: `scripts/benchmark-cli.mjs`로 측정해 JSON을 보관한 뒤, 접수 재개 후 `Benchmark report`에 붙여넣기
 
 ## 모델 데이터 기준
 

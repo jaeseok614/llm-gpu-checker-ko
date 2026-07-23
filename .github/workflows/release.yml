@@ -1,0 +1,30 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - "v1.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+
+      - name: Verify package version matches tag
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          test "v${package_version}" = "${GITHUB_REF_NAME}"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --title "v1.1.0 — AI Workload Expansion" \
+            --notes-file docs/releases/v1.1.0.md

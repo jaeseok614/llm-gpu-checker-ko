@@ -518,7 +518,7 @@
         <div>
           <span class="section-kicker">Benchmark Sheet</span>
           <h2>모델별 성능지표 시트</h2>
-          <p>대표 공개 품질 점수, 출처 연결 실측값, OCR/VLM reference 값을 서로 다른 구분으로 분리합니다.</p>
+          <p>계산 추정, 외부 공개 참고값, 사용자 측정, 자체 측정을 근거별로 분리합니다.</p>
         </div>
         <span class="benchmark-meta" id="benchmarkMeta">벤치마크 데이터 준비 중</span>
       </div>
@@ -532,7 +532,7 @@
     <div class="compare-modal" id="compareModal" role="dialog" aria-modal="true" aria-label="모델 비교" hidden></div>
 
     <footer class="app-footer" id="calculationBasis">
-      <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실측과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>
+      <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실제 측정과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>
     </footer>
 
     <script src="./data/gpus.js?v=20260723-release1" defer></script>

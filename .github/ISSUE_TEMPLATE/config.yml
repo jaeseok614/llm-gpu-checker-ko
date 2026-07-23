@@ -1,5 +1,1 @@
 blank_issues_enabled: false
-contact_links:
-  - name: 질문 또는 아이디어
-    url: https://github.com/jaeseok614/llm-gpu-checker-ko/discussions
-    about: 기능 제안이나 일반 질문은 Discussions를 사용해 주세요.

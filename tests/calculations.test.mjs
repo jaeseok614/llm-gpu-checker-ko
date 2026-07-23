@@ -172,6 +172,42 @@ describe("embedding batch memory", () => {
   });
 });
 
+describe("reranker candidate latency", () => {
+  test("more candidates require more rerank passes and higher query latency", () => {
+    const fresh = loadApp();
+    const model = fresh.eval("RERANKER_MODELS[0]");
+    fresh.rModel = model;
+    const hardware = fresh.eval(`(() => {
+      $("gpuPreset").value = "h100-sxm-80";
+      applyPreset("h100-sxm-80");
+      return getHardware();
+    })()`);
+    fresh.rHardware = hardware;
+    const few = fresh.eval(`estimateRerankerModel(rModel, rHardware, {
+      queryTokens: 64,
+      docTokens: 512,
+      candidates: 16,
+      batchSize: 8,
+      precisionId: "fp16",
+      runtime: "tei",
+    })`);
+    const many = fresh.eval(`estimateRerankerModel(rModel, rHardware, {
+      queryTokens: 64,
+      docTokens: 512,
+      candidates: 80,
+      batchSize: 8,
+      precisionId: "fp16",
+      runtime: "tei",
+    })`);
+
+    assert.ok(many.rerankPasses > few.rerankPasses);
+    assert.ok(
+      many.latencySeconds > few.latencySeconds,
+      `80 candidates (${many.latencySeconds}s) should take longer than 16 (${few.latencySeconds}s)`,
+    );
+  });
+});
+
 describe("OCR resolution scaling", () => {
   test("required VRAM increases with image resolution", () => {
     const model = win.eval("OCR_MODELS.find((m) => m.type === 'ocr-pipeline')");
@@ -181,6 +217,81 @@ describe("OCR resolution scaling", () => {
     const small = win.eval(`estimateOcrModel(oModel, oHardware, { width: 800, height: 600, batchSize: 1, featureSet: "basic" }, "auto")`);
     const large = win.eval(`estimateOcrModel(oModel, oHardware, { width: 2480, height: 3508, batchSize: 1, featureSet: "basic" }, "auto")`);
     assert.ok(large.requiredGb > small.requiredGb, `A4 300DPI (${large.requiredGb}GB) should need more VRAM than a small thumbnail (${small.requiredGb}GB)`);
+  });
+});
+
+describe("mode, filtering, and sorting UI", () => {
+  test("switches modes and applies search and speed sorting", () => {
+    const fresh = loadApp();
+    const simpleTab = fresh.document.querySelector('[data-app-mode="simple"]');
+    const expertTab = fresh.document.querySelector('[data-app-mode="expert"]');
+
+    simpleTab.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("simpleModePanel").hidden, false);
+    assert.equal(fresh.document.getElementById("expertModeSection").hidden, true);
+
+    expertTab.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
+    assert.equal(fresh.document.getElementById("expertModeSection").hidden, false);
+
+    const search = fresh.document.getElementById("searchInput");
+    search.value = "Qwen";
+    search.dispatchEvent(new fresh.Event("input", { bubbles: true }));
+    const visibleNames = [...fresh.document.querySelectorAll(".model-name-cell strong")].map((node) => node.textContent);
+    assert.ok(visibleNames.length > 0, "expected at least one filtered Qwen result");
+    assert.ok(visibleNames.every((name) => name.toLowerCase().includes("qwen")));
+
+    search.value = "";
+    const sort = fresh.document.getElementById("sortBy");
+    sort.value = "speed";
+    sort.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    const speeds = fresh.eval("getFilteredEstimates().slice(0, 12).map((estimate) => estimate.speed)");
+    assert.deepEqual([...speeds], [...speeds].sort((a, b) => b - a));
+  });
+});
+
+describe("model comparison table rendering", () => {
+  test("keeps one item column per row and labels incomparable public evaluations", () => {
+    const fresh = loadApp();
+    const candidates = [...fresh.document.querySelectorAll("[data-compare-key]")]
+      .map((checkbox) => {
+        fresh.testModelKey = checkbox.dataset.compareKey;
+        const model = fresh.eval("getModelByKey(window.testModelKey)");
+        return {
+          key: checkbox.dataset.compareKey,
+          metric: model?.qualityBenchmark?.metric || null,
+        };
+      })
+      .filter((candidate) => candidate.metric);
+    const first = candidates[0];
+    assert.ok(first, "expected at least one model with a public benchmark metric");
+    const second = candidates.find((candidate) => candidate.metric !== first.metric);
+
+    assert.ok(second, "expected two models with different public benchmark metrics");
+    [first.key, second.key].forEach((key) => {
+      const checkbox = [...fresh.document.querySelectorAll("[data-compare-key]")]
+        .find((item) => item.dataset.compareKey === key);
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    });
+
+    fresh.document.querySelector("[data-open-compare]")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+
+    const modal = fresh.document.getElementById("compareModal");
+    const headerCells = modal.querySelectorAll("thead th");
+    const bodyRows = [...modal.querySelectorAll("tbody tr")];
+    assert.equal(headerCells.length, 3, "item + two model columns should render");
+    assert.ok(bodyRows.length > 0);
+    assert.ok(bodyRows.every((row) => row.children.length === 3), "every row should keep the same three-column grid");
+    assert.match(modal.querySelector(".compare-summary-line").textContent, /권장합니다|실행 가능한 모델이 없습니다/);
+    assert.equal(
+      modal.querySelector("tbody tr:nth-child(4) > th").textContent.trim(),
+      "대표 공개 평가",
+    );
+    const caveats = [...modal.querySelectorAll(".compare-caveat")].map((node) => node.textContent.trim());
+    assert.ok(caveats.length > 0);
+    assert.ok(caveats.every((text) => text === "서로 다른 벤치마크로 직접 비교할 수 없습니다."));
   });
 });
 
@@ -229,24 +340,49 @@ describe("benchmark estimate-error aggregate stats", () => {
     // one row 10% below the estimate, one row 10% above -> average |error| should land near 10%
     fresh.eval(`
       BENCHMARKS.push({
+        evidenceType: "user",
         modelName: ${JSON.stringify(model.name)},
         gpu: "${gpuId}",
         gpuId: "${gpuId}",
         workload: "generative",
         runtime: "llamacpp",
         quantization: ${JSON.stringify(estimate.quant.label)},
+        context: 8192,
+        concurrency: 1,
+        inputTokens: 8192,
+        outputTokens: 512,
         tokensPerSecond: ${estimate.speed} * 0.9,
         sourceUrl: "https://example.com/1",
       });
       BENCHMARKS.push({
+        evidenceType: "project",
         modelName: ${JSON.stringify(model.name)},
         gpu: "${gpuId}",
         gpuId: "${gpuId}",
         workload: "generative",
         runtime: "llamacpp",
         quantization: ${JSON.stringify(estimate.quant.label)},
+        context: 8192,
+        concurrency: 1,
+        inputTokens: 8192,
+        outputTokens: 512,
         tokensPerSecond: ${estimate.speed} * 1.1,
         sourceUrl: "https://example.com/2",
+      });
+      BENCHMARKS.push({
+        evidenceType: "external",
+        modelName: ${JSON.stringify(model.name)},
+        gpu: "${gpuId}",
+        gpuId: "${gpuId}",
+        workload: "generative",
+        runtime: "llamacpp",
+        quantization: ${JSON.stringify(estimate.quant.label)},
+        context: 8192,
+        concurrency: 1,
+        inputTokens: 8192,
+        outputTokens: 512,
+        tokensPerSecond: ${estimate.speed} * 10,
+        sourceUrl: "https://example.com/external-reference",
       });
     `);
 

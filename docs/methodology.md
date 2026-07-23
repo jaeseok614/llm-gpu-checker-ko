@@ -1,6 +1,6 @@
 # 계산 기준 (Methodology)
 
-이 문서는 계산기가 사용하는 수식과 근거를 그대로 정리한 것입니다. 짧은 설명은 [README](../README.md)를, 실측값과 추정값이 왜 다를 수 있는지는 [정확도와 한계](./accuracy-and-limits.md)를 참고하세요.
+이 문서는 계산기가 사용하는 수식과 근거를 그대로 정리한 것입니다. 짧은 설명은 [README](../README.md)를, 사용자/자체 측정과 계산 추정이 왜 다를 수 있는지는 [정확도와 한계](./accuracy-and-limits.md)를 참고하세요.
 
 ### Methodology, Formula-Oriented
 

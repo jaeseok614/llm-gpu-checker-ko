@@ -1,11 +1,11 @@
-# GitHub 저장소 About / Topics 문구 초안
+# GitHub 저장소 About / Topics
 
-GitHub 저장소 페이지 우측 상단 톱니바퀴(Edit repository details)에서 아래 내용을 붙여넣으면 됩니다. 저는 저장소 설정을 직접 바꿀 권한이 없어서 문구만 준비했습니다.
+공개 저장소 메타데이터는 아래 값과 일치하도록 유지합니다.
 
 ## Description (About)
 
 ```
-AI hardware fit calculator for LLM, embedding, reranker, OCR and VLM workloads — VRAM, throughput and multi-GPU planning
+AI hardware fit calculator for LLM, embedding, reranker, OCR and VLM workloads — VRAM, throughput, licensing and multi-GPU planning
 ```
 
 한국어 버전이 필요하면:
@@ -22,7 +22,7 @@ https://jaeseok614.github.io/llm-gpu-checker-ko/
 
 ## Topics
 
-기존 태그에 아래를 추가하는 것을 권장합니다 (이미 있는 태그는 건너뛰어도 됩니다):
+기존 태그를 유지하면서 아래 항목을 포함합니다:
 
 ```
 rag
@@ -42,4 +42,4 @@ local-llm
 
 ## 확인해야 할 것
 
-Issues 탭에 "Issue creation is restricted in this repository" 같은 문구가 보인다면, 계정 제한이 아직 풀리지 않았을 가능성이 있습니다. README와 Benchmark report 템플릿이 실측 제보를 이슈로 받는 구조라, 제한이 걸린 상태로 홍보하면 사용자가 제보를 못 남기는 문제가 생깁니다. 홍보를 재개하기 전에 실제로 다른 계정(또는 시크릿 창)으로 이슈를 새로 열 수 있는지 확인해 주세요.
+GitHub API상 Issues 기능은 켜져 있지만, 외부 로그인 계정에서 실제 생성이 가능한지는 별도 확인이 필요합니다. 복구가 확인될 때까지 README의 제보 링크는 일시 중단 상태로 유지하고, 다른 계정에서 Issue form 제출까지 성공한 뒤 다시 엽니다.

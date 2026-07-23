@@ -382,6 +382,7 @@ async function main() {
 
   const decodeTokensPerSecond = avg(runs.map((run) => run.decodeTokensPerSecond));
   const prefillTokensPerSecond = avg(runs.map((run) => run.prefillTokensPerSecond));
+  const inputTokens = avg(runs.map((run) => run.prefillTokens));
   const ttftMs = avg(runs.map((run) => run.ttftMs));
 
   const gpuName = args.gpu || (latestGpu.available ? latestGpu.name : "GPU 미기재 (--gpu로 직접 입력하세요)");
@@ -389,6 +390,7 @@ async function main() {
   const idleVramGb = gpuBefore.available ? Math.round((gpuBefore.usedMb / 1024) * 100) / 100 : undefined;
 
   const row = {
+    evidenceType: "user",
     modelName: args["model-name"] || args.model,
     modelKey: args["model-key"] || undefined,
     gpu: gpuName,
@@ -401,6 +403,7 @@ async function main() {
     quantization: args.quantization || undefined,
     context,
     concurrency: 1,
+    inputTokens: inputTokens ? Math.round(inputTokens) : undefined,
     outputTokens: predict,
     tokensPerSecond: decodeTokensPerSecond ? Math.round(decodeTokensPerSecond * 100) / 100 : undefined,
     prefillTokensPerSecond: prefillTokensPerSecond ? Math.round(prefillTokensPerSecond * 100) / 100 : undefined,
@@ -437,10 +440,9 @@ async function main() {
     );
   }
 
-  console.log(`\n다음 순서로 제보해주세요:
-1. GitHub 이슈를 새로 엽니다: https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml
-2. 아래 JSON을 이슈 본문에 붙여넣습니다 (sourceUrl은 이슈를 올린 뒤 이슈 자신의 URL로 바꿔주세요).
-3. 이슈가 등록되면 유지자가 data/benchmarks.js에 실측 행으로 반영합니다.
+  console.log(`\nGitHub Issue 신규 제보는 현재 일시 중단되어 있습니다.
+아래 JSON을 로컬에 보관했다가 README의 제보 중단 안내가 해제되면 Benchmark report에 붙여넣어 주세요.
+sourceUrl은 이슈를 올린 뒤 이슈 자신의 URL로 바꿔주세요.
 
 \`\`\`json
 ${JSON.stringify(cleanRow, null, 2)}

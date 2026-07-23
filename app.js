@@ -57,42 +57,42 @@ const WORKLOAD_META = {
     statusLabel: "LLM",
     modelCountLabel: "LLM 모델",
     searchPlaceholder: "모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "출시/세대", "공개 품질 점수", "공급사/라이선스", "권장 설정", "계산 VRAM", "추정 속도", "CTX", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "권장 설정", "계산 VRAM", "추정 속도", "CTX", ""],
   },
   embedding: {
     label: "임베딩",
     statusLabel: "임베딩",
     modelCountLabel: "임베딩 모델",
     searchPlaceholder: "임베딩 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "출시/세대", "공개 품질 점수", "공급사/라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
   },
   reranker: {
     label: "리랭커",
     statusLabel: "리랭커",
     modelCountLabel: "리랭커 모델",
     searchPlaceholder: "리랭커 모델명, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "출시/세대", "공개 품질 점수", "공급사/라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/런타임", "계산 VRAM", "추정 처리량", "입력", ""],
   },
   ocrPipeline: {
     label: "OCR",
     statusLabel: "OCR",
     modelCountLabel: "OCR 모델",
     searchPlaceholder: "OCR 파이프라인, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "출시/세대", "공개 품질 점수", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
   documentVlm: {
     label: "문서 VLM",
     statusLabel: "문서 VLM",
     modelCountLabel: "문서 VLM 모델",
     searchPlaceholder: "문서 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "출시/세대", "공개 품질 점수", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
   generalVlm: {
     label: "범용 VLM",
     statusLabel: "범용 VLM",
     modelCountLabel: "범용 VLM 모델",
     searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
-    listHeaders: ["상태", "모델", "출시/세대", "공개 품질 점수", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
   },
 };
 
@@ -2543,9 +2543,23 @@ function normalizeBenchmarkSetting(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
 }
 
+function hasCompleteCalibrationConditions(row, model) {
+  if (model.type && model.type !== "generative") return false;
+  return Boolean(
+    row.gpuId
+    && row.runtime
+    && row.quantization
+    && Number.isFinite(Number(row.context))
+    && Number.isFinite(Number(row.concurrency))
+    && Number.isFinite(Number(row.inputTokens))
+    && Number.isFinite(Number(row.outputTokens))
+  );
+}
+
 function findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware) {
   return (
     benchmarkRows.find((row) => {
+      if (!hasCompleteCalibrationConditions(row, model)) return false;
       const singleGpu = hardware.primaryCount === 1 && !hardware.secondaryPreset;
       const sameGpu = Boolean(row.gpuId) && row.gpuId === hardware.preset.id && singleGpu;
       const sameRuntime = Boolean(row.runtime)
@@ -2562,7 +2576,19 @@ function findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware) {
       const sameConcurrency = model.type === "generative"
         ? Number(row.concurrency ?? 1) === hardware.concurrency
         : true;
-      return sameGpu && sameRuntime && sameSetting && sameContext && sameConcurrency;
+      const sameInputLength = model.type === "generative"
+        ? Number(row.inputTokens) === hardware.context
+        : true;
+      const sameOutputLength = model.type === "generative"
+        ? Number(row.outputTokens) === hardware.outputTokens
+        : true;
+      return sameGpu
+        && sameRuntime
+        && sameSetting
+        && sameContext
+        && sameConcurrency
+        && sameInputLength
+        && sameOutputLength;
     }) || null
   );
 }
@@ -2585,7 +2611,7 @@ function getEstimateConfidence(model, estimate, hardware) {
       label: "높음",
       className: "confidence-high",
       spread: 0.08,
-      reason: "동일 모델/조건의 출처 연결 실측값이 있습니다.",
+      reason: `동일 모델/조건의 출처 연결 ${benchmarkEvidenceLabel(exactMatch)}값이 있습니다.`,
       matchedRow: exactMatch,
     };
   }
@@ -2595,7 +2621,7 @@ function getEstimateConfidence(model, estimate, hardware) {
       label: "보통",
       className: "confidence-medium",
       spread: 0.18,
-      reason: "같은 모델의 다른 실행 조건 실측값을 참고할 수 있습니다.",
+      reason: "같은 모델의 다른 실행 조건 사용자/자체 측정을 참고할 수 있습니다.",
     };
   }
 
@@ -2604,7 +2630,7 @@ function getEstimateConfidence(model, estimate, hardware) {
       label: "보통",
       className: "confidence-medium",
       spread: 0.18,
-      reason: "모델별 OCR/VLM reference throughput을 기준으로 보정합니다.",
+      reason: "모델별 OCR/VLM 외부 공개 참고값을 기준으로 보정합니다.",
     };
   }
 
@@ -2612,7 +2638,7 @@ function getEstimateConfidence(model, estimate, hardware) {
     label: "낮음",
     className: "confidence-low",
     spread: 0.32,
-    reason: "모델별 실측값 없이 파라미터, VRAM, 대역폭 기반 계산식으로 추정합니다.",
+    reason: "모델별 사용자/자체 측정 없이 파라미터, VRAM, 대역폭 기반 계산식으로 추정합니다.",
   };
 }
 
@@ -2683,9 +2709,26 @@ function releaseClassName(year) {
   return "release-unknown";
 }
 
+function benchmarkEvidenceType(row) {
+  const value = String(row?.evidenceType || row?.measurementType || row?.sourceType || "user").trim().toLowerCase();
+  if (["project", "self", "internal"].includes(value)) return "project";
+  if (["external", "public", "reference", "public-reference"].includes(value)) return "external";
+  return "user";
+}
+
+function benchmarkEvidenceLabel(row) {
+  const type = benchmarkEvidenceType(row);
+  if (type === "project") return "자체 측정";
+  if (type === "external") return "외부 공개 참고값";
+  return "사용자 측정";
+}
+
 function findBenchmarksForModel(model) {
   const key = modelKey(model);
-  return BENCHMARKS.filter((row) => row.modelKey === key || row.modelName === model.name);
+  return BENCHMARKS.filter((row) => (
+    benchmarkEvidenceType(row) !== "external"
+    && (row.modelKey === key || row.modelName === model.name)
+  ));
 }
 
 function getBenchmarkSummary(model, estimate, confidence) {
@@ -2695,8 +2738,8 @@ function getBenchmarkSummary(model, estimate, confidence) {
       note: model.qualityBenchmark.note || "품질 지표",
       className: model.qualityBenchmark.note === "외부 평가" ? "benchmark-external" : "benchmark-quality",
       title: [
-        `${model.qualityBenchmark.metric || "공개 품질 점수"} 기준입니다.`,
-        "로컬 추론 속도 실측과 분리된 모델 품질 지표입니다.",
+        `${model.qualityBenchmark.metric || "대표 공개 평가"} 기준입니다.`,
+        "로컬 추론 속도 측정과 분리된 외부 공개 참고값입니다.",
         model.qualityBenchmark.sourceUrl ? `출처: ${model.qualityBenchmark.sourceUrl}` : "",
       ].filter(Boolean).join(" "),
     };
@@ -2715,7 +2758,7 @@ function qualityMissingLabel(model) {
   if (model.type === "embedding") {
     return {
       note: "MTEB 없음",
-      title: "공식 모델 카드나 논문에서 확인되는 MTEB 계열 공개 품질 점수가 아직 등록되지 않았습니다.",
+      title: "공식 모델 카드나 논문에서 확인되는 MTEB 계열 대표 공개 평가가 아직 등록되지 않았습니다.",
     };
   }
   if (model.type === "reranker") {
@@ -2744,7 +2787,7 @@ function qualityMissingLabel(model) {
   }
   return {
     note: "공개 점수 없음",
-    title: "공식 모델 카드나 논문에서 확인되는 공개 품질 점수가 아직 등록되지 않았습니다.",
+    title: "공식 모델 카드나 논문에서 확인되는 대표 공개 평가가 아직 등록되지 않았습니다.",
   };
 }
 
@@ -3110,12 +3153,27 @@ function buildCompareSummaryLine(rows) {
   if (!feasible.length) {
     return "비교한 모델 중 현재 실행 환경(GPU·VRAM 설정)에서 실행 가능한 모델이 없습니다.";
   }
-  if (!infeasible.length) {
-    return `비교한 ${rows.length}개 모델 모두 현재 실행 환경에서 실행 가능합니다.`;
+
+  const recommended = [...feasible].sort((a, b) => (
+    recommendationScore(b.estimate) - recommendationScore(a.estimate)
+    || GRADE_META[b.estimate.grade].score - GRADE_META[a.estimate.grade].score
+    || a.estimate.requiredGb - b.estimate.requiredGb
+  ))[0];
+  const parts = [`현재 환경에서는 ${recommended.estimate.model.name} 모델을 권장합니다.`];
+  const otherFeasible = feasible.filter((row) => row !== recommended);
+
+  if (otherFeasible.length) {
+    parts.push(`${otherFeasible.map(({ estimate }) => estimate.model.name).join(", ")}도 실행 가능합니다.`);
   }
-  const feasibleNames = feasible.map(({ estimate }) => estimate.model.name).join(", ");
-  const infeasibleNames = infeasible.map(({ estimate }) => estimate.model.name).join(", ");
-  return `현재 실행 환경에서는 ${feasibleNames}만 실행 가능합니다. (${infeasibleNames}은(는) VRAM 부족)`;
+
+  infeasible.forEach(({ estimate }) => {
+    const deficitGb = estimate.requiredGb - estimate.effectiveVram;
+    parts.push(deficitGb > 0
+      ? `${estimate.model.name}은(는) 가용 VRAM을 ${formatGb(deficitGb)} 초과합니다.`
+      : `${estimate.model.name}은(는) 안정적인 실행 여유 기준에 미달합니다.`);
+  });
+
+  return parts.join(" ");
 }
 
 function renderCompareModal(allEstimates) {
@@ -3195,7 +3253,7 @@ function renderCompareModal(allEstimates) {
               <td>
                 <span class="compare-primary">${escapeHtml(benchmark.label)}</span>
                 <span class="compare-secondary">${escapeHtml(benchmark.note)}</span>
-                ${!benchmarksComparable && benchmark.label !== "—" ? `<span class="compare-caveat">평가 기준이 달라 직접 비교 불가</span>` : ""}
+                ${!benchmarksComparable && benchmark.label !== "—" ? `<span class="compare-caveat">서로 다른 벤치마크로 직접 비교할 수 없습니다.</span>` : ""}
               </td>
             `).join("")}
           </tr>
@@ -3313,7 +3371,7 @@ function renderModelRow(estimate) {
         <strong>${escapeHtml(release.label)}</strong>
         <small>${escapeHtml(release.note)}</small>
       </span>
-      <span class="model-cell benchmark-cell ${benchmark.className}" data-label="공개 품질 점수" title="${escapeAttr(benchmark.title)}">
+      <span class="model-cell benchmark-cell ${benchmark.className}" data-label="대표 공개 평가" title="${escapeAttr(benchmark.title)}">
         <strong>${escapeHtml(benchmark.label)}</strong>
         <small>${escapeHtml(benchmark.note)}</small>
       </span>
@@ -3441,8 +3499,8 @@ function renderDetail() {
       ${renderDetailMetric("첫 응답", formatDuration(estimate.firstTokenSeconds))}
     </div>
     <section class="detail-section">
-      <h3>실측과 차이가 나는 이유</h3>
-      <p class="detail-note">추정 속도는 대역폭 대비 활성 파라미터 기준 단순 계산이라 실제와 다를 수 있습니다. 특히 오프로딩이 걸리는 경우, 양자화 방식(IQ 계열 vs K 계열)이 다른 경우, 매우 긴 컨텍스트를 쓰는 경우 실측과 몇 배 차이가 날 수 있으니 참고용으로만 사용하세요.</p>
+      <h3>실제 측정과 차이가 나는 이유</h3>
+      <p class="detail-note">추정 속도는 대역폭 대비 활성 파라미터 기준 단순 계산이라 실제와 다를 수 있습니다. 특히 오프로딩이 걸리는 경우, 양자화 방식(IQ 계열 vs K 계열)이 다른 경우, 매우 긴 컨텍스트를 쓰는 경우 실제 측정과 몇 배 차이가 날 수 있으니 참고용으로만 사용하세요.</p>
     </section>
 
     <section class="detail-section">
@@ -3511,9 +3569,9 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
         ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
         ${renderInfoItem("라이선스", `${model.license} · ${licensePolicy.commercialLabel}`)}
         ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
-        ${renderInfoItem("공개 품질 점수", `${benchmark.label} · ${benchmark.note}`)}
+        ${renderInfoItem("대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
-        ${renderInfoItem("실측 상태", findBenchmarksForModel(model).length ? "실측값 있음" : "실측값 없음")}
+        ${renderInfoItem("측정 상태", findBenchmarksForModel(model).length ? "사용자/자체 측정값 있음" : "사용자/자체 측정값 없음")}
       </div>
       <div class="external-links">
         ${renderExternalLink("Hugging Face", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
@@ -3626,9 +3684,9 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
         ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
         ${renderInfoItem("라이선스", `${model.license} · ${licensePolicy.commercialLabel}`)}
         ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
-        ${renderInfoItem("공개 품질 점수", `${benchmark.label} · ${benchmark.note}`)}
+        ${renderInfoItem("대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
-        ${renderInfoItem("실측 상태", findBenchmarksForModel(model).length ? "실측값 있음" : model.reference?.pagesPerSecond ? "참고 기준 있음" : "실측값 없음")}
+        ${renderInfoItem("측정 상태", findBenchmarksForModel(model).length ? "사용자/자체 측정값 있음" : model.reference?.pagesPerSecond ? "외부 공개 참고값 있음" : "사용자/자체 측정값 없음")}
       </div>
       <div class="external-links">
         ${model.sourceUrl ? renderExternalLink("공식/모델 카드", model.sourceUrl) : ""}
@@ -3959,22 +4017,29 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
   const measuredRows = findBenchmarksForModel(model);
   const reference = getReferenceBenchmark(model);
   const qualityBenchmark = model.qualityBenchmark;
-  const measuredLabel = measuredRows.length
-    ? `${measuredRows.length}개 실측값`
-    : qualityBenchmark
-      ? "품질 지표 있음 · 실측값 없음"
-    : reference
-      ? "실측값 없음 · 참고 기준 있음"
-      : "등록된 실측값 없음";
+  const userMeasurementCount = measuredRows.filter((row) => benchmarkEvidenceType(row) === "user").length;
+  const projectMeasurementCount = measuredRows.filter((row) => benchmarkEvidenceType(row) === "project").length;
+  const publicReferenceCount = Number(Boolean(qualityBenchmark)) + Number(Boolean(reference));
+  const evidenceLabels = [
+    publicReferenceCount ? `외부 공개 참고값 ${publicReferenceCount}개` : "",
+    userMeasurementCount ? `사용자 측정 ${userMeasurementCount}개` : "",
+    projectMeasurementCount ? `자체 측정 ${projectMeasurementCount}개` : "",
+  ].filter(Boolean);
+  const evidenceLabel = evidenceLabels.length ? evidenceLabels.join(" · ") : "등록된 외부 참고·측정값 없음";
 
   const matchedMetric = getBenchmarkNumericValue(confidence.matchedRow);
   const errorLine = matchedMetric && estimate.speed
-    ? renderEstimateErrorLine(estimate.speed, matchedMetric.value, matchedMetric.unit)
+    ? renderEstimateErrorLine(
+      estimate.speed,
+      matchedMetric.value,
+      matchedMetric.unit,
+      benchmarkEvidenceLabel(confidence.matchedRow),
+    )
     : "";
 
   return `
     <section class="detail-section">
-      <h3>추정값과 실측값</h3>
+      <h3>계산값과 근거 구분</h3>
       <div class="evidence-grid">
         <div class="evidence-card estimate-card">
           <span>계산 추정</span>
@@ -3983,8 +4048,8 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
           <small>${escapeHtml(formatHardwareName(hardware, true))} · ${escapeHtml(buildHardwareBasis(hardware))}</small>
         </div>
         <div class="evidence-card measured-card">
-          <span>공개 품질/실측</span>
-          <strong>${escapeHtml(measuredLabel)}</strong>
+          <span>외부 참고·측정 근거</span>
+          <strong>${escapeHtml(evidenceLabel)}</strong>
           ${renderBenchmarkMiniRows(measuredRows, reference, qualityBenchmark)}
         </div>
       </div>
@@ -3993,13 +4058,13 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
   `;
 }
 
-function renderEstimateErrorLine(estimateValue, measuredValue, unit) {
+function renderEstimateErrorLine(estimateValue, measuredValue, unit, measurementLabel = "사용자 측정") {
   const errorPct = ((estimateValue - measuredValue) / measuredValue) * 100;
   const sign = errorPct >= 0 ? "+" : "";
   return `
     <div class="estimate-error-line">
       <span>예상 ${escapeHtml(formatMetricNumber(estimateValue, unit, true))}</span>
-      <span>vs 실측 ${escapeHtml(formatMetricNumber(measuredValue, unit, true))}</span>
+      <span>vs ${escapeHtml(measurementLabel)} ${escapeHtml(formatMetricNumber(measuredValue, unit, true))}</span>
       <strong>추정 오차 ${sign}${errorPct.toFixed(1)}%</strong>
     </div>
   `;
@@ -4014,49 +4079,40 @@ function formatBenchmarkRuntime(row) {
 }
 
 function renderBenchmarkMiniRows(rows, reference, qualityBenchmark) {
-  if (rows.length) {
-    return `
-      <div class="benchmark-mini-table">
-        ${rows.slice(0, 3).map((row) => `
-          <div>
-            <span>${escapeHtml(row.gpu || row.gpuId || "GPU 미기재")} · ${escapeHtml(formatBenchmarkRuntime(row))}</span>
-            <strong>${escapeHtml(formatBenchmarkMetric(row))}</strong>
-            <small>${escapeHtml(row.date || "날짜 미기재")}${row.sourceUrl ? " · 출처 링크 있음" : ""}</small>
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
+  const entries = rows.slice(0, 3).map((row) => `
+    <div>
+      <span>${escapeHtml(benchmarkEvidenceLabel(row))} · ${escapeHtml(row.gpu || row.gpuId || "GPU 미기재")} · ${escapeHtml(formatBenchmarkRuntime(row))}</span>
+      <strong>${escapeHtml(formatBenchmarkMetric(row))}</strong>
+      <small>${escapeHtml(row.date || "날짜 미기재")}${row.sourceUrl ? " · 출처 링크 있음" : ""}</small>
+    </div>
+  `);
   if (qualityBenchmark) {
-    return `
-      <div class="benchmark-mini-table">
-        <div>
-          <span>${escapeHtml(qualityBenchmark.metric || "공개 품질 점수")} · ${escapeHtml(qualityBenchmark.note || "품질 지표")}</span>
-          <strong>${escapeHtml(qualityBenchmark.label)}</strong>
-          <small>${qualityBenchmark.sourceUrl ? "출처 링크 있음 · " : ""}속도 실측과 분리 표시</small>
-        </div>
+    entries.push(`
+      <div>
+        <span>외부 공개 참고값 · ${escapeHtml(qualityBenchmark.metric || "대표 공개 평가")} · ${escapeHtml(qualityBenchmark.note || "공식 발표")}</span>
+        <strong>${escapeHtml(qualityBenchmark.label)}</strong>
+        <small>${qualityBenchmark.sourceUrl ? "출처 링크 있음 · " : ""}속도 측정과 분리 표시</small>
       </div>
-    `;
+    `);
   }
-
   if (reference) {
-    return `
-      <div class="benchmark-mini-table">
-        <div>
-          <span>${escapeHtml(reference.gpu)} · ${escapeHtml(reference.setting)}</span>
-          <strong>${escapeHtml(reference.metric)}</strong>
-          <small>참고 기준 · 실측 제보 데이터와 분리 표시</small>
-        </div>
+    entries.push(`
+      <div>
+        <span>외부 공개 참고값 · ${escapeHtml(reference.gpu)} · ${escapeHtml(reference.setting)}</span>
+        <strong>${escapeHtml(reference.metric)}</strong>
+        <small>사용자/자체 측정과 분리 표시</small>
       </div>
-    `;
+    `);
+  }
+  if (entries.length) {
+    return `<div class="benchmark-mini-table">${entries.join("")}</div>`;
   }
 
   return `
-    <small>이 모델의 출처 연결 실측값은 아직 없습니다. 상세 수치는 계산식 기반 추정값으로만 표시합니다.</small>
-    <div class="external-links evidence-links">
-      ${renderExternalLink("벤치마크 제보", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
-    </div>
+    <small>이 모델의 외부 공개 참고값과 사용자/자체 측정값은 아직 없습니다. 상세 수치는 계산 추정으로만 표시합니다.</small>
+    ${BENCHMARK_META.reportingPaused
+      ? `<small>${escapeHtml(BENCHMARK_META.reportingStatus || "신규 벤치마크 제보 일시 중단")}</small>`
+      : `<div class="external-links evidence-links">${renderExternalLink("벤치마크 제보", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}</div>`}
   `;
 }
 
@@ -4226,15 +4282,17 @@ function estimateBenchmarkRow(model, row, preset) {
   return null;
 }
 
-// 실측 행마다 같은 조건으로 추정치를 다시 계산해 |오차|를 모으고 평균을 냅니다.
-// 실측이 없으면(현재 0건) null을 돌려주고, 있으면 실측 대시보드 문구에 반영됩니다.
+// 사용자/자체 측정 행마다 같은 조건으로 추정치를 다시 계산해 |오차|를 모으고 평균을 냅니다.
+// 외부 공개 참고값은 측정 오차 보정에 사용하지 않습니다.
 function computeBenchmarkErrorStats() {
   const samples = [];
   for (const row of BENCHMARKS) {
+    if (benchmarkEvidenceType(row) === "external") continue;
     const metric = getBenchmarkNumericValue(row);
     if (!metric || !row.gpuId) continue;
     const model = (row.modelKey && getModelByKey(row.modelKey)) || getAllModels().find((item) => item.name === row.modelName);
     if (!model) continue;
+    if (!hasCompleteCalibrationConditions(row, model)) continue;
     const preset = GPU_PRESETS.find((item) => item.id === row.gpuId);
     if (!preset) continue;
     const estimate = estimateBenchmarkRow(model, row, preset);
@@ -4253,18 +4311,22 @@ function computeBenchmarkErrorStats() {
 function renderBenchmarkSheet() {
   const table = $("benchmarkTable");
   if (!table) return;
-  const measuredRows = BENCHMARKS.map((row) => ({ ...row, rowType: "실측" }));
+  const benchmarkRows = BENCHMARKS.map((row) => ({ ...row, rowType: benchmarkEvidenceLabel(row) }));
+  const userMeasurementRows = benchmarkRows.filter((row) => row.rowType === "사용자 측정");
+  const projectMeasurementRows = benchmarkRows.filter((row) => row.rowType === "자체 측정");
+  const externalBenchmarkRows = benchmarkRows.filter((row) => row.rowType === "외부 공개 참고값");
   const qualityRows = collectQualityBenchmarks();
   const referenceRows = collectReferenceBenchmarks();
-  const rows = [...qualityRows, ...measuredRows, ...referenceRows];
+  const rows = [...qualityRows, ...externalBenchmarkRows, ...referenceRows, ...userMeasurementRows, ...projectMeasurementRows];
   const errorStats = computeBenchmarkErrorStats();
+  const externalReferenceCount = qualityRows.length + externalBenchmarkRows.length + referenceRows.length;
 
-  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 품질 지표 ${qualityRows.length}개 · 실측 ${measuredRows.length}개 · 참고 기준 ${referenceRows.length}개${errorStats ? ` · 평균 추정 오차 ${errorStats.avgAbsErrorPct.toFixed(1)}% (GPU ${errorStats.gpuCoverage}종 · ${errorStats.sampleCount}건 기준)` : ""}`;
+  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 외부 공개 참고값 ${externalReferenceCount}개 · 사용자 측정 ${userMeasurementRows.length}개 · 자체 측정 ${projectMeasurementRows.length}개${errorStats ? ` · 평균 추정 오차 ${errorStats.avgAbsErrorPct.toFixed(1)}% (GPU ${errorStats.gpuCoverage}종 · ${errorStats.sampleCount}건 기준)` : ""}`;
 
   if (!rows.length) {
     table.innerHTML = `
       <div class="empty-state">
-        등록된 실측 벤치마크가 없습니다. 계산 추정값은 상세 패널에서 별도로 표시됩니다.
+        등록된 외부 공개 참고값과 사용자/자체 측정값이 없습니다. 계산 추정값은 상세 패널에서 별도로 표시됩니다.
       </div>
     `;
     return;
@@ -4282,7 +4344,7 @@ function renderBenchmarkSheet() {
       </div>
       ${rows.map((row) => `
         <div class="benchmark-row">
-          <span><span class="data-kind ${row.rowType === "실측" ? "is-measured" : row.rowType === "품질 지표" ? "is-quality" : "is-reference"}">${escapeHtml(row.rowType)}</span></span>
+          <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}">${escapeHtml(row.rowType)}</span></span>
           <span>${escapeHtml(row.modelName)}</span>
           <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
           <span>${escapeHtml(row.setting || row.runtime || row.workload || "-")}</span>
@@ -4306,11 +4368,11 @@ function collectQualityBenchmarks() {
       return true;
     })
     .map((model) => ({
-      rowType: "품질 지표",
+      rowType: "외부 공개 참고값",
       modelName: model.name,
       gpu: "-",
       workload: model.type === "generative" ? WORKLOAD_META.generative.label : model.type || "-",
-      setting: model.qualityBenchmark.note || "공개 품질 점수",
+      setting: model.qualityBenchmark.note || "대표 공개 평가",
       metric: model.qualityBenchmark.label,
       sourceUrl: model.qualityBenchmark.sourceUrl,
     }));
@@ -4322,7 +4384,7 @@ function collectReferenceBenchmarks() {
     .map((model) => {
       const reference = getReferenceBenchmark(model);
       return {
-        rowType: "참고 기준",
+        rowType: "외부 공개 참고값",
         modelName: model.name,
         gpuId: model.reference.gpuId,
         gpu: reference.gpu,

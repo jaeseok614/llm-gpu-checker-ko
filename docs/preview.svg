@@ -159,15 +159,15 @@
   <rect x="1248" y="620" width="74" height="30" rx="15" fill="#F8FAFC" stroke="#D9E0E7"/>
   <text x="1264" y="640" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#334155">속도 우수</text>
 
-  <text x="1054" y="684" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">추정값과 실측값</text>
+  <text x="1054" y="684" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#18212B">계산값과 근거 구분</text>
   <rect x="1054" y="702" width="214" height="58" rx="6" fill="#FBFCFD" stroke="#D9E0E7"/>
   <text x="1070" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">계산 추정</text>
   <text x="1070" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">18.2 GB · 약 119~231 tok/s</text>
   <rect x="1280" y="702" width="214" height="58" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
-  <text x="1296" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">공개 품질/실측</text>
+  <text x="1296" y="724" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#667382">외부 참고·측정</text>
   <text x="1296" y="746" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#164A7B">MMLU-Pro 61.49</text>
 
   <rect x="24" y="804" width="1492" height="40" rx="6" fill="#FFFFFF" stroke="#D9E0E7"/>
   <text x="52" y="829" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#18212B">모델별 성능지표 시트</text>
-  <text x="210" y="829" font-family="Arial, sans-serif" font-size="13" fill="#667382">출시일 286개 · 공개 품질 점수 279개 · 라이선스 안내 286개 · OCR/VLM 참고 기준 45개</text>
+  <text x="210" y="829" font-family="Arial, sans-serif" font-size="13" fill="#667382">출시일 286개 · 대표 공개 평가 279개 · 라이선스 안내 286개 · OCR/VLM 외부 참고 45개</text>
 </svg>
