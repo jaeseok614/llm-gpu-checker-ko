@@ -1172,15 +1172,65 @@ function computeGpuPlacement(gpuRows, modelKeys) {
 function runGpuPlacement() {
   const modelKeys = [...placementSelectedKeys];
   const result = $("gpuPlacementResult");
+  const baselineEl = $("gpuPlacementBaseline");
   if (!result) return;
 
   if (!modelKeys.length) {
     result.innerHTML = `<p class="gpu-placement-empty">동시에 띄울 모델을 하나 이상 선택해주세요.</p>`;
+    if (baselineEl) {
+      baselineEl.hidden = true;
+      baselineEl.textContent = "";
+    }
     return;
   }
 
   const placement = computeGpuPlacement(gpuInventoryRows, modelKeys);
   result.innerHTML = renderGpuPlacementResult(placement);
+
+  if (baselineEl) {
+    const text = renderPlacementBaseline(computePlacementBaseline(placement));
+    baselineEl.textContent = text;
+    baselineEl.hidden = !text;
+  }
+}
+
+// 배치된 모델 전체를 통틀어 "운영 시 병목 없이 공통으로 맞출 기준값"을 찾습니다.
+// 생성형(동시 접속자 수)과 임베딩/리랭커/OCR(처리량)은 단위가 달라 하나로 합칠 수 없으므로,
+// 각 종류 안에서 가장 낮은(가장 먼저 병목이 걸리는) 값을 기준으로 따로 안내합니다.
+function computePlacementBaseline(placement) {
+  const placedItems = placement.gpus.flatMap((gpu) => gpu.placements.map((item) => ({ ...item, gpuIndex: gpu.index })));
+  if (!placedItems.length) return null;
+
+  const concurrencyItems = placedItems.filter((item) => item.capacity?.kind === "concurrency");
+  const throughputItems = placedItems.filter((item) => item.capacity?.kind === "throughput" && item.capacity.value > 0);
+
+  let concurrencyBaseline = null;
+  if (concurrencyItems.length) {
+    const bottleneck = concurrencyItems.reduce((min, item) => (item.capacity.recommendedN < min.capacity.recommendedN ? item : min));
+    concurrencyBaseline = { recommendedN: bottleneck.capacity.recommendedN, modelName: bottleneck.model.name, gpuIndex: bottleneck.gpuIndex };
+  }
+
+  let throughputBaseline = null;
+  if (throughputItems.length) {
+    const bottleneck = throughputItems.reduce((min, item) => (item.capacity.value < min.capacity.value ? item : min));
+    throughputBaseline = { value: bottleneck.capacity.value, unit: bottleneck.capacity.unit, modelName: bottleneck.model.name, gpuIndex: bottleneck.gpuIndex };
+  }
+
+  return { concurrencyBaseline, throughputBaseline };
+}
+
+function renderPlacementBaseline(baseline) {
+  if (!baseline || (!baseline.concurrencyBaseline && !baseline.throughputBaseline)) return "";
+  const parts = [];
+  if (baseline.concurrencyBaseline) {
+    const b = baseline.concurrencyBaseline;
+    parts.push(`공통 동시 접속 기준 ${b.recommendedN}명 (병목: GPU${b.gpuIndex + 1} ${b.modelName})`);
+  }
+  if (baseline.throughputBaseline) {
+    const b = baseline.throughputBaseline;
+    parts.push(`처리량 병목 ${formatThroughput(b.value, b.unit)} (GPU${b.gpuIndex + 1} ${b.modelName})`);
+  }
+  return parts.join(" · ");
 }
 
 function renderPlacementCapacityLine(capacity) {

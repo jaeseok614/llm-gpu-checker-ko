@@ -396,7 +396,10 @@
             <span class="gpu-placement-label">선택된 모델</span>
             <div class="placement-model-selected" id="placementModelSelected"></div>
 
-            <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
+            <div class="gpu-placement-actions">
+              <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
+              <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
+            </div>
 
             <div class="gpu-placement-result" id="gpuPlacementResult"></div>
           </div>
