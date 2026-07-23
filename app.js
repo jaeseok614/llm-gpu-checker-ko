@@ -3079,6 +3079,21 @@ function renderCompareBar(allEstimates) {
   `;
 }
 
+function buildCompareSummaryLine(rows) {
+  const feasible = rows.filter(({ estimate }) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
+  const infeasible = rows.filter(({ estimate }) => GRADE_META[estimate.grade].score < GRADE_META.B.score);
+
+  if (!feasible.length) {
+    return "비교한 모델 중 현재 실행 환경(GPU·VRAM 설정)에서 실행 가능한 모델이 없습니다.";
+  }
+  if (!infeasible.length) {
+    return `비교한 ${rows.length}개 모델 모두 현재 실행 환경에서 실행 가능합니다.`;
+  }
+  const feasibleNames = feasible.map(({ estimate }) => estimate.model.name).join(", ");
+  const infeasibleNames = infeasible.map(({ estimate }) => estimate.model.name).join(", ");
+  return `현재 실행 환경에서는 ${feasibleNames}만 실행 가능합니다. (${infeasibleNames}은(는) VRAM 부족)`;
+}
+
 function renderCompareModal(allEstimates) {
   const backdrop = $("compareModalBackdrop");
   const modal = $("compareModal");
@@ -3101,8 +3116,12 @@ function renderCompareModal(allEstimates) {
       benchmark: getBenchmarkSummary(estimate.model, estimate, confidence),
       licensePolicy: getLicensePolicy(estimate.model),
       meta: GRADE_META[estimate.grade],
+      metric: estimate.model.qualityBenchmark?.metric || null,
     };
   });
+
+  const comparableMetrics = rows.map((row) => row.metric).filter(Boolean);
+  const benchmarksComparable = comparableMetrics.length === rows.length && new Set(comparableMetrics).size === 1;
 
   backdrop.hidden = false;
   modal.hidden = false;
@@ -3114,6 +3133,7 @@ function renderCompareModal(allEstimates) {
       </div>
       <button type="button" class="icon-button" data-close-compare aria-label="비교 닫기">×</button>
     </div>
+    <p class="compare-summary-line">${escapeHtml(buildCompareSummaryLine(rows))}</p>
     <div class="compare-table-wrap">
       <table class="compare-table">
         <thead>
@@ -3134,35 +3154,63 @@ function renderCompareModal(allEstimates) {
           </tr>
           <tr>
             <th>공급사 / 라이선스</th>
-            ${rows.map(({ estimate, licensePolicy }) => `<td>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}<br /><span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licensePolicy.commercialLabel)}</span></td>`).join("")}
+            ${rows.map(({ estimate, licensePolicy }) => `
+              <td>
+                <span class="compare-primary">${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
+                <span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licensePolicy.commercialLabel)}</span>
+              </td>
+            `).join("")}
           </tr>
           <tr>
             <th>출시/세대</th>
-            ${rows.map(({ release }) => `<td>${escapeHtml(release.label)}<br /><small>${escapeHtml(release.note)}</small></td>`).join("")}
+            ${rows.map(({ release }) => `<td><span class="compare-primary">${escapeHtml(release.label)}</span><span class="compare-secondary">${escapeHtml(release.note)}</span></td>`).join("")}
           </tr>
           <tr>
-            <th>공개 품질 점수</th>
-            ${rows.map(({ benchmark }) => `<td>${escapeHtml(benchmark.label)}<br /><small>${escapeHtml(benchmark.note)}</small></td>`).join("")}
+            <th>대표 공개 평가</th>
+            ${rows.map(({ benchmark }) => `
+              <td>
+                <span class="compare-primary">${escapeHtml(benchmark.label)}</span>
+                <span class="compare-secondary">${escapeHtml(benchmark.note)}</span>
+                ${!benchmarksComparable && benchmark.label !== "—" ? `<span class="compare-caveat">평가 기준이 달라 직접 비교 불가</span>` : ""}
+              </td>
+            `).join("")}
           </tr>
           <tr>
             <th>권장 설정</th>
-            ${rows.map(({ estimate }) => `<td>${escapeHtml(estimate.settingLabel)}</td>`).join("")}
+            ${rows.map(({ estimate }) => `<td><span class="compare-primary">${escapeHtml(estimate.settingLabel)}</span></td>`).join("")}
           </tr>
           <tr>
             <th>필요 VRAM</th>
-            ${rows.map(({ estimate }) => `<td>${formatGb(estimate.requiredGb)}</td>`).join("")}
+            ${rows.map(({ estimate }) => {
+              const margin = estimate.effectiveVram - estimate.requiredGb;
+              const marginLabel = margin >= 0 ? `가용 VRAM 대비 여유 ${formatGb(margin)}` : `${formatGb(Math.abs(margin))} 부족`;
+              return `
+                <td>
+                  <strong class="compare-value">${formatGb(estimate.requiredGb)}</strong>
+                  <span class="compare-secondary ${margin >= 0 ? "compare-positive" : "compare-negative"}">${escapeHtml(marginLabel)}</span>
+                </td>
+              `;
+            }).join("")}
           </tr>
           <tr>
             <th>추정 속도</th>
-            ${rows.map(({ estimate, confidence }) => `<td>${escapeHtml(formatSpeedRange(estimate, confidence))}<br /><small>신뢰도 ${escapeHtml(confidence.label)}</small></td>`).join("")}
+            ${rows.map(({ estimate, confidence }) => {
+              const unavailable = !estimate.speed;
+              return `
+                <td>
+                  <strong class="compare-value ${unavailable ? "compare-negative" : ""}">${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
+                  <span class="compare-secondary">${unavailable ? "GPU 여유 부족" : `신뢰도 ${escapeHtml(confidence.label)}`}</span>
+                </td>
+              `;
+            }).join("")}
           </tr>
           <tr>
             <th>컨텍스트 한도</th>
-            ${rows.map(({ estimate }) => `<td>${escapeHtml(estimate.limitLabel)}</td>`).join("")}
+            ${rows.map(({ estimate }) => `<td><span class="compare-primary">${escapeHtml(estimate.limitLabel)}</span></td>`).join("")}
           </tr>
           <tr>
             <th>태그</th>
-            ${rows.map(({ estimate }) => `<td class="compare-tags">${renderTags(estimate.model, 6)}</td>`).join("")}
+            ${rows.map(({ estimate }) => `<td><div class="compare-tags">${renderTags(estimate.model, 6)}</div></td>`).join("")}
           </tr>
         </tbody>
       </table>

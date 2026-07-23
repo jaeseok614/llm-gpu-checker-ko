@@ -1608,6 +1608,17 @@ button:focus-visible {
   font-size: 17px;
 }
 
+.compare-summary-line {
+  margin: 0;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--blue-soft);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .compare-table-wrap {
   overflow-x: auto;
   padding: 6px 18px 18px;
@@ -1615,6 +1626,7 @@ button:focus-visible {
 
 .compare-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 12.5px;
 }
@@ -1623,8 +1635,17 @@ button:focus-visible {
 .compare-table td {
   vertical-align: top;
   border-bottom: 1px solid var(--line);
-  padding: 10px 12px;
+  padding: 10px 14px;
   text-align: left;
+}
+
+.compare-table th:not(:first-child),
+.compare-table td:not(:first-child) {
+  border-left: 1px solid var(--line);
+}
+
+.compare-table tbody th:first-child {
+  width: 120px;
 }
 
 .compare-table thead th {
@@ -1632,13 +1653,22 @@ button:focus-visible {
   vertical-align: bottom;
 }
 
+.compare-table thead th:not(:first-child) {
+  position: relative;
+  padding-right: 32px;
+}
+
 .compare-table thead th strong {
   display: block;
-  margin-bottom: 4px;
+  overflow-wrap: anywhere;
   font-size: 13px;
+  line-height: 1.35;
 }
 
 .compare-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   width: 20px;
@@ -1663,11 +1693,40 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.compare-table td small {
+.compare-primary {
+  display: block;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.compare-secondary {
   display: block;
   margin-top: 3px;
   color: var(--muted);
+  font-size: 11px;
   font-weight: 700;
+}
+
+.compare-caveat {
+  display: block;
+  margin-top: 3px;
+  color: #9a6700;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.compare-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.compare-positive {
+  color: var(--green);
+}
+
+.compare-negative {
+  color: var(--red);
 }
 
 .compare-tags {
