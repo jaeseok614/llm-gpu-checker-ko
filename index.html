@@ -368,6 +368,24 @@
           </form>
         </details>
 
+        <details class="hf-import-panel gpu-placement-panel" id="gpuPlacementPanel">
+          <summary>여러 GPU에 모델 동시 배치 추천 (베타)</summary>
+          <div class="gpu-placement-body">
+            <p>보유한 GPU 여러 대에 생성형 LLM을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 동시 사용자 1명 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.</p>
+
+            <span class="gpu-placement-label">보유 GPU 목록</span>
+            <div class="gpu-inventory-list" id="gpuInventoryList"></div>
+            <button type="button" class="ghost-button" id="addGpuInventoryButton">+ GPU 추가</button>
+
+            <label for="placementModelSelect">동시에 띄울 모델 (Ctrl/Cmd 또는 Shift+클릭으로 여러 개 선택)</label>
+            <select id="placementModelSelect" multiple size="8"></select>
+
+            <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
+
+            <div class="gpu-placement-result" id="gpuPlacementResult"></div>
+          </div>
+        </details>
+
         <div class="quant-recommendations" id="quantRecommendations" hidden></div>
 
         <div class="result-toolbar-head">

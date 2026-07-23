@@ -553,6 +553,107 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.gpu-placement-body {
+  padding: 0 13px 13px;
+}
+
+.gpu-placement-body p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.gpu-placement-label,
+.gpu-placement-body > label {
+  display: block;
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.gpu-inventory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gpu-inventory-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 72px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+#placementModelSelect {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 4px;
+}
+
+#runPlacementButton {
+  margin-top: 10px;
+}
+
+.gpu-placement-result {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gpu-placement-card {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: #fbfcfd;
+}
+
+.gpu-placement-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.gpu-placement-card-head small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.gpu-placement-model-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  padding: 4px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.gpu-placement-model-row:first-of-type {
+  border-top: none;
+  margin-top: 6px;
+}
+
+.gpu-placement-empty {
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 4px 0;
+}
+
+.gpu-placement-unplaced {
+  border: 1px dashed var(--red);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  color: var(--red);
+}
+
 .quant-recommendations {
   margin-bottom: 14px;
   border: 1px solid var(--line);

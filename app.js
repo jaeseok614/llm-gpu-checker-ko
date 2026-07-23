@@ -146,6 +146,8 @@ function init() {
   applyUrlState();
   bindEvents();
   refreshHfImportUi();
+  renderGpuInventory();
+  populatePlacementModelSelect();
   render({ syncUrl: false });
 }
 
@@ -562,6 +564,21 @@ function bindEvents() {
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
 
+  $("addGpuInventoryButton").addEventListener("click", addGpuInventoryRow);
+  $("runPlacementButton").addEventListener("click", runGpuPlacement);
+  $("gpuInventoryList").addEventListener("click", (event) => {
+    const removeButton = event.target.closest(".gpu-inventory-remove");
+    if (removeButton) removeGpuInventoryRow(removeButton.dataset.rowId);
+  });
+  $("gpuInventoryList").addEventListener("change", (event) => {
+    const target = event.target;
+    if (target.classList.contains("gpu-inventory-preset")) {
+      updateGpuInventoryRow(target.dataset.rowId, "presetId", target.value);
+    } else if (target.classList.contains("gpu-inventory-count")) {
+      updateGpuInventoryRow(target.dataset.rowId, "count", target.value);
+    }
+  });
+
   $("quantRecommendations").addEventListener("click", (event) => {
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
@@ -731,6 +748,178 @@ function gpuRuntimeFamily(gpu) {
   if (/intel|arc|flex|max\d/.test(name)) return "intel";
   if (/apple|m\dultra|m\dmax/.test(name)) return "apple";
   return "nvidia";
+}
+
+// ---- 멀티 GPU 모델 배치 추천 (베타) ----
+
+let gpuInventoryRows = [
+  { id: "gpu-row-1", presetId: "rtx4090-24", count: 1 },
+  { id: "gpu-row-2", presetId: "rtx4090-24", count: 1 },
+];
+let gpuInventoryIdCounter = 2;
+
+function renderGpuInventory() {
+  const container = $("gpuInventoryList");
+  if (!container) return;
+  container.innerHTML = gpuInventoryRows
+    .map(
+      (row) => `
+        <div class="gpu-inventory-row">
+          <select class="gpu-inventory-preset" data-row-id="${escapeAttr(row.id)}" aria-label="GPU 종류">
+            ${GPU_PRESETS.filter((gpu) => gpu.id !== "custom")
+              .map(
+                (gpu) => `<option value="${escapeAttr(gpu.id)}" ${gpu.id === row.presetId ? "selected" : ""}>${escapeHtml(gpu.name)}</option>`,
+              )
+              .join("")}
+          </select>
+          <input type="number" class="gpu-inventory-count" data-row-id="${escapeAttr(row.id)}" min="1" max="8" step="1" value="${row.count}" aria-label="이 GPU 개수" />
+          <button type="button" class="icon-button gpu-inventory-remove" data-row-id="${escapeAttr(row.id)}" aria-label="GPU 제거" ${gpuInventoryRows.length <= 1 ? "disabled" : ""}>×</button>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function addGpuInventoryRow() {
+  gpuInventoryIdCounter += 1;
+  gpuInventoryRows.push({ id: `gpu-row-${gpuInventoryIdCounter}`, presetId: "rtx4090-24", count: 1 });
+  renderGpuInventory();
+}
+
+function removeGpuInventoryRow(rowId) {
+  if (gpuInventoryRows.length <= 1) return;
+  gpuInventoryRows = gpuInventoryRows.filter((row) => row.id !== rowId);
+  renderGpuInventory();
+}
+
+function updateGpuInventoryRow(rowId, field, value) {
+  const row = gpuInventoryRows.find((item) => item.id === rowId);
+  if (!row) return;
+  if (field === "presetId") row.presetId = value;
+  if (field === "count") row.count = clampNumber(value, 1, 8, 1);
+}
+
+function populatePlacementModelSelect() {
+  const select = $("placementModelSelect");
+  if (!select) return;
+  select.innerHTML = GENERATIVE_MODELS.map(
+    (model) => `<option value="${escapeAttr(modelKey(model))}">${escapeHtml(model.name)} (${model.params}B)</option>`,
+  ).join("");
+}
+
+function computeGpuPlacement(gpuRows, modelKeys) {
+  const hardwareBase = getHardware();
+  const singleUserHardware = { ...hardwareBase, concurrency: 1 };
+
+  const gpus = gpuRows.map((row, index) => {
+    const preset = GPU_PRESETS.find((gpu) => gpu.id === row.presetId) || GPU_PRESETS[0];
+    const count = clampNumber(row.count, 1, 8, 1);
+    const capacityGb = preset.vram * count * 0.92; // 예약분/오버헤드 여유 반영
+    return {
+      index,
+      preset,
+      count,
+      capacityGb,
+      remaining: capacityGb,
+      placements: [],
+    };
+  });
+
+  const models = modelKeys
+    .map((key) => GENERATIVE_MODELS.find((model) => modelKey(model) === key))
+    .filter(Boolean);
+
+  const modelOptions = models.map((model) => {
+    const options = QUANTS
+      .filter((quant) => quant.id !== "auto")
+      .map((quant) => ({ quant, requiredGb: estimateWithQuant(model, quant, singleUserHardware).requiredGb }))
+      .sort((a, b) => a.requiredGb - b.requiredGb);
+    return { model, options, bestRequiredGb: options[0]?.requiredGb ?? Infinity };
+  });
+
+  // Best-Fit Decreasing: 가장 큰(무거운) 모델부터 배치해야 나중에 자투리 공간 낭비가 줄어듭니다.
+  modelOptions.sort((a, b) => b.bestRequiredGb - a.bestRequiredGb);
+
+  const unplaced = [];
+  for (const { model, options } of modelOptions) {
+    let bestChoice = null;
+    for (const gpu of gpus) {
+      const fit = [...options].reverse().find((option) => option.requiredGb <= gpu.remaining);
+      if (!fit) continue;
+      const leftover = gpu.remaining - fit.requiredGb;
+      if (!bestChoice || leftover < bestChoice.leftover) {
+        bestChoice = { gpu, quant: fit.quant, requiredGb: fit.requiredGb, leftover };
+      }
+    }
+    if (bestChoice) {
+      bestChoice.gpu.remaining -= bestChoice.requiredGb;
+      bestChoice.gpu.placements.push({ model, quant: bestChoice.quant, requiredGb: bestChoice.requiredGb });
+    } else {
+      unplaced.push({ model, minRequiredGb: options[0]?.requiredGb ?? 0 });
+    }
+  }
+
+  return { gpus, unplaced };
+}
+
+function runGpuPlacement() {
+  const select = $("placementModelSelect");
+  const modelKeys = select ? [...select.selectedOptions].map((option) => option.value) : [];
+  const result = $("gpuPlacementResult");
+  if (!result) return;
+
+  if (!modelKeys.length) {
+    result.innerHTML = `<p class="gpu-placement-empty">동시에 띄울 모델을 하나 이상 선택해주세요.</p>`;
+    return;
+  }
+
+  const placement = computeGpuPlacement(gpuInventoryRows, modelKeys);
+  result.innerHTML = renderGpuPlacementResult(placement);
+}
+
+function renderGpuPlacementResult(placement) {
+  const gpuCards = placement.gpus
+    .map((gpu) => {
+      const rows = gpu.placements.length
+        ? gpu.placements
+            .map(
+              (item) => `
+                <div class="gpu-placement-model-row">
+                  <span>${escapeHtml(item.model.name)} · ${escapeHtml(item.quant.label)}</span>
+                  <span>${escapeHtml(formatGb(item.requiredGb))}</span>
+                </div>
+              `,
+            )
+            .join("")
+        : `<p class="gpu-placement-empty">이 GPU에는 배치된 모델이 없습니다.</p>`;
+
+      return `
+        <div class="gpu-placement-card">
+          <div class="gpu-placement-card-head">
+            <span>GPU ${gpu.index + 1} · ${escapeHtml(gpu.preset.name)}${gpu.count > 1 ? ` × ${gpu.count}` : ""}</span>
+            <small>여유 ${escapeHtml(formatGb(gpu.remaining))} / 총 ${escapeHtml(formatGb(gpu.capacityGb))}</small>
+          </div>
+          ${rows}
+        </div>
+      `;
+    })
+    .join("");
+
+  const unplacedBlock = placement.unplaced.length
+    ? `
+      <div class="gpu-placement-unplaced">
+        <strong>배치하지 못한 모델 ${placement.unplaced.length}개</strong>
+        ${placement.unplaced
+          .map(
+            (item) => `<div class="gpu-placement-model-row"><span>${escapeHtml(item.model.name)}</span><span>최소 ${escapeHtml(formatGb(item.minRequiredGb))} 필요</span></div>`,
+          )
+          .join("")}
+        <p>GPU를 추가하거나, 다른 모델과 함께 띄우지 말고 순차 실행하는 것을 고려해보세요.</p>
+      </div>
+    `
+    : "";
+
+  return gpuCards + unplacedBlock;
 }
 
 function syncPresetForInput(inputId) {
@@ -1376,6 +1565,66 @@ function estimateFirstTokenSeconds(model, hardware, grade) {
   const modelSeconds = Math.min(5, model.active * 0.025);
   const concurrencySeconds = Math.max(0, hardware.concurrency - 1) * 0.025;
   return (0.18 + modelSeconds + contextSeconds + concurrencySeconds) * runtimeMultiplier * pressureMultiplier;
+}
+
+function estimateConcurrencyCapacity(model, quant, hardware) {
+  // requiredGb(N) = A + N * B for N >= 1 (KV cache와 요청당 오버헤드가 선형이라는 전제 하의 역산)
+  const runtimeFactor = getRuntimeFactor(hardware.runtime);
+  const weightsGb = model.params * quant.bytesPerB * 1.08;
+  const contextMultiplier = hardware.context / 4096;
+  const kvPerUnit = model.active * 0.09 * contextMultiplier * hardware.kvMeta.factor;
+  const fixedOverhead = runtimeFactor.base + Math.min(runtimeFactor.cap, weightsGb * runtimeFactor.weightRatio);
+  const requestOverhead = runtimeFactor.requestOverhead;
+  const a = weightsGb + fixedOverhead - requestOverhead;
+  const b = kvPerUnit + requestOverhead;
+  const effectiveVram = getEffectiveVram(hardware);
+
+  const solveN = (pressureThreshold) => {
+    if (b <= 0) return 256;
+    const n = Math.floor((effectiveVram * pressureThreshold - a) / b);
+    return Math.max(0, Math.min(256, n));
+  };
+
+  const recommendedN = solveN(0.85);
+  const maxN = solveN(1);
+
+  const speedAt = (n) => {
+    if (n <= 0) return { perRequest: 0, total: 0 };
+    return estimateSpeed(model, quant, { ...hardware, concurrency: n }, "B");
+  };
+
+  return {
+    recommendedN,
+    maxN,
+    speedAtRecommended: speedAt(recommendedN),
+    speedAtMax: speedAt(maxN),
+  };
+}
+
+function renderConcurrencySection(model, quant, hardware) {
+  const capacity = estimateConcurrencyCapacity(model, quant, hardware);
+
+  if (capacity.maxN <= 0) {
+    return `
+      <section class="detail-section">
+        <h3>동시 처리 용량 (베타)</h3>
+        <p class="detail-note">현재 설정(${escapeHtml(quant.label)} · ${escapeHtml(formatContext(hardware.context))})에서는 이 GPU VRAM 단독으로 1명도 여유 있게 처리하기 어렵습니다. 양자화를 낮추거나 컨텍스트 길이를 줄여보세요.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="detail-section">
+      <h3>동시 처리 용량 (베타)</h3>
+      <div class="detail-summary-grid">
+        ${renderDetailMetric("권장 동시 인원", `${capacity.recommendedN}명`, "VRAM 여유 있게(등급 A 이내)")}
+        ${renderDetailMetric("이론적 최대 인원", `${capacity.maxN}명`, "GPU VRAM 한계치(등급 B 경계)")}
+        ${renderDetailMetric("권장 인원 기준 처리량", formatThroughput(capacity.speedAtRecommended.total, "tok/s"), `1인당 약 ${formatSpeed(capacity.speedAtRecommended.perRequest)}`)}
+        ${renderDetailMetric("최대 인원 기준 처리량", formatThroughput(capacity.speedAtMax.total, "tok/s"), `1인당 약 ${formatSpeed(capacity.speedAtMax.perRequest)}`)}
+      </div>
+      <p class="detail-note">KV cache와 VRAM 여유만 반영한 이론치입니다. 실제 동시접속 처리량은 vLLM·TGI 등 서빙 프레임워크의 연속 배칭 효율, 요청 길이 분포, 스케줄링 정책에 따라 크게 달라질 수 있으니 참고용으로만 사용하세요.</p>
+    </section>
+  `;
 }
 
 function buildReason(grade, requiredGb, effectiveVram, model, hardware, contextLimitTokens, contextSupported) {
@@ -2238,6 +2487,8 @@ function renderDetail() {
       ${renderFitRationale(estimate, hardware)}
       <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
+
+    ${renderConcurrencySection(model, estimate.quant, hardware)}
 
     <section class="detail-section">
       <h3>양자화별 비교</h3>
