@@ -297,7 +297,11 @@ window.LLM_GPU_CHECKER_DATA.modelMetadata = {
     MODEL_METADATA_SOURCES.kanana15,
     quality("KMMLU 48.28", "KMMLU (0-shot, CoT)", 48.28, MODEL_METADATA_SOURCES.kanana15, "공식 한국어"),
   ),
-  "A.X 4.0 Light 7B": meta("2025-07-03", MODEL_METADATA_SOURCES.ax40),
+  "A.X 4.0 Light 7B": meta(
+    "2025-07-03",
+    MODEL_METADATA_SOURCES.ax40,
+    quality("MMLU 75.43", "MMLU (자체 평가, CoT)", 75.43, MODEL_METADATA_SOURCES.ax40, "공식 발표"),
+  ),
   "A.X 4.0 72B": meta(
     "2025-07-03",
     MODEL_METADATA_SOURCES.ax40,
