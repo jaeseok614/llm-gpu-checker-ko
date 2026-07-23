@@ -2223,22 +2223,38 @@ function buildRecommendationReasons(estimate) {
   return [...new Set(reasons)].slice(0, 4);
 }
 
+function findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware) {
+  return (
+    benchmarkRows.find((row) => {
+      const sameGpu = !row.gpuId
+        || (row.gpuId === hardware.preset.id && hardware.primaryCount === 1 && !hardware.secondaryPreset);
+      const sameRuntime = !row.runtime || row.runtime === hardware.runtime;
+      const sameSetting = model.type === "generative" ? (!row.quantization || row.quantization === estimate.settingLabel || row.quantization === estimate.quant?.label) : true;
+      return sameGpu && sameRuntime && sameSetting;
+    }) || null
+  );
+}
+
+function getBenchmarkNumericValue(row) {
+  if (!row) return null;
+  if (row.tokensPerSecond) return { value: row.tokensPerSecond, unit: "tok/s" };
+  if (row.docsPerSecond) return { value: row.docsPerSecond, unit: "doc/s" };
+  if (row.pairsPerSecond) return { value: row.pairsPerSecond, unit: "pair/s" };
+  if (row.pagesPerSecond) return { value: row.pagesPerSecond, unit: "page/s" };
+  return null;
+}
+
 function getEstimateConfidence(model, estimate, hardware) {
   const benchmarkRows = findBenchmarksForModel(model);
-  const hasExactMeasured = benchmarkRows.some((row) => {
-    const sameGpu = !row.gpuId
-      || (row.gpuId === hardware.preset.id && hardware.primaryCount === 1 && !hardware.secondaryPreset);
-    const sameRuntime = !row.runtime || row.runtime === hardware.runtime;
-    const sameSetting = model.type === "generative" ? (!row.quantization || row.quantization === estimate.settingLabel || row.quantization === estimate.quant?.label) : true;
-    return sameGpu && sameRuntime && sameSetting;
-  });
+  const exactMatch = findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware);
 
-  if (hasExactMeasured) {
+  if (exactMatch) {
     return {
       label: "높음",
       className: "confidence-high",
       spread: 0.08,
       reason: "동일 모델/조건의 출처 연결 실측값이 있습니다.",
+      matchedRow: exactMatch,
     };
   }
 
@@ -3369,6 +3385,11 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
       ? "실측값 없음 · 참고 기준 있음"
       : "등록된 실측값 없음";
 
+  const matchedMetric = getBenchmarkNumericValue(confidence.matchedRow);
+  const errorLine = matchedMetric && estimate.speed
+    ? renderEstimateErrorLine(estimate.speed, matchedMetric.value, matchedMetric.unit)
+    : "";
+
   return `
     <section class="detail-section">
       <h3>추정값과 실측값</h3>
@@ -3385,7 +3406,20 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
           ${renderBenchmarkMiniRows(measuredRows, reference, qualityBenchmark)}
         </div>
       </div>
+      ${errorLine}
     </section>
+  `;
+}
+
+function renderEstimateErrorLine(estimateValue, measuredValue, unit) {
+  const errorPct = ((estimateValue - measuredValue) / measuredValue) * 100;
+  const sign = errorPct >= 0 ? "+" : "";
+  return `
+    <div class="estimate-error-line">
+      <span>예상 ${escapeHtml(formatMetricNumber(estimateValue, unit, true))}</span>
+      <span>vs 실측 ${escapeHtml(formatMetricNumber(measuredValue, unit, true))}</span>
+      <strong>추정 오차 ${sign}${errorPct.toFixed(1)}%</strong>
+    </div>
   `;
 }
 

@@ -600,6 +600,24 @@ This is intentionally shown as an estimate, not a measured guarantee. OCR accura
 
 실행 결과가 있다면 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml)로 제보해 주세요.
 
+### 로컬 벤치마크 자동 수집 (`scripts/benchmark-cli.mjs`)
+
+실측 행이 늘어날수록 계산 추정값의 신뢰도가 올라갑니다. 직접 로그를 정리하지 않아도 되도록, 실행 중인 Ollama/llama.cpp 서버에 짧은 프롬프트를 보내 prefill/decode 속도, TTFT, peak VRAM을 측정하고 `data/benchmarks.js` 형식의 JSON을 바로 만들어 주는 CLI를 제공합니다.
+
+```bash
+# Ollama
+node scripts/benchmark-cli.mjs --runtime ollama --model qwen3:8b --context 8192
+
+# llama.cpp 서버
+node scripts/benchmark-cli.mjs --runtime llamacpp --url http://localhost:8080 --model "Qwen3 8B Q4_K_M" --context 8192
+```
+
+- 이 GPU와 로컬 서버에만 접속합니다. 아무것도 자동으로 전송하지 않으며, 출력된 JSON을 제보할지는 직접 선택합니다.
+- NVIDIA GPU에서 `nvidia-smi`가 있으면 GPU 이름·VRAM·드라이버·CUDA 버전을 자동으로 채웁니다. 없으면 `--gpu`로 직접 입력하고 VRAM은 다른 도구로 확인해 JSON에 채워 넣으면 됩니다.
+- 출력된 JSON을 [Benchmark report](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml) 이슈의 "CLI 측정 결과 (JSON)" 칸에 붙여넣으면 됩니다. `sourceUrl`은 이슈를 올린 뒤 이슈 자신의 링크로 바꿔주세요.
+- 모델·GPU·조건이 현재 화면과 정확히 일치하는 실측 행이 등록되면, 상세 화면에 "예상 X vs 실측 Y · 추정 오차 ±Z%"가 함께 표시됩니다.
+- `--help`로 전체 옵션을 확인할 수 있습니다.
+
 ### Hugging Face 공개 LLM 직접 계산
 
 브라우저는 전체 가중치 파일을 다운로드하지 않습니다. 공개 Hub API에서 `safetensors.total` 파라미터 수와 `config.json`의 컨텍스트·MoE 구조 정보를 읽어 계산용 모델 레코드만 만듭니다.
