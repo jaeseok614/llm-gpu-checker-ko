@@ -553,6 +553,111 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.simple-mode-panel {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.simple-mode-body {
+  padding: 0 13px 13px;
+}
+
+.simple-mode-body p {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.simple-mode-hint {
+  margin-top: 10px !important;
+  color: var(--muted) !important;
+  font-size: 11px !important;
+}
+
+.simple-mode-questions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.simple-mode-gpu-readout {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.simple-mode-result {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.simple-pick-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.simple-pick-card:hover {
+  border-color: var(--blue);
+}
+
+.simple-pick-rank {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: var(--blue);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.simple-pick-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.simple-pick-head strong {
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+
+.simple-pick-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.simple-pick-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+  color: #2f3c48;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .gpu-placement-body {
   padding: 0 13px 13px;
 }
@@ -2171,6 +2276,10 @@ button:focus-visible {
   }
 
   .field-control-pair.is-custom {
+    grid-template-columns: 1fr;
+  }
+
+  .simple-mode-questions {
     grid-template-columns: 1fr;
   }
 

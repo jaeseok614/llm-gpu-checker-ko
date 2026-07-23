@@ -623,6 +623,15 @@ function bindEvents() {
     }
   });
 
+  $("simplePurpose").addEventListener("change", () => render());
+  $("simplePriority").addEventListener("change", () => render());
+  $("simpleModeResult").addEventListener("click", (event) => {
+    const target = event.target.closest("[data-model-key]");
+    if (!target) return;
+    selectedModelKey = target.dataset.modelKey;
+    render();
+  });
+
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
 
@@ -2531,6 +2540,7 @@ function render(options = {}) {
   refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
   renderSummary(allEstimates);
+  renderSimpleMode(hardware, allEstimates);
   renderCalculationBasisStrip(hardware);
   renderQuantizationRecommendations(estimates);
   renderResults(estimates, allEstimates);
@@ -2694,6 +2704,69 @@ function renderSummary(estimates) {
       >
         <span>${escapeHtml(filter.label)}</span>
         <strong>${count}</strong>
+      </button>
+    `;
+  }).join("");
+}
+
+function computeSimpleRecommendations(allEstimates, purpose, priority) {
+  let candidates = allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
+
+  if (purpose && candidates.some((estimate) => estimate.model.tags.includes(purpose))) {
+    candidates = candidates.filter((estimate) => estimate.model.tags.includes(purpose));
+  }
+
+  const sorted = [...candidates].sort((a, b) => {
+    if (priority === "speed") return b.speed - a.speed || gradeSort(a, b) || a.requiredGb - b.requiredGb;
+    if (priority === "quality") return gradeSort(a, b) || b.model.params - a.model.params || b.speed - a.speed;
+    if (priority === "vramHeadroom") return (b.effectiveVram - b.requiredGb) - (a.effectiveVram - a.requiredGb) || gradeSort(a, b);
+    return recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure;
+  });
+
+  return sorted.slice(0, 3);
+}
+
+function renderSimpleMode(hardware, allEstimates) {
+  const gpuReadout = $("simpleModeGpuReadout");
+  if (gpuReadout) gpuReadout.textContent = formatHardwareName(hardware);
+
+  const target = $("simpleModeResult");
+  if (!target) return;
+
+  const purpose = $("simplePurpose")?.value || "general";
+  const priority = $("simplePriority")?.value || "balanced";
+  const picks = computeSimpleRecommendations(allEstimates, purpose, priority);
+
+  if (!picks.length) {
+    target.innerHTML = `
+      <div class="empty-state">
+        <strong>현재 조건에 맞는 모델이 없습니다.</strong>
+        <span>GPU 설정이나 우선순위를 바꿔 다시 확인해 보세요.</span>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = picks.map((estimate, index) => {
+    const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
+    const meta = GRADE_META[estimate.grade];
+    const licensePolicy = getLicensePolicy(estimate.model);
+    const reasons = buildRecommendationReasons(estimate).slice(0, 3);
+    const key = modelKey(estimate.model);
+
+    return `
+      <button type="button" class="simple-pick-card" data-model-key="${escapeAttr(key)}">
+        <span class="simple-pick-rank">${index + 1}순위</span>
+        <span class="simple-pick-head">
+          <strong>${escapeHtml(estimate.model.name)}</strong>
+          <span class="grade-pill ${meta.className}">${meta.label}</span>
+        </span>
+        <span class="simple-pick-specs">
+          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licensePolicy.commercialLabel)}</span>
+          <span>VRAM ${formatGb(estimate.requiredGb)}</span>
+          <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
+        </span>
+        ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
       </button>
     `;
   }).join("");

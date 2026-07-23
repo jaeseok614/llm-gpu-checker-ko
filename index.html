@@ -361,6 +361,41 @@
         <div class="summary-filterbar" id="summaryGrid"></div>
         <div class="calculation-basis-strip" id="calculationBasisStrip"></div>
 
+        <details class="hf-import-panel simple-mode-panel" id="simpleModePanel" open>
+          <summary>🎯 3단계로 모델 추천받기 (초보자 모드)</summary>
+          <div class="simple-mode-body">
+            <p>아래 목록은 <strong>전문가 모드</strong>로, 조건에 맞는 모든 모델을 직접 비교합니다. 처음이라 뭘 골라야 할지 모르겠다면 GPU·용도·우선순위 3가지만 고르세요. 지금 탭 기준 최적 모델 3개를 바로 추천합니다.</p>
+            <div class="simple-mode-questions">
+              <label class="field">
+                <span>1. 사용할 GPU</span>
+                <span class="simple-mode-gpu-readout" id="simpleModeGpuReadout">GeForce RTX 4090 24GB</span>
+              </label>
+              <label class="field">
+                <span>2. 용도</span>
+                <select id="simplePurpose">
+                  <option value="general">일반 대화 / 비서</option>
+                  <option value="korean">한국어 특화</option>
+                  <option value="coding">코딩</option>
+                  <option value="reasoning">추론 / 수학</option>
+                  <option value="long">긴 문서 / RAG</option>
+                  <option value="vision">이미지 / 문서 인식</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>3. 우선순위</span>
+                <select id="simplePriority">
+                  <option value="balanced">균형 잡힌 추천</option>
+                  <option value="quality">품질 우선</option>
+                  <option value="speed">속도 우선</option>
+                  <option value="vramHeadroom">여유 VRAM 우선</option>
+                </select>
+              </label>
+            </div>
+            <p class="simple-mode-hint">GPU를 바꾸려면 위쪽의 <strong>설정 변경</strong>에서 GPU를 먼저 선택하세요.</p>
+            <div class="simple-mode-result" id="simpleModeResult"></div>
+          </div>
+        </details>
+
         <details class="hf-import-panel" id="hfImportPanel">
           <summary>Hugging Face 공개 LLM 직접 계산</summary>
           <form class="hf-import-form" id="hfImportForm">
