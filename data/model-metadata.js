@@ -4,6 +4,7 @@ const MODEL_METADATA_SOURCES = {
   qwen25: "https://qwenlm.github.io/blog/qwen2.5/",
   qwen3: "https://qwenlm.github.io/blog/qwen3/",
   qwen3Report: "https://arxiv.org/abs/2505.09388",
+  qwen25TechReport: "https://arxiv.org/abs/2412.15115",
   llama31: "https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md",
   llama32: "https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/MODEL_CARD.md",
   llama33: "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct",
@@ -51,12 +52,26 @@ function same(record, names) {
 }
 
 window.LLM_GPU_CHECKER_DATA.modelMetadata = {
-  ...same(meta("2024-09-19", MODEL_METADATA_SOURCES.qwen25), [
-    "Qwen2.5 0.5B Instruct",
-    "Qwen2.5 1.5B Instruct",
-    "Qwen2.5 3B Instruct",
-    "Qwen2.5 14B Instruct",
-  ]),
+  "Qwen2.5 0.5B Instruct": meta(
+    "2024-09-19",
+    MODEL_METADATA_SOURCES.qwen25,
+    quality("MMLU-Pro 15.0", "MMLU-Pro", 15.0, MODEL_METADATA_SOURCES.qwen25TechReport, "공식 발표"),
+  ),
+  "Qwen2.5 1.5B Instruct": meta(
+    "2024-09-19",
+    MODEL_METADATA_SOURCES.qwen25,
+    quality("MMLU-Pro 32.4", "MMLU-Pro", 32.4, MODEL_METADATA_SOURCES.qwen25TechReport, "공식 발표"),
+  ),
+  "Qwen2.5 3B Instruct": meta(
+    "2024-09-19",
+    MODEL_METADATA_SOURCES.qwen25,
+    quality("MMLU-Pro 43.7", "MMLU-Pro", 43.7, MODEL_METADATA_SOURCES.qwen25TechReport, "공식 발표"),
+  ),
+  "Qwen2.5 14B Instruct": meta(
+    "2024-09-19",
+    MODEL_METADATA_SOURCES.qwen25,
+    quality("MMLU-Pro 63.7", "MMLU-Pro", 63.7, MODEL_METADATA_SOURCES.qwen25TechReport, "공식 발표"),
+  ),
   "Qwen2.5 7B Instruct": meta(
     "2024-09-19",
     MODEL_METADATA_SOURCES.qwen25,
@@ -73,13 +88,31 @@ window.LLM_GPU_CHECKER_DATA.modelMetadata = {
     quality("MMLU 87.14", "MMLU (0-shot, CoT)", 87.14, MODEL_METADATA_SOURCES.kanana15, "외부 평가"),
   ),
 
-  ...same(meta("2025-04-29", MODEL_METADATA_SOURCES.qwen3), [
-    "Qwen3 0.6B",
-    "Qwen3 1.7B",
-    "Qwen3 4B",
-    "Qwen3 8B",
-    "Qwen3 14B",
-  ]),
+  "Qwen3 0.6B": meta(
+    "2025-04-29",
+    MODEL_METADATA_SOURCES.qwen3,
+    quality("MMLU-Pro 24.74", "MMLU-Pro (Base 모델, 5-shot CoT)", 24.74, MODEL_METADATA_SOURCES.qwen3Report),
+  ),
+  "Qwen3 1.7B": meta(
+    "2025-04-29",
+    MODEL_METADATA_SOURCES.qwen3,
+    quality("MMLU-Pro 36.76", "MMLU-Pro (Base 모델, 5-shot CoT)", 36.76, MODEL_METADATA_SOURCES.qwen3Report),
+  ),
+  "Qwen3 4B": meta(
+    "2025-04-29",
+    MODEL_METADATA_SOURCES.qwen3,
+    quality("MMLU-Pro 50.58", "MMLU-Pro (Base 모델, 5-shot CoT)", 50.58, MODEL_METADATA_SOURCES.qwen3Report),
+  ),
+  "Qwen3 8B": meta(
+    "2025-04-29",
+    MODEL_METADATA_SOURCES.qwen3,
+    quality("MMLU-Pro 56.73", "MMLU-Pro (Base 모델, 5-shot CoT)", 56.73, MODEL_METADATA_SOURCES.qwen3Report),
+  ),
+  "Qwen3 14B": meta(
+    "2025-04-29",
+    MODEL_METADATA_SOURCES.qwen3,
+    quality("MMLU-Pro 61.03", "MMLU-Pro (Base 모델, 5-shot CoT)", 61.03, MODEL_METADATA_SOURCES.qwen3Report),
+  ),
   "Qwen3 30B A3B": meta(
     "2025-04-29",
     MODEL_METADATA_SOURCES.qwen3,
@@ -291,10 +324,12 @@ mergeModelMetadata({
   "SmolLM2 1.7B Instruct": {
     releaseDate: "2025-02-05",
     sourceUrl: "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B",
+    qualityBenchmark: quality("IFEval 56.7", "IFEval 평균(prompt/inst)", 56.7, "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct", "공식 발표"),
   },
   "Phi-3.5 Mini Instruct": {
     releaseDate: "2024-08-20",
     sourceUrl: "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
+    qualityBenchmark: quality("MMLU 69.0", "MMLU (5-shot)", 69, "https://huggingface.co/microsoft/Phi-3.5-mini-instruct", "공식 발표"),
   },
   "Phi-4 Mini Instruct": {
     releaseDate: "2025-02",
@@ -304,6 +339,7 @@ mergeModelMetadata({
   "Mistral 7B Instruct": {
     releaseDate: "2023-09-27",
     sourceUrl: "https://legal.mistral.ai/ai-governance/models/mistral-7-b",
+    qualityBenchmark: quality("MT-Bench 6.84", "MT-Bench (v0.1)", 6.84, "https://arxiv.org/abs/2310.06825", "공식 논문"),
   },
   "Mistral Nemo 12B Instruct": {
     qualityBenchmark: quality("MMLU 68.0", "MMLU (5-shot)", 68, "https://developer.nvidia.com/blog/power-text-generation-applications-with-mistral-nemo-12b-running-on-a-single-gpu/", "공식 파트너"),
@@ -344,6 +380,7 @@ mergeModelMetadata({
   "Qwen3-Coder 480B A35B Instruct": {
     releaseDate: "2025-07",
     sourceUrl: "https://github.com/QwenLM/Qwen3-Coder",
+    qualityBenchmark: quality("SWE-bench Pro 38.7", "SWE-bench Pro", 38.7, "https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct", "공식 발표"),
   },
   "CodeLlama 7B Instruct": {
     releaseDate: "2023-08-24",
@@ -360,38 +397,47 @@ mergeModelMetadata({
   "DeepSeek Coder V2 Lite 16B": {
     releaseDate: "2024-06-17",
     sourceUrl: "https://github.com/deepseek-ai/DeepSeek-Coder-V2",
+    qualityBenchmark: quality("HumanEval 81.1", "HumanEval pass@1", 81.1, "https://github.com/deepseek-ai/DeepSeek-Coder-V2", "공식 발표"),
   },
   "DeepSeek Coder V2 236B": {
     releaseDate: "2024-06-17",
     sourceUrl: "https://github.com/deepseek-ai/DeepSeek-Coder-V2",
+    qualityBenchmark: quality("HumanEval 90.2", "HumanEval pass@1", 90.2, "https://github.com/deepseek-ai/DeepSeek-Coder-V2", "공식 발표"),
   },
   "Mixtral 8x22B Instruct": {
     releaseDate: "2024-04-17",
     sourceUrl: "https://mistral.ai/news/mixtral-8x22b/",
+    qualityBenchmark: quality("GSM8K 90.8", "GSM8K maj@8", 90.8, "https://mistral.ai/news/mixtral-8x22b/", "공식 발표"),
   },
   "Command R 35B": {
     releaseDate: "2024-03-11",
     sourceUrl: "https://huggingface.co/CohereForAI/c4ai-command-r-v01",
+    qualityBenchmark: quality("MMLU 68.2", "MMLU (Open LLM Leaderboard)", 68.2, "https://huggingface.co/CohereLabs/c4ai-command-r-plus", "공식 비교"),
   },
   "Command R+ 104B": {
     releaseDate: "2024-04-04",
     sourceUrl: "https://huggingface.co/CohereForAI/c4ai-command-r-plus",
+    qualityBenchmark: quality("MMLU 75.7", "MMLU", 75.7, "https://huggingface.co/CohereLabs/c4ai-command-r-plus", "공식 발표"),
   },
   "Aya Expanse 8B": {
     releaseDate: "2024-10-23",
     sourceUrl: "https://huggingface.co/CohereForAI/aya-expanse-8b",
+    qualityBenchmark: quality("MMLU-Pro 33.74", "MMLU-Pro (Open LLM Leaderboard 연동)", 33.74, "https://huggingface.co/CohereLabs/aya-expanse-8b", "공식 카드"),
   },
   "Aya Expanse 32B": {
     releaseDate: "2024-10-23",
     sourceUrl: "https://huggingface.co/CohereForAI/aya-expanse-32b",
+    qualityBenchmark: quality("MMLU-Pro 45.41", "MMLU-Pro (Open LLM Leaderboard 연동)", 45.41, "https://huggingface.co/CohereLabs/aya-expanse-32b", "공식 카드"),
   },
   "OLMo 2 7B Instruct": {
     releaseDate: "2024-11-26",
     sourceUrl: "https://huggingface.co/allenai/OLMo-2-1124-7B-Instruct",
+    qualityBenchmark: quality("MMLU 61.3", "MMLU", 61.3, "https://huggingface.co/allenai/OLMo-2-1124-7B-Instruct", "공식 발표"),
   },
   "OLMo 2 13B Instruct": {
     releaseDate: "2024-11-26",
     sourceUrl: "https://huggingface.co/allenai/OLMo-2-1124-13B-Instruct",
+    qualityBenchmark: quality("Avg 62.0", "10개 벤치마크 평균(AlpacaEval/BBH/GSM8k/MMLU 등)", 62, "https://huggingface.co/allenai/OLMo-2-1124-13B-Instruct", "공식 발표"),
   },
   "OLMoE 1B-7B Instruct": {
     releaseDate: "2024-09-05",
@@ -400,10 +446,12 @@ mergeModelMetadata({
   "Falcon 7B Instruct": {
     releaseDate: "2023-05-25",
     sourceUrl: "https://huggingface.co/tiiuae/falcon-7b-instruct",
+    qualityBenchmark: quality("Open LLM Avg 48.4", "Open LLM Leaderboard 평균(ARC/HellaSwag/MMLU/TruthfulQA)", 48.4, "https://github.com/huggingface/blog/blob/main/falcon.md", "공식 발표"),
   },
   "Falcon 40B Instruct": {
     releaseDate: "2023-05-25",
     sourceUrl: "https://huggingface.co/tiiuae/falcon-40b-instruct",
+    qualityBenchmark: quality("Open LLM Avg 63.2", "Open LLM Leaderboard 평균(ARC/HellaSwag/MMLU/TruthfulQA)", 63.2, "https://github.com/huggingface/blog/blob/main/falcon.md", "공식 발표"),
   },
   "Falcon 180B Chat": {
     releaseDate: "2023-09-06",
@@ -412,35 +460,43 @@ mergeModelMetadata({
   "Jamba 1.5 Mini": {
     releaseDate: "2024-08-22",
     sourceUrl: "https://huggingface.co/ai21labs/AI21-Jamba-1.5-Mini",
+    qualityBenchmark: quality("Arena Hard 46.1", "Arena Hard", 46.1, "https://www.ai21.com/blog/announcing-jamba-model-family/", "공식 발표"),
   },
   "Jamba 1.5 Large": {
     releaseDate: "2024-08-22",
     sourceUrl: "https://huggingface.co/ai21labs/AI21-Jamba-1.5-Large",
+    qualityBenchmark: quality("Arena Hard 65.4", "Arena Hard", 65.4, "https://www.ai21.com/blog/announcing-jamba-model-family/", "공식 발표"),
   },
   "NVIDIA Nemotron 4 15B": {
     releaseDate: "2024-06-14",
     sourceUrl: "https://huggingface.co/nvidia/Nemotron-4-15B-Instruct",
+    qualityBenchmark: quality("MMLU 64.2", "MMLU (5-shot)", 64.2, "https://arxiv.org/abs/2402.16819", "공식 논문"),
   },
   "Llama 3.1 Nemotron 70B": {
     releaseDate: "2024-10-15",
     sourceUrl: "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct-HF",
+    qualityBenchmark: quality("MMLU-Pro 62.78", "MMLU-Pro", 62.78, "https://huggingface.co/nvidia/Llama-3.1-Nemotron-70B-Instruct-HF", "공식 발표"),
   },
 
   "Llama 3.2 11B Vision Instruct": {
     releaseDate: "2024-09-25",
     sourceUrl: MODEL_METADATA_SOURCES.llama32,
+    qualityBenchmark: quality("MMMU 50.7", "MMMU (val, CoT)", 50.7, "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct", "공식 발표"),
   },
   "Llama 3.2 90B Vision Instruct": {
     releaseDate: "2024-09-25",
     sourceUrl: MODEL_METADATA_SOURCES.llama32,
+    qualityBenchmark: quality("MMMU 60.3", "MMMU (val, CoT)", 60.3, "https://huggingface.co/meta-llama/Llama-3.2-90B-Vision-Instruct", "공식 발표"),
   },
   "Qwen2.5-VL 3B Instruct": {
     releaseDate: "2025-01-26",
     sourceUrl: "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct",
+    qualityBenchmark: quality("MMMU 53.1", "MMMU (val)", 53.1, "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct", "공식 발표"),
   },
   "Qwen2.5-VL 7B Instruct": {
     releaseDate: "2025-01-26",
     sourceUrl: "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
+    qualityBenchmark: quality("MMMU 58.6", "MMMU (val)", 58.6, "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct", "공식 발표"),
   },
   "Qwen2.5-VL 32B Instruct": {
     releaseDate: "2025-03-21",
@@ -460,26 +516,32 @@ mergeModelMetadata({
   "Pixtral Large 124B": {
     releaseDate: "2024-11-18",
     sourceUrl: "https://huggingface.co/mistralai/Pixtral-Large-Instruct-2411",
+    qualityBenchmark: quality("MMMU 64.0", "MMMU (CoT)", 64, "https://huggingface.co/mistralai/Pixtral-Large-Instruct-2411", "공식 발표"),
   },
   "MiniCPM-V 2.6 8B": {
     releaseDate: "2024-08-06",
     sourceUrl: "https://huggingface.co/openbmb/MiniCPM-V-2_6",
+    qualityBenchmark: quality("OpenCompass 65.2", "OpenCompass 8개 벤치마크 평균", 65.2, "https://huggingface.co/openbmb/MiniCPM-V-2_6", "공식 발표"),
   },
   "InternVL2.5 8B": {
     releaseDate: "2024-12-10",
     sourceUrl: "https://huggingface.co/OpenGVLab/InternVL2_5-8B",
+    qualityBenchmark: quality("MMMU 56.0", "MMMU (val)", 56, "https://internvl.github.io/blog/2024-12-05-InternVL-2.5/", "공식 발표"),
   },
   "InternVL2.5 26B": {
     releaseDate: "2024-12-10",
     sourceUrl: "https://huggingface.co/OpenGVLab/InternVL2_5-26B",
+    qualityBenchmark: quality("MMMU 60.0", "MMMU (val)", 60, "https://internvl.github.io/blog/2024-12-05-InternVL-2.5/", "공식 발표"),
   },
   "InternVL2.5 78B": {
     releaseDate: "2024-12-10",
     sourceUrl: "https://huggingface.co/OpenGVLab/InternVL2_5-78B",
+    qualityBenchmark: quality("MMMU 70.1", "MMMU (val)", 70.1, "https://internvl.github.io/blog/2024-12-05-InternVL-2.5/", "공식 발표"),
   },
   "Phi-3.5 Vision Instruct": {
     releaseDate: "2024-08-20",
     sourceUrl: "https://huggingface.co/microsoft/Phi-3.5-vision-instruct",
+    qualityBenchmark: quality("MMMU 43.0", "MMMU (val)", 43, "https://huggingface.co/microsoft/Phi-3.5-vision-instruct", "공식 발표"),
   },
 
   "PP-OCRv6 Tiny": {
