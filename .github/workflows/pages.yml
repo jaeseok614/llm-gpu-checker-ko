@@ -27,6 +27,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install test dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
       - name: Validate data
         run: npm run check
 
