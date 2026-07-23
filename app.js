@@ -637,7 +637,7 @@ function bindEvents() {
     if (!event.target.closest("[data-open-settings]")) return;
     settingsExpanded = true;
     refreshWorkloadUi();
-    document.querySelector(".hardware-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("settingsDrawer")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
 
   $("activeFilterChips").addEventListener("click", (event) => {
