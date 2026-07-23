@@ -137,6 +137,9 @@ let activeSummaryFilter = "all";
 let selectedModelKey = "";
 let viewMode = "list";
 let settingsExpanded = false;
+let compareKeys = [];
+let compareModalOpen = false;
+const MAX_COMPARE_MODELS = 3;
 
 const $ = (id) => document.getElementById(id);
 
@@ -689,6 +692,8 @@ function bindEvents() {
       activeWorkload = nextWorkload;
       activeSummaryFilter = "all";
       selectedModelKey = "";
+      compareKeys = [];
+      compareModalOpen = false;
       refreshWorkloadUi();
       refreshFilterOptions();
       render();
@@ -738,13 +743,52 @@ function bindEvents() {
     render();
   });
 
+  $("modelResults").addEventListener("change", (event) => {
+    const checkbox = event.target.closest("[data-compare-key]");
+    if (!checkbox) return;
+    toggleCompareModel(checkbox.dataset.compareKey);
+  });
+
+  $("compareBar").addEventListener("click", (event) => {
+    const removeButton = event.target.closest("[data-remove-compare-key]");
+    if (removeButton) {
+      toggleCompareModel(removeButton.dataset.removeCompareKey);
+      return;
+    }
+    if (event.target.closest("[data-open-compare]")) {
+      compareModalOpen = true;
+      render();
+      return;
+    }
+    if (event.target.closest("[data-clear-compare]")) {
+      compareKeys = [];
+      compareModalOpen = false;
+      render();
+    }
+  });
+
+  $("compareModalBackdrop").addEventListener("click", closeCompareModal);
+  $("compareModal").addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-compare]")) {
+      closeCompareModal();
+      return;
+    }
+    const removeButton = event.target.closest("[data-remove-compare-key]");
+    if (removeButton) toggleCompareModel(removeButton.dataset.removeCompareKey);
+  });
+
   $("drawerBackdrop").addEventListener("click", closeModelDetail);
   $("modelDetail").addEventListener("click", (event) => {
     if (event.target.closest("[data-close-detail]")) closeModelDetail();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && selectedModelKey) closeModelDetail();
+    if (event.key !== "Escape") return;
+    if (compareModalOpen) {
+      closeCompareModal();
+      return;
+    }
+    if (selectedModelKey) closeModelDetail();
   });
 
   window.addEventListener("popstate", () => {
@@ -2490,6 +2534,8 @@ function render(options = {}) {
   renderCalculationBasisStrip(hardware);
   renderQuantizationRecommendations(estimates);
   renderResults(estimates, allEstimates);
+  renderCompareBar(allEstimates);
+  renderCompareModal(allEstimates);
   renderActiveFilterChips(estimates, allEstimates);
   renderDetail();
   renderViewToggle();
@@ -2693,6 +2739,133 @@ function renderResults(estimates, allEstimates = []) {
   `;
 }
 
+function getCompareEstimates(allEstimates) {
+  return compareKeys
+    .map((key) => allEstimates.find((estimate) => modelKey(estimate.model) === key))
+    .filter(Boolean);
+}
+
+function renderCompareBar(allEstimates) {
+  const bar = $("compareBar");
+  const items = getCompareEstimates(allEstimates);
+
+  if (compareKeys.length && items.length !== compareKeys.length) {
+    compareKeys = items.map((estimate) => modelKey(estimate.model));
+  }
+
+  if (!items.length) {
+    bar.hidden = true;
+    bar.innerHTML = "";
+    return;
+  }
+
+  bar.hidden = false;
+  bar.innerHTML = `
+    <span class="compare-bar-label">비교 (${items.length}/${MAX_COMPARE_MODELS})</span>
+    <div class="compare-bar-chips">
+      ${items.map((estimate) => `
+        <span class="compare-chip">
+          ${escapeHtml(estimate.model.name)}
+          <button type="button" data-remove-compare-key="${escapeAttr(modelKey(estimate.model))}" aria-label="${escapeAttr(estimate.model.name)} 비교에서 제거">×</button>
+        </span>
+      `).join("")}
+    </div>
+    <button type="button" class="primary-button compare-open-button" data-open-compare ${items.length < 2 ? "disabled" : ""}>비교 보기</button>
+    <button type="button" class="ghost-button" data-clear-compare>전체 해제</button>
+  `;
+}
+
+function renderCompareModal(allEstimates) {
+  const backdrop = $("compareModalBackdrop");
+  const modal = $("compareModal");
+  const items = getCompareEstimates(allEstimates);
+
+  if (!compareModalOpen || items.length < 2) {
+    backdrop.hidden = true;
+    modal.hidden = true;
+    modal.innerHTML = "";
+    return;
+  }
+
+  const hardware = getHardware();
+  const rows = items.map((estimate) => {
+    const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
+    return {
+      estimate,
+      confidence,
+      release: getModelReleaseInfo(estimate.model),
+      benchmark: getBenchmarkSummary(estimate.model, estimate, confidence),
+      licensePolicy: getLicensePolicy(estimate.model),
+      meta: GRADE_META[estimate.grade],
+    };
+  });
+
+  backdrop.hidden = false;
+  modal.hidden = false;
+  modal.innerHTML = `
+    <div class="compare-modal-head">
+      <div>
+        <span class="section-kicker">Compare</span>
+        <h2>모델 비교 (${rows.length}개)</h2>
+      </div>
+      <button type="button" class="icon-button" data-close-compare aria-label="비교 닫기">×</button>
+    </div>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            ${rows.map(({ estimate }) => `
+              <th>
+                <strong>${escapeHtml(estimate.model.name)}</strong>
+                <button type="button" class="compare-remove" data-remove-compare-key="${escapeAttr(modelKey(estimate.model))}" title="비교에서 제거" aria-label="${escapeAttr(estimate.model.name)} 비교에서 제거">×</button>
+              </th>
+            `).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>실행 등급</th>
+            ${rows.map(({ meta: gradeMeta, estimate }) => `<td><span class="grade-pill ${gradeMeta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${gradeMeta.label}</span></td>`).join("")}
+          </tr>
+          <tr>
+            <th>공급사 / 라이선스</th>
+            ${rows.map(({ estimate, licensePolicy }) => `<td>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}<br /><span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licensePolicy.commercialLabel)}</span></td>`).join("")}
+          </tr>
+          <tr>
+            <th>출시/세대</th>
+            ${rows.map(({ release }) => `<td>${escapeHtml(release.label)}<br /><small>${escapeHtml(release.note)}</small></td>`).join("")}
+          </tr>
+          <tr>
+            <th>공개 품질 점수</th>
+            ${rows.map(({ benchmark }) => `<td>${escapeHtml(benchmark.label)}<br /><small>${escapeHtml(benchmark.note)}</small></td>`).join("")}
+          </tr>
+          <tr>
+            <th>권장 설정</th>
+            ${rows.map(({ estimate }) => `<td>${escapeHtml(estimate.settingLabel)}</td>`).join("")}
+          </tr>
+          <tr>
+            <th>필요 VRAM</th>
+            ${rows.map(({ estimate }) => `<td>${formatGb(estimate.requiredGb)}</td>`).join("")}
+          </tr>
+          <tr>
+            <th>추정 속도</th>
+            ${rows.map(({ estimate, confidence }) => `<td>${escapeHtml(formatSpeedRange(estimate, confidence))}<br /><small>신뢰도 ${escapeHtml(confidence.label)}</small></td>`).join("")}
+          </tr>
+          <tr>
+            <th>컨텍스트 한도</th>
+            ${rows.map(({ estimate }) => `<td>${escapeHtml(estimate.limitLabel)}</td>`).join("")}
+          </tr>
+          <tr>
+            <th>태그</th>
+            ${rows.map(({ estimate }) => `<td class="compare-tags">${renderTags(estimate.model, 6)}</td>`).join("")}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderActiveFilterChips(estimates, allEstimates) {
   const chips = [];
   const summary = SUMMARY_FILTERS.find((item) => item.id === activeSummaryFilter);
@@ -2746,10 +2919,15 @@ function renderModelRow(estimate) {
   const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
   const gradeTitle = buildGradeTooltip(estimate);
   const isSelected = selectedModelKey === key;
+  const compareSelected = compareKeys.includes(key);
+  const compareDisabled = !compareSelected && compareKeys.length >= MAX_COMPARE_MODELS;
 
   return `
     <button type="button" class="model-row ${isSelected ? "is-selected" : ""}" data-model-key="${escapeAttr(key)}">
-      <span class="model-cell status-cell" data-label="상태"><span class="grade-pill ${meta.className}" title="${escapeAttr(gradeTitle)}">${meta.label}</span></span>
+      <span class="model-cell status-cell" data-label="상태">
+        <input type="checkbox" class="compare-checkbox" data-compare-key="${escapeAttr(key)}" ${compareSelected ? "checked" : ""} ${compareDisabled ? "disabled" : ""} title="비교에 추가 (최대 ${MAX_COMPARE_MODELS}개)" aria-label="${escapeAttr(estimate.model.name)} 비교에 추가" onclick="event.stopPropagation()" />
+        <span class="grade-pill ${meta.className}" title="${escapeAttr(gradeTitle)}">${meta.label}</span>
+      </span>
       <span class="model-cell model-name-cell">
         <strong>${escapeHtml(estimate.model.name)}</strong>
         <span class="tag-row compact-tags">${tags}</span>
@@ -2789,11 +2967,14 @@ function renderModelCard(estimate) {
   const benchmark = getBenchmarkSummary(estimate.model, estimate, confidence);
   const licensePolicy = getLicensePolicy(estimate.model);
   const recommendation = buildRecommendationReasons(estimate).slice(0, 3).join(" · ");
+  const compareSelected = compareKeys.includes(key);
+  const compareDisabled = !compareSelected && compareKeys.length >= MAX_COMPARE_MODELS;
 
   return `
     <button type="button" class="compact-card" data-model-key="${escapeAttr(key)}">
       <span class="compact-card-head">
         <span>
+          <input type="checkbox" class="compare-checkbox" data-compare-key="${escapeAttr(key)}" ${compareSelected ? "checked" : ""} ${compareDisabled ? "disabled" : ""} title="비교에 추가 (최대 ${MAX_COMPARE_MODELS}개)" aria-label="${escapeAttr(estimate.model.name)} 비교에 추가" onclick="event.stopPropagation()" />
           <strong>${escapeHtml(estimate.model.name)}</strong>
           <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)} · ${escapeHtml(licensePolicy.commercialLabel)}</span>
         </span>
@@ -3803,6 +3984,23 @@ function formatBenchmarkMetric(row) {
 
 function closeModelDetail() {
   selectedModelKey = "";
+  render();
+}
+
+function toggleCompareModel(key) {
+  const index = compareKeys.indexOf(key);
+  if (index >= 0) {
+    compareKeys.splice(index, 1);
+  } else {
+    if (compareKeys.length >= MAX_COMPARE_MODELS) return;
+    compareKeys.push(key);
+  }
+  if (compareKeys.length < 2) compareModalOpen = false;
+  render();
+}
+
+function closeCompareModal() {
+  compareModalOpen = false;
   render();
 }
 

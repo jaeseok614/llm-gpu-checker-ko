@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 모델 목록에서 체크박스로 최대 3개 모델을 선택해 등급·VRAM·추정 속도·공개 품질 점수·라이선스·태그를 표 형태로 나란히 비교하는 비교 모드 추가 (목록/카드 보기 모두 지원)
+- README를 ~180줄의 홍보용 요약 페이지로 축소하고, 계산 수식·정확도/한계·참고 자료를 `docs/methodology.md`, `docs/accuracy-and-limits.md`, `docs/data-sources.md`로 분리
+
 ## v1.1.0 - Multi-workload AI Hardware Planner - 2026-07-24
 
 - 루프백 전용 로컬 실측 벤치마크 CLI(`scripts/benchmark-cli.mjs`) 추가: Ollama/llama.cpp에 실제 프롬프트를 보내 prefill/decode 속도·TTFT·peak VRAM을 측정하고 제보용 JSON 생성

@@ -465,6 +465,7 @@
           </select>
         </div>
         <div class="active-filter-chips" id="activeFilterChips" hidden></div>
+        <div class="compare-bar" id="compareBar" hidden></div>
 
         <div class="model-results" id="modelResults"></div>
       </section>
@@ -484,6 +485,9 @@
 
     <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
     <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
+
+    <div class="compare-modal-backdrop" id="compareModalBackdrop" hidden></div>
+    <div class="compare-modal" id="compareModal" role="dialog" aria-modal="true" aria-label="모델 비교" hidden></div>
 
     <footer class="app-footer" id="calculationBasis">
       <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실측과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>

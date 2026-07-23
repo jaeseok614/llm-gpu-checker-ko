@@ -1000,6 +1000,21 @@ button:focus-visible {
   text-align: center;
 }
 
+.status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.compare-checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--blue);
+}
+
 .provider-cell strong {
   display: block;
   overflow-wrap: anywhere;
@@ -1269,7 +1284,19 @@ button:focus-visible {
 }
 
 .compact-card-head > span:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   min-width: 0;
+}
+
+.compact-card-head > span:first-child .compare-checkbox {
+  order: -1;
+}
+
+.compact-card-head > span:first-child > span:last-child {
+  flex-basis: 100%;
 }
 
 .compact-specs {
@@ -1320,6 +1347,174 @@ button:focus-visible {
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.compare-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--blue-soft);
+}
+
+.compare-bar-label {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.compare-bar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.compare-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 4px 6px 4px 10px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.compare-chip button {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.compare-chip button:hover {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.compare-open-button,
+.compare-bar .ghost-button {
+  white-space: nowrap;
+}
+
+.compare-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(15, 23, 32, 0.45);
+}
+
+.compare-modal {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  z-index: 41;
+  width: min(920px, 94vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 32, 0.28);
+}
+
+.compare-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.97);
+}
+
+.compare-modal-head h2 {
+  margin: 2px 0 0;
+  font-size: 17px;
+}
+
+.compare-table-wrap {
+  overflow-x: auto;
+  padding: 6px 18px 18px;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.compare-table th,
+.compare-table td {
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.compare-table thead th {
+  background: #ffffff;
+  vertical-align: bottom;
+}
+
+.compare-table thead th strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.compare-remove {
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  width: 20px;
+  height: 20px;
+  background: #f8fafc;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.compare-remove:hover {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.compare-table tbody th {
+  min-width: 110px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.compare-table td small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.compare-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .drawer-backdrop {
@@ -2073,6 +2268,18 @@ button:focus-visible {
 
   .model-detail {
     width: 100%;
+  }
+
+  .compare-bar {
+    align-items: flex-start;
+  }
+
+  .compare-modal {
+    inset: auto 0 0 0;
+    transform: none;
+    width: 100%;
+    max-height: 88vh;
+    border-radius: 12px 12px 0 0;
   }
 
   .detail-row,
