@@ -187,6 +187,7 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["전체 모델에서 비교하기", "Compare all models"],
   ["상세 설정", "Detailed settings"],
   ["기본 하드웨어", "Primary hardware"],
+  ["보조 GPU 수", "Secondary GPU count"],
   ["보조 GPU", "Secondary GPU"],
   ["메모리 보정", "Memory adjustments"],
   ["고급 도구", "Advanced tools"],
@@ -202,6 +203,7 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["내 GPU", "My GPU"],
   ["내 실행 환경", "My setup"],
   ["GPU를 선택해 주세요", "Select a GPU"],
+  ["GPU 선택 필요", "No GPU selected"],
   ["GPU 프리셋을 선택하면 추천을 시작합니다.", "Select a GPU preset to start recommendations."],
   ["선택 즉시 현재 환경에 맞는 모델을 계산합니다.", "Results update immediately for your setup."],
   ["결과 링크 복사", "Copy result link"],
@@ -210,23 +212,40 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["VRAM", "VRAM"],
   ["시스템 RAM", "System RAM"],
   ["GPU 수", "GPU count"],
-  ["보조 GPU 수", "Secondary GPU count"],
   ["사용 중 VRAM", "Reserved VRAM"],
   ["안전 여유분", "Safety margin"],
   ["대역폭 GB/s", "Bandwidth GB/s"],
   ["실행 방식", "Runtime"],
   ["양자화", "Quantization"],
   ["컨텍스트 토큰", "Context tokens"],
+  ["동시 요청 프리셋", "Concurrent requests preset"],
+  ["동시 요청 직접 입력", "Custom concurrent requests"],
   ["동시 요청", "Concurrent requests"],
+  ["평균 출력 프리셋", "Average output preset"],
+  ["평균 출력 직접 입력", "Custom average output"],
   ["평균 출력 토큰", "Average output tokens"],
+  ["평균 입력 길이 프리셋", "Average input length preset"],
+  ["평균 입력 길이 직접 입력", "Custom average input length"],
+  ["평균 입력 길이", "Average input length"],
+  ["정밀도/런타임", "Precision/Runtime"],
+  ["정밀도/기능", "Precision/Features"],
   ["정밀도", "Precision"],
-  ["검색", "Search"],
+  ["검색해서 선택", "Search to select"],
+  ["GPU 모델명 검색", "Search GPU model name"],
+  ["모델명, 제조사로 검색", "Search by model name or maker"],
   ["모델명, 제조사, 태그 검색", "Search model, maker, or tag"],
+  ["임베딩 모델명, 제조사, 태그 검색", "Search embedding model, maker, or tag"],
+  ["리랭커 모델명, 제조사, 태그 검색", "Search reranker model, maker, or tag"],
+  ["OCR 파이프라인, 제조사, 태그 검색", "Search OCR pipeline, maker, or tag"],
+  ["문서 VLM, 제조사, 태그 검색", "Search document VLM, maker, or tag"],
+  ["범용 VLM, 제조사, 태그 검색", "Search general VLM, maker, or tag"],
+  ["검색", "Search"],
   ["전체 등급", "All grades"],
   ["전체 작업", "All tasks"],
   ["전체 공급사", "All providers"],
   ["전체 라이선스", "All licenses"],
   ["전체 이용 조건", "All usage terms"],
+  ["전체 해제", "Clear all"],
   ["종합 추천", "Overall recommendation"],
   ["최신 모델순", "Newest first"],
   ["파라미터 큰 순", "Largest parameters first"],
@@ -238,12 +257,15 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["긴 문서 / RAG", "Long documents / RAG"],
   ["코딩 모델 우선", "Coding models first"],
   ["한국어 모델 우선", "Korean models first"],
+  ["한국어 특화", "Korean-focused"],
   ["이미지 / 문서 인식", "Image / document understanding"],
+  ["추론 / 수학", "Reasoning / math"],
   ["문서 파싱 전체", "Full document parsing"],
   ["텍스트 OCR", "Text OCR"],
   ["영수증/라벨", "Receipts / labels"],
   ["웹/스크린샷 1080p", "Web / screenshot 1080p"],
   ["배치 계산", "Calculate placement"],
+  ["아직 선택된 모델이 없습니다.", "No models selected yet."],
   ["선택된 모델", "Selected models"],
   ["보유 GPU 목록", "GPU inventory"],
   ["모델별 성능지표 시트", "Per-model benchmark sheet"],
@@ -264,24 +286,231 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["조건부 상업 이용", "Conditional commercial use"],
   ["비상업·연구용", "Non-commercial / research"],
   ["약관 확인 필요", "Review terms"],
+  ["비상업 이용만", "Non-commercial use only"],
+  ["연구·비상업 전용", "Research / non-commercial only"],
+  ["연구·테스트 전용", "Research / testing only"],
+  ["등록 후 상업 이용", "Commercial use after registration"],
+  ["모델별 확인 필요", "Check per model"],
+  ["수정 조항 확인", "Review modified terms"],
   ["가능 이상", "Good or better"],
   ["쾌적", "Comfortable"],
   ["잘 돌아감", "Runs well"],
-  ["가능", "Possible"],
+  ["빡빡함", "Tight"],
+  ["오프로딩 전제", "Requires offloading"],
+  ["오프로딩", "Offloading"],
   ["조건부", "Conditional"],
   ["부적합", "Not suitable"],
+  ["현재 조건 부적합", "Not suitable under current settings"],
   ["계산 추정치", "Estimated calculation"],
   ["외부 공개 참고값", "External public reference"],
   ["사용자 측정", "User measurement"],
   ["자체 측정", "Project measurement"],
+  ["MoE 활성 파라미터 낮음", "Low MoE active params"],
+  ["RAG/검색", "RAG / search"],
+  ["속도 우수", "Fast"],
+  ["용도", "Purpose"],
+  ["우선순위", "Priority"],
+  ["GPU 설정이나 우선순위를 바꿔 다시 확인해 보세요.", "Try changing your GPU settings or priority and check again."],
+  ["출시/세대", "Release/Gen"],
+  ["대표 공개 평가", "Public benchmark"],
+  ["공급사/라이선스", "Provider/License"],
+  ["권장 설정", "Recommended settings"],
+  ["계산 VRAM", "Calculated VRAM"],
+  ["추정 속도", "Estimated speed"],
+  ["추정 처리량", "Estimated throughput"],
+  ["상태", "Status"],
+  ["직접 입력", "Custom"],
+  ["직접", "Custom"],
+  ["이미지 너비", "Image width"],
+  ["이미지 높이", "Image height"],
+  ["이미지", "Image"],
+  ["수량", "Count"],
+  ["선택", "Select"],
+  ["+ GPU 추가", "+ Add GPU"],
+  ["비교 보기", "Compare view"],
+  ["경량", "Lightweight"],
+  ["긴 문서", "Long context"],
+  ["대화", "Chat"],
+  ["비전", "Vision"],
+  ["오디오", "Audio"],
+  ["추론", "Reasoning"],
+  ["코딩", "Coding"],
+  ["Hugging Face 공개 LLM 직접 계산", "Direct Hugging Face LLM calculation"],
+  ["모델 주소 또는 ID", "Model URL or ID"],
+  ["가중치 정보 가져오기", "Fetch weight info"],
+  [
+    "Hugging Face 공개 API의 생성형 LLM safetensors 파라미터 수와 config를 사용합니다. 비공개·접근 승인 필요 모델은 불러올 수 없습니다.",
+    "Uses the public Hugging Face API's generative LLM safetensors parameter count and config. Private or gated models can't be loaded.",
+  ],
+  ["여러 GPU에 모델 동시 배치 추천 (베타)", "Multi-GPU model placement recommendation (beta)"],
+  [
+    "보유한 GPU 여러 대에 LLM·임베딩·리랭커·OCR/VLM 모델을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 기본 부하(동시 1명 또는 기본 배치) 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.",
+    "Calculates which GPU each LLM, embedding, reranker, or OCR/VLM model should run on across multiple GPUs you own. Each model is placed based on the VRAM required at its base load (1 concurrent request or default batch); actual results are reference estimates that vary by serving framework and scheduling.",
+  ],
+  ["동시에 띄울 모델 검색 후 클릭해서 선택 (여러 종류 섞어서 선택 가능)", "Search and click to select models to run together (mixing types is fine)"],
+  ["빡빡함: VRAM 여유가 적어 컨텍스트나 동시 요청 제한이 필요합니다. 오프로딩: 일부 연산을 시스템 RAM 또는 CPU에서 처리합니다.", "Tight: limited VRAM headroom requires reducing context or concurrent requests. Offloading: some computation runs on system RAM or CPU."],
+  ["상단 메뉴", "Top navigation"],
+  ["언어 선택", "Language"],
+  ["하드웨어 설정", "Hardware settings"],
+  ["기본 GPU", "Primary GPU"],
+  ["GPU 종류 검색", "Search GPU type"],
+  ["GPU 종류", "GPU type"],
+  ["이 GPU 개수", "Number of this GPU"],
+  ["GPU 제거", "Remove GPU"],
+  ["배치할 모델 종류", "Model types to place"],
+  ["사용 모드", "Mode"],
+  ["모델 종류", "Model type"],
+  ["컨텍스트 프리셋", "Context preset"],
+  ["컨텍스트 직접 입력", "Custom context"],
+  ["임베딩 배치 프리셋", "Embedding batch preset"],
+  ["임베딩 배치 직접 입력", "Custom embedding batch"],
+  ["최대 배치 토큰 프리셋", "Max batch tokens preset"],
+  ["최대 배치 토큰 직접 입력", "Custom max batch tokens"],
+  ["최대 배치 토큰", "Max batch tokens"],
+  ["질의 길이 프리셋", "Query length preset"],
+  ["질의 길이 직접 입력", "Custom query length"],
+  ["질의 길이", "Query length"],
+  ["문서 길이 프리셋", "Document length preset"],
+  ["문서 길이 직접 입력", "Custom document length"],
+  ["문서 길이", "Document length"],
+  ["후보 문서 프리셋", "Candidate docs preset"],
+  ["후보 문서 직접 입력", "Custom candidate docs"],
+  ["후보 문서", "Candidate docs"],
+  ["리랭커 배치 프리셋", "Reranker batch preset"],
+  ["리랭커 배치 직접 입력", "Custom reranker batch"],
+  ["배치 크기", "Batch size"],
+  ["OCR 배치 페이지 프리셋", "OCR batch pages preset"],
+  ["OCR 배치 페이지 직접 입력", "Custom OCR batch pages"],
+  ["배치 페이지", "Batch pages"],
+  ["모델 검색 결과", "Model search results"],
+  ["데이터 범위", "Data coverage"],
+  ["실행 등급", "Run grade"],
+  ["작업 유형", "Task type"],
+  ["공급사", "Provider"],
+  ["라이선스", "License"],
+  ["상업 이용 조건", "Commercial use terms"],
+  ["정렬", "Sort"],
+  ["보기 방식", "View mode"],
+  ["목록 보기", "List view"],
+  ["카드 보기", "Card view"],
+  ["문서 크기", "Document size"],
+  ["처리 기능", "Processing"],
+  ["레이아웃 포함", "With layout"],
+  ["표/수식 포함", "With tables/formulas"],
+  ["비교에 추가 (최대 3개)", "Add to compare (max 3)"],
+  ["조건 변경", "Change settings"],
+  ["현재 계산 기준", "Current settings"],
+  ["추천 시작하기", "Get started"],
+  ["위에서 사용할 GPU를 먼저 선택해 주세요.", "Select the GPU to use above first."],
+  ["GPU 선택", "Select GPU"],
+  ["양자화별 추천", "Recommendation by quantization"],
+  [
+    "현재 조건에서 실행 가능한 모델을 권장 양자화로 묶었습니다.",
+    "Runnable models under your current settings, grouped by recommended quantization.",
+  ],
+  ["모델을 누르면 상세 계산을 엽니다.", "Click a model to see the detailed calculation."],
+  ["PyTorch 직접 실행", "PyTorch (direct)"],
+  ["최고 품질", "Highest quality"],
+  ["가장 빠른 모델", "Fastest model"],
+  ["사용 안 함", "Not used"],
+  ["GPU를 선택하세요", "Select a GPU"],
+  ["공식 카드", "Official card"],
+  ["추정 · 낮음", "Estimated · Low"],
+  ["전체", "All"],
+  ["공식 모델 카드", "Official model card"],
+  ["공식 벤치마크 논문", "Official benchmark paper"],
+  ["공식 기술 보고서 비교", "Official tech report comparison"],
+  ["공식 기술 보고서", "Official tech report"],
+  ["공식 비교표", "Official comparison table"],
+  ["공식 비교", "Official comparison"],
+  ["공식 증류", "Official distillation"],
+  ["공식 논문", "Official paper"],
+  ["공식 그래프", "Official graph"],
+  ["공식 파트너", "Official partner"],
+  ["공식 한국어", "Official (Korean)"],
+  ["공식/미러", "Official/mirror"],
+  ["공식", "Official"],
+  ["외부 평가", "External eval"],
+  ["외부 한국어", "External (Korean)"],
+  ["외부 비교", "External comparison"],
+  ["공개 평가", "Public evaluation"],
+  ["품질 지표", "Quality metric"],
+  ["불가", "N/A"],
+  ["비교표", "comparison table"],
+  ["최대 승률", "max win rate"],
+  ["문서 OCR F1", "Document OCR F1"],
+  ["필요 VRAM", "Required VRAM"],
+  ["남는 VRAM", "Remaining VRAM"],
+  ["부족 VRAM", "VRAM shortfall"],
+  [
+    "계산값은 로컬 추정치입니다. 실제 결과는 ",
+    "Calculated values are local estimates. Actual results can vary significantly based on ",
+  ],
+  ["모델 아키텍처(MoE·attention 구조 등)", "model architecture (MoE, attention structure, etc.)"],
+  [
+    ", 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실제 측정과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.",
+    ", drivers, CUDA/ROCm, framework, batch size, reserved VRAM, KV cache, and OCR preprocessing settings — especially speed (tok/s), which can differ from real measurements by multiples. Use these for relative comparison and reference only.",
+  ],
+  ["모델 데이터에 등록된 출시일입니다.", "This is the release date recorded in the model data."],
+  [
+    "공식 릴리스일이 아니라 공개 모델 카드의 createdAt 기준입니다.",
+    "Based on the public model card's createdAt date, not the official release date.",
+  ],
+  [
+    "서로 다른 GPU를 함께 쓰는 경우 메모리 분할·통신 손실을 보수적으로 반영합니다.",
+    "Conservatively accounts for memory partitioning and communication loss when combining different GPUs.",
+  ],
+  ["예: Qwen/Qwen2.5-1.5B-Instruct", "e.g. Qwen/Qwen2.5-1.5B-Instruct"],
+  [
+    "위에서 GPU를 선택하고 용도와 우선순위를 고르면 현재 워크로드의 실행 가능한 모델만 추립니다.",
+    "Select a GPU above, then choose a purpose and priority to see only runnable models for this workload.",
+  ],
+  ["VRAM 여유 우선", "VRAM headroom first"],
+  ["벤치마크 시트", "Benchmark sheet"],
+  ["모델 상세 분석", "Model details"],
+  ["모델 비교", "Model comparison"],
+  ["자체 평가", "self-reported"],
+  ["연동", "integrated"],
+  ["평균", "avg"],
+  ["통합메모리", "unified memory"],
+  ["채굴카드", "mining card"],
 ];
 
+// Hangul syllable + jamo range, used to guard dictionary substring matches
+// below so we never translate half of a Korean word. Without this guard,
+// replacing a short entry like "모델" ("model") inside "모델을"/"모델별" would
+// leave a dangling Korean particle glued onto the English word (e.g.
+// "Model을"), which reads as broken text rather than a simple missing
+// translation.
+const HANGUL_RANGE = "\\uAC00-\\uD7A3\\u3131-\\u318E";
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function compileBoundarySafeReplacements(pairs) {
+  const hangulStart = new RegExp(`^[${HANGUL_RANGE}]`);
+  const hangulEnd = new RegExp(`[${HANGUL_RANGE}]$`);
+  return pairs.map(([from, to]) => {
+    const lookbehind = hangulStart.test(from) ? `(?<![${HANGUL_RANGE}])` : "";
+    const lookahead = hangulEnd.test(from) ? `(?![${HANGUL_RANGE}])` : "";
+    return { regex: new RegExp(`${lookbehind}${escapeRegExp(from)}${lookahead}`, "g"), to };
+  });
+}
+
 function translateDynamicUi(language = "en") {
-  const replacements = ENGLISH_UI_REPLACEMENTS
-    .map(([from, to]) => language === "en" ? [from, to] : [to, from])
+  const pairs = ENGLISH_UI_REPLACEMENTS.map(([from, to]) => (language === "en" ? [from, to] : [to, from]))
     .sort((a, b) => b[0].length - a[0].length);
+  const compiled = compileBoundarySafeReplacements(pairs);
   const replaceText = (value) => {
-    let text = replacements.reduce((current, [from, to]) => current.split(from).join(to), value);
+    // The template/regex rules below run BEFORE the dictionary's boundary-safe
+    // substring pass. Several of them embed short Korean words (e.g. "모델",
+    // "출처") that also exist as bare dictionary entries; if the dictionary
+    // ran first it would consume those words out from under the more
+    // specific template match, breaking it. Running templates first avoids
+    // that ordering conflict — whatever Korean survives the templates is
+    // handled generically by the dictionary afterward.
+    let text = value;
     if (language === "en") {
       text = text
         .replace(/가용 VRAM\s+([\d.]+)\s*GB/g, "Available VRAM $1 GB")
@@ -290,7 +519,6 @@ function translateDynamicUi(language = "en") {
         .replace(/(\d+)K\s*·\s*동시\s*(\d+)명\s*·\s*llama\.cpp \/ Ollama\s*·\s*자동 추천/g, "$1K · $2 concurrent · llama.cpp / Ollama · Auto")
         .replace(/(\d+)단계 빠른 추천/g, "$1-step quick recommendations")
         .replace(/GPU에 맞는 모델 (\d+)개를 바로 추천합니다/g, "Get $1 models recommended for your GPU")
-        .replace(/현재 워크로드의 실행 가능한 모델만 추립니다\./g, "Only runnable models for this workload are shown.")
         .replace(/(\d+)순위/g, "Rank $1")
         .replace(/약\s*([\d.]+)~([\d.]+)\s*tok\/s/g, "Approx. $1–$2 tok/s")
         .replace(/VRAM 여유\s*([\d.]+)%/g, "$1% VRAM headroom")
@@ -304,7 +532,32 @@ function translateDynamicUi(language = "en") {
         .replace(/GPU 프리셋/g, "GPU presets")
         .replace(/출처 연결 평가/g, "Cited evaluations")
         .replace(/AI 모델/g, "AI models")
-        .replace(/자동 추천/g, "Auto recommendation");
+        .replace(/자동 추천/g, "Auto recommendation")
+        // Grade label "가능" ("Possible") only when it stands alone as a whole
+        // line/value — never mid-sentence, where "가능" usually just means
+        // "available/possible" as an ordinary adjective (e.g. "선택 가능").
+        .replace(/(^|\n)가능(?=\n|$)/g, "$1Possible")
+        .replace(/^(.+) 비교에 추가$/, "Add $1 to compare")
+        .replace(/^(.+) 비교에서 제거$/, "Remove $1 from compare")
+        .replace(
+          /^(.+?) 기준입니다\. 로컬 추론 속도 측정과 분리된 외부 공개 참고값입니다\.(?:\s*출처: (\S+))?$/,
+          (_, metric, url) => `Based on ${metric}. External public reference, separate from local speed measurements.${url ? ` Source: ${url}` : ""}`,
+        )
+        .replace(/속도와 처리량은 오른쪽 추정 처리량 열에서 별도로 표시합니다\./g, "Speed and throughput are shown separately in the estimated throughput column.")
+        .replace(/공식 모델 카드나 논문에서 확인되는 (.+?)가 아직 등록되지 않았습니다\./g, "No official $1 has been recorded yet from the model card or paper.")
+        .replace(/동일 OCR 정확도 기준의 공개 점수가 아직 등록되지 않았습니다\./g, "No public score using the same OCR accuracy standard has been recorded yet.")
+        .replace(/문서 VLM 탭은 OmniDocBench 계열 점수만 같은 열에 표시합니다\./g, "The Document VLM tab only shows OmniDocBench-family scores in this column.")
+        .replace(/범용 VLM 탭은 OCRBench v2 계열 점수만 같은 열에 표시합니다\./g, "The General VLM tab only shows OCRBench v2-family scores in this column.")
+        .replace(/MTEB 없음/g, "No MTEB")
+        .replace(/BEIR\/MIRACL 없음/g, "No BEIR/MIRACL")
+        .replace(/공개 점수 없음/g, "No public score")
+        .replace(/동일 기준 없음/g, "No matching standard")
+        .replace(/(\d+)K 컨텍스트/g, "$1K context")
+        .replace(/(\d+K?) 토큰/g, "$1 tokens")
+        .replace(/비교 \((\d+)\/(\d+)\)/g, "Compare ($1/$2)")
+        .replace(/사용률\s*([\d.]+)%/g, "Utilization $1%")
+        .replace(/^현재 (.+·.+) 기준$/gm, "Current: $1")
+        .replace(/ · (\d+)개(?![가-힣])/g, " · $1");
     } else {
       text = text
         .replace(/Available VRAM\s+([\d.]+)\s*GB/g, "가용 VRAM $1 GB")
@@ -313,7 +566,6 @@ function translateDynamicUi(language = "en") {
         .replace(/(\d+)K\s*·\s*(\d+) concurrent\s*·\s*llama\.cpp \/ Ollama\s*·\s*Auto/g, "$1K · 동시 $2명 · llama.cpp / Ollama · 자동 추천")
         .replace(/(\d+)-step quick recommendations/g, "$1단계 빠른 추천")
         .replace(/Get (\d+) models recommended for your GPU/g, "GPU에 맞는 모델 $1개를 바로 추천합니다")
-        .replace(/Only runnable models for this workload are shown\./g, "현재 워크로드의 실행 가능한 모델만 추립니다.")
         .replace(/Rank (\d+)/g, "$1순위")
         .replace(/Approx\.\s*([\d.]+)–([\d.]+) tok\/s/g, "약 $1~$2 tok/s")
         .replace(/([\d.]+)% VRAM headroom/g, "VRAM 여유 $1%")
@@ -326,8 +578,37 @@ function translateDynamicUi(language = "en") {
         .replace(/GPU presets/g, "GPU 프리셋")
         .replace(/Cited evaluations/g, "출처 연결 평가")
         .replace(/AI models/g, "AI 모델")
-        .replace(/Auto recommendation/g, "자동 추천");
+        .replace(/Auto recommendation/g, "자동 추천")
+        .replace(/(^|\n)Possible(?=\n|$)/g, "$1가능")
+        .replace(/^Add (.+) to compare$/, "$1 비교에 추가")
+        .replace(/^Remove (.+) from compare$/, "$1 비교에서 제거")
+        .replace(
+          /^Based on (.+?)\. External public reference, separate from local speed measurements\.(?:\s*Source: (\S+))?$/,
+          (_, metric, url) => `${metric} 기준입니다. 로컬 추론 속도 측정과 분리된 외부 공개 참고값입니다.${url ? ` 출처: ${url}` : ""}`,
+        )
+        .replace(/Speed and throughput are shown separately in the estimated throughput column\./g, "속도와 처리량은 오른쪽 추정 처리량 열에서 별도로 표시합니다.")
+        .replace(/No official (.+?) has been recorded yet from the model card or paper\./g, "공식 모델 카드나 논문에서 확인되는 $1가 아직 등록되지 않았습니다.")
+        .replace(/No public score using the same OCR accuracy standard has been recorded yet\./g, "동일 OCR 정확도 기준의 공개 점수가 아직 등록되지 않았습니다.")
+        .replace(/The Document VLM tab only shows OmniDocBench-family scores in this column\./g, "문서 VLM 탭은 OmniDocBench 계열 점수만 같은 열에 표시합니다.")
+        .replace(/The General VLM tab only shows OCRBench v2-family scores in this column\./g, "범용 VLM 탭은 OCRBench v2 계열 점수만 같은 열에 표시합니다.")
+        .replace(/No MTEB/g, "MTEB 없음")
+        .replace(/No BEIR\/MIRACL/g, "BEIR/MIRACL 없음")
+        .replace(/No public score/g, "공개 점수 없음")
+        .replace(/No matching standard/g, "동일 기준 없음")
+        .replace(/(\d+)K context/g, "$1K 컨텍스트")
+        .replace(/(\d+) tokens/g, "$1 토큰")
+        .replace(/Compare \((\d+)\/(\d+)\)/g, "비교 ($1/$2)")
+        .replace(/Utilization\s*([\d.]+)%/g, "사용률 $1%")
+        .replace(/^Current: (.+)$/gm, "현재 $1 기준");
     }
+    text = compiled.reduce((current, { regex, to }) => current.replace(regex, to), text);
+    // Cleanup pass: after the dictionary translates the surrounding label to
+    // English (e.g. "외부 공개 참고값" → "External public reference"), strip
+    // the leftover Korean counter word "개" glued to a trailing count (e.g.
+    // "reference 334개" → "reference 334"). Requires a Latin letter right
+    // before the number so this never touches standalone Korean option
+    // values like "8개" in the settings dropdowns.
+    if (language === "en") text = text.replace(/([A-Za-z])\s(\d+)개(?![가-힣])/g, "$1 $2");
     return text;
   };
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
