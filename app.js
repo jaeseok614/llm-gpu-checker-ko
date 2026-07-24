@@ -706,6 +706,15 @@ function bindEvents() {
     render();
   });
   $("simpleOpenExpert").addEventListener("click", () => setAppMode("expert"));
+  $("simpleExploreActions").addEventListener("click", (event) => {
+    if (event.target.closest("[data-share-link]")) {
+      copyTextToClipboard(window.location.href, event.target.closest("[data-share-link]"));
+      return;
+    }
+    if (event.target.closest("[data-download-share-card]")) {
+      downloadShareCard("", event.target.closest("[data-download-share-card]"));
+    }
+  });
 
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
@@ -889,6 +898,13 @@ function bindEvents() {
   $("drawerBackdrop").addEventListener("click", closeModelDetail);
   $("modelDetail").addEventListener("click", (event) => {
     if (event.target.closest("[data-close-detail]")) closeModelDetail();
+    if (event.target.closest("[data-share-link]")) {
+      copyTextToClipboard(window.location.href, event.target.closest("[data-share-link]"));
+      return;
+    }
+    if (event.target.closest("[data-download-share-card]")) {
+      downloadShareCard(selectedModelKey, event.target.closest("[data-download-share-card]"));
+    }
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1627,6 +1643,111 @@ function copyTextToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(restoreLabel).catch(() => fallbackCopyToClipboard(text, restoreLabel));
   } else {
     fallbackCopyToClipboard(text, restoreLabel);
+  }
+}
+
+function renderShareActions() {
+  return `
+    <div class="detail-share-actions">
+      <span>이 결과를 공유하세요</span>
+      <div>
+        <button type="button" class="ghost-button" data-share-link>결과 링크 복사</button>
+        <button type="button" class="ghost-button" data-download-share-card>요약 카드 PNG</button>
+      </div>
+    </div>
+  `;
+}
+
+function getShareCardEntries(modelKeyOverride = "") {
+  if (!hasPrimaryGpuSelection) return [];
+  const hardware = getHardware();
+  if (modelKeyOverride) {
+    const model = getModelByKey(modelKeyOverride);
+    if (!model) return [];
+    const estimate = estimateAnyModel(model, hardware);
+    return [{ model, estimate }];
+  }
+  return getQuickRecommendationEstimates().map((estimate) => ({ model: estimate.model, estimate }));
+}
+
+function canvasText(value, maxLength = 42) {
+  const text = String(value || "");
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function downloadShareCard(modelKeyOverride = "", button = null) {
+  const entries = getShareCardEntries(modelKeyOverride);
+  if (!entries.length) return;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 630;
+  let context;
+  try {
+    context = canvas.getContext("2d");
+  } catch {
+    return;
+  }
+  if (!context) return;
+
+  const hardware = getHardware();
+  const purpose = $("simplePurpose")?.selectedOptions?.[0]?.textContent || "현재 조건";
+  const priority = $("simplePriority")?.selectedOptions?.[0]?.textContent || "균형 잡힌 추천";
+  const palette = ["#e8f1fb", "#eef2f6", "#e5f4ee"];
+  context.fillStyle = "#f4f6f8";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#ffffff";
+  context.fillRect(42, 34, 1116, 562);
+  context.strokeStyle = "#d9e0e7";
+  context.strokeRect(42, 34, 1116, 562);
+
+  context.fillStyle = "#164a7b";
+  context.font = "700 22px Pretendard, 'Noto Sans KR', sans-serif";
+  context.fillText("AI HARDWARE FIT", 78, 78);
+  context.fillStyle = "#18212b";
+  context.font = "800 38px Pretendard, 'Noto Sans KR', sans-serif";
+  context.fillText(modelKeyOverride ? "모델 실행 요약" : "내 GPU 추천 모델", 78, 132);
+  context.fillStyle = "#667382";
+  context.font = "600 18px Pretendard, 'Noto Sans KR', sans-serif";
+  context.fillText(`${canvasText(formatHardwareName(hardware, true), 42)} · ${purpose} · ${priority}`, 78, 168);
+
+  entries.forEach(({ model, estimate }, index) => {
+    const y = 214 + index * 112;
+    context.fillStyle = palette[index % palette.length];
+    context.fillRect(78, y, 1044, 88);
+    context.fillStyle = "#164a7b";
+    context.font = "800 13px Pretendard, 'Noto Sans KR', sans-serif";
+    context.fillText(modelKeyOverride ? "선택 모델" : `${index + 1}순위`, 100, y + 25);
+    context.fillStyle = "#18212b";
+    context.font = "700 22px Pretendard, 'Noto Sans KR', sans-serif";
+    context.fillText(canvasText(model.name, 36), 100, y + 57);
+    context.fillStyle = "#475569";
+    context.font = "600 16px Pretendard, 'Noto Sans KR', sans-serif";
+    const confidence = getEstimateConfidence(model, estimate, hardware);
+    context.fillText(`${GRADE_META[estimate.grade].label} · VRAM ${formatGb(estimate.requiredGb)} · ${canvasText(formatSpeedRange(estimate, confidence), 28)}`, 720, y + 49);
+  });
+
+  context.fillStyle = "#667382";
+  context.font = "500 14px Pretendard, 'Noto Sans KR', sans-serif";
+  context.fillText("계산 추정치 · 실제 속도는 런타임·양자화·컨텍스트에 따라 달라질 수 있습니다.", 78, 560);
+
+  let dataUrl;
+  try {
+    dataUrl = canvas.toDataURL("image/png");
+  } catch {
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = `ai-hardware-fit-${modelKeyOverride ? "model" : "recommendations"}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  if (button) {
+    const original = button.dataset.label || button.textContent;
+    button.dataset.label = original;
+    button.textContent = "저장됨";
+    setTimeout(() => { button.textContent = original; }, 1500);
   }
 }
 
@@ -3109,6 +3230,17 @@ function computeSimpleRecommendations(allEstimates, purpose, priority) {
   return sorted.slice(0, 3);
 }
 
+function getQuickRecommendationEstimates() {
+  if (!hasPrimaryGpuSelection) return [];
+  const hardware = getHardware();
+  const estimates = getActiveModels().map((model) => estimateAnyModel(model, hardware));
+  return computeSimpleRecommendations(
+    estimates,
+    $("simplePurpose")?.value || "general",
+    $("simplePriority")?.value || "balanced",
+  );
+}
+
 function renderSimpleMode(hardware, allEstimates) {
   const gpuReadout = $("simpleModeGpuReadout");
   if (gpuReadout) {
@@ -3142,9 +3274,11 @@ function renderSimpleMode(hardware, allEstimates) {
     return;
   }
 
-  const purpose = $("simplePurpose")?.value || "general";
-  const priority = $("simplePriority")?.value || "balanced";
-  const picks = computeSimpleRecommendations(allEstimates, purpose, priority);
+  const picks = computeSimpleRecommendations(
+    allEstimates,
+    $("simplePurpose")?.value || "general",
+    $("simplePriority")?.value || "balanced",
+  );
 
   if (!picks.length) {
     exploreActions.hidden = true;
@@ -3617,6 +3751,8 @@ function renderDetail() {
       <p class="detail-description">${escapeHtml(model.summary)}</p>
     </div>
 
+    ${renderShareActions()}
+
     <div class="detail-summary-grid">
       ${renderDetailMetric("실행 판정", meta.label)}
       ${renderDetailMetric("권장 설정", `${estimate.quant.label} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`)}
@@ -3735,6 +3871,8 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
       <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licensePolicy.commercialLabel)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
       <p class="detail-description">${escapeHtml(model.summary)}</p>
     </div>
+
+    ${renderShareActions()}
 
     <div class="detail-summary-grid">
       ${renderDetailMetric("실행 판정", meta.label)}
@@ -4801,6 +4939,8 @@ function syncUrlState() {
   params.set("fit", activeSummaryFilter);
   params.set("sort", $("sortBy").value);
   params.set("view", viewMode);
+  params.set("purpose", $("simplePurpose").value);
+  params.set("priority", $("simplePriority").value);
   if (selectedModelKey) params.set("model", selectedModelKey);
 
   const nextUrl = `${window.location.pathname}?${params.toString()}`;
@@ -4876,6 +5016,8 @@ function applyUrlState() {
 
   const nextView = params.get("view");
   viewMode = nextView === "card" ? "card" : "list";
+  setSelectIfValid("simplePurpose", params.get("purpose"));
+  setSelectIfValid("simplePriority", params.get("priority"));
 
   syncPresetControls();
 

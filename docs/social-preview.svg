@@ -4,11 +4,11 @@
   <rect x="104" y="98" width="92" height="92" rx="8" fill="#E8F1FB" stroke="#164A7B" stroke-width="6"/>
   <rect x="130" y="124" width="40" height="40" rx="6" fill="#E5F4EE" stroke="#13795B" stroke-width="6"/>
   <text x="230" y="132" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#164A7B">AI Hardware Fit</text>
-  <text x="230" y="208" font-family="Arial, sans-serif" font-size="58" font-weight="800" fill="#18212B">AI 모델 실행 가능성 계산기</text>
+  <text x="230" y="208" font-family="Arial, sans-serif" font-size="58" font-weight="800" fill="#18212B">내 GPU에서 돌아가는 AI 모델 찾기</text>
   <text x="230" y="268" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="#667382">LLM · Embedding · Reranker · OCR · VLM</text>
 
   <rect x="104" y="336" width="242" height="116" rx="6" fill="#E5F4EE"/>
-  <text x="130" y="382" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#13795B">87 GPUs</text>
+  <text x="130" y="382" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#13795B">90 GPUs</text>
   <text x="130" y="420" font-family="Arial, sans-serif" font-size="22" fill="#18212B">RTX · GB10 · H100</text>
   <rect x="376" y="336" width="242" height="116" rx="6" fill="#E8F1FB"/>
   <text x="402" y="382" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#164A7B">286 Models</text>

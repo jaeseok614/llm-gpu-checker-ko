@@ -30,9 +30,9 @@ function main() {
   rect(130, 124, 40, 40, colors.greenSoft);
   strokeRect(130, 124, 40, 40, colors.green, 6);
   text(230, 112, "AI HARDWARE FIT", 4, colors.blue);
-  text(230, 166, "AI MODEL FIT", 8, colors.ink);
+  text(230, 166, "GPU MODEL FIT", 8, colors.ink);
   text(230, 252, "LLM EMBEDDING RERANKER OCR VLM", 4, colors.muted);
-  infoCard(104, 336, "87 GPUS", "RTX GB10 H100", colors.greenSoft, colors.green);
+  infoCard(104, 336, "90 GPUS", "RTX GB10 H100", colors.greenSoft, colors.green);
   infoCard(376, 336, "286 MODELS", "147 LLMS", colors.blueSoft, colors.blue);
   infoCard(648, 336, "RAG FIT", "BATCH TOKENS", colors.violetSoft, colors.violet);
   infoCard(920, 336, "OCR FIT", "DPI PAGES", colors.yellowSoft, colors.yellow);

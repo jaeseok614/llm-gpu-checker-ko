@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Hardware Fit — 내 GPU에서 돌아가는 AI 모델 찾기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260725-compact-settings1" />
+    <link rel="stylesheet" href="./styles.css?v=20260725-share-card1" />
   </head>
   <body>
     <header class="app-header">
@@ -468,6 +468,10 @@
             </div>
             <div class="simple-mode-result" id="simpleModeResult"></div>
             <div class="simple-explore-actions" id="simpleExploreActions" hidden>
+              <div class="simple-share-actions">
+                <button type="button" class="ghost-button" data-share-link>결과 링크 복사</button>
+                <button type="button" class="ghost-button" data-download-share-card>요약 카드 PNG</button>
+              </div>
               <button type="button" class="ghost-button" id="simpleOpenExpert">전체 모델에서 비교하기</button>
             </div>
           </div>
@@ -570,6 +574,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260725-compact-settings1" defer></script>
+    <script src="./app.js?v=20260725-share-card1" defer></script>
   </body>
 </html>

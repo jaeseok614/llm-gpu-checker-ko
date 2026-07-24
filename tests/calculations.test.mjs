@@ -328,9 +328,22 @@ describe("quick recommendation navigation", () => {
     const card = fresh.document.querySelector(".simple-pick-card");
     assert.ok(card, "expected a quick recommendation card");
     assert.match(card.querySelector(".simple-pick-cta").textContent, /상세 계산 보기/);
+    assert.ok(fresh.document.querySelector("[data-share-link]"));
+    assert.ok(fresh.document.querySelector("[data-download-share-card]"));
 
     card.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.getElementById("modelDetail").hidden, false);
+    assert.equal(fresh.document.querySelector(".detail-share-actions [data-share-link]") !== null, true);
+    assert.equal(fresh.document.querySelector(".detail-share-actions [data-download-share-card]") !== null, true);
+
+    const purpose = fresh.document.getElementById("simplePurpose");
+    const priority = fresh.document.getElementById("simplePriority");
+    purpose.value = "coding";
+    priority.value = "quality";
+    purpose.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    const params = new URLSearchParams(fresh.location.search);
+    assert.equal(params.get("purpose"), "coding");
+    assert.equal(params.get("priority"), "quality");
 
     fresh.document.getElementById("simpleOpenExpert")
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
@@ -417,12 +430,14 @@ describe("URL state save / restore", () => {
   });
 
   test("loading a URL with query params restores the same settings on a fresh session", () => {
-    const restored = loadApp("https://example.com/?gpu=h100-sxm-80&vram=80&ram=128&count=1&ctx=32768&con=4&out=512&kv=fp16&runtime=vllm");
+    const restored = loadApp("https://example.com/?gpu=h100-sxm-80&vram=80&ram=128&count=1&ctx=32768&con=4&out=512&kv=fp16&runtime=vllm&purpose=coding&priority=quality");
     const hardware = restored.eval("getHardware()");
     assert.equal(hardware.preset.id, "h100-sxm-80");
     assert.equal(hardware.context, 32768);
     assert.equal(hardware.concurrency, 4);
     assert.equal(hardware.runtime, "vllm");
+    assert.equal(restored.document.getElementById("simplePurpose").value, "coding");
+    assert.equal(restored.document.getElementById("simplePriority").value, "quality");
   });
 });
 
