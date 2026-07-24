@@ -178,6 +178,109 @@ const UI_TRANSLATIONS = {
   },
 };
 
+const ENGLISH_UI_REPLACEMENTS = [
+  ["내 GPU에서 돌아가는 AI 모델 찾기", "Find AI models for your GPU"],
+  ["빠른 추천", "Quick recommendations"],
+  ["전체 모델 탐색", "Explore all models"],
+  ["전체 모델에서 비교하기", "Compare all models"],
+  ["상세 설정", "Detailed settings"],
+  ["기본 하드웨어", "Primary hardware"],
+  ["보조 GPU", "Secondary GPU"],
+  ["메모리 보정", "Memory adjustments"],
+  ["고급 도구", "Advanced tools"],
+  ["계산 기준", "Methodology"],
+  ["데이터 출처", "Data sources"],
+  ["벤치마크", "Benchmarks"],
+  ["생성형 LLM", "Generative LLM"],
+  ["임베딩", "Embedding"],
+  ["리랭커", "Reranker"],
+  ["OCR·VLM", "OCR · VLM"],
+  ["문서 VLM", "Document VLM"],
+  ["범용 VLM", "General VLM"],
+  ["내 GPU", "My GPU"],
+  ["내 실행 환경", "My setup"],
+  ["GPU를 선택해 주세요", "Select a GPU"],
+  ["GPU 프리셋을 선택하면 추천을 시작합니다.", "Select a GPU preset to start recommendations."],
+  ["선택 즉시 현재 환경에 맞는 모델을 계산합니다.", "Results update immediately for your setup."],
+  ["결과 링크 복사", "Copy result link"],
+  ["요약 카드 PNG", "Download PNG card"],
+  ["RTX 3060 링크", "RTX 3060 link"],
+  ["VRAM", "VRAM"],
+  ["시스템 RAM", "System RAM"],
+  ["GPU 수", "GPU count"],
+  ["보조 GPU 수", "Secondary GPU count"],
+  ["사용 중 VRAM", "Reserved VRAM"],
+  ["안전 여유분", "Safety margin"],
+  ["대역폭 GB/s", "Bandwidth GB/s"],
+  ["실행 방식", "Runtime"],
+  ["양자화", "Quantization"],
+  ["컨텍스트 토큰", "Context tokens"],
+  ["동시 요청", "Concurrent requests"],
+  ["평균 출력 토큰", "Average output tokens"],
+  ["정밀도", "Precision"],
+  ["검색", "Search"],
+  ["모델명, 제조사, 태그 검색", "Search model, maker, or tag"],
+  ["전체 등급", "All grades"],
+  ["전체 작업", "All tasks"],
+  ["전체 공급사", "All providers"],
+  ["전체 라이선스", "All licenses"],
+  ["전체 이용 조건", "All usage terms"],
+  ["종합 추천", "Overall recommendation"],
+  ["최신 모델순", "Newest first"],
+  ["파라미터 큰 순", "Largest parameters first"],
+  ["속도 우선", "Speed first"],
+  ["품질 우선", "Quality first"],
+  ["여유 VRAM 우선", "VRAM headroom first"],
+  ["균형 잡힌 추천", "Balanced recommendation"],
+  ["일반 대화 / 비서", "General chat / assistant"],
+  ["긴 문서 / RAG", "Long documents / RAG"],
+  ["코딩 모델 우선", "Coding models first"],
+  ["한국어 모델 우선", "Korean models first"],
+  ["이미지 / 문서 인식", "Image / document understanding"],
+  ["문서 파싱 전체", "Full document parsing"],
+  ["텍스트 OCR", "Text OCR"],
+  ["영수증/라벨", "Receipts / labels"],
+  ["웹/스크린샷 1080p", "Web / screenshot 1080p"],
+  ["배치 계산", "Calculate placement"],
+  ["선택된 모델", "Selected models"],
+  ["보유 GPU 목록", "GPU inventory"],
+  ["모델별 성능지표 시트", "Per-model benchmark sheet"],
+  ["불러온 모델 지우기", "Clear imported models"],
+  ["상업 이용 가능", "Commercial use allowed"],
+  ["조건부 상업 이용", "Conditional commercial use"],
+  ["비상업·연구용", "Non-commercial / research"],
+  ["약관 확인 필요", "Review terms"],
+  ["가능 이상", "Good or better"],
+  ["쾌적", "Comfortable"],
+  ["잘 돌아감", "Runs well"],
+  ["가능", "Possible"],
+  ["조건부", "Conditional"],
+  ["부적합", "Not suitable"],
+  ["계산 추정치", "Estimated calculation"],
+  ["외부 공개 참고값", "External public reference"],
+  ["사용자 측정", "User measurement"],
+  ["자체 측정", "Project measurement"],
+];
+
+function translateDynamicUi(language = "en") {
+  const replacements = ENGLISH_UI_REPLACEMENTS
+    .map(([from, to]) => language === "en" ? [from, to] : [to, from])
+    .sort((a, b) => b[0].length - a[0].length);
+  const replaceText = (value) => replacements.reduce((text, [from, to]) => text.split(from).join(to), value);
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+  textNodes.forEach((node) => {
+    if (node.parentElement?.closest("script,style")) return;
+    node.nodeValue = replaceText(node.nodeValue);
+  });
+  document.querySelectorAll("[placeholder],[aria-label],[title]").forEach((node) => {
+    ["placeholder", "aria-label", "title"].forEach((attribute) => {
+      if (node.hasAttribute(attribute)) node.setAttribute(attribute, replaceText(node.getAttribute(attribute)));
+    });
+  });
+}
+
 const $ = (id) => document.getElementById(id);
 
 function getStoredPrimaryGpuId() {
@@ -241,6 +344,7 @@ function setUiLanguage(language) {
   });
   const toggle = document.querySelector("[data-language-toggle]");
   if (toggle) toggle.value = uiLanguage;
+  translateDynamicUi(uiLanguage);
 }
 
 function restoreUiLanguage() {
@@ -775,7 +879,10 @@ function bindEvents() {
     }
   });
 
-  document.querySelector("[data-language-toggle]")?.addEventListener("change", (event) => setUiLanguage(event.target.value));
+  document.querySelector("[data-language-toggle]")?.addEventListener("change", (event) => {
+    setUiLanguage(event.target.value);
+    try { window.localStorage?.setItem("ai-hardware-fit-language", event.target.value); } catch {}
+  });
 
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
