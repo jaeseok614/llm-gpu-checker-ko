@@ -145,6 +145,81 @@ let appMode = "simple";
 let hasPrimaryGpuSelection = false;
 let uiLanguage = "ko";
 
+const MESSAGES = {
+  ko: {
+    settings: "상세 설정",
+    closeSettings: "상세 설정 닫기",
+    allProviders: "전체 공급사",
+    allLicenses: "전체 라이선스",
+    allTasks: "전체 작업",
+    searchModel: "모델명, 제조사, 태그 검색",
+    quickRecommendations: "빠른 추천",
+    exploreAll: "전체 모델 탐색",
+    generative: "생성형 LLM",
+    embedding: "임베딩",
+    reranker: "리랭커",
+    ocrVlm: "OCR·VLM",
+    documentVlm: "문서 VLM",
+    generalVlm: "범용 VLM",
+    currentGpu: "현재 GPU",
+    quickTitle: "3단계 빠른 추천",
+    quickSubtitle: "GPU에 맞는 모델 3개를 바로 추천합니다",
+    quickDescription: "위에서 GPU를 선택하고 용도와 우선순위를 고르면 현재 워크로드의 실행 가능한 모델만 추립니다.",
+    currentCondition: "현재 조건에서 실행 가능한 모델을 권장 양자화로 묶었습니다.",
+    detailCalculation: "상세 계산 보기",
+    gpuRequired: "GPU 선택 필요",
+    chooseGpu: "GPU 선택하기",
+    benchmarkSheet: "벤치마크 시트",
+    benchmarkIntro: "계산 추정, 외부 공개 참고값, 사용자 측정, 자체 측정을 근거별로 분리합니다.",
+    updated: "업데이트",
+    type: "구분",
+    model: "모델",
+    gpu: "GPU",
+    conditions: "조건",
+    metric: "지표",
+    source: "출처",
+    view: "보기",
+  },
+  en: {
+    settings: "Detailed settings",
+    closeSettings: "Close settings",
+    allProviders: "All providers",
+    allLicenses: "All licenses",
+    allTasks: "All tasks",
+    searchModel: "Search model, maker, or tag",
+    quickRecommendations: "Quick recommendations",
+    exploreAll: "Explore all models",
+    generative: "Generative LLM",
+    embedding: "Embedding",
+    reranker: "Reranker",
+    ocrVlm: "OCR · VLM",
+    documentVlm: "Document VLM",
+    generalVlm: "General VLM",
+    currentGpu: "Current GPU",
+    quickTitle: "3-step quick recommendations",
+    quickSubtitle: "Get 3 models recommended for your GPU",
+    quickDescription: "Choose a GPU, purpose, and priority above to show only runnable models for this workload.",
+    currentCondition: "Runnable models grouped with recommended quantization for the current setup.",
+    detailCalculation: "View detailed calculation",
+    gpuRequired: "No GPU selected",
+    chooseGpu: "Select a GPU",
+    benchmarkSheet: "Benchmark sheet",
+    benchmarkIntro: "Estimates, external public references, user measurements, and project measurements are shown separately.",
+    updated: "Updated",
+    type: "Type",
+    model: "Model",
+    gpu: "GPU",
+    conditions: "Conditions",
+    metric: "Metric",
+    source: "Source",
+    view: "View",
+  },
+};
+
+function t(key) {
+  return MESSAGES[uiLanguage]?.[key] || MESSAGES.ko[key] || key;
+}
+
 const UI_TRANSLATIONS = {
   en: {
     "계산 기준": "Methodology",
@@ -678,6 +753,9 @@ function setAppMode(mode) {
 function setUiLanguage(language) {
   uiLanguage = language === "en" ? "en" : "ko";
   try { window.localStorage?.setItem("ai-hardware-fit-language", uiLanguage); } catch {}
+  const url = new URL(window.location.href);
+  url.searchParams.set("lang", uiLanguage);
+  window.history.replaceState({}, "", url);
   document.documentElement.lang = uiLanguage;
   const dictionary = UI_TRANSLATIONS[uiLanguage];
   const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker", "#hardwareHeadline"];
@@ -698,7 +776,12 @@ function setUiLanguage(language) {
 }
 
 function restoreUiLanguage() {
-  try { uiLanguage = window.localStorage?.getItem("ai-hardware-fit-language") === "en" ? "en" : "ko"; } catch { uiLanguage = "ko"; }
+  const queryLanguage = new URLSearchParams(window.location.search).get("lang");
+  if (queryLanguage === "en" || queryLanguage === "ko") {
+    uiLanguage = queryLanguage;
+  } else {
+    try { uiLanguage = window.localStorage?.getItem("ai-hardware-fit-language") === "en" ? "en" : "ko"; } catch { uiLanguage = "ko"; }
+  }
   setUiLanguage(uiLanguage);
 }
 
@@ -718,6 +801,7 @@ function init() {
   restoreImportedHfModels();
   populateSelects();
   applyUrlState();
+  restoreUiLanguage();
   bindEvents();
   refreshAppModeUi();
   refreshHfImportUi();
@@ -725,7 +809,6 @@ function init() {
   renderPlacementModelList();
   renderPlacementSelectedChips();
   render({ syncUrl: false });
-  restoreUiLanguage();
 }
 
 function populateSelects() {
@@ -1069,25 +1152,25 @@ function refreshFilterOptions() {
   const tags = [...new Set(models.flatMap((model) => model.tags || []))].sort((a, b) => tagLabel(a).localeCompare(tagLabel(b)));
 
   $("providerFilter").innerHTML = [
-    `<option value="all">전체 공급사</option>`,
+    `<option value="all">${t("allProviders")}</option>`,
     ...providers.map((provider) => `<option value="${escapeAttr(provider)}">${escapeHtml(provider)}</option>`),
   ].join("");
   $("licenseFilter").innerHTML = [
-    `<option value="all">전체 라이선스</option>`,
+    `<option value="all">${t("allLicenses")}</option>`,
     ...licenses.map((license) => {
       const policy = getLicensePolicy(license);
       return `<option value="${escapeAttr(license)}">${escapeHtml(license)} · ${escapeHtml(policy.commercialLabel)}</option>`;
     }),
   ].join("");
   $("taskFilter").innerHTML = [
-    `<option value="all">전체 작업</option>`,
+    `<option value="all">${t("allTasks")}</option>`,
     ...tags.map((tag) => `<option value="${escapeAttr(tag)}">${escapeHtml(tagLabel(tag))}</option>`),
   ].join("");
 
   setSelectIfValid("providerFilter", previousProvider) || ($("providerFilter").value = "all");
   setSelectIfValid("licenseFilter", previousLicense) || ($("licenseFilter").value = "all");
   setSelectIfValid("taskFilter", previousTask) || ($("taskFilter").value = "all");
-  $("searchInput").placeholder = WORKLOAD_META[activeWorkload].searchPlaceholder;
+  $("searchInput").placeholder = t("searchModel");
 }
 
 function bindEvents() {
@@ -1478,7 +1561,7 @@ function setViewMode(nextMode) {
 function refreshWorkloadUi() {
   $("settingsDrawer").hidden = !settingsExpanded;
   $("settingsToggle").setAttribute("aria-expanded", String(settingsExpanded));
-  $("settingsToggle").textContent = settingsExpanded ? "상세 설정 닫기" : "상세 설정";
+  $("settingsToggle").textContent = settingsExpanded ? t("closeSettings") : t("settings");
 
   document.querySelectorAll("[data-workload-tab]").forEach((button) => {
     const isActive = button.dataset.workloadTab === activeWorkload;
@@ -3772,7 +3855,7 @@ function getQuickRecommendationEstimates() {
 function renderSimpleMode(hardware, allEstimates) {
   const gpuReadout = $("simpleModeGpuReadout");
   if (gpuReadout) {
-    gpuReadout.textContent = hasPrimaryGpuSelection ? formatHardwareName(hardware) : "GPU 선택 필요";
+    gpuReadout.textContent = hasPrimaryGpuSelection ? formatHardwareName(hardware) : t("gpuRequired");
   }
 
   const coverageTarget = $("simpleDataCoverage");
@@ -3780,9 +3863,9 @@ function renderSimpleMode(hardware, allEstimates) {
     const catalogModels = Object.values(MODEL_GROUPS).flat().filter((model) => !model.hfImported);
     const qualityCount = catalogModels.filter((model) => model.qualityBenchmark).length;
     coverageTarget.innerHTML = `
-      <span><strong>${GPU_PRESETS.length}</strong> GPU 프리셋</span>
-      <span><strong>${catalogModels.length}</strong> AI 모델</span>
-      <span><strong>${qualityCount}</strong> 출처 연결 평가</span>
+      <span><strong>${GPU_PRESETS.length}</strong> ${uiLanguage === "en" ? "GPU presets" : "GPU 프리셋"}</span>
+      <span><strong>${catalogModels.length}</strong> ${uiLanguage === "en" ? "AI models" : "AI 모델"}</span>
+      <span><strong>${qualityCount}</strong> ${uiLanguage === "en" ? "Cited evaluations" : "출처 연결 평가"}</span>
     `;
   }
 
@@ -3794,9 +3877,9 @@ function renderSimpleMode(hardware, allEstimates) {
     exploreActions.hidden = true;
     target.innerHTML = `
       <div class="empty-state simple-gpu-empty">
-        <strong>내 GPU를 선택하면 추천을 시작합니다.</strong>
-        <span>상단에서 GPU 모델을 고르면 VRAM과 속도를 계산해 실행 가능한 모델 3개를 보여드립니다.</span>
-        <button type="button" class="primary-button" data-focus-primary-gpu>GPU 선택하기</button>
+        <strong>${uiLanguage === "en" ? "Select your GPU to start recommendations." : "내 GPU를 선택하면 추천을 시작합니다."}</strong>
+        <span>${uiLanguage === "en" ? "Choose a GPU above to calculate VRAM and speed for 3 runnable models." : "상단에서 GPU 모델을 고르면 VRAM과 속도를 계산해 실행 가능한 모델 3개를 보여드립니다."}</span>
+        <button type="button" class="primary-button" data-focus-primary-gpu>${t("chooseGpu")}</button>
       </div>
     `;
     return;
@@ -3829,7 +3912,7 @@ function renderSimpleMode(hardware, allEstimates) {
 
     return `
       <button type="button" class="simple-pick-card ${index === 0 ? "is-top-pick" : ""}" data-model-key="${escapeAttr(key)}">
-        <span class="simple-pick-rank">${index + 1}순위</span>
+        <span class="simple-pick-rank">${uiLanguage === "en" ? `Rank ${index + 1}` : `${index + 1}순위`}</span>
         <span class="simple-pick-head">
           <strong>${escapeHtml(estimate.model.name)}</strong>
           <span class="grade-pill ${meta.className}">${meta.label}</span>
@@ -3840,7 +3923,7 @@ function renderSimpleMode(hardware, allEstimates) {
           <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
         </span>
         ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
-        <span class="simple-pick-cta">상세 계산 보기 →</span>
+        <span class="simple-pick-cta">${t("detailCalculation")} →</span>
       </button>
     `;
   }).join("");
@@ -3849,13 +3932,13 @@ function renderSimpleMode(hardware, allEstimates) {
 function renderResults(estimates, allEstimates = []) {
   const meta = WORKLOAD_META[activeWorkload];
   if (!hasPrimaryGpuSelection) {
-    $("resultMeta").textContent = "GPU 선택 필요";
+    $("resultMeta").textContent = t("gpuRequired");
     $("modelResults").className = "model-results";
     $("modelResults").innerHTML = `
       <div class="empty-state">
-        <strong>GPU를 선택하면 전체 모델을 계산합니다.</strong>
-        <span>상단의 GPU 프리셋에서 사용할 하드웨어를 먼저 선택해 주세요.</span>
-        <button type="button" class="primary-button" data-focus-primary-gpu>GPU 선택하기</button>
+        <strong>${uiLanguage === "en" ? "Select a GPU to calculate all models." : "GPU를 선택하면 전체 모델을 계산합니다."}</strong>
+        <span>${uiLanguage === "en" ? "Choose the hardware preset to use above." : "상단의 GPU 프리셋에서 사용할 하드웨어를 먼저 선택해 주세요."}</span>
+        <button type="button" class="primary-button" data-focus-primary-gpu>${t("chooseGpu")}</button>
       </div>
     `;
     return;
@@ -5114,12 +5197,15 @@ function renderBenchmarkSheet() {
   const errorStats = computeBenchmarkErrorStats();
   const externalReferenceCount = qualityRows.length + externalBenchmarkRows.length + referenceRows.length;
 
-  $("benchmarkMeta").textContent = `업데이트 ${DATA_UPDATED_AT} · 외부 공개 참고값 ${externalReferenceCount}개 · 사용자 측정 ${userMeasurementRows.length}개 · 자체 측정 ${projectMeasurementRows.length}개${errorStats ? ` · 평균 추정 오차 ${errorStats.avgAbsErrorPct.toFixed(1)}% (GPU ${errorStats.gpuCoverage}종 · ${errorStats.sampleCount}건 기준)` : ""}`;
+  const benchmarkTypeLabel = uiLanguage === "en" ? "External public reference" : "외부 공개 참고값";
+  const userTypeLabel = uiLanguage === "en" ? "User measurement" : "사용자 측정";
+  const projectTypeLabel = uiLanguage === "en" ? "Project measurement" : "자체 측정";
+  $("benchmarkMeta").textContent = `${t("updated")} ${DATA_UPDATED_AT} · ${benchmarkTypeLabel} ${externalReferenceCount}${uiLanguage === "en" ? "" : "개"} · ${userTypeLabel} ${userMeasurementRows.length}${uiLanguage === "en" ? "" : "개"} · ${projectTypeLabel} ${projectMeasurementRows.length}${uiLanguage === "en" ? "" : "개"}${errorStats ? ` · ${uiLanguage === "en" ? "Average estimate error" : "평균 추정 오차"} ${errorStats.avgAbsErrorPct.toFixed(1)}%` : ""}`;
 
   if (!rows.length) {
     table.innerHTML = `
       <div class="empty-state">
-        등록된 외부 공개 참고값과 사용자/자체 측정값이 없습니다. 계산 추정값은 상세 패널에서 별도로 표시됩니다.
+        ${uiLanguage === "en" ? "No external references or user/project measurements are registered. Estimates are shown separately in each detail panel." : "등록된 외부 공개 참고값과 사용자/자체 측정값이 없습니다. 계산 추정값은 상세 패널에서 별도로 표시됩니다."}
       </div>
     `;
     return;
@@ -5128,21 +5214,21 @@ function renderBenchmarkSheet() {
   table.innerHTML = `
     <div class="benchmark-table">
       <div class="benchmark-row benchmark-table-head">
-        <span>구분</span>
-        <span>모델</span>
-        <span>GPU</span>
-        <span>조건</span>
-        <span>지표</span>
-        <span>출처</span>
+        <span>${t("type")}</span>
+        <span>${t("model")}</span>
+        <span>${t("gpu")}</span>
+        <span>${t("conditions")}</span>
+        <span>${t("metric")}</span>
+        <span>${t("source")}</span>
       </div>
       ${rows.map((row) => `
         <div class="benchmark-row">
-          <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}">${escapeHtml(row.rowType)}</span></span>
+          <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}">${escapeHtml(row.rowType === "외부 공개 참고값" ? benchmarkTypeLabel : row.rowType === "사용자 측정" ? userTypeLabel : projectTypeLabel)}</span></span>
           <span>${escapeHtml(row.modelName)}</span>
           <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
           <span>${escapeHtml(row.setting || row.runtime || row.workload || "-")}</span>
           <span>${escapeHtml(formatBenchmarkMetric(row))}</span>
-          <span>${row.sourceUrl ? renderExternalLink("보기", row.sourceUrl) : "-"}</span>
+          <span>${row.sourceUrl ? renderExternalLink(t("view"), row.sourceUrl) : "-"}</span>
         </div>
       `).join("")}
     </div>
@@ -5423,6 +5509,7 @@ function syncUrlState() {
 
   const params = new URLSearchParams();
   params.set("ui", appMode);
+  params.set("lang", uiLanguage);
   params.set("mode", activeWorkload);
   const hardware = getHardware();
   if (hasPrimaryGpuSelection) {

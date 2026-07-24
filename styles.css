@@ -178,6 +178,31 @@ h3 {
   color: var(--blue);
 }
 
+html[lang="en"] .result-toolbar select {
+  min-width: 145px;
+  max-width: 210px;
+}
+
+html[lang="en"] .result-toolbar .search-wrap {
+  flex-basis: 260px;
+}
+
+html[lang="en"] .advanced-tools-inline {
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+}
+
+html[lang="en"] .workload-tabs {
+  gap: 14px;
+}
+
+html[lang="en"] .simple-mode-head {
+  flex-wrap: wrap;
+}
+
+html[lang="en"] .simple-mode-head > div:first-child {
+  flex: 1 1 520px;
+}
+
 .app-shell {
   display: grid;
   gap: 0;
@@ -2588,6 +2613,13 @@ button:focus-visible {
 }
 
 @media (max-width: 1180px) {
+  .header-nav {
+    gap: 12px;
+  }
+
+  .header-nav a {
+    font-size: 12px;
+  }
   .hardware-topline {
     grid-template-columns: minmax(0, 1fr) auto;
   }
