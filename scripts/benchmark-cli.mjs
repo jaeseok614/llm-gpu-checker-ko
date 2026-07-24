@@ -440,8 +440,10 @@ async function main() {
     );
   }
 
-  console.log(`\nGitHub Issue 신규 제보는 현재 일시 중단되어 있습니다.
-아래 JSON을 로컬에 보관했다가 README의 제보 중단 안내가 해제되면 Benchmark report에 붙여넣어 주세요.
+  console.log(`\nGitHub Benchmark report:
+https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml
+
+아래 JSON을 Benchmark report에 직접 붙여넣어 주세요. CLI는 결과를 자동 전송하지 않습니다.
 sourceUrl은 이슈를 올린 뒤 이슈 자신의 URL로 바꿔주세요.
 
 \`\`\`json

@@ -12,10 +12,8 @@
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/"><strong>웹에서 사용하기</strong></a>
   · <a href="./docs/methodology.md">계산 기준</a>
   · <a href="./README.en.md">English</a>
-  · <img alt="제보 일시 중단" src="https://img.shields.io/badge/제보-일시%20중단-lightgrey" />
+  · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">벤치마크 제보</a>
 </p>
-
-> **제보 일시 중단:** GitHub의 외부 계정 Issue 생성 제한을 확인 중입니다. 복구가 확인될 때까지 모델·GPU·벤치마크 제보 버튼을 닫아 둡니다. 기존 Issue는 계속 열람할 수 있습니다.
 
 ![AI Hardware Fit 10초 데모](./docs/demo.gif)
 

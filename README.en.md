@@ -12,10 +12,8 @@
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/"><strong>Open the web app</strong></a>
   · <a href="./docs/methodology.md">Methodology</a>
   · <a href="./README.md">한국어</a>
-  · <img alt="Reports temporarily paused" src="https://img.shields.io/badge/reports-temporarily%20paused-lightgrey" />
+  · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">Report a benchmark</a>
 </p>
-
-> **Reports temporarily paused:** External-account issue creation is being checked with GitHub. Model, GPU, and benchmark report links will remain paused until access is confirmed. Existing issues remain readable.
 
 ![AI Hardware Fit 10-second demo](./docs/demo.gif)
 

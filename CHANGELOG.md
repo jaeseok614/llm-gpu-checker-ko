@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- GitHub Issue 생성 정책이 `ALL`이고 상호작용 제한이 없음을 확인한 뒤 모델·GPU·벤치마크 제보 링크 재개
+- GitHub 저장소 About 설명과 Topics를 LLM·임베딩·리랭커·OCR·VLM·멀티 GPU 범위에 맞게 갱신
+
 ## v1.1.0 - AI Workload Expansion - 2026-07-24
 
 - 하드웨어 설정 패널을 페이지 진입 시 기본적으로 펼쳐서 보여주도록 변경 (매번 "설정 변경"을 눌러야 GPU를 바꿀 수 있던 문제)
