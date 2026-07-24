@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Hardware Fit — 내 GPU에서 돌아가는 AI 모델 찾기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260725-first-screen1" />
+    <link rel="stylesheet" href="./styles.css?v=20260725-compact-settings1" />
   </head>
   <body>
     <header class="app-header">
@@ -47,48 +47,62 @@
         </div>
 
         <div class="settings-drawer" id="settingsDrawer" hidden>
-          <div class="settings-panel" id="hardwareEditor">
-            <div class="settings-group-title">상세 하드웨어 설정</div>
-            <label class="field">
-              <span>VRAM</span>
-              <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
-            </label>
-            <label class="field">
-              <span>시스템 RAM</span>
-              <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
-            </label>
-            <label class="field">
-              <span>GPU 수</span>
-              <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
-            </label>
-            <div class="settings-group-title">이기종 병렬 GPU (선택)</div>
-            <label class="field field-wide">
-              <span>보조 GPU</span>
-              <div class="field-control-pair" id="secondaryGpuPresetPair">
-                <select id="secondaryGpuPreset" aria-label="보조 GPU">
-                  <option value="none">사용 안 함</option>
-                </select>
-                <input type="text" id="secondaryGpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="검색해서 선택" hidden />
+          <div class="settings-panel hardware-editor" id="hardwareEditor">
+            <section class="settings-cluster" aria-labelledby="primaryHardwareTitle">
+              <h3 id="primaryHardwareTitle">기본 하드웨어</h3>
+              <div class="settings-cluster-fields settings-cluster-fields-three">
+                <label class="field">
+                  <span>VRAM</span>
+                  <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
+                </label>
+                <label class="field">
+                  <span>시스템 RAM</span>
+                  <input id="ramGb" type="number" min="8" max="2048" step="1" value="64" />
+                </label>
+                <label class="field">
+                  <span>GPU 수</span>
+                  <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
+                </label>
               </div>
-            </label>
-            <label class="field">
-              <span>보조 GPU 수</span>
-              <input id="secondaryGpuCount" type="number" min="1" max="16" step="1" value="1" disabled />
-            </label>
-            <p class="settings-note field-wide" id="secondaryGpuNote">서로 다른 GPU를 함께 쓰는 경우 메모리 분할·통신 손실을 보수적으로 반영합니다.</p>
-            <div class="settings-group-title">고급 설정</div>
-            <label class="field">
-              <span>대역폭 GB/s</span>
-              <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
-            </label>
-            <label class="field">
-              <span>이미 사용 중인 VRAM</span>
-              <input id="reservedVramGb" type="number" min="0" max="10240" step="0.5" value="0" />
-            </label>
-            <label class="field">
-              <span>안전 여유분</span>
-              <input id="safetyMarginGb" type="number" min="0" max="256" step="0.5" value="2" />
-            </label>
+            </section>
+
+            <section class="settings-cluster settings-cluster-secondary" aria-labelledby="secondaryHardwareTitle">
+              <h3 id="secondaryHardwareTitle">보조 GPU <span>선택</span></h3>
+              <div class="settings-cluster-fields settings-cluster-fields-secondary">
+                <label class="field">
+                  <span>GPU 모델</span>
+                  <div class="field-control-pair" id="secondaryGpuPresetPair">
+                    <select id="secondaryGpuPreset" aria-label="보조 GPU">
+                      <option value="none">사용 안 함</option>
+                    </select>
+                    <input type="text" id="secondaryGpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="검색해서 선택" hidden />
+                  </div>
+                </label>
+                <label class="field">
+                  <span>수량</span>
+                  <input id="secondaryGpuCount" type="number" min="1" max="16" step="1" value="1" disabled />
+                </label>
+              </div>
+              <p class="settings-note" id="secondaryGpuNote">서로 다른 GPU를 함께 쓰는 경우 메모리 분할·통신 손실을 보수적으로 반영합니다.</p>
+            </section>
+
+            <section class="settings-cluster" aria-labelledby="memoryAdjustmentTitle">
+              <h3 id="memoryAdjustmentTitle">메모리 보정</h3>
+              <div class="settings-cluster-fields settings-cluster-fields-three">
+                <label class="field">
+                  <span>대역폭 GB/s</span>
+                  <input id="bandwidth" type="number" min="100" max="12000" step="10" value="1008" />
+                </label>
+                <label class="field">
+                  <span>사용 중 VRAM</span>
+                  <input id="reservedVramGb" type="number" min="0" max="10240" step="0.5" value="0" />
+                </label>
+                <label class="field">
+                  <span>안전 여유분</span>
+                  <input id="safetyMarginGb" type="number" min="0" max="256" step="0.5" value="2" />
+                </label>
+              </div>
+            </section>
           </div>
 
           <div class="advanced-tools-inline">
@@ -556,6 +570,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260725-first-screen1" defer></script>
+    <script src="./app.js?v=20260725-compact-settings1" defer></script>
   </body>
 </html>

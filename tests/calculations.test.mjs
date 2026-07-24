@@ -305,6 +305,21 @@ describe("first-visit GPU onboarding", () => {
     assert.equal(fresh.document.getElementById("settingsDrawer").hidden, false);
     assert.equal(fresh.document.getElementById("gpuPresetSearch").hidden, false);
   });
+
+  test("opens hardware settings as three compact groups with two advanced tools", () => {
+    const fresh = loadApp();
+    fresh.document.getElementById("settingsToggle")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+
+    const drawer = fresh.document.getElementById("settingsDrawer");
+    const groupTitles = [...drawer.querySelectorAll(".settings-cluster h3")]
+      .map((title) => title.childNodes[0].textContent.trim());
+    assert.equal(drawer.hidden, false);
+    assert.deepEqual(groupTitles, ["기본 하드웨어", "보조 GPU", "메모리 보정"]);
+    assert.equal(drawer.querySelectorAll(".advanced-tools-inline > details").length, 2);
+    assert.equal(fresh.document.querySelector('[data-workload-settings="generative"]').hidden, false);
+    assert.equal(fresh.document.getElementById("vramGb").value, "24");
+  });
 });
 
 describe("quick recommendation navigation", () => {
