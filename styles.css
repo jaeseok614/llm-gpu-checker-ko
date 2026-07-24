@@ -122,6 +122,8 @@ h3 {
   align-items: center;
   gap: 20px;
   flex: 0 0 auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .header-nav a {
@@ -131,47 +133,32 @@ h3 {
   text-decoration: none;
 }
 
-.language-select {
+.language-toggle {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
   gap: 4px;
+  margin-left: 8px;
   white-space: nowrap;
+  color: #94a3b8;
+  font-size: 13px;
 }
 
-.language-select select {
-  width: auto;
-  min-width: 92px;
-  height: 34px;
-  padding: 0 28px 0 8px;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  background-color: #fff;
-  color: #334155;
+.language-toggle button {
+  min-width: 26px;
+  padding: 3px 2px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
   cursor: pointer;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
 }
 
-.language-select select:hover {
-  background: var(--blue-soft);
-}
-
-.language-icon {
-  font-size: 14px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.language-toggle button.active {
+  color: var(--blue);
+  font-weight: 700;
 }
 
 .header-nav a:hover {

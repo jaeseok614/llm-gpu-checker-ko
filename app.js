@@ -180,6 +180,8 @@ const UI_TRANSLATIONS = {
 
 const ENGLISH_UI_REPLACEMENTS = [
   ["내 GPU에서 돌아가는 AI 모델 찾기", "Find AI models for your GPU"],
+  ["실행 가능한", "runnable"],
+  ["실행 판정", "Run verdict"],
   ["빠른 추천", "Quick recommendations"],
   ["전체 모델 탐색", "Explore all models"],
   ["전체 모델에서 비교하기", "Compare all models"],
@@ -246,6 +248,18 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["보유 GPU 목록", "GPU inventory"],
   ["모델별 성능지표 시트", "Per-model benchmark sheet"],
   ["불러온 모델 지우기", "Clear imported models"],
+  ["상세 계산 보기", "View detailed calculation"],
+  ["계산 추정, 외부 공개 참고값, 사용자 측정, 자체 측정을 근거별로 분리합니다.", "Estimates, external public references, user measurements, and project measurements are shown separately."],
+  ["업데이트", "Updated"],
+  ["구분", "Type"],
+  ["모델", "Model"],
+  ["조건", "Conditions"],
+  ["지표", "Metric"],
+  ["출처", "Source"],
+  ["공식 평가", "Official evaluation"],
+  ["공식 발표", "Official report"],
+  ["공식 품질", "Official quality"],
+  ["보기", "View"],
   ["상업 이용 가능", "Commercial use allowed"],
   ["조건부 상업 이용", "Conditional commercial use"],
   ["비상업·연구용", "Non-commercial / research"],
@@ -392,7 +406,13 @@ function setUiLanguage(language) {
     if (dictionary[source]) node.textContent = dictionary[source];
   });
   const toggle = document.querySelector("[data-language-toggle]");
-  if (toggle) toggle.value = uiLanguage;
+  if (toggle) {
+    toggle.querySelectorAll("[data-lang]").forEach((button) => {
+      const active = button.dataset.lang === uiLanguage;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
   translateDynamicUi(uiLanguage);
 }
 
@@ -928,9 +948,10 @@ function bindEvents() {
     }
   });
 
-  document.querySelector("[data-language-toggle]")?.addEventListener("change", (event) => {
-    setUiLanguage(event.target.value);
-    try { window.localStorage?.setItem("ai-hardware-fit-language", event.target.value); } catch {}
+  document.querySelector("[data-language-toggle]")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-lang]");
+    if (!button) return;
+    setUiLanguage(button.dataset.lang);
   });
 
   $("hfImportForm").addEventListener("submit", importHfModel);
