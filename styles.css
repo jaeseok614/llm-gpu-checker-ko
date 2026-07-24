@@ -999,6 +999,26 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.simple-pick-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.simple-pick-copy {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.simple-pick-copy:hover,
+.simple-pick-copy:focus-visible {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
 .simple-explore-actions {
   display: flex;
   align-items: center;

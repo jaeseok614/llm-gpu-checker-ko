@@ -1371,6 +1371,11 @@ function bindEvents() {
       focusPrimaryGpuSelector();
       return;
     }
+    const copyCommand = event.target.closest("[data-copy-command]");
+    if (copyCommand) {
+      copyTextToClipboard(copyCommand.dataset.copyCommand, copyCommand);
+      return;
+    }
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
     selectedModelKey = target.dataset.modelKey;
@@ -3723,6 +3728,8 @@ function render(options = {}) {
   renderDetail();
   renderViewToggle();
   renderBenchmarkSheet();
+  const benchmarkSheet = $("benchmarkSheet");
+  if (benchmarkSheet) benchmarkSheet.hidden = !hasPrimaryGpuSelection;
 
   if (syncUrl) syncUrlState();
   if (uiLanguage === "en") setUiLanguage("en");
@@ -3730,6 +3737,7 @@ function render(options = {}) {
 
 function renderHardware(hardware, allEstimates) {
   if (!hasPrimaryGpuSelection) {
+    $("settingsToggle").hidden = true;
     $("hardwareHeadline").textContent = "GPU를 선택해 주세요";
     $("hardwareMeta").textContent = `GPU 프리셋 ${GPU_PRESETS.length}개 또는 직접 입력`;
     $("hardwareSubline").textContent = "선택 즉시 현재 환경에 맞는 모델을 계산합니다.";
@@ -3737,6 +3745,8 @@ function renderHardware(hardware, allEstimates) {
     $("gpuSourceLinks").innerHTML = "";
     return;
   }
+
+  $("settingsToggle").hidden = false;
 
   const basis = buildHardwareBasis(hardware);
   const metaParts = [
@@ -3986,7 +3996,7 @@ function renderSimpleMode(hardware, allEstimates) {
     const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
     const meta = GRADE_META[estimate.grade];
     const licensePolicy = getLicensePolicy(estimate.model);
-    const reasons = buildRecommendationReasons(estimate).slice(0, 3);
+    const reasons = buildRecommendationReasons(estimate).slice(0, 3).map(localizeRecommendationReason);
     const key = modelKey(estimate.model);
 
     return `
@@ -4002,10 +4012,25 @@ function renderSimpleMode(hardware, allEstimates) {
           <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
         </span>
         ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
-        <span class="simple-pick-cta">${t("detailCalculation")} →</span>
+        <span class="simple-pick-actions">
+          <span class="simple-pick-cta">${t("detailCalculation")} →</span>
+          <span class="simple-pick-copy" role="button" tabindex="0" data-copy-command="${escapeAttr(buildOllamaCommand(estimate.model, estimate.quant, hardware))}">${uiLanguage === "en" ? "Copy Ollama" : "Ollama 복사"}</span>
+        </span>
       </button>
     `;
   }).join("");
+}
+
+function localizeRecommendationReason(reason) {
+  if (uiLanguage !== "en") return reason;
+  return String(reason)
+    .replace("가용 VRAM 안에 들어옴", "Fits available VRAM")
+    .replace("VRAM 여유", "VRAM headroom")
+    .replace("한국어 지원", "Korean support")
+    .replace("코딩 적합", "Good for coding")
+    .replace("추론 태그", "Reasoning tag")
+    .replace("긴 컨텍스트", "Long context")
+    .replace("품질 평가 출처 있음", "Quality evaluation cited");
 }
 
 function renderResults(estimates, allEstimates = []) {
