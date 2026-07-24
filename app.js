@@ -17,6 +17,7 @@ const BENCHMARKS = DATA.benchmarks || [];
 const BENCHMARK_META = DATA.benchmarkMeta || {};
 const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
 const HF_MODEL_STORAGE_KEY = "llm-gpu-checker-hf-models-v1";
+const PRIMARY_GPU_STORAGE_KEY = "ai-hardware-fit-primary-gpu-v1";
 const MAX_IMPORTED_HF_MODELS = 20;
 const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm"]);
 const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm"]);
@@ -136,13 +137,55 @@ let activeWorkload = "generative";
 let activeSummaryFilter = "all";
 let selectedModelKey = "";
 let viewMode = "list";
-let settingsExpanded = true;
+let settingsExpanded = false;
 let compareKeys = [];
 let compareModalOpen = false;
 const MAX_COMPARE_MODELS = 3;
-let appMode = "expert";
+let appMode = "simple";
+let hasPrimaryGpuSelection = false;
 
 const $ = (id) => document.getElementById(id);
+
+function getStoredPrimaryGpuId() {
+  try {
+    const id = window.localStorage?.getItem(PRIMARY_GPU_STORAGE_KEY) || "";
+    return GPU_PRESETS.some((gpu) => gpu.id === id && gpu.id !== "custom") ? id : "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberPrimaryGpuId(id) {
+  try {
+    if (id && id !== "custom" && GPU_PRESETS.some((gpu) => gpu.id === id)) {
+      window.localStorage?.setItem(PRIMARY_GPU_STORAGE_KEY, id);
+    } else {
+      window.localStorage?.removeItem(PRIMARY_GPU_STORAGE_KEY);
+    }
+  } catch {
+    // 저장소를 사용할 수 없어도 현재 세션의 계산은 그대로 동작합니다.
+  }
+}
+
+function selectPrimaryGpu(id, { persist = false } = {}) {
+  const preset = GPU_PRESETS.find((gpu) => gpu.id === id);
+  if (!preset) {
+    hasPrimaryGpuSelection = false;
+    $("gpuPreset").value = "";
+    if (persist) rememberPrimaryGpuId("");
+    return false;
+  }
+
+  applyPreset(preset.id);
+  hasPrimaryGpuSelection = true;
+  if (persist) rememberPrimaryGpuId(preset.id);
+  return true;
+}
+
+function focusPrimaryGpuSelector() {
+  $("gpuPreset")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  $("gpuPreset")?.focus();
+}
 
 function setAppMode(mode) {
   if (mode !== "simple" && mode !== "expert") return;
@@ -155,6 +198,7 @@ function refreshAppModeUi() {
   const isSimple = appMode === "simple";
   $("simpleModePanel").hidden = !isSimple;
   $("expertModeSection").hidden = isSimple;
+  $("calculationBasisStrip").hidden = isSimple;
   document.querySelectorAll("[data-app-mode]").forEach((button) => {
     const active = button.dataset.appMode === appMode;
     button.classList.toggle("is-active", active);
@@ -176,10 +220,13 @@ function init() {
 }
 
 function populateSelects() {
-  $("gpuPreset").innerHTML = GPU_PRESETS.map(
-    (gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`,
-  ).join("");
-  $("gpuPreset").value = "rtx4090-24";
+  $("gpuPreset").innerHTML = [
+    `<option value="">GPU를 선택하세요</option>`,
+    ...GPU_PRESETS.map(
+      (gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`,
+    ),
+  ].join("");
+  $("gpuPreset").value = "";
   $("secondaryGpuPreset").innerHTML = [
     `<option value="none">사용 안 함</option>`,
     ...GPU_PRESETS
@@ -201,7 +248,6 @@ function populateSelects() {
   refreshWorkloadUi();
   refreshFilterOptions();
 
-  applyPreset("rtx4090-24");
   refreshSecondaryGpuUi();
 }
 
@@ -607,11 +653,15 @@ function bindEvents() {
   $("searchInput").addEventListener("input", render);
 
   $("gpuPreset").addEventListener("change", (event) => {
-    applyPreset(event.target.value);
+    const selected = selectPrimaryGpu(event.target.value, { persist: true });
     if (event.target.value === "custom") $("gpuPresetSearch").value = "";
     refreshSecondaryGpuUi();
     render();
-    if (event.target.value === "custom") $("gpuPresetSearch")?.focus();
+    if (selected && event.target.value === "custom") {
+      settingsExpanded = true;
+      refreshWorkloadUi();
+      $("gpuPresetSearch")?.focus();
+    }
   });
 
   $("secondaryGpuPreset").addEventListener("change", () => {
@@ -646,11 +696,16 @@ function bindEvents() {
   $("simplePurpose").addEventListener("change", () => render());
   $("simplePriority").addEventListener("change", () => render());
   $("simpleModeResult").addEventListener("click", (event) => {
+    if (event.target.closest("[data-focus-primary-gpu]")) {
+      focusPrimaryGpuSelector();
+      return;
+    }
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
     selectedModelKey = target.dataset.modelKey;
     render();
   });
+  $("simpleOpenExpert").addEventListener("click", () => setAppMode("expert"));
 
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
@@ -760,6 +815,10 @@ function bindEvents() {
 
   $("calculationBasisStrip").addEventListener("click", (event) => {
     if (!event.target.closest("[data-open-settings]")) return;
+    if (!hasPrimaryGpuSelection) {
+      focusPrimaryGpuSelector();
+      return;
+    }
     settingsExpanded = true;
     refreshWorkloadUi();
     document.getElementById("settingsDrawer")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -776,6 +835,10 @@ function bindEvents() {
   $("cardViewButton").addEventListener("click", () => setViewMode("card"));
 
   $("modelResults").addEventListener("click", (event) => {
+    if (event.target.closest("[data-focus-primary-gpu]")) {
+      focusPrimaryGpuSelector();
+      return;
+    }
     const emptyAction = event.target.closest("[data-empty-action]");
     if (emptyAction) {
       applyEmptyAction(emptyAction.dataset.emptyAction);
@@ -880,7 +943,7 @@ function setViewMode(nextMode) {
 function refreshWorkloadUi() {
   $("settingsDrawer").hidden = !settingsExpanded;
   $("settingsToggle").setAttribute("aria-expanded", String(settingsExpanded));
-  $("settingsToggle").textContent = settingsExpanded ? "설정 닫기" : "설정 변경";
+  $("settingsToggle").textContent = settingsExpanded ? "상세 설정 닫기" : "상세 설정";
 
   document.querySelectorAll("[data-workload-tab]").forEach((button) => {
     const isActive = button.dataset.workloadTab === activeWorkload;
@@ -904,7 +967,7 @@ function applyOcrResolutionPreset(id) {
 }
 
 function applyPreset(id) {
-  const preset = GPU_PRESETS.find((gpu) => gpu.id === id) || GPU_PRESETS[0];
+  const preset = GPU_PRESETS.find((gpu) => gpu.id === id);
   if (!preset) return;
 
   $("gpuPreset").value = preset.id;
@@ -2832,8 +2895,10 @@ function escapeTextLabel(value) {
 function render(options = {}) {
   const { syncUrl = true } = options;
   const hardware = getHardware();
-  const allEstimates = getActiveModels().map((model) => estimateAnyModel(model, hardware));
-  const estimates = getFilteredEstimates();
+  const allEstimates = hasPrimaryGpuSelection
+    ? getActiveModels().map((model) => estimateAnyModel(model, hardware))
+    : [];
+  const estimates = hasPrimaryGpuSelection ? getFilteredEstimates() : [];
 
   refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
@@ -2853,6 +2918,15 @@ function render(options = {}) {
 }
 
 function renderHardware(hardware, allEstimates) {
+  if (!hasPrimaryGpuSelection) {
+    $("hardwareHeadline").textContent = "GPU를 선택해 주세요";
+    $("hardwareMeta").textContent = `GPU 프리셋 ${GPU_PRESETS.length}개 또는 직접 입력`;
+    $("hardwareSubline").textContent = "선택 즉시 현재 환경에 맞는 모델을 계산합니다.";
+    $("gpuSourceLinks").hidden = true;
+    $("gpuSourceLinks").innerHTML = "";
+    return;
+  }
+
   const basis = buildHardwareBasis(hardware);
   const metaParts = [
     `가용 VRAM ${formatGb(hardware.availableVram)}`,
@@ -2903,6 +2977,17 @@ function buildHardwareBasis(hardware) {
 }
 
 function renderCalculationBasisStrip(hardware) {
+  if (!hasPrimaryGpuSelection) {
+    $("calculationBasisStrip").innerHTML = `
+      <div>
+        <span>추천 시작하기</span>
+        <strong>위에서 사용할 GPU를 먼저 선택해 주세요.</strong>
+      </div>
+      <button type="button" class="primary-button" data-open-settings>GPU 선택</button>
+    `;
+    return;
+  }
+
   const basis = buildHardwareBasis(hardware);
   $("calculationBasisStrip").innerHTML = `
     <div>
@@ -3026,16 +3111,43 @@ function computeSimpleRecommendations(allEstimates, purpose, priority) {
 
 function renderSimpleMode(hardware, allEstimates) {
   const gpuReadout = $("simpleModeGpuReadout");
-  if (gpuReadout) gpuReadout.textContent = formatHardwareName(hardware);
+  if (gpuReadout) {
+    gpuReadout.textContent = hasPrimaryGpuSelection ? formatHardwareName(hardware) : "GPU 선택 필요";
+  }
+
+  const coverageTarget = $("simpleDataCoverage");
+  if (coverageTarget) {
+    const catalogModels = Object.values(MODEL_GROUPS).flat().filter((model) => !model.hfImported);
+    const qualityCount = catalogModels.filter((model) => model.qualityBenchmark).length;
+    coverageTarget.innerHTML = `
+      <span><strong>${GPU_PRESETS.length}</strong> GPU 프리셋</span>
+      <span><strong>${catalogModels.length}</strong> AI 모델</span>
+      <span><strong>${qualityCount}</strong> 출처 연결 평가</span>
+    `;
+  }
 
   const target = $("simpleModeResult");
   if (!target) return;
+  const exploreActions = $("simpleExploreActions");
+
+  if (!hasPrimaryGpuSelection) {
+    exploreActions.hidden = true;
+    target.innerHTML = `
+      <div class="empty-state simple-gpu-empty">
+        <strong>내 GPU를 선택하면 추천을 시작합니다.</strong>
+        <span>상단에서 GPU 모델을 고르면 VRAM과 속도를 계산해 실행 가능한 모델 3개를 보여드립니다.</span>
+        <button type="button" class="primary-button" data-focus-primary-gpu>GPU 선택하기</button>
+      </div>
+    `;
+    return;
+  }
 
   const purpose = $("simplePurpose")?.value || "general";
   const priority = $("simplePriority")?.value || "balanced";
   const picks = computeSimpleRecommendations(allEstimates, purpose, priority);
 
   if (!picks.length) {
+    exploreActions.hidden = true;
     target.innerHTML = `
       <div class="empty-state">
         <strong>현재 조건에 맞는 모델이 없습니다.</strong>
@@ -3045,6 +3157,7 @@ function renderSimpleMode(hardware, allEstimates) {
     return;
   }
 
+  exploreActions.hidden = false;
   target.innerHTML = picks.map((estimate, index) => {
     const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
     const meta = GRADE_META[estimate.grade];
@@ -3053,7 +3166,7 @@ function renderSimpleMode(hardware, allEstimates) {
     const key = modelKey(estimate.model);
 
     return `
-      <button type="button" class="simple-pick-card" data-model-key="${escapeAttr(key)}">
+      <button type="button" class="simple-pick-card ${index === 0 ? "is-top-pick" : ""}" data-model-key="${escapeAttr(key)}">
         <span class="simple-pick-rank">${index + 1}순위</span>
         <span class="simple-pick-head">
           <strong>${escapeHtml(estimate.model.name)}</strong>
@@ -3065,6 +3178,7 @@ function renderSimpleMode(hardware, allEstimates) {
           <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
         </span>
         ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
+        <span class="simple-pick-cta">상세 계산 보기 →</span>
       </button>
     `;
   }).join("");
@@ -3072,6 +3186,19 @@ function renderSimpleMode(hardware, allEstimates) {
 
 function renderResults(estimates, allEstimates = []) {
   const meta = WORKLOAD_META[activeWorkload];
+  if (!hasPrimaryGpuSelection) {
+    $("resultMeta").textContent = "GPU 선택 필요";
+    $("modelResults").className = "model-results";
+    $("modelResults").innerHTML = `
+      <div class="empty-state">
+        <strong>GPU를 선택하면 전체 모델을 계산합니다.</strong>
+        <span>상단의 GPU 프리셋에서 사용할 하드웨어를 먼저 선택해 주세요.</span>
+        <button type="button" class="primary-button" data-focus-primary-gpu>GPU 선택하기</button>
+      </div>
+    `;
+    return;
+  }
+
   const shownCount = estimates.length.toLocaleString("ko-KR");
   const totalCount = allEstimates.length.toLocaleString("ko-KR");
   $("resultMeta").textContent = estimates.length === allEstimates.length
@@ -4629,17 +4756,20 @@ function syncUrlState() {
   if (!window.history || !window.location) return;
 
   const params = new URLSearchParams();
+  params.set("ui", appMode);
   params.set("mode", activeWorkload);
-  params.set("gpu", $("gpuPreset").value);
   const hardware = getHardware();
-  params.set("vram", String(hardware.vram));
-  params.set("ram", String(hardware.ram));
-  params.set("count", String(hardware.primaryCount));
-  params.set("gpu2", hardware.secondaryPreset?.id || "none");
-  params.set("count2", String(hardware.secondaryCount || 1));
-  params.set("bandwidth", String(hardware.bandwidth));
-  params.set("reserved", String(hardware.reservedVram));
-  params.set("margin", String(hardware.safetyMarginGb));
+  if (hasPrimaryGpuSelection) {
+    params.set("gpu", $("gpuPreset").value);
+    params.set("vram", String(hardware.vram));
+    params.set("ram", String(hardware.ram));
+    params.set("count", String(hardware.primaryCount));
+    params.set("gpu2", hardware.secondaryPreset?.id || "none");
+    params.set("count2", String(hardware.secondaryCount || 1));
+    params.set("bandwidth", String(hardware.bandwidth));
+    params.set("reserved", String(hardware.reservedVram));
+    params.set("margin", String(hardware.safetyMarginGb));
+  }
   params.set("ctx", String(hardware.context));
   params.set("con", String(hardware.concurrency));
   params.set("out", String(hardware.outputTokens));
@@ -4679,6 +4809,13 @@ function syncUrlState() {
 
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
+  const uiParam = params.get("ui");
+  appMode = uiParam === "expert" || uiParam === "simple"
+    ? uiParam
+    : params.get("model")
+      ? "expert"
+      : "simple";
+
   const modeParam = params.get("mode");
   const mode = WORKLOAD_ALIASES[modeParam] || modeParam;
   if (WORKLOAD_META[mode]) activeWorkload = mode;
@@ -4686,17 +4823,23 @@ function applyUrlState() {
   refreshFilterOptions();
 
   const gpuId = params.get("gpu");
-  if (setSelectIfValid("gpuPreset", gpuId)) applyPreset(gpuId);
+  const restoredFromUrl = gpuId ? selectPrimaryGpu(gpuId) : false;
+  if (!restoredFromUrl) {
+    const storedGpuId = getStoredPrimaryGpuId();
+    if (storedGpuId) selectPrimaryGpu(storedGpuId);
+  }
 
-  setValueIfPresent("vramGb", params.get("vram"));
-  setValueIfPresent("ramGb", params.get("ram"));
-  setValueIfPresent("gpuCount", params.get("count"));
-  setSelectIfValid("secondaryGpuPreset", params.get("gpu2"));
-  setValueIfPresent("secondaryGpuCount", params.get("count2"));
+  if (hasPrimaryGpuSelection) {
+    setValueIfPresent("vramGb", params.get("vram"));
+    setValueIfPresent("ramGb", params.get("ram"));
+    setValueIfPresent("gpuCount", params.get("count"));
+    setSelectIfValid("secondaryGpuPreset", params.get("gpu2"));
+    setValueIfPresent("secondaryGpuCount", params.get("count2"));
+    setValueIfPresent("bandwidth", params.get("bandwidth"));
+    setValueIfPresent("reservedVramGb", params.get("reserved"));
+    setValueIfPresent("safetyMarginGb", params.get("margin"));
+  }
   refreshSecondaryGpuUi();
-  setValueIfPresent("bandwidth", params.get("bandwidth"));
-  setValueIfPresent("reservedVramGb", params.get("reserved"));
-  setValueIfPresent("safetyMarginGb", params.get("margin"));
   setValueIfPresent("contextSize", params.get("ctx"));
   setValueIfPresent("concurrency", params.get("con"));
   setValueIfPresent("outputTokens", params.get("out"));
@@ -4737,7 +4880,7 @@ function applyUrlState() {
   syncPresetControls();
 
   const model = params.get("model");
-  selectedModelKey = model && getModelByKey(model) ? model : "";
+  selectedModelKey = hasPrimaryGpuSelection && model && getModelByKey(model) ? model : "";
 }
 
 function setSelectIfValid(id, value) {

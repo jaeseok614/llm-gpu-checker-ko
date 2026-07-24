@@ -39,12 +39,13 @@ const DATA_FILES = [
 const BRIDGED_NAMES = [
   "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS",
   "QUANTS", "KV_PRECISION_META", "GPU_PRESETS", "ENCODER_PRECISIONS", "OCR_PRECISIONS",
-  "BENCHMARKS",
+  "BENCHMARKS", "PRIMARY_GPU_STORAGE_KEY",
 ];
 
-function loadApp(url = "https://example.com/") {
+function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}) {
   const dom = new JSDOM(read("index.html"), { url, runScripts: "outside-only" });
   const { window } = dom;
+  Object.entries(storage).forEach(([key, value]) => window.localStorage.setItem(key, value));
   let combined = DATA_FILES.map(read).join("\n;\n");
   combined += "\n;\n" + read("app.js");
   combined += "\n;\ninit();\n";
@@ -250,6 +251,94 @@ describe("mode, filtering, and sorting UI", () => {
   });
 });
 
+describe("first-visit GPU onboarding", () => {
+  test("starts in quick recommendation mode without inventing a GPU", () => {
+    const fresh = loadApp("https://example.com/");
+
+    assert.equal(fresh.document.getElementById("gpuPreset").value, "");
+    assert.equal(fresh.document.getElementById("hardwareHeadline").textContent, "GPU를 선택해 주세요");
+    assert.equal(fresh.document.getElementById("settingsDrawer").hidden, true);
+    assert.equal(fresh.document.getElementById("simpleModePanel").hidden, false);
+    assert.equal(fresh.document.getElementById("expertModeSection").hidden, true);
+    assert.equal(fresh.document.getElementById("calculationBasisStrip").hidden, true);
+    assert.equal(fresh.document.querySelectorAll(".simple-pick-card").length, 0);
+    assert.match(fresh.document.getElementById("simpleModeResult").textContent, /내 GPU를 선택하면 추천을 시작합니다/);
+  });
+
+  test("remembers a fixed GPU and restores it on the next visit", () => {
+    const fresh = loadApp("https://example.com/");
+    const select = fresh.document.getElementById("gpuPreset");
+    select.value = "rtx3060-12";
+    select.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+
+    const storageKey = fresh.PRIMARY_GPU_STORAGE_KEY;
+    assert.equal(fresh.localStorage.getItem(storageKey), "rtx3060-12");
+    assert.ok(fresh.document.querySelectorAll(".simple-pick-card").length > 0);
+
+    const restored = loadApp("https://example.com/", {
+      [storageKey]: "rtx3060-12",
+    });
+    assert.equal(restored.document.getElementById("gpuPreset").value, "rtx3060-12");
+    assert.match(restored.document.getElementById("simpleModeGpuReadout").textContent, /RTX 3060/);
+  });
+
+  test("URL GPU overrides the remembered GPU without replacing the preference", () => {
+    const storageKey = "ai-hardware-fit-primary-gpu-v1";
+    const fresh = loadApp("https://example.com/?gpu=h100-sxm-80", {
+      [storageKey]: "rtx3060-12",
+    });
+
+    assert.equal(fresh.document.getElementById("gpuPreset").value, "h100-sxm-80");
+    assert.equal(fresh.localStorage.getItem(storageKey), "rtx3060-12");
+  });
+
+  test("custom GPU input is usable for the session but is not persisted", () => {
+    const storageKey = "ai-hardware-fit-primary-gpu-v1";
+    const fresh = loadApp("https://example.com/", {
+      [storageKey]: "rtx3060-12",
+    });
+    const select = fresh.document.getElementById("gpuPreset");
+    select.value = "custom";
+    select.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+
+    assert.equal(fresh.localStorage.getItem(storageKey), null);
+    assert.equal(fresh.document.getElementById("settingsDrawer").hidden, false);
+    assert.equal(fresh.document.getElementById("gpuPresetSearch").hidden, false);
+  });
+});
+
+describe("quick recommendation navigation", () => {
+  test("opens a recommendation detail and exposes an explicit full-catalog action", () => {
+    const fresh = loadApp();
+    const card = fresh.document.querySelector(".simple-pick-card");
+    assert.ok(card, "expected a quick recommendation card");
+    assert.match(card.querySelector(".simple-pick-cta").textContent, /상세 계산 보기/);
+
+    card.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("modelDetail").hidden, false);
+
+    fresh.document.getElementById("simpleOpenExpert")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
+    assert.equal(fresh.document.getElementById("expertModeSection").hidden, false);
+    assert.equal(fresh.document.getElementById("calculationBasisStrip").hidden, false);
+    assert.equal(new URLSearchParams(fresh.location.search).get("ui"), "expert");
+  });
+
+  test("restores an explicit UI mode and treats a model-only link as expert mode", () => {
+    const explicit = loadApp("https://example.com/?gpu=rtx4090-24&ui=expert");
+    assert.equal(explicit.document.getElementById("simpleModePanel").hidden, true);
+    assert.equal(explicit.document.getElementById("expertModeSection").hidden, false);
+
+    const keySource = loadApp();
+    const key = keySource.eval("modelKey(GENERATIVE_MODELS[0])");
+    const linked = loadApp(`https://example.com/?gpu=rtx4090-24&model=${encodeURIComponent(key)}`);
+    assert.equal(linked.document.getElementById("simpleModePanel").hidden, true);
+    assert.equal(linked.document.getElementById("expertModeSection").hidden, false);
+    assert.equal(linked.document.getElementById("modelDetail").hidden, false);
+  });
+});
+
 describe("model comparison table rendering", () => {
   test("keeps one item column per row and labels incomparable public evaluations", () => {
     const fresh = loadApp();
@@ -309,6 +398,7 @@ describe("URL state save / restore", () => {
     assert.equal(params.get("gpu"), "h100-sxm-80");
     assert.equal(params.get("ctx"), "32768");
     assert.equal(params.get("con"), "4");
+    assert.equal(params.get("ui"), "simple");
   });
 
   test("loading a URL with query params restores the same settings on a fresh session", () => {

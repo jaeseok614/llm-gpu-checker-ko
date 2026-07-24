@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AI 모델 실행 가능성 계산기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260724-benchmark-cli1" />
+    <title>AI Hardware Fit — 내 GPU에서 돌아가는 AI 모델 찾기</title>
+    <link rel="stylesheet" href="./styles.css?v=20260725-first-screen1" />
   </head>
   <body>
     <header class="app-header">
@@ -12,7 +12,7 @@
         <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
         <div>
           <p class="eyebrow">AI Hardware Fit</p>
-          <h1>AI 모델 실행 가능성 계산기</h1>
+          <h1>내 GPU에서 돌아가는 AI 모델 찾기</h1>
         </div>
       </div>
       <nav class="header-nav" aria-label="상단 메뉴">
@@ -26,27 +26,29 @@
     <main class="app-shell">
       <section class="hardware-panel" aria-label="하드웨어 설정">
         <div class="hardware-topline">
-          <div class="hardware-copy">
-            <span class="section-kicker">내 실행 환경</span>
-            <strong id="hardwareHeadline">GeForce RTX 4090 24GB · RAM 64GB · GPU 1개</strong>
-            <p class="hardware-meta-line" id="hardwareMeta">가용 VRAM 22GB · RAM 64GB · GPU 1개</p>
-            <p id="hardwareSubline">현재 기준: 8K · 동시 1명 · llama.cpp / Ollama</p>
-            <div class="gpu-source-links" id="gpuSourceLinks" hidden></div>
-          </div>
-          <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">설정 변경</button>
-        </div>
-
-        <div class="settings-drawer" id="settingsDrawer" hidden>
-          <div class="settings-panel" id="hardwareEditor">
-            <div class="settings-group-title">기본 설정</div>
-            <label class="field field-wide">
-              <span>GPU</span>
+          <div class="primary-gpu-control">
+            <label class="field">
+              <span>내 GPU</span>
               <div class="field-control-pair" id="gpuPresetPair">
-                <select id="gpuPreset"></select>
+                <select id="gpuPreset" aria-label="기본 GPU"></select>
                 <input type="text" id="gpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="GPU 모델명 검색" hidden />
               </div>
             </label>
             <datalist id="gpuFixedPresetOptions"></datalist>
+          </div>
+          <div class="hardware-copy">
+            <span class="section-kicker">내 실행 환경</span>
+            <strong id="hardwareHeadline">GPU를 선택해 주세요</strong>
+            <p class="hardware-meta-line" id="hardwareMeta">GPU 프리셋을 선택하면 추천을 시작합니다.</p>
+            <p id="hardwareSubline">선택 즉시 현재 환경에 맞는 모델을 계산합니다.</p>
+            <div class="gpu-source-links" id="gpuSourceLinks" hidden></div>
+          </div>
+          <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">상세 설정</button>
+        </div>
+
+        <div class="settings-drawer" id="settingsDrawer" hidden>
+          <div class="settings-panel" id="hardwareEditor">
+            <div class="settings-group-title">상세 하드웨어 설정</div>
             <label class="field">
               <span>VRAM</span>
               <input id="vramGb" type="number" min="2" max="640" step="1" value="24" />
@@ -140,8 +142,8 @@
         </div>
 
         <div class="app-mode-toggle" role="tablist" aria-label="사용 모드">
-          <button type="button" class="app-mode-tab" data-app-mode="simple" aria-selected="false">🎯 빠른 추천</button>
-          <button type="button" class="app-mode-tab is-active" data-app-mode="expert" aria-selected="true">📋 전체 모델 탐색</button>
+          <button type="button" class="app-mode-tab is-active" data-app-mode="simple" aria-selected="true">빠른 추천</button>
+          <button type="button" class="app-mode-tab" data-app-mode="expert" aria-selected="false">전체 모델 탐색</button>
         </div>
 
         <div class="workload-tabs" role="tablist" aria-label="모델 종류">
@@ -414,16 +416,23 @@
       <section class="results-panel" aria-label="모델 검색 결과">
         <div class="calculation-basis-strip" id="calculationBasisStrip"></div>
 
-        <div class="simple-mode-panel" id="simpleModePanel" hidden>
+        <div class="simple-mode-panel" id="simpleModePanel">
           <div class="simple-mode-body">
-            <p>GPU·용도·우선순위 3가지만 고르면 지금 탭 기준 최적 모델 3개를 바로 추천합니다. 조건에 맞는 모델을 전부 직접 비교하려면 위의 <strong>전체 모델 탐색</strong>을 눌러주세요.</p>
+            <div class="simple-mode-head">
+              <div>
+                <span class="section-kicker">3단계 빠른 추천</span>
+                <h2>GPU에 맞는 모델 3개를 바로 추천합니다</h2>
+                <p>위에서 GPU를 선택하고 용도와 우선순위를 고르면 현재 워크로드의 실행 가능한 모델만 추립니다.</p>
+              </div>
+              <div class="simple-data-coverage" id="simpleDataCoverage" aria-label="데이터 범위"></div>
+            </div>
+            <div class="simple-current-gpu">
+              <span>현재 GPU</span>
+              <strong id="simpleModeGpuReadout">GPU 선택 필요</strong>
+            </div>
             <div class="simple-mode-questions">
               <label class="field">
-                <span>1. 사용할 GPU</span>
-                <span class="simple-mode-gpu-readout" id="simpleModeGpuReadout">GeForce RTX 4090 24GB</span>
-              </label>
-              <label class="field">
-                <span>2. 용도</span>
+                <span>용도</span>
                 <select id="simplePurpose">
                   <option value="general">일반 대화 / 비서</option>
                   <option value="korean">한국어 특화</option>
@@ -434,7 +443,7 @@
                 </select>
               </label>
               <label class="field">
-                <span>3. 우선순위</span>
+                <span>우선순위</span>
                 <select id="simplePriority">
                   <option value="balanced">균형 잡힌 추천</option>
                   <option value="quality">품질 우선</option>
@@ -443,12 +452,14 @@
                 </select>
               </label>
             </div>
-            <p class="simple-mode-hint">GPU를 바꾸려면 위쪽의 <strong>설정 변경</strong>에서 GPU를 먼저 선택하세요.</p>
             <div class="simple-mode-result" id="simpleModeResult"></div>
+            <div class="simple-explore-actions" id="simpleExploreActions" hidden>
+              <button type="button" class="ghost-button" id="simpleOpenExpert">전체 모델에서 비교하기</button>
+            </div>
           </div>
         </div>
 
-        <div id="expertModeSection">
+        <div id="expertModeSection" hidden>
           <div class="summary-filterbar" id="summaryGrid"></div>
           <div class="quant-recommendations" id="quantRecommendations" hidden></div>
 
@@ -545,6 +556,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260724-benchmark-cli1" defer></script>
+    <script src="./app.js?v=20260725-first-screen1" defer></script>
   </body>
 </html>
