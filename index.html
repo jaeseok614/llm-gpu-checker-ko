@@ -8,26 +8,29 @@
   </head>
   <body>
     <header class="app-header">
-      <div class="brand-block">
-        <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
-        <div>
-          <p class="eyebrow">AI Hardware Fit</p>
-          <h1>내 GPU에서 돌아가는 AI 모델 찾기</h1>
+      <div class="header-inner">
+        <div class="brand-block">
+          <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
+          <div>
+            <p class="eyebrow">AI Hardware Fit</p>
+            <h1>내 GPU에서 돌아가는 AI 모델 찾기</h1>
+          </div>
         </div>
+        <nav class="header-nav" aria-label="상단 메뉴">
+          <a href="#calculationBasis">계산 기준</a>
+          <a href="https://github.com/jaeseok614/llm-gpu-checker-ko#참고한-공식-자료" target="_blank" rel="noreferrer">데이터 출처</a>
+          <a href="#benchmarkSheet">벤치마크</a>
+          <a class="github-link" href="https://github.com/jaeseok614/llm-gpu-checker-ko" target="_blank" rel="noreferrer">GitHub</a>
+          <label class="language-select">
+            <span class="language-icon" aria-hidden="true">🌐</span>
+            <span class="sr-only">언어 선택</span>
+            <select id="languageSelect" data-language-toggle aria-label="언어 선택">
+              <option value="ko">한국어</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+        </nav>
       </div>
-      <nav class="header-nav" aria-label="상단 메뉴">
-        <a href="#calculationBasis">계산 기준</a>
-        <a href="https://github.com/jaeseok614/llm-gpu-checker-ko#참고한-공식-자료" target="_blank" rel="noreferrer">데이터 출처</a>
-        <a href="#benchmarkSheet">벤치마크</a>
-        <a href="https://github.com/jaeseok614/llm-gpu-checker-ko" target="_blank" rel="noreferrer">GitHub</a>
-        <label class="language-select-wrap">
-          <span class="sr-only">언어 선택</span>
-          <select class="language-select" data-language-toggle aria-label="언어 선택">
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-      </nav>
     </header>
 
     <main class="app-shell">
