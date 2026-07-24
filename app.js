@@ -4010,6 +4010,7 @@ function renderSimpleMode(hardware, allEstimates) {
           <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licensePolicy.commercialLabel)}</span>
           <span>VRAM ${formatGb(estimate.requiredGb)}</span>
           <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
+          <span>${uiLanguage === "en" ? `Estimated · ${confidence.label}` : `추정 · ${confidence.label}`}</span>
         </span>
         ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
         <span class="simple-pick-actions">
@@ -4127,7 +4128,9 @@ function buildCompareSummaryLine(rows) {
   const infeasible = rows.filter(({ estimate }) => GRADE_META[estimate.grade].score < GRADE_META.B.score);
 
   if (!feasible.length) {
-    return "비교한 모델 중 현재 실행 환경(GPU·VRAM 설정)에서 실행 가능한 모델이 없습니다.";
+    return uiLanguage === "en"
+      ? "None of the compared models is runnable with the current GPU and VRAM settings."
+      : "비교한 모델 중 현재 실행 환경(GPU·VRAM 설정)에서 실행 가능한 모델이 없습니다.";
   }
 
   const recommended = [...feasible].sort((a, b) => (
@@ -4135,18 +4138,22 @@ function buildCompareSummaryLine(rows) {
     || GRADE_META[b.estimate.grade].score - GRADE_META[a.estimate.grade].score
     || a.estimate.requiredGb - b.estimate.requiredGb
   ))[0];
-  const parts = [`현재 환경에서는 ${recommended.estimate.model.name} 모델을 권장합니다.`];
+  const parts = [uiLanguage === "en"
+    ? `We recommend ${recommended.estimate.model.name} for the current setup.`
+    : `현재 환경에서는 ${recommended.estimate.model.name} 모델을 권장합니다.`];
   const otherFeasible = feasible.filter((row) => row !== recommended);
 
   if (otherFeasible.length) {
-    parts.push(`${otherFeasible.map(({ estimate }) => estimate.model.name).join(", ")}도 실행 가능합니다.`);
+    parts.push(uiLanguage === "en"
+      ? `${otherFeasible.map(({ estimate }) => estimate.model.name).join(", ")} are also runnable.`
+      : `${otherFeasible.map(({ estimate }) => estimate.model.name).join(", ")}도 실행 가능합니다.`);
   }
 
   infeasible.forEach(({ estimate }) => {
     const deficitGb = estimate.requiredGb - estimate.effectiveVram;
     parts.push(deficitGb > 0
-      ? `${estimate.model.name}은(는) 가용 VRAM을 ${formatGb(deficitGb)} 초과합니다.`
-      : `${estimate.model.name}은(는) 안정적인 실행 여유 기준에 미달합니다.`);
+      ? (uiLanguage === "en" ? `${estimate.model.name} exceeds available VRAM by ${formatGb(deficitGb)}.` : `${estimate.model.name}은(는) 가용 VRAM을 ${formatGb(deficitGb)} 초과합니다.`)
+      : (uiLanguage === "en" ? `${estimate.model.name} does not meet the recommended headroom.` : `${estimate.model.name}은(는) 안정적인 실행 여유 기준에 미달합니다.`));
   });
 
   return parts.join(" ");

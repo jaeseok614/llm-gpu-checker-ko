@@ -423,6 +423,16 @@ describe("model comparison table rendering", () => {
 });
 
 describe("URL state save / restore", () => {
+  test("lang query restores English UI and survives a GPU rerender", () => {
+    const english = loadApp("https://example.com/?gpu=rtx4090-24&lang=en");
+    assert.equal(english.document.documentElement.lang, "en");
+    assert.equal(english.document.getElementById("settingsToggle").textContent, "Detailed settings");
+    assert.equal(english.document.getElementById("providerFilter").options[0].textContent, "All providers");
+    english.document.getElementById("gpuPreset").dispatchEvent(new english.Event("change", { bubbles: true }));
+    assert.equal(english.document.getElementById("settingsToggle").textContent, "Detailed settings");
+    assert.equal(new URLSearchParams(english.location.search).get("lang"), "en");
+  });
+
   test("share URL encodes the current GPU and context settings", () => {
     win.eval(`
       $("gpuPreset").value = "h100-sxm-80";
