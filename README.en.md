@@ -15,7 +15,7 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">Report a benchmark</a>
 </p>
 
-![AI Hardware Fit 10-second demo](./docs/demo.gif)
+![AI Hardware Fit current UI preview](./docs/preview.svg)
 
 ## Why this project?
 

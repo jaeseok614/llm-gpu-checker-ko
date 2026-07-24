@@ -15,7 +15,7 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">벤치마크 제보</a>
 </p>
 
-![AI Hardware Fit 10초 데모](./docs/demo.gif)
+![AI Hardware Fit 현재 UI 미리보기](./docs/preview.svg)
 
 ## 왜 만들었나요?
 

@@ -266,7 +266,56 @@ function translateDynamicUi(language = "en") {
   const replacements = ENGLISH_UI_REPLACEMENTS
     .map(([from, to]) => language === "en" ? [from, to] : [to, from])
     .sort((a, b) => b[0].length - a[0].length);
-  const replaceText = (value) => replacements.reduce((text, [from, to]) => text.split(from).join(to), value);
+  const replaceText = (value) => {
+    let text = replacements.reduce((current, [from, to]) => current.split(from).join(to), value);
+    if (language === "en") {
+      text = text
+        .replace(/가용 VRAM\s+([\d.]+)\s*GB/g, "Available VRAM $1 GB")
+        .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
+        .replace(/GPU\s+(\d+)개/g, "GPUs: $1")
+        .replace(/(\d+)K\s*·\s*동시\s*(\d+)명\s*·\s*llama\.cpp \/ Ollama\s*·\s*자동 추천/g, "$1K · $2 concurrent · llama.cpp / Ollama · Auto")
+        .replace(/(\d+)단계 빠른 추천/g, "$1-step quick recommendations")
+        .replace(/GPU에 맞는 모델 (\d+)개를 바로 추천합니다/g, "Get $1 models recommended for your GPU")
+        .replace(/현재 워크로드의 실행 가능한 모델만 추립니다\./g, "Only runnable models for this workload are shown.")
+        .replace(/(\d+)순위/g, "Rank $1")
+        .replace(/약\s*([\d.]+)~([\d.]+)\s*tok\/s/g, "Approx. $1–$2 tok/s")
+        .replace(/VRAM 여유\s*([\d.]+)%/g, "$1% VRAM headroom")
+        .replace(/가용 VRAM 안에 들어옴/g, "Fits available VRAM")
+        .replace(/한국어 지원/g, "Korean support")
+        .replace(/코딩 적합/g, "Good for coding")
+        .replace(/추론 태그/g, "Reasoning tag")
+        .replace(/모델 (\d+)개/g, "$1 models")
+        .replace(/(\d+)개 모델/g, "$1 models")
+        .replace(/현재 GPU/g, "Current GPU")
+        .replace(/GPU 프리셋/g, "GPU presets")
+        .replace(/출처 연결 평가/g, "Cited evaluations")
+        .replace(/AI 모델/g, "AI models")
+        .replace(/자동 추천/g, "Auto recommendation");
+    } else {
+      text = text
+        .replace(/Available VRAM\s+([\d.]+)\s*GB/g, "가용 VRAM $1 GB")
+        .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
+        .replace(/GPUs:\s*(\d+)/g, "GPU $1개")
+        .replace(/(\d+)K\s*·\s*(\d+) concurrent\s*·\s*llama\.cpp \/ Ollama\s*·\s*Auto/g, "$1K · 동시 $2명 · llama.cpp / Ollama · 자동 추천")
+        .replace(/(\d+)-step quick recommendations/g, "$1단계 빠른 추천")
+        .replace(/Get (\d+) models recommended for your GPU/g, "GPU에 맞는 모델 $1개를 바로 추천합니다")
+        .replace(/Only runnable models for this workload are shown\./g, "현재 워크로드의 실행 가능한 모델만 추립니다.")
+        .replace(/Rank (\d+)/g, "$1순위")
+        .replace(/Approx\.\s*([\d.]+)–([\d.]+) tok\/s/g, "약 $1~$2 tok/s")
+        .replace(/([\d.]+)% VRAM headroom/g, "VRAM 여유 $1%")
+        .replace(/Fits available VRAM/g, "가용 VRAM 안에 들어옴")
+        .replace(/Korean support/g, "한국어 지원")
+        .replace(/Good for coding/g, "코딩 적합")
+        .replace(/Reasoning tag/g, "추론 태그")
+        .replace(/(\d+) models/g, "모델 $1개")
+        .replace(/Current GPU/g, "현재 GPU")
+        .replace(/GPU presets/g, "GPU 프리셋")
+        .replace(/Cited evaluations/g, "출처 연결 평가")
+        .replace(/AI models/g, "AI 모델")
+        .replace(/Auto recommendation/g, "자동 추천");
+    }
+    return text;
+  };
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
