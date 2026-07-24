@@ -220,6 +220,46 @@ function t(key) {
   return MESSAGES[uiLanguage]?.[key] || MESSAGES.ko[key] || key;
 }
 
+function localizedText(value, fallback = "") {
+  if (value && typeof value === "object") {
+    return value[uiLanguage] || value.ko || value.en || fallback;
+  }
+  return value || fallback;
+}
+
+function modelSummary(model) {
+  const explicit = localizedText(model?.summary, "");
+  if (uiLanguage !== "en" || (model?.summary && typeof model.summary === "object")) return explicit;
+  const workload = model?.type === "embedding" ? "embedding" : model?.type === "reranker" ? "reranker" : model?.type?.includes("vlm") ? "vision-language" : model?.type === "ocr-pipeline" ? "OCR" : "language";
+  const tags = (model?.tags || []).slice(0, 3).map(tagLabel).join(", ");
+  return `${workload} model for ${tags || "general local AI workloads"}. The Korean description is available in the Korean interface.`;
+}
+
+function licenseCommercialLabel(policy) {
+  if (uiLanguage !== "en") return localizedText(policy?.commercialLabel, "");
+  const map = {
+    "상업 이용 가능": "Commercial use allowed",
+    "조건부 상업 이용": "Conditional commercial use",
+    "연구·비상업 전용": "Research / non-commercial only",
+    "비상업 이용만": "Non-commercial use only",
+    "약관 확인 필요": "Review terms",
+  };
+  return localizedText(policy?.commercialLabel, "") in map ? map[localizedText(policy.commercialLabel)] : localizedText(policy?.commercialLabel, "");
+}
+
+function licenseOpennessLabel(policy) {
+  if (uiLanguage !== "en") return localizedText(policy?.opennessLabel, "");
+  const map = { "오픈소스": "Open source", "공개 가중치": "Open weights", "연구용 공개 가중치": "Research weights", "비상업 공개": "Non-commercial", "라이선스 미표기": "License not stated" };
+  const value = localizedText(policy?.opennessLabel, "");
+  return map[value] || value;
+}
+
+function licenseSummary(policy) {
+  const value = localizedText(policy?.summary, "");
+  if (uiLanguage !== "en" || (policy?.summary && typeof policy.summary === "object")) return value;
+  return "Review the latest license and model-specific terms before commercial distribution.";
+}
+
 const UI_TRANSLATIONS = {
   en: {
     "계산 기준": "Methodology",
@@ -1238,7 +1278,7 @@ function refreshFilterOptions() {
     `<option value="all">${t("allLicenses")}</option>`,
     ...licenses.map((license) => {
       const policy = getLicensePolicy(license);
-      return `<option value="${escapeAttr(license)}">${escapeHtml(license)} · ${escapeHtml(policy.commercialLabel)}</option>`;
+      return `<option value="${escapeAttr(license)}">${escapeHtml(license)} · ${escapeHtml(licenseCommercialLabel(policy))}</option>`;
     }),
   ].join("");
   $("taskFilter").innerHTML = [
@@ -3242,9 +3282,9 @@ function getFilteredEstimates() {
         estimate.model.name,
         estimate.model.maker,
         estimate.model.license,
-        getLicensePolicy(estimate.model).commercialLabel,
-        getLicensePolicy(estimate.model).opennessLabel,
-        estimate.model.summary,
+        licenseCommercialLabel(getLicensePolicy(estimate.model)),
+        licenseOpennessLabel(getLicensePolicy(estimate.model)),
+        modelSummary(estimate.model),
         release.label,
         release.note,
         benchmark.label,
@@ -4007,7 +4047,7 @@ function renderSimpleMode(hardware, allEstimates) {
           <span class="grade-pill ${meta.className}">${meta.label}</span>
         </span>
         <span class="simple-pick-specs">
-          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licensePolicy.commercialLabel)}</span>
+          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
           <span>VRAM ${formatGb(estimate.requiredGb)}</span>
           <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
           <span>${uiLanguage === "en" ? `Estimated · ${confidence.label}` : `추정 · ${confidence.label}`}</span>
@@ -4222,7 +4262,7 @@ function renderCompareModal(allEstimates) {
             ${rows.map(({ estimate, licensePolicy }) => `
               <td>
                 <span class="compare-primary">${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)}</span>
-                <span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licensePolicy.commercialLabel)}</span>
+                <span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
               </td>
             `).join("")}
           </tr>
@@ -4361,7 +4401,7 @@ function renderModelRow(estimate) {
       <span class="model-cell provider-cell" data-label="공급사/라이선스">
         <strong>${escapeHtml(estimate.model.maker)}</strong>
         <small>${escapeHtml(estimate.model.license)}</small>
-        <span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licensePolicy.commercialLabel)}</span>
+        <span class="license-inline license-${escapeAttr(licensePolicy.commercialUse)}">${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
       </span>
       <span class="model-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[5])}">${escapeHtml(estimate.settingLabel)}</span>
       <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${formatGb(estimate.requiredGb)}</span>
@@ -4393,7 +4433,7 @@ function renderModelCard(estimate) {
         <span>
           <input type="checkbox" class="compare-checkbox" data-compare-key="${escapeAttr(key)}" ${compareSelected ? "checked" : ""} ${compareDisabled ? "disabled" : ""} title="비교에 추가 (최대 ${MAX_COMPARE_MODELS}개)" aria-label="${escapeAttr(estimate.model.name)} 비교에 추가" onclick="event.stopPropagation()" />
           <strong>${escapeHtml(estimate.model.name)}</strong>
-          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)} · ${escapeHtml(licensePolicy.commercialLabel)}</span>
+          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(estimate.model.license)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
         </span>
         <span class="grade-pill ${meta.className}">${meta.label}</span>
       </span>
@@ -4407,7 +4447,7 @@ function renderModelCard(estimate) {
       </span>
       <span class="tag-row">${tags}</span>
       <span class="recommendation-line">${escapeHtml(recommendation)}</span>
-      <span class="compact-summary">${escapeHtml(estimate.model.summary)}</span>
+      <span class="compact-summary">${escapeHtml(modelSummary(estimate.model))}</span>
     </button>
   `;
 }
@@ -4469,8 +4509,8 @@ function renderDetail() {
     <div class="detail-title">
       <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
-      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licensePolicy.commercialLabel)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
-      <p class="detail-description">${escapeHtml(model.summary)}</p>
+      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+      <p class="detail-description">${escapeHtml(modelSummary(model))}</p>
     </div>
 
     ${renderShareActions()}
@@ -4552,7 +4592,7 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
         ${renderInfoItem("파라미터", formatParams(model.params))}
         ${renderInfoItem("활성 파라미터", formatParams(model.active))}
         ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
-        ${renderInfoItem("라이선스", `${model.license} · ${licensePolicy.commercialLabel}`)}
+        ${renderInfoItem("라이선스", `${model.license} · ${licenseCommercialLabel(licensePolicy)}`)}
         ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
         ${renderInfoItem("대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
@@ -4590,8 +4630,8 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
     <div class="detail-title">
       <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
-      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licensePolicy.commercialLabel)} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
-      <p class="detail-description">${escapeHtml(model.summary)}</p>
+      <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))} · ${model.tags.map(tagLabel).map(escapeHtml).join(" · ")}</p>
+      <p class="detail-description">${escapeHtml(modelSummary(model))}</p>
     </div>
 
     ${renderShareActions()}
@@ -4669,7 +4709,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
         ${renderInfoItem("파라미터", formatParams(model.params || 0))}
         ${renderInfoItem(isVisionModel(model) ? "처리 유형" : "최대 입력", isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
         ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
-        ${renderInfoItem("라이선스", `${model.license} · ${licensePolicy.commercialLabel}`)}
+        ${renderInfoItem("라이선스", `${model.license} · ${licenseCommercialLabel(licensePolicy)}`)}
         ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
         ${renderInfoItem("대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
         ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
@@ -5233,11 +5273,11 @@ function renderLicenseSection(model) {
       <h3>라이선스 및 상업 이용</h3>
       <div class="license-summary-card">
         <div class="license-badges">
-          <span class="license-badge license-${escapeAttr(policy.commercialUse)}">${escapeHtml(policy.commercialLabel)}</span>
-          <span class="license-badge license-openness">${escapeHtml(policy.opennessLabel)}</span>
+          <span class="license-badge license-${escapeAttr(policy.commercialUse)}">${escapeHtml(licenseCommercialLabel(policy))}</span>
+          <span class="license-badge license-openness">${escapeHtml(licenseOpennessLabel(policy))}</span>
         </div>
         <strong>${escapeHtml(model.license)}</strong>
-        <p>${escapeHtml(policy.summary)}</p>
+        <p>${escapeHtml(licenseSummary(policy))}</p>
         <small>${escapeHtml(LICENSE_META.disclaimer || "참고용 요약입니다. 실제 배포 전 최신 원문 약관을 확인하세요.")}</small>
         ${sourceUrl ? `<div class="external-links">${renderExternalLink("라이선스 원문 확인", sourceUrl)}</div>` : ""}
       </div>
