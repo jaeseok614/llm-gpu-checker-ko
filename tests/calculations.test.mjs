@@ -330,6 +330,14 @@ describe("quick recommendation navigation", () => {
     assert.match(card.querySelector(".simple-pick-cta").textContent, /상세 계산 보기/);
     assert.ok(fresh.document.querySelector("[data-share-link]"));
     assert.ok(fresh.document.querySelector("[data-download-share-card]"));
+    assert.ok(fresh.document.querySelector("[data-share-3060]"));
+
+    const languageToggle = fresh.document.querySelector("[data-language-toggle]");
+    languageToggle.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.documentElement.lang, "en");
+    assert.equal(languageToggle.textContent, "한국어");
+    languageToggle.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.documentElement.lang, "ko");
 
     card.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.getElementById("modelDetail").hidden, false);

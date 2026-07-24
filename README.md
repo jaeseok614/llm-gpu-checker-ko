@@ -31,6 +31,7 @@
 - 빠른 추천 결과 링크 공유와 PNG 요약 카드 다운로드
 - 출처가 연결된 대표 공개 평가와 한국어 라이선스 이용 조건
 - Hugging Face 공개 모델 직접 계산과 로컬 벤치마크 CLI
+- 첫 실측 10개 수집 계획: [benchmark-first-10.md](docs/benchmark-first-10.md)
 
 ## 30초 사용법
 

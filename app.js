@@ -143,6 +143,40 @@ let compareModalOpen = false;
 const MAX_COMPARE_MODELS = 3;
 let appMode = "simple";
 let hasPrimaryGpuSelection = false;
+let uiLanguage = "ko";
+
+const UI_TRANSLATIONS = {
+  en: {
+    "계산 기준": "Methodology",
+    "데이터 출처": "Data sources",
+    "벤치마크": "Benchmarks",
+    "상세 설정": "Detailed settings",
+    "내 GPU에서 돌아가는 AI 모델 찾기": "Find AI models for your GPU",
+    "내 GPU": "My GPU",
+    "내 실행 환경": "My setup",
+    "GPU를 선택해 주세요": "Select a GPU",
+    "결과 링크 복사": "Copy result link",
+    "요약 카드 PNG": "Download PNG card",
+    "전체 모델에서 비교하기": "Compare all models",
+    "RTX 3060 링크": "RTX 3060 link",
+    "English": "한국어",
+  },
+  ko: {
+    "Methodology": "계산 기준",
+    "Data sources": "데이터 출처",
+    "Benchmarks": "벤치마크",
+    "Detailed settings": "상세 설정",
+    "Find AI models for your GPU": "내 GPU에서 돌아가는 AI 모델 찾기",
+    "My GPU": "내 GPU",
+    "My setup": "내 실행 환경",
+    "Select a GPU": "GPU를 선택해 주세요",
+    "Copy result link": "결과 링크 복사",
+    "Download PNG card": "요약 카드 PNG",
+    "Compare all models": "전체 모델에서 비교하기",
+    "RTX 3060 link": "RTX 3060 링크",
+    "한국어": "English",
+  },
+};
 
 const $ = (id) => document.getElementById(id);
 
@@ -194,6 +228,26 @@ function setAppMode(mode) {
   render();
 }
 
+function setUiLanguage(language) {
+  uiLanguage = language === "en" ? "en" : "ko";
+  try { window.localStorage?.setItem("ai-hardware-fit-language", uiLanguage); } catch {}
+  document.documentElement.lang = uiLanguage;
+  const dictionary = UI_TRANSLATIONS[uiLanguage];
+  const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker", "#hardwareHeadline"];
+  document.querySelectorAll(selectors.join(",")).forEach((node) => {
+    const source = node.dataset.i18nSource || node.textContent.trim();
+    node.dataset.i18nSource = source;
+    if (dictionary[source]) node.textContent = dictionary[source];
+  });
+  const toggle = document.querySelector("[data-language-toggle]");
+  if (toggle) toggle.textContent = uiLanguage === "en" ? "한국어" : "English";
+}
+
+function restoreUiLanguage() {
+  try { uiLanguage = window.localStorage?.getItem("ai-hardware-fit-language") === "en" ? "en" : "ko"; } catch { uiLanguage = "ko"; }
+  setUiLanguage(uiLanguage);
+}
+
 function refreshAppModeUi() {
   const isSimple = appMode === "simple";
   $("simpleModePanel").hidden = !isSimple;
@@ -217,6 +271,7 @@ function init() {
   renderPlacementModelList();
   renderPlacementSelectedChips();
   render({ syncUrl: false });
+  restoreUiLanguage();
 }
 
 function populateSelects() {
@@ -713,8 +768,14 @@ function bindEvents() {
     }
     if (event.target.closest("[data-download-share-card]")) {
       downloadShareCard("", event.target.closest("[data-download-share-card]"));
+      return;
+    }
+    if (event.target.closest("[data-share-3060]")) {
+      copyRecommendationLinkForGpu("rtx3060-12", event.target.closest("[data-share-3060]"));
     }
   });
+
+  document.querySelector("[data-language-toggle]")?.addEventListener("click", () => setUiLanguage(uiLanguage === "en" ? "ko" : "en"));
 
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
@@ -1656,6 +1717,14 @@ function renderShareActions() {
       </div>
     </div>
   `;
+}
+
+function copyRecommendationLinkForGpu(gpuId, button) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("gpu", gpuId);
+  url.searchParams.set("ui", "simple");
+  url.searchParams.delete("model");
+  copyTextToClipboard(url.toString(), button);
 }
 
 function getShareCardEntries(modelKeyOverride = "") {
@@ -3036,6 +3105,7 @@ function render(options = {}) {
   renderBenchmarkSheet();
 
   if (syncUrl) syncUrlState();
+  if (uiLanguage === "en") setUiLanguage("en");
 }
 
 function renderHardware(hardware, allEstimates) {
