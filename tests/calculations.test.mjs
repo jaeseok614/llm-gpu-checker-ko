@@ -333,10 +333,12 @@ describe("quick recommendation navigation", () => {
     assert.ok(fresh.document.querySelector("[data-share-3060]"));
 
     const languageToggle = fresh.document.querySelector("[data-language-toggle]");
-    languageToggle.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    languageToggle.value = "en";
+    languageToggle.dispatchEvent(new fresh.Event("change", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "en");
-    assert.equal(languageToggle.textContent, "한국어");
-    languageToggle.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(languageToggle.value, "en");
+    languageToggle.value = "ko";
+    languageToggle.dispatchEvent(new fresh.Event("change", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "ko");
 
     card.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));

@@ -125,7 +125,12 @@ h3 {
   text-decoration: none;
 }
 
-.language-toggle {
+.language-select-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.language-select {
   min-height: 28px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
@@ -138,7 +143,7 @@ h3 {
   padding: 0 9px;
 }
 
-.language-toggle:hover {
+.language-select:hover {
   background: var(--blue-soft);
 }
 

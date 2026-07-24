@@ -240,7 +240,7 @@ function setUiLanguage(language) {
     if (dictionary[source]) node.textContent = dictionary[source];
   });
   const toggle = document.querySelector("[data-language-toggle]");
-  if (toggle) toggle.textContent = uiLanguage === "en" ? "한국어" : "English";
+  if (toggle) toggle.value = uiLanguage;
 }
 
 function restoreUiLanguage() {
@@ -775,7 +775,7 @@ function bindEvents() {
     }
   });
 
-  document.querySelector("[data-language-toggle]")?.addEventListener("click", () => setUiLanguage(uiLanguage === "en" ? "ko" : "en"));
+  document.querySelector("[data-language-toggle]")?.addEventListener("change", (event) => setUiLanguage(event.target.value));
 
   $("hfImportForm").addEventListener("submit", importHfModel);
   $("hfClearButton").addEventListener("click", clearImportedHfModels);
