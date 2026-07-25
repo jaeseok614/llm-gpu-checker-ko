@@ -981,10 +981,16 @@ function setUiLanguage(language) {
     });
   }
   // Regenerate language-conditional dynamic text (e.g. the onboarding GPU
-  // count hint) BEFORE the dictionary sweep below, so translateDynamicUi
-  // only ever sees fully-Korean or fully-English text nodes to swap —
-  // never a half-translated leftover from the previous render() call.
+  // count hint, and the benchmark chart's metric descriptions/analysis
+  // sentences, which are full free-form sentences that a word-by-word
+  // dictionary sweep can never translate correctly) BEFORE the dictionary
+  // sweep below, so translateDynamicUi only ever sees fully-Korean or
+  // fully-English text nodes to swap — never a half-translated leftover
+  // from the previous render() call. Calling renderBenchmarkSheet() here
+  // (not the full render()) avoids recursing back into setUiLanguage(),
+  // since render() itself calls setUiLanguage("en") at its end.
   renderOnboardingQuickPicks();
+  renderBenchmarkSheet();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
 }
