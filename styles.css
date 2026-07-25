@@ -2842,10 +2842,25 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.benchmark-body {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 1400px) {
+  .benchmark-body {
+    /* Chart only ever needs ~350-630px (label + capped track + value); on a
+       wide panel the rest of the row was empty space. Put the table beside
+       it instead of stacking, so the panel width is actually used. */
+    grid-template-columns: minmax(360px, 460px) minmax(480px, 1fr);
+    align-items: start;
+  }
+}
+
 .benchmark-chart {
   display: grid;
+  align-content: start;
   gap: 14px;
-  margin-bottom: 12px;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -2912,6 +2927,13 @@ button:focus-visible {
 }
 
 .benchmark-chart-bar-fill {
+  /* This is a nested <span> inside another <span> (.benchmark-chart-bar-track).
+     The track itself gets blockified because it's a direct CSS grid item, but
+     this fill span is not a grid item, so it stays inline by default -- and
+     inline elements ignore the `width:NN%` set inline via JS. Without
+     `display: block` the fill was invisible even though its width was being
+     computed correctly. */
+  display: block;
   height: 100%;
   background: linear-gradient(to right, #1c6a90, var(--blue));
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
