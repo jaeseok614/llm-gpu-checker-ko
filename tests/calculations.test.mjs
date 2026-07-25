@@ -341,10 +341,18 @@ describe("quick recommendation navigation", () => {
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "ko");
 
-    card.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
-    assert.equal(fresh.document.getElementById("modelDetail").hidden, false);
-    assert.equal(fresh.document.querySelector(".detail-share-actions [data-share-link]") !== null, true);
-    assert.equal(fresh.document.querySelector(".detail-share-actions [data-download-share-card]") !== null, true);
+    // Quick-recommend cards expand inline (accordion) instead of opening
+    // the shared expert-mode drawer, so the click target is the card's own
+    // toggle button, and the assertions check for the inline detail region.
+    card.querySelector(".simple-pick-card-toggle")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("modelDetail").hidden, true, "quick-recommend clicks must not open the expert-mode drawer");
+    const expandedCard = fresh.document.querySelector(".simple-pick-card.is-expanded");
+    assert.ok(expandedCard, "expected the clicked card to expand inline");
+    const inlineDetail = expandedCard.querySelector(".simple-pick-detail");
+    assert.ok(inlineDetail, "expected inline detail content inside the expanded card");
+    assert.equal(inlineDetail.querySelector("[data-share-link]") !== null, true);
+    assert.equal(inlineDetail.querySelector("[data-download-share-card]") !== null, true);
 
     const purpose = fresh.document.getElementById("simplePurpose");
     const priority = fresh.document.getElementById("simplePriority");
