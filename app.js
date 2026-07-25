@@ -192,6 +192,8 @@ const MESSAGES = {
     model: "모델",
     gpu: "GPU",
     conditions: "조건",
+    environment: "환경",
+    scaleRelease: "규모/출시",
     metric: "지표",
     source: "출처",
     view: "보기",
@@ -227,6 +229,8 @@ const MESSAGES = {
     model: "Model",
     gpu: "GPU",
     conditions: "Conditions",
+    environment: "Environment",
+    scaleRelease: "Scale/Release",
     metric: "Metric",
     source: "Source",
     view: "View",
@@ -3475,74 +3479,17 @@ function tagSort(a, b, tag) {
 }
 
 function modelFreshnessScore(model) {
-  const text = model.name.toLowerCase();
-  let score = 0;
-  if (text.includes("mineru2.5-pro-2604")) score += 760;
-  if (text.includes("paddleocr-vl-1.6")) score += 755;
-  if (text.includes("deepseek-ocr-2")) score += 750;
-  if (text.includes("qwen3-vl")) score += 745;
-  if (text.includes("glm-4.1v")) score += 742;
-  if (text.includes("internvl3.5")) score += 740;
-  if (text.includes("deepseek-vl2")) score += 739;
-  if (text.includes("minicpm-v-4.6")) score += 738;
-  if (text.includes("kimi-vl")) score += 736;
-  if (text.includes("qwen3-embedding") || text.includes("qwen3-reranker")) score += 735;
-  if (text.includes("embeddinggemma")) score += 734;
-  if (text.includes("jina-embeddings-v4")) score += 733;
-  if (text.includes("granite-embedding") && text.includes("-r2")) score += 732;
-  if (text.includes("mxbai-rerank") && text.includes("-v2")) score += 731;
-  if (text.includes("bge-reranker-v2.5")) score += 731;
-  if (text.includes("jina-embeddings-v5")) score += 730;
-  if (text.includes("bge-code-v1")) score += 729;
-  if (text.includes("olmocr-2")) score += 728;
-  if (text.includes("gte-reranker-modernbert") || text.includes("modernbert-embed")) score += 727;
-  if (text.includes("gte-qwen2")) score += 725;
-  if (text.includes("dots.ocr")) score += 724;
-  if (text.includes("sfr-embedding-2")) score += 723;
-  if (text.includes("qwen2.5-vl")) score += 722;
-  if (text.includes("phi-4-multimodal")) score += 721;
-  if (text.includes("gpt-oss")) score += 720;
-  if (text.includes("aya-vision")) score += 719;
-  if (text.includes("smolvlm2")) score += 718;
-  if (text.includes("pixtral-large")) score += 716;
-  if (text.includes("pixtral")) score += 714;
-  if (text.includes("llava-onevision")) score += 712;
-  if (text.includes("molmo")) score += 710;
-  if (text.includes("llama-3.2") && text.includes("vision")) score += 708;
-  if (text.includes("qwen2-vl")) score += 706;
-  if (text.includes("qwen3")) score += 700;
-  if (text.includes("deepseek v3.2")) score += 690;
-  if (text.includes("llama 4")) score += 680;
-  if (text.includes("gemma 3")) score += 660;
-  if (text.includes("phi-4")) score += 650;
-  if (text.includes("gemma 4")) score += 675;
-  if (text.includes("qwen3.6")) score += 646;
-  if (text.includes("qwen3.5")) score += 645;
-  if (text.includes("mistral small 4")) score += 674;
-  if (text.includes("mistral medium 3.5")) score += 673;
-  if (text.includes("mistral large 3")) score += 672;
-  if (text.includes("ministral 3")) score += 671;
-  if (text.includes("magistral small 1.2")) score += 671;
-  if (text.includes("mistral small 3.1")) score += 640;
-  if (text.includes("mistral small 3.2")) score += 640;
-  if (text.includes("qwen3-next")) score += 638;
-  if (text.includes("qwen3-coder")) score += 637;
-  if (text.includes("granite 4.1")) score += 667;
-  if (text.includes("glm-4.5")) score += 666;
-  if (text.includes("kimi k2 thinking")) score += 665;
-  if (text.includes("a.x 4.0")) score += 664;
-  if (text.includes("exaone 4.0")) score += 663;
-  if (text.includes("hyperclovax")) score += 662;
-  if (text.includes("kanana 1.5")) score += 661;
-  if (text.includes("trillion 7b")) score += 658;
-  if (text.includes("bllossom-70b")) score += 657;
-  if (text.includes("devstral")) score += 630;
-  if (text.includes("qwen2.5")) score += 600;
-  if (text.includes("llama 3.3")) score += 590;
-  if (text.includes("llama 3.2")) score += 570;
-  if (text.includes("llama 3.1")) score += 560;
-  if (text.includes("gemma 2")) score += 540;
-  return score + Math.min(model.params, 1000) / 1000;
+  // Every model (LLM, embedding, reranker, OCR/VLM alike) carries a real
+  // releaseDate merged in via withModelMetadata(), so sort on that directly
+  // instead of hand-maintained name-keyword scoring -- the old version only
+  // recognized a hardcoded list of LLM/VLM name patterns, silently missing
+  // most embedding/reranker/OCR models (and anything added after the list
+  // was last updated), so "최신 모델순" wasn't actually chronological for
+  // those categories.
+  const timestamp = /^\d{4}-\d{2}-\d{2}/.test(model.releaseDate || "") ? Date.parse(model.releaseDate) : 0;
+  // Tiny param-size tie-break for same-day releases; timestamps differ by at
+  // least a full day (86400000ms) so this never outweighs a real date gap.
+  return timestamp + Math.min(model.params || 0, 1000) / 1000;
 }
 
 function recommendationScore(estimate) {
@@ -5841,7 +5788,21 @@ function renderBenchmarkSheet() {
   const qualityRows = collectQualityBenchmarks();
   const referenceRows = collectReferenceBenchmarks();
   const rows = [...qualityRows, ...externalBenchmarkRows, ...referenceRows, ...userMeasurementRows, ...projectMeasurementRows];
-  rows.forEach((row, index) => { row.rowKey = String(index); });
+  rows.forEach((row, index) => {
+    row.rowKey = String(index);
+    // qualityRows/referenceRows already carry params/active/releaseDate from
+    // their source model; the raw BENCHMARKS-derived rows (external/user/
+    // project measurements) only have modelName, so look the model up once
+    // to fill in the same fields for the 규모/출시 column.
+    if (row.params == null && row.releaseDate == null) {
+      const model = getAllModels().find((item) => item.name === row.modelName);
+      if (model) {
+        row.params = model.params;
+        row.active = model.active;
+        row.releaseDate = model.releaseDate;
+      }
+    }
+  });
   const errorStats = computeBenchmarkErrorStats();
   const externalReferenceCount = qualityRows.length + externalBenchmarkRows.length + referenceRows.length;
 
@@ -5904,8 +5865,8 @@ function renderBenchmarkSheet() {
         <span></span>
         <span>${t("type")}</span>
         <span>${t("model")}</span>
-        <span>${t("gpu")}</span>
-        <span>${t("conditions")}</span>
+        <span>${t("environment")}</span>
+        <span>${t("scaleRelease")}</span>
         <span>${t("metric")}</span>
         <span>${t("source")}</span>
       </div>
@@ -5920,8 +5881,8 @@ function renderBenchmarkSheet() {
           </span>
           <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}"><span class="evidence-code">${benchmarkEvidenceCode(row.rowType)}</span>${escapeHtml(row.rowType === "외부 공개 참고값" ? benchmarkTypeLabel : row.rowType === "사용자 측정" ? userTypeLabel : projectTypeLabel)}</span></span>
           <span>${escapeHtml(row.modelName)}</span>
-          <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
-          <span>${escapeHtml(row.setting || row.runtime || row.workload || "-")}</span>
+          <span>${escapeHtml(formatBenchmarkEnvironment(row))}</span>
+          <span>${escapeHtml(formatBenchmarkScaleRelease(row))}</span>
           <span>${escapeHtml(formatBenchmarkMetric(row))}</span>
           <span>${row.sourceUrl ? renderExternalLink(t("view"), row.sourceUrl) : "-"}</span>
         </div>
@@ -5952,6 +5913,9 @@ function collectQualityBenchmarks() {
       sourceUrl: model.qualityBenchmark.sourceUrl,
       qualityValue: typeof model.qualityBenchmark.value === "number" ? model.qualityBenchmark.value : null,
       qualityMetricName: model.qualityBenchmark.metric || model.qualityBenchmark.label,
+      params: model.params,
+      active: model.active,
+      releaseDate: model.releaseDate,
     }));
 }
 
@@ -5970,6 +5934,9 @@ function collectReferenceBenchmarks() {
         pagesPerSecond: model.reference.pagesPerSecond,
         peakVramGb: model.reference.peakVramGb,
         sourceUrl: model.sourceUrl,
+        params: model.params,
+        active: model.active,
+        releaseDate: model.releaseDate,
       };
     });
 }
@@ -5996,6 +5963,32 @@ function formatBenchmarkMetric(row) {
   if (row.pagesPerSecond) return `${formatThroughput(row.pagesPerSecond, "page/s")}${row.peakVramGb ? ` · ${formatGb(row.peakVramGb)}` : ""}`;
   if (row.metric) return row.metric;
   return "-";
+}
+
+// GPU and condition used to be two separate columns, but for the large
+// majority of rows (published quality benchmarks like MMLU) neither field is
+// hardware-specific, so both sat empty/generic side by side. Merge them into
+// one "환경" column and only show what's actually meaningful for the row.
+function formatBenchmarkEnvironment(row) {
+  const gpu = row.gpu && row.gpu !== "-" ? row.gpu : row.gpuId;
+  const condition = row.setting || row.runtime || row.workload;
+  if (gpu && condition) return `${gpu} · ${condition}`;
+  return gpu || condition || "-";
+}
+
+// Frees up the space the empty GPU column used to take with something that's
+// actually useful for every row: model scale (and active/MoE params, if
+// smaller) plus release date, so the table can be scanned for recency/size
+// without opening each model's detail panel.
+function formatBenchmarkScaleRelease(row) {
+  const parts = [];
+  if (row.params) {
+    parts.push(row.active && row.active < row.params
+      ? `${formatParams(row.params)} A${formatParams(row.active)}`
+      : formatParams(row.params));
+  }
+  if (row.releaseDate) parts.push(row.releaseDate);
+  return parts.length ? parts.join(" · ") : "-";
 }
 
 function closeModelDetail() {

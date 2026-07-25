@@ -2797,12 +2797,16 @@ button:focus-visible {
 }
 
 .benchmark-table {
-  min-width: 950px;
+  min-width: 900px;
 }
 
 .benchmark-row {
   display: grid;
-  grid-template-columns: 34px 92px minmax(240px, 1.5fr) 170px 200px 130px 80px;
+  /* GPU and 조건 used to be separate 170px/200px columns, but both were "-"
+     or generic boilerplate for most rows (quality benchmarks aren't
+     hardware-specific). Merged into one 환경 column and used the freed width
+     for 규모/출시 (params + release date), which is meaningful on every row. */
+  grid-template-columns: 34px 92px minmax(220px, 1.5fr) 190px 130px 130px 80px;
   gap: 12px;
   align-items: center;
   min-height: 44px;
