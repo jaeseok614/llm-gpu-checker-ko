@@ -315,6 +315,36 @@ const UI_TRANSLATIONS = {
   },
 };
 
+// Static <option> presets whose entire label is just "숫자+단위" (e.g. "40개",
+// "16쌍"). These can't go through the generic dictionary/regex sweep below:
+// the exact same "N개" shape is reused across unrelated presets (embedding
+// batch, reranker candidates, ...) with different meanings, so one shared
+// rule would mislabel one preset using another's wording. Keyed by the
+// option's stable `value` attribute (not its text) and written directly on
+// every language switch, so unlike the dictionary-cache mechanism above this
+// never gets stuck on a stale/partial translation after toggling back and
+// forth.
+const pluralize = (value, singular, plural) => `${value} ${Number(value) === 1 ? singular : plural}`;
+
+const PRESET_OPTION_LABELS = {
+  concurrencyPreset: { ko: (v) => `${v}명`, en: (v) => `${v} concurrent` },
+  embeddingBatchSizePreset: { ko: (v) => `${v}개`, en: (v) => pluralize(v, "text", "texts") },
+  rerankerCandidatesPreset: { ko: (v) => `${v}개`, en: (v) => pluralize(v, "candidate", "candidates") },
+  rerankerBatchSizePreset: { ko: (v) => `${v}쌍`, en: (v) => pluralize(v, "pair", "pairs") },
+  ocrBatchSizePreset: { ko: (v) => `${v}페이지`, en: (v) => pluralize(v, "page", "pages") },
+};
+
+function translatePresetOptionLabels(language) {
+  Object.entries(PRESET_OPTION_LABELS).forEach(([selectId, labels]) => {
+    const select = $(selectId);
+    if (!select) return;
+    [...select.options].forEach((option) => {
+      if (option.value === "custom") return; // "직접" already handled by the dictionary sweep
+      option.textContent = language === "en" ? labels.en(option.value) : labels.ko(option.value);
+    });
+  });
+}
+
 const ENGLISH_UI_REPLACEMENTS = [
   ["내 GPU에서 돌아가는 AI 모델 찾기", "Find AI models for your GPU"],
   ["상태", "Status"],
@@ -724,9 +754,18 @@ function escapeRegExp(value) {
 function compileBoundarySafeReplacements(pairs) {
   const hangulStart = new RegExp(`^[${HANGUL_RANGE}]`);
   const hangulEnd = new RegExp(`[${HANGUL_RANGE}]$`);
+  // Same idea as the Hangul guard, but for Latin words: without it, a short
+  // bare entry like ["임베딩", "Embedding"] reversed for the en→ko direction
+  // becomes a plain "Embedding" match with no boundary check, which also
+  // matches the "Embedding" prefix inside the longer proper noun "Text
+  // Embeddings Inference" -- replacing just the prefix and leaving a
+  // dangling "s" behind ("Text 임베딩s Inference"). Guard Latin-letter edges
+  // the same way so short entries never eat into a longer English word.
+  const latinStart = /^[A-Za-z]/;
+  const latinEnd = /[A-Za-z]$/;
   return pairs.map(([from, to]) => {
-    const lookbehind = hangulStart.test(from) ? `(?<![${HANGUL_RANGE}])` : "";
-    const lookahead = hangulEnd.test(from) ? `(?![${HANGUL_RANGE}])` : "";
+    const lookbehind = hangulStart.test(from) ? `(?<![${HANGUL_RANGE}])` : latinStart.test(from) ? "(?<![A-Za-z])" : "";
+    const lookahead = hangulEnd.test(from) ? `(?![${HANGUL_RANGE}])` : latinEnd.test(from) ? "(?![A-Za-z])" : "";
     return { regex: new RegExp(`${lookbehind}${escapeRegExp(from)}${lookahead}`, "g"), to };
   });
 }
@@ -750,6 +789,7 @@ function translateDynamicUi(language = "en") {
         .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
         .replace(/GPU\s+(\d+)개/g, "GPUs: $1")
         .replace(/(\d+)K\s*·\s*동시\s*(\d+)명\s*·\s*llama\.cpp \/ Ollama\s*·\s*자동 추천/g, "$1K · $2 concurrent · llama.cpp / Ollama · Auto")
+        .replace(/질의 (\d+) \+ 문서 (\d+) · 후보 (\d+)개/g, "Query $1 + Document $2 · $3 candidates")
         .replace(/(\d+)단계 빠른 추천/g, "$1-step quick recommendations")
         .replace(/GPU에 맞는 모델 (\d+)개를 바로 추천합니다/g, "Get $1 models recommended for your GPU")
         .replace(/(\d+)순위/g, "Rank $1")
@@ -797,6 +837,7 @@ function translateDynamicUi(language = "en") {
         .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
         .replace(/GPUs:\s*(\d+)/g, "GPU $1개")
         .replace(/(\d+)K\s*·\s*(\d+) concurrent\s*·\s*llama\.cpp \/ Ollama\s*·\s*Auto/g, "$1K · 동시 $2명 · llama.cpp / Ollama · 자동 추천")
+        .replace(/Query (\d+) \+ Document (\d+) · (\d+) candidates/g, "질의 $1 + 문서 $2 · 후보 $3개")
         .replace(/(\d+)-step quick recommendations/g, "$1단계 빠른 추천")
         .replace(/Get (\d+) models recommended for your GPU/g, "GPU에 맞는 모델 $1개를 바로 추천합니다")
         .replace(/Rank (\d+)/g, "$1순위")
@@ -944,6 +985,7 @@ function setUiLanguage(language) {
   // only ever sees fully-Korean or fully-English text nodes to swap —
   // never a half-translated leftover from the previous render() call.
   renderOnboardingQuickPicks();
+  translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
 }
 
@@ -2217,7 +2259,10 @@ function runGpuPlacement() {
   if (!result) return;
 
   if (!modelKeys.length) {
-    result.innerHTML = `<p class="gpu-placement-empty">동시에 띄울 모델을 하나 이상 선택해주세요.</p>`;
+    const emptyMessage = uiLanguage === "en"
+      ? "Select at least one model to run together."
+      : "동시에 띄울 모델을 하나 이상 선택해주세요.";
+    result.innerHTML = `<p class="gpu-placement-empty">${escapeHtml(emptyMessage)}</p>`;
     if (baselineEl) {
       baselineEl.hidden = true;
       baselineEl.textContent = "";
