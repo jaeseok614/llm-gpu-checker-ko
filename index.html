@@ -4,6 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Hardware Fit — 내 GPU에서 돌아가는 AI 모델 찾기</title>
+    <script>
+      (function () {
+        // Set the theme before first paint to avoid a light-mode flash for
+        // users with a saved/OS dark preference. Kept in sync with
+        // restoreUiTheme()/setUiTheme() in app.js, which take over from here.
+        try {
+          var stored = window.localStorage.getItem("ai-hardware-fit-theme");
+          var isDark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+          if (isDark) document.documentElement.setAttribute("data-theme", "dark");
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="./styles.css?v=20260725-onboarding1" />
   </head>
   <body>
@@ -21,6 +33,10 @@
           <div class="language-toggle" data-language-toggle role="group" aria-label="언어 선택">
             <button type="button" data-lang="ko">한국어</button>
             <button type="button" data-lang="en">EN</button>
+          </div>
+          <div class="theme-toggle" data-theme-toggle role="group" aria-label="테마 선택">
+            <button type="button" data-theme="light">라이트</button>
+            <button type="button" data-theme="dark">다크</button>
           </div>
         </nav>
       </div>

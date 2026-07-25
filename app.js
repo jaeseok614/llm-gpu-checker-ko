@@ -160,6 +160,7 @@ const MAX_BENCHMARK_COMPARE = 6;
 let appMode = "simple";
 let hasPrimaryGpuSelection = false;
 let uiLanguage = "ko";
+let uiTheme = "light";
 
 const MESSAGES = {
   ko: {
@@ -993,6 +994,11 @@ function setUiLanguage(language) {
   renderBenchmarkSheet();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
+  // Refresh the theme-toggle button labels ("라이트"/"다크" vs "Light"/"Dark"),
+  // which depend on uiLanguage but live outside the dictionary sweep above.
+  document.querySelectorAll("[data-theme-toggle] [data-theme]").forEach((button) => {
+    button.textContent = THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage];
+  });
 }
 
 function restoreUiLanguage() {
@@ -1003,6 +1009,41 @@ function restoreUiLanguage() {
     try { uiLanguage = window.localStorage?.getItem("ai-hardware-fit-language") === "en" ? "en" : "ko"; } catch { uiLanguage = "ko"; }
   }
   setUiLanguage(uiLanguage);
+}
+
+const THEME_TOGGLE_LABELS = {
+  light: { ko: "라이트", en: "Light" },
+  dark: { ko: "다크", en: "Dark" },
+};
+
+function setUiTheme(theme) {
+  uiTheme = theme === "dark" ? "dark" : "light";
+  try { window.localStorage?.setItem("ai-hardware-fit-theme", uiTheme); } catch {}
+  if (uiTheme === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  const toggle = document.querySelector("[data-theme-toggle]");
+  if (toggle) {
+    toggle.querySelectorAll("[data-theme]").forEach((button) => {
+      const active = button.dataset.theme === uiTheme;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+      button.textContent = THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage];
+    });
+  }
+}
+
+function restoreUiTheme() {
+  let storedTheme = null;
+  try { storedTheme = window.localStorage?.getItem("ai-hardware-fit-theme"); } catch { storedTheme = null; }
+  if (storedTheme === "dark" || storedTheme === "light") {
+    setUiTheme(storedTheme);
+  } else {
+    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    setUiTheme(prefersDark ? "dark" : "light");
+  }
 }
 
 function refreshAppModeUi() {
@@ -1026,6 +1067,7 @@ function refreshAppModeUi() {
 }
 
 function init() {
+  restoreUiTheme();
   restoreImportedHfModels();
   populateSelects();
   applyUrlState();
@@ -1599,6 +1641,12 @@ function bindEvents() {
     const button = event.target.closest("[data-lang]");
     if (!button) return;
     setUiLanguage(button.dataset.lang);
+  });
+
+  document.querySelector("[data-theme-toggle]")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-theme]");
+    if (!button) return;
+    setUiTheme(button.dataset.theme);
   });
 
   $("hfImportForm").addEventListener("submit", importHfModel);
