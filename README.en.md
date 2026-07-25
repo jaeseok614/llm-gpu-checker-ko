@@ -9,13 +9,13 @@
 </p>
 
 <p align="center">
-  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/"><strong>Open the web app</strong></a>
+  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the English web app</strong></a>
   · <a href="./docs/methodology.md">Methodology</a>
   · <a href="./README.md">한국어</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">Report a benchmark</a>
 </p>
 
-![AI Hardware Fit current UI preview](./docs/preview.svg)
+![AI Hardware Fit current UI preview](./docs/english-ui-desktop.png)
 
 ## Why this project?
 

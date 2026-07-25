@@ -912,7 +912,7 @@ function setUiLanguage(language) {
   window.history.replaceState({}, "", url);
   document.documentElement.lang = uiLanguage;
   const dictionary = UI_TRANSLATIONS[uiLanguage];
-  const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker", "#hardwareHeadline"];
+  const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
     const source = node.dataset.i18nSource || node.textContent.trim();
     node.dataset.i18nSource = source;

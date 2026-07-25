@@ -9,13 +9,13 @@
 </p>
 
 <p align="center">
-  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/"><strong>웹에서 사용하기</strong></a>
+  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 사용하기</strong></a>
   · <a href="./docs/methodology.md">계산 기준</a>
   · <a href="./README.en.md">English</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">벤치마크 제보</a>
 </p>
 
-![AI Hardware Fit 현재 UI 미리보기](./docs/preview.svg)
+![AI Hardware Fit 현재 UI 미리보기](./docs/english-ui-desktop.png)
 
 ## 왜 만들었나요?
 

@@ -2903,6 +2903,11 @@ button:focus-visible {
   .header-nav {
     gap: 14px;
     overflow-x: auto;
+    min-width: 0;
+  }
+
+  .language-toggle {
+    margin-left: 0;
   }
 
   .app-shell,
@@ -3062,6 +3067,21 @@ button:focus-visible {
   .simple-mode-head {
     flex-direction: column;
     gap: 8px;
+  }
+
+  html[lang="en"] .simple-mode-head > div:first-child {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .app-mode-toggle {
+    padding: 10px 12px;
+  }
+
+  .app-mode-tab {
+    min-width: 0;
+    padding: 0 6px;
+    white-space: normal;
   }
 
   .simple-mode-head h2 {
@@ -3225,6 +3245,12 @@ button:focus-visible {
   }
 
   .language-icon {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .header-nav .github-link {
     display: none;
   }
 }

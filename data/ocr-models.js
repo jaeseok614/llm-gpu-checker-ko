@@ -44,7 +44,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
       int8: { residentWeightsGb: 0.08, baseRuntimeGb: 0.32, activationGbPerMegapixel: 0.032, batchOverheadGb: 0.021 },
     },
     reference: { gpuId: "t4-16", bandwidth: 320, width: 1654, height: 2339, batch: 1, pagesPerSecond: 5.6 },
-    summary: { ko: "엣지/IoT 성격의 초경량 OCR 파이프라인입니다. 낮은 VRAM에서 텍스트와 좌표 추출을 우선할 때 적합합니다.", en: "An ultra-lightweight OCR pipeline for edge/IoT use, suited for prioritizing text and coordinate extraction on low VRAM." },
+    summary: "엣지/IoT 성격의 초경량 OCR 파이프라인입니다. 낮은 VRAM에서 텍스트와 좌표 추출을 우선할 때 적합합니다.",
   },
   {
     type: "ocr-pipeline",
@@ -62,7 +62,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
       int8: { residentWeightsGb: 0.15, baseRuntimeGb: 0.4, activationGbPerMegapixel: 0.052, batchOverheadGb: 0.032 },
     },
     reference: { gpuId: "t4-16", bandwidth: 320, width: 1654, height: 2339, batch: 1, pagesPerSecond: 3.8 },
-    summary: { ko: "정확도와 속도를 균형 있게 보는 모바일/데스크톱용 OCR 파이프라인입니다.", en: "A mobile/desktop OCR pipeline that balances accuracy and speed." },
+    summary: "정확도와 속도를 균형 있게 보는 모바일/데스크톱용 OCR 파이프라인입니다.",
   },
   {
     type: "ocr-pipeline",
@@ -80,7 +80,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
       int8: { residentWeightsGb: 0.28, baseRuntimeGb: 0.6, activationGbPerMegapixel: 0.12, batchOverheadGb: 0.07 },
     },
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 1654, height: 2339, batch: 1, pagesPerSecond: 7.7 },
-    summary: { ko: "PP-OCRv6의 서버 지향 기본 후보입니다. 최신 경량 OCR 계열로, 좌표 추출과 대량 처리에 적합합니다.", en: "The server-oriented default pick in the PP-OCRv6 line, a recent lightweight OCR family suited for coordinate extraction and bulk processing." },
+    summary: "PP-OCRv6의 서버 지향 기본 후보입니다. 최신 경량 OCR 계열로, 좌표 추출과 대량 처리에 적합합니다.",
   },
   {
     type: "ocr-pipeline",
@@ -98,7 +98,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
       int8: { residentWeightsGb: 10.2, baseRuntimeGb: 3.5, activationGbPerMegapixel: 0.34, batchOverheadGb: 0.22 },
     },
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 2480, height: 3508, batch: 1, pagesPerSecond: 0.89, peakVramGb: 22.3 },
-    summary: { ko: "레이아웃, 표, 수식, 차트 등 문서 파싱 모듈을 포함하는 무거운 OCR/문서 분석 파이프라인입니다.", en: "A heavier OCR/document-analysis pipeline that bundles layout, table, formula, and chart parsing modules." },
+    summary: "레이아웃, 표, 수식, 차트 등 문서 파싱 모듈을 포함하는 무거운 OCR/문서 분석 파이프라인입니다.",
   },
   visionModel({
     type: "document-vlm",
@@ -115,7 +115,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "korean", "multilingual", "layout", "table", "math", "chart", "seal", "spotting", "markdown"],
     sourceUrl: "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6",
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 2480, height: 3508, batch: 1, pagesPerSecond: 1.35 },
-    summary: { ko: "PaddleOCR-VL 1.6 기반 0.9B 문서 VLM입니다. 텍스트, 표, 수식, 차트, 인장, spotting 출력에 초점을 둡니다.", en: "A 0.9B document VLM based on PaddleOCR-VL 1.6, focused on text, table, formula, chart, seal, and spotting outputs." },
+    summary: "PaddleOCR-VL 1.6 기반 0.9B 문서 VLM입니다. 텍스트, 표, 수식, 차트, 인장, spotting 출력에 초점을 둡니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -132,7 +132,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "korean", "multilingual", "layout", "table", "math", "chart", "markdown"],
     sourceUrl: "https://huggingface.co/PaddlePaddle/PaddleOCR-VL",
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 2480, height: 3508, batch: 1, pagesPerSecond: 1.2 },
-    summary: { ko: "109개 언어와 복잡 문서 요소 인식을 지원하는 PaddleOCR-VL 0.9B 기준 모델입니다.", en: "The baseline PaddleOCR-VL 0.9B model, supporting 109 languages and complex document-element recognition." },
+    summary: "109개 언어와 복잡 문서 요소 인식을 지원하는 PaddleOCR-VL 0.9B 기준 모델입니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -149,7 +149,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "pdf", "markdown", "layout", "table", "math", "chart"],
     sourceUrl: "https://huggingface.co/opendatalab/MinerU2.5-Pro-2604-1.2B",
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 2480, height: 3508, batch: 1, pagesPerSecond: 2.12 },
-    summary: { ko: "PDF-to-Markdown 문서 파싱에 특화된 1.2B급 MinerU2.5-Pro 모델입니다. vLLM 기반 동시 처리 기준이 공개되어 있습니다.", en: "A 1.2B-class MinerU2.5-Pro model specialized in PDF-to-Markdown document parsing, with published vLLM-based concurrency benchmarks." },
+    summary: "PDF-to-Markdown 문서 파싱에 특화된 1.2B급 MinerU2.5-Pro 모델입니다. vLLM 기반 동시 처리 기준이 공개되어 있습니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -166,7 +166,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "multilingual", "layout", "markdown"],
     sourceUrl: "https://huggingface.co/deepseek-ai/DeepSeek-OCR-2",
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 2480, height: 3508, batch: 1, pagesPerSecond: 1.05 },
-    summary: { ko: "Transformers, vLLM, SGLang 실행을 지원하는 DeepSeek 문서 OCR/VL 모델입니다.", en: "A DeepSeek document OCR/VL model that supports Transformers, vLLM, and SGLang execution." },
+    summary: "Transformers, vLLM, SGLang 실행을 지원하는 DeepSeek 문서 OCR/VL 모델입니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -183,7 +183,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "multilingual", "layout", "table", "math", "coordinate", "markdown"],
     sourceUrl: "https://huggingface.co/rednote-hilab/dots.ocr",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.55 },
-    summary: { ko: "레이아웃 검출과 콘텐츠 인식을 단일 VLM로 통합한 다국어 문서 파서입니다. 모델 카드 파일 기준은 3B, 설명상 LLM foundation은 1.7B입니다.", en: "A multilingual document parser that unifies layout detection and content recognition in a single VLM. The model-card files list 3B, while the description cites a 1.7B LLM foundation." },
+    summary: "레이아웃 검출과 콘텐츠 인식을 단일 VLM로 통합한 다국어 문서 파서입니다. 모델 카드 파일 기준은 3B, 설명상 LLM foundation은 1.7B입니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -200,7 +200,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "multilingual", "layout", "table", "math", "chart", "screen", "markdown"],
     sourceUrl: "https://huggingface.co/rednote-hilab/dots.mocr",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.48 },
-    summary: { ko: "문서 파싱뿐 아니라 차트, UI, 과학 도형 같은 구조적 그래픽을 SVG 형태로 복원하는 최신 dots 계열 모델입니다.", en: "A recent model in the dots family that goes beyond document parsing to reconstruct structured graphics — charts, UI, scientific figures — as SVG." },
+    summary: "문서 파싱뿐 아니라 차트, UI, 과학 도형 같은 구조적 그래픽을 SVG 형태로 복원하는 최신 dots 계열 모델입니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -217,7 +217,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["ocr", "document", "document-vlm", "vlm", "pdf", "markdown", "table", "math", "handwriting", "layout"],
     sourceUrl: "https://huggingface.co/allenai/olmOCR-2-7B-1025",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1288, height: 1288, batch: 1, pagesPerSecond: 0.65 },
-    summary: { ko: "Qwen2.5-VL 7B 기반의 PDF-to-Markdown 문서 OCR 모델입니다. 표, 수식, 필기, 다단 문서 처리에 강점을 둡니다.", en: "A PDF-to-Markdown document OCR model built on Qwen2.5-VL 7B, strong at tables, formulas, handwriting, and multi-column documents." },
+    summary: "Qwen2.5-VL 7B 기반의 PDF-to-Markdown 문서 OCR 모델입니다. 표, 수식, 필기, 다단 문서 처리에 강점을 둡니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -242,7 +242,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
       int8: { baseRuntimeGb: 0.78, activationGbPerMegapixel: 0.23, batchOverheadGb: 0.07 },
     },
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 1.2 },
-    summary: { ko: "문서, 표, 수식 등 다양한 OCR 출력을 생성하는 580M급 end-to-end OCR 비교군입니다.", en: "A 580M-class end-to-end OCR comparison model that produces varied outputs — documents, tables, formulas, and more." },
+    summary: "문서, 표, 수식 등 다양한 OCR 출력을 생성하는 580M급 end-to-end OCR 비교군입니다.",
   }),
   visionModel({
     type: "document-vlm",
@@ -267,7 +267,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
       int8: { baseRuntimeGb: 0.86, activationGbPerMegapixel: 0.25, batchOverheadGb: 0.08 },
     },
     reference: { gpuId: "rtx5090-32", bandwidth: 1792, width: 1654, height: 2339, batch: 128, pagesPerSecond: 5 },
-    summary: { ko: "OCR, 레이아웃 분석, 표 인식, 읽기 순서를 함께 제공하는 650M급 문서 지능 비교군입니다.", en: "A 650M-class document-intelligence comparison model offering OCR, layout analysis, table recognition, and reading order together." },
+    summary: "OCR, 레이아웃 분석, 표 인식, 읽기 순서를 함께 제공하는 650M급 문서 지능 비교군입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -284,7 +284,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "long", "screen", "agent", "mobile"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.9 },
-    summary: { ko: "로컬 GPU에서 문서 질의응답, OCR-like 추출, 화면 이해를 같이 시험하기 좋은 Qwen3-VL 소형 모델입니다.", en: "A small Qwen3-VL model good for testing document QA, OCR-like extraction, and screen understanding together on a local GPU." },
+    summary: "로컬 GPU에서 문서 질의응답, OCR-like 추출, 화면 이해를 같이 시험하기 좋은 Qwen3-VL 소형 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -301,7 +301,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "long", "screen", "agent"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.62 },
-    summary: { ko: "품질과 실행 부담 사이의 균형을 보는 Qwen3-VL 4B 범용 비전-언어 모델입니다.", en: "A general-purpose Qwen3-VL 4B vision-language model that balances quality against runtime cost." },
+    summary: "품질과 실행 부담 사이의 균형을 보는 Qwen3-VL 4B 범용 비전-언어 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -318,7 +318,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "long", "screen", "agent", "reasoning"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.38 },
-    summary: { ko: "장문 문서 구조 분석, 화면 이해, 멀티모달 질의응답을 함께 보는 Qwen3-VL 8B 모델입니다.", en: "A Qwen3-VL 8B model for long-document structure analysis, screen understanding, and multimodal QA together." },
+    summary: "장문 문서 구조 분석, 화면 이해, 멀티모달 질의응답을 함께 보는 Qwen3-VL 8B 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -336,7 +336,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "table", "grounding", "edge"],
     sourceUrl: "https://huggingface.co/deepseek-ai/deepseek-vl2-tiny",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.52 },
-    summary: { ko: "DeepSeek-VL2의 경량 MoE 모델입니다. 3.37B total / 1B activated 구조라 표기 파라미터 대비 추론 부담이 낮습니다.", en: "The lightweight MoE model in DeepSeek-VL2, with a 3.37B total / 1B activated structure, so inference cost is lower than the listed parameter count suggests." },
+    summary: "DeepSeek-VL2의 경량 MoE 모델입니다. 3.37B total / 1B activated 구조라 표기 파라미터 대비 추론 부담이 낮습니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -354,7 +354,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "table", "grounding", "reasoning"],
     sourceUrl: "https://huggingface.co/deepseek-ai/deepseek-vl2-small",
     reference: { gpuId: "a100-40", bandwidth: 1555, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.28 },
-    summary: { ko: "DeepSeek-VL2 Small은 16.1B total / 2.8B activated MoE 구조입니다. 문서, 표, 차트, grounding 성능 비교용으로 넣었습니다.", en: "DeepSeek-VL2 Small uses a 16.1B total / 2.8B activated MoE structure, included as a comparison for document, table, chart, and grounding performance." },
+    summary: "DeepSeek-VL2 Small은 16.1B total / 2.8B activated MoE 구조입니다. 문서, 표, 차트, grounding 성능 비교용으로 넣었습니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -372,7 +372,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "table", "grounding", "reasoning"],
     sourceUrl: "https://github.com/deepseek-ai/DeepSeek-VL2",
     reference: { gpuId: "a100-pcie-80", bandwidth: 1935, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.2 },
-    summary: { ko: "DeepSeek-VL2 Full은 27.5B total / 4.5B activated MoE 구조의 범용 VLM입니다. 단일 24GB보다는 40GB 이상 GPU 기준입니다.", en: "DeepSeek-VL2 Full is a general-purpose VLM with a 27.5B total / 4.5B activated MoE structure, sized more for a 40GB+ GPU than a single 24GB card." },
+    summary: "DeepSeek-VL2 Full은 27.5B total / 4.5B activated MoE 구조의 범용 VLM입니다. 단일 24GB보다는 40GB 이상 GPU 기준입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -389,7 +389,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "legacy"],
     sourceUrl: "https://huggingface.co/deepseek-ai/deepseek-vl-7b-chat",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.34 },
-    summary: { ko: "DeepSeek-VL2와 비교하기 위한 이전 세대 DeepSeek-VL 7B Chat 모델입니다.", en: "The previous-generation DeepSeek-VL 7B Chat model, included for comparison against DeepSeek-VL2." },
+    summary: "DeepSeek-VL2와 비교하기 위한 이전 세대 DeepSeek-VL 7B Chat 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -406,7 +406,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "video", "agent", "grounding", "coordinate", "mobile"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.72 },
-    summary: { ko: "문서, 차트, 아이콘, 화면 이해와 좌표 기반 grounding을 지원하는 Qwen2.5-VL 소형 모델입니다.", en: "A small Qwen2.5-VL model supporting document, chart, and icon understanding along with coordinate-based grounding." },
+    summary: "문서, 차트, 아이콘, 화면 이해와 좌표 기반 grounding을 지원하는 Qwen2.5-VL 소형 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -423,7 +423,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "video", "agent", "grounding", "coordinate", "reasoning"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.44 },
-    summary: { ko: "로컬 문서 QA, OCR-like 추출, 화면/에이전트 작업을 균형 있게 보는 Qwen2.5-VL 7B급 모델입니다.", en: "A 7B-class Qwen2.5-VL model that balances local document QA, OCR-like extraction, and screen/agent tasks." },
+    summary: "로컬 문서 QA, OCR-like 추출, 화면/에이전트 작업을 균형 있게 보는 Qwen2.5-VL 7B급 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -440,7 +440,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "video", "agent", "grounding", "coordinate", "reasoning"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
     reference: { gpuId: "h100-sxm-80", bandwidth: 3350, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.28 },
-    summary: { ko: "33B급 Qwen2.5-VL 모델입니다. 고품질 문서/화면 이해와 grounding 비교용으로 서버급 GPU 기준에 가깝습니다.", en: "A 33B-class Qwen2.5-VL model for high-quality document/screen understanding and grounding comparisons, closer to server-GPU territory." },
+    summary: "33B급 Qwen2.5-VL 모델입니다. 고품질 문서/화면 이해와 grounding 비교용으로 서버급 GPU 기준에 가깝습니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -457,7 +457,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "video", "agent", "grounding", "coordinate", "reasoning"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
     reference: { gpuId: "h100-sxm-80", bandwidth: 3350, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.13 },
-    summary: { ko: "Qwen2.5-VL 대형 모델입니다. 단일 데스크톱 GPU보다는 H100/A100급 멀티 GPU 검토 대상입니다.", en: "The large Qwen2.5-VL model, better suited to multi-GPU H100/A100-class setups than a single desktop GPU." },
+    summary: "Qwen2.5-VL 대형 모델입니다. 단일 데스크톱 GPU보다는 H100/A100급 멀티 GPU 검토 대상입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -474,7 +474,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "video", "mobile", "legacy"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct",
     reference: { gpuId: "rtx4060-8", bandwidth: 272, width: 1280, height: 1920, batch: 1, pagesPerSecond: 0.7 },
-    summary: { ko: "Qwen2-VL의 2B급 이전 세대 비교군입니다. 한국어 포함 다국어 이미지 텍스트 처리 비교에 쓸 수 있습니다.", en: "The previous-generation 2B-class Qwen2-VL comparison model, usable for comparing multilingual image-text processing, including Korean." },
+    summary: "Qwen2-VL의 2B급 이전 세대 비교군입니다. 한국어 포함 다국어 이미지 텍스트 처리 비교에 쓸 수 있습니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -491,7 +491,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "video", "legacy"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.38 },
-    summary: { ko: "Qwen2.5-VL/Qwen3-VL과 비교하기 위한 Qwen2-VL 7B급 범용 VLM입니다.", en: "A 7B-class general-purpose Qwen2-VL model, included for comparison against Qwen2.5-VL/Qwen3-VL." },
+    summary: "Qwen2.5-VL/Qwen3-VL과 비교하기 위한 Qwen2-VL 7B급 범용 VLM입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -508,7 +508,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "reasoning"],
     sourceUrl: "https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.3 },
-    summary: { ko: "128K context를 갖는 Llama 3.2 11B Vision 모델입니다. 이미지 질의응답과 문서 이해 비교군으로 적합합니다.", en: "A Llama 3.2 11B Vision model with 128K context, suited as a comparison for image QA and document understanding." },
+    summary: "128K context를 갖는 Llama 3.2 11B Vision 모델입니다. 이미지 질의응답과 문서 이해 비교군으로 적합합니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -525,7 +525,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "reasoning"],
     sourceUrl: "https://huggingface.co/meta-llama/Llama-3.2-90B-Vision-Instruct",
     reference: { gpuId: "h100-sxm-80", bandwidth: 3350, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.1 },
-    summary: { ko: "Llama 3.2 Vision 대형 모델입니다. 고품질 이미지 이해를 서버급 멀티 GPU에서 검토할 때 사용합니다.", en: "The large Llama 3.2 Vision model, used when evaluating high-quality image understanding on server-class multi-GPU setups." },
+    summary: "Llama 3.2 Vision 대형 모델입니다. 고품질 이미지 이해를 서버급 멀티 GPU에서 검토할 때 사용합니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -542,7 +542,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "long", "legacy"],
     sourceUrl: "https://huggingface.co/mistralai/Pixtral-12B-Base-2409",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.26 },
-    summary: { ko: "12B decoder와 약 400M vision encoder를 결합한 Pixtral 12B 모델입니다. 128K context와 가변 해상도 입력 비교군입니다.", en: "The Pixtral 12B model, pairing a 12B decoder with a roughly 400M vision encoder, included for comparing 128K context and variable-resolution input." },
+    summary: "12B decoder와 약 400M vision encoder를 결합한 Pixtral 12B 모델입니다. 128K context와 가변 해상도 입력 비교군입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -559,7 +559,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "chart", "long", "reasoning"],
     sourceUrl: "https://huggingface.co/mistralai/Pixtral-Large-Instruct-2411",
     reference: { gpuId: "b200-192", bandwidth: 8000, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.08 },
-    summary: { ko: "123B decoder와 1B vision encoder 기반의 Pixtral Large입니다. vLLM/tensor parallel 서버 환경 기준으로 검토합니다.", en: "Pixtral Large, built on a 123B decoder and 1B vision encoder, evaluated against a vLLM/tensor-parallel server setup." },
+    summary: "123B decoder와 1B vision encoder 기반의 Pixtral Large입니다. vLLM/tensor parallel 서버 환경 기준으로 검토합니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -576,7 +576,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "video", "multilingual", "reasoning"],
     sourceUrl: "https://huggingface.co/llava-hf/llava-onevision-qwen2-7b-ov-hf",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.36 },
-    summary: { ko: "이미지, 다중 이미지, 비디오 시나리오를 하나로 다루는 LLaVA-OneVision Qwen2 7B 모델입니다.", en: "A LLaVA-OneVision Qwen2 7B model that handles image, multi-image, and video scenarios in one model." },
+    summary: "이미지, 다중 이미지, 비디오 시나리오를 하나로 다루는 LLaVA-OneVision Qwen2 7B 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -593,7 +593,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "video", "multilingual", "reasoning"],
     sourceUrl: "https://huggingface.co/llava-hf/llava-onevision-qwen2-72b-ov-hf",
     reference: { gpuId: "h100-sxm-80", bandwidth: 3350, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.11 },
-    summary: { ko: "LLaVA-OneVision의 72B급 대형 비교군입니다. 비디오/문서 멀티모달 추론을 서버급 GPU에서 봅니다.", en: "The large 72B-class comparison model in LLaVA-OneVision, for evaluating video/document multimodal reasoning on server-class GPUs." },
+    summary: "LLaVA-OneVision의 72B급 대형 비교군입니다. 비디오/문서 멀티모달 추론을 서버급 GPU에서 봅니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -610,7 +610,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "document", "chart", "grounding", "reasoning"],
     sourceUrl: "https://huggingface.co/allenai/Molmo-7B-D-0924",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.36 },
-    summary: { ko: "Qwen2-7B와 CLIP 기반의 Molmo 7B-D 모델입니다. 이미지 이해와 pointing/grounding 계열 비교에 적합합니다.", en: "A Molmo 7B-D model built on Qwen2-7B and CLIP, suited for comparing image understanding and pointing/grounding tasks." },
+    summary: "Qwen2-7B와 CLIP 기반의 Molmo 7B-D 모델입니다. 이미지 이해와 pointing/grounding 계열 비교에 적합합니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -627,7 +627,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "document", "chart", "grounding", "reasoning"],
     sourceUrl: "https://huggingface.co/allenai/Molmo-72B-0924",
     reference: { gpuId: "h100-sxm-80", bandwidth: 3350, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.09 },
-    summary: { ko: "Molmo 계열의 72B급 고품질 VLM입니다. 대형 서버 GPU 기준의 이미지 이해 비교군입니다.", en: "A high-quality 72B-class VLM in the Molmo family, a comparison model for image understanding on large server GPUs." },
+    summary: "Molmo 계열의 72B급 고품질 VLM입니다. 대형 서버 GPU 기준의 이미지 이해 비교군입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -644,7 +644,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "video", "mobile", "edge"],
     sourceUrl: "https://huggingface.co/HuggingFaceTB/SmolVLM2-2.2B-Instruct",
     reference: { gpuId: "rtx4060-8", bandwidth: 272, width: 1280, height: 1920, batch: 1, pagesPerSecond: 0.62 },
-    summary: { ko: "온디바이스와 경량 비디오/이미지 이해를 목표로 한 SmolVLM2 2.2B 모델입니다.", en: "A SmolVLM2 2.2B model aimed at on-device, lightweight video/image understanding." },
+    summary: "온디바이스와 경량 비디오/이미지 이해를 목표로 한 SmolVLM2 2.2B 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -661,7 +661,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "video", "mobile", "edge"],
     sourceUrl: "https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
     reference: { gpuId: "rtx4060-8", bandwidth: 272, width: 1024, height: 1536, batch: 1, pagesPerSecond: 0.95 },
-    summary: { ko: "500M급 초경량 SmolVLM2 비디오 모델입니다. 저VRAM 환경에서 비전 기능을 빠르게 확인할 때 사용합니다.", en: "An ultra-lightweight 500M-class SmolVLM2 video model, used to quickly check vision features on low-VRAM setups." },
+    summary: "500M급 초경량 SmolVLM2 비디오 모델입니다. 저VRAM 환경에서 비전 기능을 빠르게 확인할 때 사용합니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -678,7 +678,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "audio", "reasoning"],
     sourceUrl: "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.42 },
-    summary: { ko: "텍스트, 이미지, 오디오 입력을 함께 지원하는 6B급 Phi-4 multimodal 모델입니다. MIT 라이선스 비교군입니다.", en: "A 6B-class Phi-4 multimodal model supporting text, image, and audio input together, included as an MIT-licensed comparison." },
+    summary: "텍스트, 이미지, 오디오 입력을 함께 지원하는 6B급 Phi-4 multimodal 모델입니다. MIT 라이선스 비교군입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -695,7 +695,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "chart", "reasoning"],
     sourceUrl: "https://huggingface.co/CohereLabs/aya-vision-8b",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.36 },
-    summary: { ko: "한국어를 포함한 23개 언어권 비전-언어 작업을 목표로 한 Aya Vision 8B 모델입니다.", en: "An Aya Vision 8B model aimed at vision-language tasks across 23 languages, including Korean." },
+    summary: "한국어를 포함한 23개 언어권 비전-언어 작업을 목표로 한 Aya Vision 8B 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -712,7 +712,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "korean", "multilingual", "chart", "reasoning"],
     sourceUrl: "https://huggingface.co/CohereLabs/aya-vision-32b",
     reference: { gpuId: "h100-sxm-80", bandwidth: 3350, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.22 },
-    summary: { ko: "Aya Vision의 32B급 다국어 VLM입니다. 비영어 문서·이미지 QA 품질 비교용으로 넣었습니다.", en: "The 32B-class multilingual VLM in Aya Vision, included for comparing non-English document/image QA quality." },
+    summary: "Aya Vision의 32B급 다국어 VLM입니다. 비영어 문서·이미지 QA 품질 비교용으로 넣었습니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -729,7 +729,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "video", "screen", "gui", "reasoning", "agent"],
     sourceUrl: "https://huggingface.co/zai-org/GLM-4.1V-9B-Thinking",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.32 },
-    summary: { ko: "고해상도 이미지, 장문 문서, 비디오, GUI 에이전트 작업을 겨냥한 GLM-4.1V 9B Thinking 모델입니다.", en: "A GLM-4.1V 9B Thinking model aimed at high-resolution images, long documents, video, and GUI agent tasks." },
+    summary: "고해상도 이미지, 장문 문서, 비디오, GUI 에이전트 작업을 겨냥한 GLM-4.1V 9B Thinking 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -746,7 +746,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "screen", "reasoning", "legacy"],
     sourceUrl: "https://huggingface.co/zai-org/glm-4v-9b",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1280, height: 1280, batch: 1, pagesPerSecond: 0.34 },
-    summary: { ko: "GLM-4.1V와 비교하기 위한 이전 세대 GLM-4V 9B 모델입니다.", en: "The previous-generation GLM-4V 9B model, included for comparison against GLM-4.1V." },
+    summary: "GLM-4.1V와 비교하기 위한 이전 세대 GLM-4V 9B 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -763,7 +763,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "mobile", "screen", "edge"],
     sourceUrl: "https://huggingface.co/openbmb/MiniCPM-V-4.6",
     reference: { gpuId: "rtx4060-8", bandwidth: 272, width: 1024, height: 2048, batch: 1, pagesPerSecond: 0.85 },
-    summary: { ko: "온디바이스 지향 1B급 VLM입니다. 이미지/비디오 이해와 OCR-like 질의를 낮은 메모리로 시험하기 좋습니다.", en: "An on-device-oriented 1B-class VLM, good for testing image/video understanding and OCR-like queries on low memory." },
+    summary: "온디바이스 지향 1B급 VLM입니다. 이미지/비디오 이해와 OCR-like 질의를 낮은 메모리로 시험하기 좋습니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -780,7 +780,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "multilingual", "reasoning", "screen"],
     sourceUrl: "https://huggingface.co/OpenGVLab/InternVL3_5-4B",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.52 },
-    summary: { ko: "Visual Resolution Router와 효율적 멀티모달 추론을 강조하는 InternVL3.5 4B급 모델입니다.", en: "A 4B-class InternVL3.5 model that emphasizes a Visual Resolution Router and efficient multimodal inference." },
+    summary: "Visual Resolution Router와 효율적 멀티모달 추론을 강조하는 InternVL3.5 4B급 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -797,7 +797,7 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "multilingual", "reasoning", "screen"],
     sourceUrl: "https://huggingface.co/OpenGVLab/InternVL3_5-8B",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.34 },
-    summary: { ko: "품질 우선의 범용 멀티모달 인식과 문서 질의응답을 비교하기 위한 InternVL3.5 8B급 모델입니다.", en: "An 8B-class InternVL3.5 model for comparing quality-first general multimodal recognition and document QA." },
+    summary: "품질 우선의 범용 멀티모달 인식과 문서 질의응답을 비교하기 위한 InternVL3.5 8B급 모델입니다.",
   }),
   visionModel({
     type: "general-vlm",
@@ -814,6 +814,6 @@ window.LLM_GPU_CHECKER_DATA.ocrModels = [
     tags: ["vision", "vlm", "general-vlm", "ocr", "document", "long", "agent", "screen", "reasoning"],
     sourceUrl: "https://huggingface.co/moonshotai/Kimi-VL-A3B-Instruct",
     reference: { gpuId: "rtx4090-24", bandwidth: 1008, width: 1654, height: 2339, batch: 1, pagesPerSecond: 0.28 },
-    summary: { ko: "16B total / 3B activated MoE 구조의 범용 VLM입니다. OCR, 장문 문서, 다중 이미지, 에이전트 작업을 함께 봅니다.", en: "A general-purpose VLM with a 16B total / 3B activated MoE structure, covering OCR, long documents, multi-image, and agent tasks together." },
+    summary: "16B total / 3B activated MoE 구조의 범용 VLM입니다. OCR, 장문 문서, 다중 이미지, 에이전트 작업을 함께 봅니다.",
   }),
 ];

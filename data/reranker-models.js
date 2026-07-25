@@ -24,7 +24,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B",
-    summary: { ko: "32K 컨텍스트와 100개 이상 언어를 지원하는 Qwen3 소형 리랭커입니다.", en: "A small Qwen3 reranker supporting 32K context and 100+ languages." },
+    summary: "32K 컨텍스트와 100개 이상 언어를 지원하는 Qwen3 소형 리랭커입니다.",
   }),
   rerankerModel({
     name: "Qwen/Qwen3-Reranker-4B",
@@ -38,7 +38,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-Reranker-4B",
-    summary: { ko: "품질 우선 RAG 재정렬에 맞춘 4B급 Qwen3 리랭커입니다.", en: "A 4B-class Qwen3 reranker tuned for quality-first RAG reranking." },
+    summary: "품질 우선 RAG 재정렬에 맞춘 4B급 Qwen3 리랭커입니다.",
   }),
   rerankerModel({
     name: "Qwen/Qwen3-Reranker-8B",
@@ -52,7 +52,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-Reranker-8B",
-    summary: { ko: "대형 GPU에서 높은 품질의 장문/다국어 재정렬을 목표로 하는 Qwen3 리랭커입니다.", en: "A Qwen3 reranker aimed at high-quality long-document, multilingual reranking on large GPUs." },
+    summary: "대형 GPU에서 높은 품질의 장문/다국어 재정렬을 목표로 하는 Qwen3 리랭커입니다.",
   }),
   rerankerModel({
     name: "BAAI/bge-reranker-v2-m3",
@@ -66,7 +66,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/BAAI/bge-reranker-v2-m3",
-    summary: { ko: "bge-m3 기반의 다국어 cross-encoder 리랭커입니다. RAG 후보 문서 재정렬에 적합합니다.", en: "A multilingual cross-encoder reranker based on bge-m3, suited for reranking RAG candidate documents." },
+    summary: "bge-m3 기반의 다국어 cross-encoder 리랭커입니다. RAG 후보 문서 재정렬에 적합합니다.",
   }),
   rerankerModel({
     name: "BAAI/bge-reranker-v2-gemma",
@@ -80,7 +80,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Gemma",
     tags: ["reranker", "retrieval", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/BAAI/bge-reranker-v2-gemma",
-    summary: { ko: "Gemma 기반의 대형 bge v2 리랭커로 품질 우선 재정렬 비교에 적합합니다.", en: "A large Gemma-based bge v2 reranker, good for quality-first reranking comparisons." },
+    summary: "Gemma 기반의 대형 bge v2 리랭커로 품질 우선 재정렬 비교에 적합합니다.",
   }),
   rerankerModel({
     name: "BAAI/bge-reranker-v2-minicpm-layerwise",
@@ -94,7 +94,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/BAAI/bge-reranker-v2-minicpm-layerwise",
-    summary: { ko: "Layerwise early-exit 운용을 고려할 수 있는 MiniCPM 기반 bge v2 리랭커입니다.", en: "A MiniCPM-based bge v2 reranker that supports layerwise early-exit operation." },
+    summary: "Layerwise early-exit 운용을 고려할 수 있는 MiniCPM 기반 bge v2 리랭커입니다.",
   }),
   rerankerModel({
     name: "Alibaba-NLP/gte-multilingual-reranker-base",
@@ -108,7 +108,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-multilingual-reranker-base",
-    summary: { ko: "8192 토큰 입력을 지원하는 0.3B급 다국어 GTE 리랭커입니다.", en: "A 0.3B-class multilingual GTE reranker supporting 8,192-token input." },
+    summary: "8192 토큰 입력을 지원하는 0.3B급 다국어 GTE 리랭커입니다.",
   }),
   rerankerModel({
     name: "jinaai/jina-reranker-v2-base-multilingual",
@@ -122,7 +122,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "CC BY-NC 4.0",
     tags: ["reranker", "retrieval", "korean", "multilingual"],
     sourceUrl: "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual",
-    summary: { ko: "한국어 포함 다국어 후보 문서 재정렬에 쓰기 좋은 Jina v2 base 리랭커입니다.", en: "A Jina v2 base reranker good for multilingual candidate-document reranking, including Korean." },
+    summary: "한국어 포함 다국어 후보 문서 재정렬에 쓰기 좋은 Jina v2 base 리랭커입니다.",
   }),
   rerankerModel({
     name: "mixedbread-ai/mxbai-rerank-large-v1",
@@ -137,7 +137,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/mixedbread-ai/mxbai-rerank-large-v1",
-    summary: { ko: "짧은 후보 문서 재정렬에서 품질을 우선하는 Mixedbread large 리랭커입니다.", en: "A Mixedbread large reranker that prioritizes quality for short candidate-document reranking." },
+    summary: "짧은 후보 문서 재정렬에서 품질을 우선하는 Mixedbread large 리랭커입니다.",
   }),
   rerankerModel({
     name: "BAAI/bge-reranker-large",
@@ -152,7 +152,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/BAAI/bge-reranker-large",
-    summary: { ko: "중국어/영어 중심의 large급 리랭커로 짧은 후보 문서 재정렬 기준점으로 쓰기 좋습니다.", en: "A large-class reranker focused on Chinese/English, good as a baseline for short candidate-document reranking." },
+    summary: "중국어/영어 중심의 large급 리랭커로 짧은 후보 문서 재정렬 기준점으로 쓰기 좋습니다.",
   }),
   rerankerModel({
     name: "BAAI/bge-reranker-base",
@@ -167,7 +167,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/BAAI/bge-reranker-base",
-    summary: { ko: "가벼운 cross-encoder 리랭커로 낮은 VRAM에서 후보 문서 재정렬을 시험하기 좋습니다.", en: "A lightweight cross-encoder reranker, good for testing candidate-document reranking on low VRAM." },
+    summary: "가벼운 cross-encoder 리랭커로 낮은 VRAM에서 후보 문서 재정렬을 시험하기 좋습니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-MiniLM-L-12-v2",
@@ -182,7 +182,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2",
-    summary: { ko: "짧은 passage 재정렬에서 빠른 기준선으로 쓰기 좋은 MiniLM L12 cross-encoder입니다.", en: "A MiniLM L12 cross-encoder, good as a fast baseline for short-passage reranking." },
+    summary: "짧은 passage 재정렬에서 빠른 기준선으로 쓰기 좋은 MiniLM L12 cross-encoder입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-MiniLM-L-6-v2",
@@ -197,7 +197,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2",
-    summary: { ko: "저사양 환경에서 매우 빠르게 후보 문서를 재점수화하는 MiniLM L6 리랭커입니다.", en: "A MiniLM L6 reranker that rescores candidate documents very quickly on low-spec hardware." },
+    summary: "저사양 환경에서 매우 빠르게 후보 문서를 재점수화하는 MiniLM L6 리랭커입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
@@ -212,7 +212,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "korean", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
-    summary: { ko: "다국어 MS MARCO 계열의 가벼운 cross-encoder 리랭커입니다.", en: "A lightweight cross-encoder reranker from the multilingual MS MARCO family." },
+    summary: "다국어 MS MARCO 계열의 가벼운 cross-encoder 리랭커입니다.",
   }),
   rerankerModel({
     name: "BAAI/bge-reranker-v2.5-gemma2-lightweight",
@@ -226,7 +226,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Gemma",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual", "reasoning"],
     sourceUrl: "https://huggingface.co/BAAI/bge-reranker-v2.5-gemma2-lightweight",
-    summary: { ko: "Gemma 2 9B 기반의 최신 BGE 리랭커입니다. layerwise/압축 운용으로 품질과 비용을 조절하는 비교군입니다.", en: "A recent BGE reranker based on Gemma 2 9B; a comparison model for balancing quality and cost via layerwise/compressed operation." },
+    summary: "Gemma 2 9B 기반의 최신 BGE 리랭커입니다. layerwise/압축 운용으로 품질과 비용을 조절하는 비교군입니다.",
   }),
   rerankerModel({
     name: "mixedbread-ai/mxbai-rerank-base-v2",
@@ -240,7 +240,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "long", "multilingual", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v2",
-    summary: { ko: "100개 이상 언어와 긴 입력을 지원하는 0.5B급 Mixedbread v2 리랭커입니다.", en: "A 0.5B-class Mixedbread v2 reranker supporting 100+ languages and long inputs." },
+    summary: "100개 이상 언어와 긴 입력을 지원하는 0.5B급 Mixedbread v2 리랭커입니다.",
   }),
   rerankerModel({
     name: "mixedbread-ai/mxbai-rerank-large-v2",
@@ -254,7 +254,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "long", "multilingual", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/mixedbread-ai/mxbai-rerank-large-v2",
-    summary: { ko: "품질 우선 RAG 재정렬을 위한 1.5B급 Mixedbread v2 리랭커입니다.", en: "A 1.5B-class Mixedbread v2 reranker for quality-first RAG reranking." },
+    summary: "품질 우선 RAG 재정렬을 위한 1.5B급 Mixedbread v2 리랭커입니다.",
   }),
   rerankerModel({
     name: "Alibaba-NLP/gte-reranker-modernbert-base",
@@ -268,7 +268,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "long", "multilingual", "edge"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-reranker-modernbert-base",
-    summary: { ko: "ModernBERT 기반의 장문 GTE 리랭커입니다. 8K 입력과 낮은 VRAM 기준 비교에 적합합니다.", en: "A ModernBERT-based long-document GTE reranker, suited for comparisons at 8K input and low VRAM." },
+    summary: "ModernBERT 기반의 장문 GTE 리랭커입니다. 8K 입력과 낮은 VRAM 기준 비교에 적합합니다.",
   }),
   rerankerModel({
     name: "ibm-granite/granite-embedding-reranker-english-r2",
@@ -282,7 +282,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "long", "edge"],
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-reranker-english-r2",
-    summary: { ko: "Granite Embedding R2 계열의 ModernBERT 기반 영어 리랭커입니다.", en: "A ModernBERT-based English reranker from the Granite Embedding R2 family." },
+    summary: "Granite Embedding R2 계열의 ModernBERT 기반 영어 리랭커입니다.",
   }),
   rerankerModel({
     name: "jinaai/jina-reranker-v1-tiny-en",
@@ -297,7 +297,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "long", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/jinaai/jina-reranker-v1-tiny-en",
-    summary: { ko: "매우 작은 33M급 영어 리랭커입니다. CPU/저VRAM 기준선으로 적합합니다.", en: "A very small 33M-class English reranker, suited as a CPU/low-VRAM baseline." },
+    summary: "매우 작은 33M급 영어 리랭커입니다. CPU/저VRAM 기준선으로 적합합니다.",
   }),
   rerankerModel({
     name: "jinaai/jina-reranker-v1-turbo-en",
@@ -312,7 +312,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "long", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/jinaai/jina-reranker-v1-turbo-en",
-    summary: { ko: "Jina v1 계열의 경량 turbo 리랭커입니다. 빠른 passage 재정렬 기준선으로 표시합니다.", en: "A lightweight turbo reranker from the Jina v1 family, listed as a fast passage-reranking baseline." },
+    summary: "Jina v1 계열의 경량 turbo 리랭커입니다. 빠른 passage 재정렬 기준선으로 표시합니다.",
   }),
   rerankerModel({
     name: "maidalun1020/bce-reranker-base_v1",
@@ -327,7 +327,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "korean", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/maidalun1020/bce-reranker-base_v1",
-    summary: { ko: "중국어/영어/일본어/한국어 검색 재정렬에 쓰이는 BCE cross-encoder 리랭커입니다.", en: "A BCE cross-encoder reranker used for Chinese/English/Japanese/Korean search reranking." },
+    summary: "중국어/영어/일본어/한국어 검색 재정렬에 쓰이는 BCE cross-encoder 리랭커입니다.",
   }),
   rerankerModel({
     name: "dragonkue/bge-reranker-v2-m3-ko",
@@ -341,7 +341,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/dragonkue/bge-reranker-v2-m3-ko",
-    summary: { ko: "bge-reranker-v2-m3를 한국어 검색 데이터에 맞춘 한국어 RAG 재정렬 비교군입니다.", en: "A Korean RAG reranking comparison model, adapting bge-reranker-v2-m3 to Korean search data." },
+    summary: "bge-reranker-v2-m3를 한국어 검색 데이터에 맞춘 한국어 RAG 재정렬 비교군입니다.",
   }),
   rerankerModel({
     name: "upskyy/ko-reranker-8k",
@@ -355,7 +355,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     license: "Apache 2.0",
     tags: ["reranker", "retrieval", "korean", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/upskyy/ko-reranker-8k",
-    summary: { ko: "한국어 장문 검색 재정렬을 위해 bge-reranker-v2-m3 계열을 8K 입력으로 운용하는 모델입니다.", en: "A model that runs the bge-reranker-v2-m3 family at 8K input for Korean long-document search reranking." },
+    summary: "한국어 장문 검색 재정렬을 위해 bge-reranker-v2-m3 계열을 8K 입력으로 운용하는 모델입니다.",
   }),
   rerankerModel({
     name: "upskyy/ko-reranker",
@@ -370,7 +370,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "korean", "multilingual", "matching"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/upskyy/ko-reranker",
-    summary: { ko: "한국어 후보 문서 재정렬용 cross-encoder입니다. 짧은 질의-문서 쌍 기준 비교에 넣었습니다.", en: "A cross-encoder for Korean candidate-document reranking, included as a comparison for short query-document pairs." },
+    summary: "한국어 후보 문서 재정렬용 cross-encoder입니다. 짧은 질의-문서 쌍 기준 비교에 넣었습니다.",
   }),
   rerankerModel({
     name: "Dongjin-kr/ko-reranker",
@@ -385,7 +385,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "korean", "matching"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/Dongjin-kr/ko-reranker",
-    summary: { ko: "한국어 검색 후보의 relevance 점수화를 위한 cross-encoder 기준 모델입니다.", en: "A baseline cross-encoder model for scoring the relevance of Korean search candidates." },
+    summary: "한국어 검색 후보의 relevance 점수화를 위한 cross-encoder 기준 모델입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-MiniLM-L-4-v2",
@@ -400,7 +400,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-4-v2",
-    summary: { ko: "MiniLM L4 기반의 초경량 passage 재정렬 기준선입니다.", en: "An ultra-lightweight passage-reranking baseline based on MiniLM L4." },
+    summary: "MiniLM L4 기반의 초경량 passage 재정렬 기준선입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-MiniLM-L-2-v2",
@@ -415,7 +415,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-2-v2",
-    summary: { ko: "아주 낮은 지연시간으로 후보를 재점수화하는 MiniLM L2 cross-encoder입니다.", en: "A MiniLM L2 cross-encoder that rescores candidates with very low latency." },
+    summary: "아주 낮은 지연시간으로 후보를 재점수화하는 MiniLM L2 cross-encoder입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-electra-base",
@@ -430,7 +430,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/ms-marco-electra-base",
-    summary: { ko: "ELECTRA base 구조의 MS MARCO cross-encoder입니다. MiniLM과 다른 구조 비교에 사용합니다.", en: "An MS MARCO cross-encoder built on ELECTRA base, used to compare against MiniLM-based architectures." },
+    summary: "ELECTRA base 구조의 MS MARCO cross-encoder입니다. MiniLM과 다른 구조 비교에 사용합니다.",
   }),
   rerankerModel({
     name: "cross-encoder/stsb-roberta-large",
@@ -445,7 +445,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "matching"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/stsb-roberta-large",
-    summary: { ko: "문장 쌍 유사도 점수화용 RoBERTa large cross-encoder입니다.", en: "A RoBERTa large cross-encoder for scoring sentence-pair similarity." },
+    summary: "문장 쌍 유사도 점수화용 RoBERTa large cross-encoder입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/nli-deberta-v3-base",
@@ -460,7 +460,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "matching"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/nli-deberta-v3-base",
-    summary: { ko: "NLI 스타일의 질의-문서 관계 점수화 비교에 쓸 수 있는 DeBERTa v3 base cross-encoder입니다.", en: "A DeBERTa v3 base cross-encoder usable for NLI-style query-document relation scoring comparisons." },
+    summary: "NLI 스타일의 질의-문서 관계 점수화 비교에 쓸 수 있는 DeBERTa v3 base cross-encoder입니다.",
   }),
   rerankerModel({
     name: "cross-encoder/quora-roberta-base",
@@ -475,7 +475,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/quora-roberta-base",
-    summary: { ko: "중복 질문/문장쌍 매칭에 맞춘 RoBERTa base cross-encoder입니다.", en: "A RoBERTa base cross-encoder tuned for duplicate-question/sentence-pair matching." },
+    summary: "중복 질문/문장쌍 매칭에 맞춘 RoBERTa base cross-encoder입니다.",
   }),
   rerankerModel({
     name: "nreimers/mmarco-mMiniLMv2-L6-H384-v1",
@@ -490,7 +490,7 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "korean", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/nreimers/mmarco-mMiniLMv2-L6-H384-v1",
-    summary: { ko: "다국어 MS MARCO L6 기반의 빠른 리랭커입니다. 원 저장소에 모델 카드와 라이선스 표기가 없어 사용 전 확인이 필요합니다.", en: "A fast reranker based on multilingual MS MARCO L6. The original repository has no model card or license notice, so verify before use." },
+    summary: "다국어 MS MARCO L6 기반의 빠른 리랭커입니다. 원 저장소에 모델 카드와 라이선스 표기가 없어 사용 전 확인이 필요합니다.",
   }),
   rerankerModel({
     name: "cross-encoder/ms-marco-TinyBERT-L-2-v2",
@@ -505,6 +505,6 @@ window.LLM_GPU_CHECKER_DATA.rerankerModels = [
     tags: ["reranker", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/cross-encoder/ms-marco-TinyBERT-L-2-v2",
-    summary: { ko: "초저지연 실험용 TinyBERT L2 리랭커입니다. 정확도보다 속도 기준선으로 표시합니다.", en: "A TinyBERT L2 reranker for ultra-low-latency experiments, listed as a speed baseline rather than an accuracy one." },
+    summary: "초저지연 실험용 TinyBERT L2 리랭커입니다. 정확도보다 속도 기준선으로 표시합니다.",
   }),
 ];
