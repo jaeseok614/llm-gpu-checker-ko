@@ -1,21 +1,36 @@
 :root {
-  --bg: #f4f6f8;
-  --panel: #ffffff;
-  --ink: #18212b;
-  --muted: #667382;
-  --line: #d9e0e7;
-  --line-strong: #b9c6d4;
-  --blue: #164a7b;
-  --blue-soft: #e8f1fb;
-  --green: #13795b;
-  --green-soft: #e5f4ee;
-  --yellow: #9a6700;
-  --yellow-soft: #fff4d6;
-  --red: #ba2f2f;
-  --red-soft: #fde8e8;
+  /* Light Industrial Benchmark Workbench palette. Warm gray canvas, flat
+     white work surfaces, navy accent reserved for selection/primary
+     actions only, hairline borders instead of shadows. */
+  --bg: #f2f3f1;
+  --panel: #fbfbfa;
+  --panel-raised: #ffffff;
+  --ink: #17202a;
+  --muted: #65717d;
+  --line: #cfd5d9;
+  --line-strong: #9da8b1;
+  --blue: #16577a;
+  --blue-soft: #e4edf3;
+  --green: #14745a;
+  --green-soft: #e2f0ea;
+  --yellow: #a86500;
+  --yellow-soft: #f7edda;
+  --red: #b42318;
+  --red-soft: #f8e6e4;
   --violet: #5f4bb6;
   --violet-soft: #eeeafd;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow: none;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.num,
+.mono-num,
+.metric-value,
+.compare-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
 * {
@@ -141,7 +156,7 @@ h3 {
   margin-left: 8px;
   padding: 2px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: #f8fafc;
   white-space: nowrap;
 }
@@ -151,7 +166,7 @@ h3 {
   min-height: 24px;
   padding: 0 10px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -215,17 +230,17 @@ html[lang="en"] .simple-mode-head > div:first-child {
   min-width: 0;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow);
 }
 
 .hardware-panel {
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .results-panel {
   border-top: 0;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
 .hardware-topline {
@@ -337,7 +352,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
   flex: 1 1 0;
   min-height: 40px;
   border: 1px solid var(--line-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: #ffffff;
   color: var(--muted);
   cursor: pointer;
@@ -395,7 +410,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .back-button {
   min-height: 36px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 0 12px;
   background: #f8fafc;
   color: var(--ink);
@@ -414,7 +429,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .primary-button {
   min-height: 36px;
   border: 1px solid var(--blue);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 0 13px;
   background: var(--blue);
   color: #ffffff;
@@ -469,7 +484,7 @@ select:disabled {
 .settings-cluster {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 9px 10px 10px;
   background: #ffffff;
 }
@@ -485,7 +500,7 @@ select:disabled {
 }
 
 .settings-cluster h3 span {
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 2px 6px;
   background: #eef2f6;
   color: var(--muted);
@@ -638,7 +653,7 @@ select {
   min-width: 0;
   min-height: 36px;
   border: 1px solid #cbd5df;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 8px 10px;
   background: #ffffff;
   color: var(--ink);
@@ -674,7 +689,7 @@ button:focus-visible {
   gap: 6px;
   min-height: 30px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 0 10px;
   background: transparent;
   cursor: pointer;
@@ -743,7 +758,7 @@ button:focus-visible {
   gap: 14px;
   margin-bottom: 12px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   background: #f8fafc;
 }
@@ -769,7 +784,7 @@ button:focus-visible {
 .hf-import-panel {
   margin-bottom: 12px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: #fbfcfd;
 }
 
@@ -827,7 +842,7 @@ button:focus-visible {
   margin-bottom: 16px;
   border: 1px solid var(--line);
   border-top: 2px solid var(--blue);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: #ffffff;
 }
 
@@ -877,7 +892,7 @@ button:focus-visible {
   gap: 4px;
   min-height: 28px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 4px 9px;
   background: #f8fafc;
   color: var(--muted);
@@ -932,7 +947,7 @@ button:focus-visible {
   gap: 8px;
   position: relative;
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 13px;
   background: #ffffff;
   text-align: left;
@@ -942,18 +957,17 @@ button:focus-visible {
 
 .simple-pick-card:hover {
   border-color: var(--blue);
-  box-shadow: 0 4px 14px rgba(22, 74, 123, 0.09);
-  transform: translateY(-1px);
+  background: var(--blue-soft);
 }
 
 .simple-pick-card.is-top-pick {
   border-color: var(--blue);
-  box-shadow: inset 0 3px 0 var(--blue);
+  border-left: 3px solid var(--blue);
 }
 
 .simple-pick-rank {
   width: fit-content;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 2px 9px;
   background: var(--blue);
   color: #ffffff;
@@ -1093,7 +1107,7 @@ button:focus-visible {
 
 .gpu-placement-export-panel {
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: #ffffff;
 }
 
@@ -1177,7 +1191,7 @@ button:focus-visible {
 #placementModelSearch {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   padding: 8px 10px;
   margin-bottom: 8px;
@@ -1185,7 +1199,7 @@ button:focus-visible {
 
 .placement-model-list {
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   max-height: 220px;
   overflow-y: auto;
   background: #ffffff;
@@ -1247,7 +1261,7 @@ button:focus-visible {
   align-items: center;
   gap: 5px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 3px 6px 3px 10px;
   font-size: 11px;
   font-weight: 700;
@@ -1288,7 +1302,7 @@ button:focus-visible {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--blue-soft);
   color: var(--blue);
   font-size: 12px;
@@ -1308,7 +1322,7 @@ button:focus-visible {
 
 .gpu-placement-card {
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   background: #fbfcfd;
 }
@@ -1349,7 +1363,7 @@ button:focus-visible {
 
 .gpu-placement-unplaced {
   border: 1px dashed var(--red);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 11.5px;
   color: var(--red);
@@ -1358,7 +1372,7 @@ button:focus-visible {
 .quant-recommendations {
   margin-bottom: 14px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 12px;
   background: #ffffff;
 }
@@ -1406,7 +1420,7 @@ button:focus-visible {
   gap: 4px;
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 9px 10px;
   background: #f8fafc;
   text-align: left;
@@ -1465,7 +1479,7 @@ button:focus-visible {
 .filter-clear {
   min-height: 28px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 0 9px;
   background: #f8fafc;
   color: #334155;
@@ -1540,7 +1554,7 @@ button:focus-visible {
 }
 
 .model-row.is-selected {
-  background: #f4f8fc;
+  background: var(--blue-soft);
   box-shadow: inset 3px 0 0 var(--blue);
 }
 
@@ -1557,6 +1571,11 @@ button:focus-visible {
 .model-list-head span:nth-child(8),
 .model-list-head span:nth-child(9) {
   text-align: right;
+}
+
+.numeric-cell {
+  font-family: var(--mono);
+  font-weight: 600;
 }
 
 .status-cell,
@@ -1604,7 +1623,7 @@ button:focus-visible {
   align-items: center;
   width: fit-content;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   font-size: 10px;
   font-weight: 800;
   line-height: 1.2;
@@ -1747,8 +1766,9 @@ button:focus-visible {
   gap: 6px;
   min-width: 0;
   min-height: 26px;
-  border-radius: 999px;
-  padding: 0 9px;
+  border-radius: var(--radius-sm);
+  padding: 0 2px;
+  background: transparent;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -1760,15 +1780,14 @@ button:focus-visible {
   height: 7px;
   border-radius: 50%;
   background: currentColor;
+  flex: 0 0 auto;
 }
 
 .grade-s {
-  background: #e8f3ee;
-  color: #237655;
+  color: #14745a;
 }
 
 .grade-a {
-  background: #e7f0f5;
   color: #2f6687;
 }
 
@@ -1779,13 +1798,11 @@ button:focus-visible {
 
 .grade-c,
 .grade-d {
-  background: #fff2dc;
-  color: #91621c;
+  color: #a86500;
 }
 
 .grade-f {
-  background: #fae9e9;
-  color: #a53a3a;
+  color: #b42318;
 }
 
 .tag-row {
@@ -1831,7 +1848,7 @@ button:focus-visible {
   width: 100%;
   min-height: 210px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 14px;
   background: #ffffff;
   text-align: left;
@@ -1873,7 +1890,7 @@ button:focus-visible {
 .compact-specs span {
   min-height: 34px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 7px 8px;
   background: #f8fafc;
   color: #2f3c48;
@@ -1891,7 +1908,7 @@ button:focus-visible {
   display: grid;
   gap: 10px;
   border: 1px dashed var(--line-strong);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 30px;
   color: var(--muted);
   background: #fbfcfd;
@@ -1921,7 +1938,7 @@ button:focus-visible {
   gap: 10px;
   margin-bottom: 10px;
   border: 1px solid var(--blue);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   background: var(--blue-soft);
 }
@@ -1946,7 +1963,7 @@ button:focus-visible {
   align-items: center;
   gap: 6px;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 4px 6px 4px 10px;
   background: #ffffff;
   color: var(--ink);
@@ -1991,9 +2008,10 @@ button:focus-visible {
   width: min(920px, 94vw);
   max-height: 86vh;
   overflow-y: auto;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong);
   background: #ffffff;
-  box-shadow: 0 24px 60px rgba(15, 23, 32, 0.28);
+  box-shadow: 0 2px 8px rgba(15, 23, 32, 0.12);
 }
 
 .compare-modal-head {
@@ -2076,7 +2094,7 @@ button:focus-visible {
   top: 8px;
   right: 8px;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   width: 20px;
   height: 20px;
   background: #f8fafc;
@@ -2156,9 +2174,9 @@ button:focus-visible {
   width: min(680px, 100%);
   height: 100vh;
   overflow-y: auto;
-  border-left: 1px solid var(--line);
+  border-left: 1px solid var(--line-strong);
   background: #ffffff;
-  box-shadow: -18px 0 36px rgba(22, 32, 42, 0.18);
+  box-shadow: -2px 0 8px rgba(22, 32, 42, 0.08);
 }
 
 .detail-head {
@@ -2220,7 +2238,7 @@ button:focus-visible {
 .info-item,
 .runtime-card {
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 11px;
   background: #ffffff;
 }
@@ -2260,7 +2278,7 @@ button:focus-visible {
 
 .license-summary-card {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 14px;
   background: #fbfcfd;
 }
@@ -2292,7 +2310,7 @@ button:focus-visible {
 
 .detail-table {
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -2317,6 +2335,89 @@ button:focus-visible {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
+}
+
+.memory-map {
+  margin-bottom: 16px;
+}
+
+.memmap-title {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.memmap-bar {
+  display: flex;
+  height: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.memmap-seg {
+  height: 100%;
+}
+
+.memmap-seg.memmap-weights,
+.memmap-swatch.memmap-weights {
+  background: var(--blue);
+}
+
+.memmap-seg.memmap-kv,
+.memmap-swatch.memmap-kv {
+  background: #4f8fb0;
+}
+
+.memmap-seg.memmap-other,
+.memmap-swatch.memmap-other {
+  background: #7fa6b8;
+}
+
+.memmap-seg.memmap-runtime,
+.memmap-swatch.memmap-runtime {
+  background: #9db8c6;
+}
+
+.memmap-seg.memmap-free,
+.memmap-swatch.memmap-free {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.memmap-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+
+.memmap-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.memmap-swatch {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 1px;
+}
+
+.memmap-swatch.memmap-free {
+  border: 1px solid var(--line-strong);
+}
+
+.memmap-legend-item strong {
+  margin-left: auto;
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .memory-breakdown {
@@ -2346,7 +2447,7 @@ button:focus-visible {
 
 .memory-bar {
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: #edf1f5;
   overflow: hidden;
 }
@@ -2386,7 +2487,7 @@ button:focus-visible {
 .evidence-card {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 12px;
   background: #ffffff;
 }
@@ -2416,7 +2517,7 @@ button:focus-visible {
   gap: 8px;
   margin-top: 10px;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: var(--green-soft);
   color: var(--green);
   font-size: 12px;
@@ -2463,7 +2564,7 @@ button:focus-visible {
 .reason-list span {
   min-height: 30px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   background: #f8fafc;
   color: #334155;
@@ -2489,7 +2590,7 @@ button:focus-visible {
   margin: 0;
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 12px;
   background: #111827;
   color: #e5edf6;
@@ -2514,7 +2615,7 @@ button:focus-visible {
   align-items: center;
   min-height: 34px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 0 10px;
   color: var(--blue);
   background: #f8fafc;
@@ -2531,7 +2632,7 @@ button:focus-visible {
   width: min(1540px, calc(100vw - 48px));
   margin: 0 auto 18px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 18px 22px;
   background: #ffffff;
   box-shadow: var(--shadow);
@@ -2566,7 +2667,7 @@ button:focus-visible {
   max-height: 520px;
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .benchmark-table {
@@ -2603,7 +2704,7 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   padding: 0 8px;
   font-size: 11px;
   font-weight: 800;
@@ -2622,6 +2723,16 @@ button:focus-visible {
 .data-kind.is-reference {
   background: #eef2f6;
   color: #475569;
+}
+
+.evidence-code {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: 5px;
+  padding-right: 5px;
+  border-right: 1px solid currentColor;
+  opacity: 0.75;
 }
 
 .app-footer {

@@ -668,6 +668,12 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["평균", "avg"],
   ["통합메모리", "unified memory"],
   ["채굴카드", "mining card"],
+  ["VRAM 메모리 맵", "VRAM memory map"],
+  ["기타 버퍼", "Other buffers"],
+  ["모델 가중치", "Model weights"],
+  ["상주 모델/모듈", "Resident model/module"],
+  ["런타임 오버헤드", "Runtime overhead"],
+  ["여유", "Free"],
 ];
 
 // Hangul syllable + jamo range, used to guard dictionary substring matches
@@ -3641,6 +3647,13 @@ function benchmarkEvidenceLabel(row) {
   return "사용자 측정";
 }
 
+function benchmarkEvidenceCode(rowType) {
+  if (rowType === "자체 측정") return "SELF";
+  if (rowType === "외부 공개 참고값") return "EXT";
+  if (rowType === "사용자 측정") return "USER";
+  return "EST";
+}
+
 function findBenchmarksForModel(model) {
   const key = modelKey(model);
   return BENCHMARKS.filter((row) => (
@@ -4055,7 +4068,7 @@ function renderSimpleMode(hardware, allEstimates) {
         ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
         <span class="simple-pick-actions">
           <span class="simple-pick-cta">${t("detailCalculation")} →</span>
-          <span class="simple-pick-copy" role="button" tabindex="0" data-copy-command="${escapeAttr(buildOllamaCommand(estimate.model, estimate.quant, hardware))}">${uiLanguage === "en" ? "Copy Ollama" : "Ollama 복사"}</span>
+          <span class="simple-pick-copy" role="button" tabindex="0" data-copy-command="${escapeAttr(estimate.model.type === "generative" ? buildOllamaCommand(estimate.model, estimate.quant, hardware) : buildNonGenerativeCommand(estimate.model, estimate))}">${uiLanguage === "en" ? "Copy run command" : "실행 명령어 복사"}</span>
         </span>
       </button>
     `;
@@ -4559,6 +4572,15 @@ function renderDetail() {
 
     <section class="detail-section">
       <h3>VRAM 상세 분석</h3>
+      ${renderMemoryMap(
+        [
+          { key: "weights", label: "모델 가중치", value: estimate.weightsGb },
+          { key: "kv", label: "KV cache", value: estimate.kvGb },
+          { key: "runtime", label: "런타임 오버헤드", value: estimate.runtimeOverheadGb },
+          { key: "free", label: "여유", value: Math.max(0, hardware.availableVram - estimate.requiredGb) },
+        ],
+        Math.max(hardware.availableVram, estimate.requiredGb),
+      )}
       <div class="memory-breakdown">
         ${renderMemoryLine("모델 가중치", estimate.weightsGb, breakdownTotal)}
         ${renderMemoryLine("KV cache", estimate.kvGb, breakdownTotal)}
@@ -4674,6 +4696,10 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
 
     <section class="detail-section">
       <h3>${detailKind} 메모리 분석</h3>
+      ${renderMemoryMap(
+        buildNonGenerativeMemorySegments(estimate, hardware),
+        Math.max(hardware.availableVram, estimate.requiredGb),
+      )}
       <div class="memory-breakdown">
         ${renderNonGenerativeMemoryLines(estimate, breakdownTotal)}
       </div>
@@ -4745,6 +4771,22 @@ function renderPrecisionRows(model, hardware, recommendedPrecisionId) {
       </div>
     `;
   }).join("");
+}
+
+function buildNonGenerativeMemorySegments(estimate, hardware) {
+  const other = (estimate.activationGb || 0) + (estimate.attentionGb || 0) + (estimate.imageBufferGb || 0) + (estimate.outputGb || 0);
+  const segments = [
+    {
+      key: "weights",
+      label: estimate.model.type === "ocr-pipeline" ? "상주 모델/모듈" : "모델 가중치",
+      value: estimate.weightsGb,
+    },
+  ];
+  if (estimate.kvGb) segments.push({ key: "kv", label: "KV cache", value: estimate.kvGb });
+  if (other > 0) segments.push({ key: "other", label: "기타 버퍼", value: other });
+  segments.push({ key: "runtime", label: "런타임 오버헤드", value: estimate.runtimeOverheadGb });
+  segments.push({ key: "free", label: "여유", value: Math.max(0, hardware.availableVram - estimate.requiredGb) });
+  return segments;
 }
 
 function renderNonGenerativeMemoryLines(estimate, totalWithSafety) {
@@ -5197,6 +5239,35 @@ function getPrecisionLabel(precisionId, precisionOptions) {
   return precisionOptions.find((precision) => precision.id === precisionId)?.label || "자동 추천";
 }
 
+function renderMemoryMap(segments, capacity) {
+  const safeCapacity = Math.max(0.1, capacity);
+  const bar = segments
+    .map((segment) => {
+      const width = Math.max(0, Math.min(100, (segment.value / safeCapacity) * 100));
+      if (width <= 0) return "";
+      return `<span class="memmap-seg memmap-${segment.key}" style="width:${width}%"></span>`;
+    })
+    .join("");
+  const legend = segments
+    .map(
+      (segment) => `
+        <div class="memmap-legend-item">
+          <span class="memmap-swatch memmap-${segment.key}"></span>
+          <span>${escapeHtml(segment.label)}</span>
+          <strong class="num">${formatGb(segment.value)}</strong>
+        </div>
+      `,
+    )
+    .join("");
+  return `
+    <div class="memory-map">
+      <div class="memmap-title">VRAM 메모리 맵 · 총 ${formatGb(safeCapacity)}</div>
+      <div class="memmap-bar">${bar}</div>
+      <div class="memmap-legend">${legend}</div>
+    </div>
+  `;
+}
+
 function renderMemoryLine(label, value, total) {
   const safeTotal = Math.max(0.1, total, value);
   const width = Math.max(3, Math.min(100, (value / safeTotal) * 100));
@@ -5374,7 +5445,7 @@ function renderBenchmarkSheet() {
       </div>
       ${rows.map((row) => `
         <div class="benchmark-row">
-          <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}">${escapeHtml(row.rowType === "외부 공개 참고값" ? benchmarkTypeLabel : row.rowType === "사용자 측정" ? userTypeLabel : projectTypeLabel)}</span></span>
+          <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}"><span class="evidence-code">${benchmarkEvidenceCode(row.rowType)}</span>${escapeHtml(row.rowType === "외부 공개 참고값" ? benchmarkTypeLabel : row.rowType === "사용자 측정" ? userTypeLabel : projectTypeLabel)}</span></span>
           <span>${escapeHtml(row.modelName)}</span>
           <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
           <span>${escapeHtml(row.setting || row.runtime || row.workload || "-")}</span>
