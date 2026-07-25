@@ -2870,6 +2870,13 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
+.benchmark-chart-group-description {
+  margin: -2px 0 2px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .benchmark-chart-bar-row {
   display: grid;
   grid-template-columns: minmax(120px, 240px) 1fr 68px;
@@ -2906,6 +2913,11 @@ button:focus-visible {
   font-family: var(--mono);
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
+}
+
+.benchmark-chart-bar-scale {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .benchmark-chart-group-analysis {
