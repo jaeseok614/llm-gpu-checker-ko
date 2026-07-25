@@ -468,6 +468,7 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["컨텍스트 토큰", "Context tokens"],
   ["동시 요청 프리셋", "Concurrent requests preset"],
   ["동시 요청 직접 입력", "Custom concurrent requests"],
+  ["목표 동시 사용자 직접 입력", "Custom target concurrent users"],
   ["동시 요청", "Concurrent requests"],
   ["평균 출력 프리셋", "Average output preset"],
   ["평균 출력 직접 입력", "Custom average output"],
@@ -998,6 +999,12 @@ function setUiLanguage(language) {
   // since render() itself calls setUiLanguage("en") at its end.
   renderOnboardingQuickPicks();
   renderBenchmarkSheet();
+  // Same reasoning for the multi-GPU placement result, its 3-plan comparison,
+  // and the run-command/docker-compose export — all free-form sentences (and
+  // the export panel's <pre> code blocks) that only re-running the real
+  // render functions can translate correctly.
+  if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+  comparePlacementPlans();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
   // Refresh the theme-toggle button labels ("라이트"/"다크" vs "Light"/"Dark"),
@@ -1760,11 +1767,19 @@ function bindEvents() {
     button.addEventListener("click", () => setPlacementUsageMode(button.dataset.placementUsage));
   });
 
-  $("placementTargetConcurrency")?.addEventListener("change", (event) => {
-    const value = event.target.value;
-    placementTargetN = value ? clampNumber(value, 1, 256, 1) : null;
+  const updatePlacementTargetConcurrency = () => {
+    const select = $("placementTargetConcurrency");
+    if (!select || select.value === "") {
+      placementTargetN = null;
+    } else if (select.value === "custom") {
+      placementTargetN = clampNumber($("placementTargetConcurrencyCustom").value, 1, 256, 32);
+    } else {
+      placementTargetN = clampNumber(select.value, 1, 256, 1);
+    }
     if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
-  });
+  };
+  $("placementTargetConcurrency")?.addEventListener("change", updatePlacementTargetConcurrency);
+  $("placementTargetConcurrencyCustom")?.addEventListener("input", updatePlacementTargetConcurrency);
 
   $("placementPrimaryModel")?.addEventListener("change", (event) => {
     placementPrimaryKey = event.target.value;
@@ -3062,8 +3077,12 @@ function buildPlacementDeploymentScript(placement) {
   const hardware = getHardware();
   const lines = [
     "#!/usr/bin/env bash",
-    "# AI Hardware Fit — 배치 계산 결과 기반 실행 명령어 초안",
-    "# 추정 배치입니다. 실제 배포 전 각 모델의 라이선스와 최신 실행 옵션을 다시 확인하세요.",
+    uiLanguage === "en"
+      ? "# AI Hardware Fit — draft run commands generated from the placement result"
+      : "# AI Hardware Fit — 배치 계산 결과 기반 실행 명령어 초안",
+    uiLanguage === "en"
+      ? "# This is an estimated placement. Re-check each model's license and the latest run options before deploying."
+      : "# 추정 배치입니다. 실제 배포 전 각 모델의 라이선스와 최신 실행 옵션을 다시 확인하세요.",
     "",
   ];
 
@@ -3087,9 +3106,13 @@ function buildPlacementDeploymentScript(placement) {
   });
 
   if (placement.unplaced.length) {
-    lines.push("# ===== 배치하지 못한 모델 (GPU 여유 부족) =====");
+    lines.push(uiLanguage === "en"
+      ? "# ===== Models that didn't fit (not enough GPU headroom) ====="
+      : "# ===== 배치하지 못한 모델 (GPU 여유 부족) =====");
     placement.unplaced.forEach((item) => {
-      lines.push(`# ${item.model.name} — 최소 ${formatGb(item.minRequiredGb)} 필요`);
+      lines.push(uiLanguage === "en"
+        ? `# ${item.model.name} — needs at least ${formatGb(item.minRequiredGb)}`
+        : `# ${item.model.name} — 최소 ${formatGb(item.minRequiredGb)} 필요`);
     });
     lines.push("");
   }
@@ -3119,6 +3142,9 @@ function buildPlacementDockerCompose(placement) {
       const pullHint = generativeItems
         .map((item) => `    #   docker exec ${serviceName} ollama pull ${buildOllamaModelName(item.model)}  # ${item.model.name} (${item.label})`)
         .join("\n");
+      const pullHintLabel = uiLanguage === "en"
+        ? "# After the first startup, pull the model with:"
+        : "# 최초 기동 후 아래 명령으로 모델을 내려받으세요:";
       services.push(`  ${serviceName}:
     image: ollama/ollama:latest
     container_name: ${serviceName}
@@ -3134,7 +3160,7 @@ function buildPlacementDockerCompose(placement) {
             - driver: nvidia
               device_ids: ["${gpu.index}"]
               capabilities: [gpu]
-    # 최초 기동 후 아래 명령으로 모델을 내려받으세요:
+    ${pullHintLabel}
 ${pullHint}`);
       hostPort += 1;
     }
@@ -3160,7 +3186,13 @@ ${pullHint}`);
     });
 
     if (visionItems.length) {
-      services.push(`  # GPU ${gpu.index + 1}에 배치된 OCR/VLM 모델 ${visionItems.length}개(${visionItems.map((item) => item.model.name).join(", ")})는
+      const names = visionItems.map((item) => item.model.name).join(", ");
+      services.push(uiLanguage === "en"
+        ? `  # The ${visionItems.length} OCR/VLM model(s) placed on GPU ${gpu.index + 1} (${names})
+  # aren't auto-generated as a standard service since each one runs differently
+  # (vLLM, Transformers, a dedicated CLI, etc.).
+  # Use the run commands (.sh) or the model detail screen's "run example" to set these up manually.`
+        : `  # GPU ${gpu.index + 1}에 배치된 OCR/VLM 모델 ${visionItems.length}개(${names})는
   # 모델마다 실행 방식(vLLM, Transformers, 전용 CLI 등)이 달라 표준 서비스로 자동 생성하지 않습니다.
   # 실행 명령어(.sh) 또는 앱의 모델 상세 화면 "실행 예시"를 참고해 직접 구성하세요.`);
     }
@@ -3170,9 +3202,15 @@ ${pullHint}`);
     ? `\n\nvolumes:\n${volumeNames.map((name) => `  ${name}:`).join("\n")}`
     : "";
 
-  return `# AI Hardware Fit — 배치 계산 결과 기반 docker-compose 초안 (참고용)
+  const header = uiLanguage === "en"
+    ? `# AI Hardware Fit — draft docker-compose generated from the placement result (reference only)
+# This is an estimated placement and requires nvidia-container-toolkit.
+# Re-check resource limits, port conflicts, and each model's license before running this in production.`
+    : `# AI Hardware Fit — 배치 계산 결과 기반 docker-compose 초안 (참고용)
 # 추정 배치이며 nvidia-container-toolkit 설치가 필요합니다.
-# 실제 운영 전 리소스 한도, 포트 충돌, 각 모델 라이선스를 반드시 다시 확인하세요.
+# 실제 운영 전 리소스 한도, 포트 충돌, 각 모델 라이선스를 반드시 다시 확인하세요.`;
+
+  return `${header}
 services:
 ${services.join("\n\n")}${volumesBlock}
 `;
@@ -3191,28 +3229,32 @@ function renderPlacementExport(placement) {
 
   const script = buildPlacementDeploymentScript(placement);
   const compose = buildPlacementDockerCompose(placement);
+  const copyLabel = uiLanguage === "en" ? "Copy" : "복사";
+  const downloadLabel = uiLanguage === "en" ? "Download" : "다운로드";
 
   target.hidden = false;
   target.innerHTML = `
     <details class="gpu-placement-export-panel">
-      <summary>실행 설정 내보내기 (실행 명령어 · docker-compose 초안)</summary>
+      <summary>${escapeHtml(uiLanguage === "en" ? "Export run config (run commands · docker-compose draft)" : "실행 설정 내보내기 (실행 명령어 · docker-compose 초안)")}</summary>
       <div class="gpu-placement-export-body">
-        <p>배치 계산 결과를 기준으로 만든 초안입니다. 실제 배포 전 각 모델의 라이선스, 최신 실행 옵션, GPU 리소스를 다시 확인하세요.</p>
+        <p>${escapeHtml(uiLanguage === "en"
+          ? "A draft based on the current placement result. Re-check each model's license, the latest run options, and GPU resources before deploying."
+          : "배치 계산 결과를 기준으로 만든 초안입니다. 실제 배포 전 각 모델의 라이선스, 최신 실행 옵션, GPU 리소스를 다시 확인하세요.")}</p>
 
         <div class="export-block-head">
-          <span>실행 명령어 (.sh)</span>
+          <span>${escapeHtml(uiLanguage === "en" ? "Run commands (.sh)" : "실행 명령어 (.sh)")}</span>
           <div class="export-block-actions">
-            <button type="button" class="ghost-button" data-copy-target="placementExportScript">복사</button>
-            <button type="button" class="ghost-button" data-download-target="placementExportScript" data-download-filename="ai-hardware-fit-run.sh">다운로드</button>
+            <button type="button" class="ghost-button" data-copy-target="placementExportScript">${escapeHtml(copyLabel)}</button>
+            <button type="button" class="ghost-button" data-download-target="placementExportScript" data-download-filename="ai-hardware-fit-run.sh">${escapeHtml(downloadLabel)}</button>
           </div>
         </div>
         <pre class="command-block" id="placementExportScript"><code>${escapeHtml(script)}</code></pre>
 
         <div class="export-block-head">
-          <span>docker-compose.yml 초안 (Ollama · TEI)</span>
+          <span>${escapeHtml(uiLanguage === "en" ? "docker-compose.yml draft (Ollama · TEI)" : "docker-compose.yml 초안 (Ollama · TEI)")}</span>
           <div class="export-block-actions">
-            <button type="button" class="ghost-button" data-copy-target="placementExportCompose">복사</button>
-            <button type="button" class="ghost-button" data-download-target="placementExportCompose" data-download-filename="docker-compose.yml">다운로드</button>
+            <button type="button" class="ghost-button" data-copy-target="placementExportCompose">${escapeHtml(copyLabel)}</button>
+            <button type="button" class="ghost-button" data-download-target="placementExportCompose" data-download-filename="docker-compose.yml">${escapeHtml(downloadLabel)}</button>
           </div>
         </div>
         <pre class="command-block" id="placementExportCompose"><code>${escapeHtml(compose)}</code></pre>
@@ -3226,7 +3268,7 @@ function copyTextToClipboard(text, button) {
     if (!button) return;
     const original = button.dataset.label || button.textContent;
     button.dataset.label = original;
-    button.textContent = "복사됨";
+    button.textContent = uiLanguage === "en" ? "Copied" : "복사됨";
     setTimeout(() => {
       button.textContent = original;
     }, 1500);

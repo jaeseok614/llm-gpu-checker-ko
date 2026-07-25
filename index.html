@@ -197,15 +197,20 @@
                 <div class="gpu-placement-goals">
                   <label class="field">
                     <span>목표 동시 사용자</span>
-                    <select id="placementTargetConcurrency">
-                      <option value="">설정 안 함</option>
-                      <option value="1">1명</option>
-                      <option value="2">2명</option>
-                      <option value="4">4명</option>
-                      <option value="8">8명</option>
-                      <option value="16">16명</option>
-                      <option value="32">32명</option>
-                    </select>
+                    <div class="field-control-pair">
+                      <select id="placementTargetConcurrency" data-preset-target="placementTargetConcurrencyCustom">
+                        <option value="">설정 안 함</option>
+                        <option value="1">1명</option>
+                        <option value="2">2명</option>
+                        <option value="4">4명</option>
+                        <option value="8">8명</option>
+                        <option value="16">16명</option>
+                        <option value="32">32명</option>
+                        <option value="64">64명</option>
+                        <option value="custom">직접</option>
+                      </select>
+                      <input id="placementTargetConcurrencyCustom" data-direct-preset="placementTargetConcurrency" type="number" min="1" max="256" step="1" value="32" aria-label="목표 동시 사용자 직접 입력" />
+                    </div>
                   </label>
                   <label class="field">
                     <span>주 모델(우선 배정)</span>
