@@ -1506,6 +1506,49 @@ button:focus-visible {
   font-weight: 700;
 }
 
+.gpu-placement-baseline:has(.capacity-warning) {
+  background: var(--red-soft);
+}
+
+.capacity-warning {
+  color: var(--red);
+  font-weight: 800;
+}
+
+.gpu-placement-diagnosis-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--yellow);
+  border-radius: var(--radius-sm);
+  background: var(--yellow-soft);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.gpu-placement-diagnosis-box > strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.gpu-placement-diagnosis-box p {
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+
+.gpu-placement-diagnosis-note {
+  color: var(--muted) !important;
+  font-size: 12px;
+}
+
+.gpu-placement-diagnosis-box .ghost-button {
+  margin-top: 2px;
+}
+
 #runPlacementButton {
   margin-top: 0;
 }
@@ -2894,11 +2937,17 @@ button:focus-visible {
 
 .benchmark-toolbar {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
 .benchmark-toolbar input[type="search"] {
   max-width: 360px;
+}
+
+.benchmark-toolbar select {
+  max-width: 280px;
 }
 
 .benchmark-compare-bar {
