@@ -3999,35 +3999,68 @@ function estimateImageTokens(model, width, height) {
 }
 
 function buildEncoderReason(model, workload, grade, requiredGb, effectiveVram, microBatch) {
+  const en = uiLanguage === "en";
   if (workload.inputTokens > model.maxTokens) {
-    return `선택한 ${formatContext(workload.inputTokens)} 입력 길이가 모델 한도 ${formatContext(model.maxTokens)}를 초과합니다.`;
+    return en
+      ? `The selected ${formatContext(workload.inputTokens)} input length exceeds the model's ${formatContext(model.maxTokens)} limit.`
+      : `선택한 ${formatContext(workload.inputTokens)} 입력 길이가 모델 한도 ${formatContext(model.maxTokens)}를 초과합니다.`;
   }
   if (microBatch < workload.batchSize) {
-    return `TEI식 최대 배치 토큰 기준으로 ${workload.batchSize}개 요청을 ${microBatch}개 micro-batch로 나누어 계산했습니다.`;
+    return en
+      ? `Based on TEI-style max batch tokens, ${workload.batchSize} requests were split into micro-batches of ${microBatch}.`
+      : `TEI식 최대 배치 토큰 기준으로 ${workload.batchSize}개 요청을 ${microBatch}개 micro-batch로 나누어 계산했습니다.`;
   }
-  if (grade === "F") return `Peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
-  if (grade === "D") return `GPU 단독 처리보다 RAM/CPU 보조나 배치 축소가 필요한 범위입니다.`;
-  if (grade === "C") return `배치 또는 입력 길이를 조금 낮추면 더 안정적인 임베딩 처리량을 기대할 수 있습니다.`;
-  return `${workload.inputTokens} 토큰, 배치 ${workload.batchSize} 기준으로 GPU 메모리 안에 들어오는 임베딩 워크로드입니다.`;
+  if (grade === "F") return en
+    ? `Peak VRAM of ${formatGb(requiredGb)} exceeds the available VRAM (${formatGb(effectiveVram)}) plus RAM-assist range.`
+    : `Peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
+  if (grade === "D") return en
+    ? "This is beyond GPU-only processing and needs RAM/CPU assistance or a smaller batch."
+    : "GPU 단독 처리보다 RAM/CPU 보조나 배치 축소가 필요한 범위입니다.";
+  if (grade === "C") return en
+    ? "Lowering the batch size or input length a bit would give more stable embedding throughput."
+    : "배치 또는 입력 길이를 조금 낮추면 더 안정적인 임베딩 처리량을 기대할 수 있습니다.";
+  return en
+    ? `An embedding workload that fits in GPU memory at ${workload.inputTokens} tokens, batch ${workload.batchSize}.`
+    : `${workload.inputTokens} 토큰, 배치 ${workload.batchSize} 기준으로 GPU 메모리 안에 들어오는 임베딩 워크로드입니다.`;
 }
 
 function buildRerankerReason(model, workload, grade, requiredGb, effectiveVram, pairTokens) {
+  const en = uiLanguage === "en";
   if (pairTokens > model.maxTokens) {
-    return `질의+문서 ${formatContext(pairTokens)} 입력이 모델 한도 ${formatContext(model.maxTokens)}를 초과합니다.`;
+    return en
+      ? `The query+document input of ${formatContext(pairTokens)} exceeds the model's ${formatContext(model.maxTokens)} limit.`
+      : `질의+문서 ${formatContext(pairTokens)} 입력이 모델 한도 ${formatContext(model.maxTokens)}를 초과합니다.`;
   }
   if (pairTokens > (model.recommendedTokens || model.maxTokens)) {
-    return `모델 한도 안에는 들어가지만 권장 입력 ${formatContext(model.recommendedTokens || model.maxTokens)}보다 길어 지연시간이 커질 수 있습니다.`;
+    return en
+      ? `Within the model limit, but longer than the recommended input of ${formatContext(model.recommendedTokens || model.maxTokens)} — latency may increase.`
+      : `모델 한도 안에는 들어가지만 권장 입력 ${formatContext(model.recommendedTokens || model.maxTokens)}보다 길어 지연시간이 커질 수 있습니다.`;
   }
-  if (grade === "F") return `리랭커 peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
-  if (grade === "D") return `후보 ${workload.candidates}개를 처리하려면 배치 축소나 CPU/RAM 보조를 고려해야 합니다.`;
-  return `후보 ${workload.candidates}개를 배치 ${workload.batchSize}로 나누어 ${Math.ceil(workload.candidates / workload.batchSize)}회 추론하는 기준입니다.`;
+  if (grade === "F") return en
+    ? `Reranker peak VRAM of ${formatGb(requiredGb)} greatly exceeds the available VRAM (${formatGb(effectiveVram)}).`
+    : `리랭커 peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
+  if (grade === "D") return en
+    ? `Processing ${workload.candidates} candidates needs a smaller batch or CPU/RAM assistance.`
+    : `후보 ${workload.candidates}개를 처리하려면 배치 축소나 CPU/RAM 보조를 고려해야 합니다.`;
+  return en
+    ? `${workload.candidates} candidates split into batches of ${workload.batchSize}, run over ${Math.ceil(workload.candidates / workload.batchSize)} inference passes.`
+    : `후보 ${workload.candidates}개를 배치 ${workload.batchSize}로 나누어 ${Math.ceil(workload.candidates / workload.batchSize)}회 추론하는 기준입니다.`;
 }
 
 function buildOcrReason(model, workload, grade, requiredGb, effectiveVram, megapixels) {
-  if (grade === "F") return `${formatMegapixels(megapixels)} 이미지의 peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
-  if (grade === "D") return `GPU 단독 처리보다 CPU/RAM 보조 또는 배치 페이지 축소가 필요한 OCR 워크로드입니다.`;
-  if (grade === "C") return `이미지 해상도나 배치가 높아 VRAM 여유가 작습니다. DPI 또는 배치 페이지를 낮추는 편이 안정적입니다.`;
-  return `${formatMegapixels(megapixels)}, 배치 ${workload.batchSize}페이지 기준으로 실행 가능한 OCR 워크로드입니다.`;
+  const en = uiLanguage === "en";
+  if (grade === "F") return en
+    ? `Peak VRAM of ${formatGb(requiredGb)} for a ${formatMegapixels(megapixels)} image exceeds the available VRAM (${formatGb(effectiveVram)}) plus RAM-assist range.`
+    : `${formatMegapixels(megapixels)} 이미지의 peak VRAM ${formatGb(requiredGb)}가 가용 VRAM ${formatGb(effectiveVram)}와 RAM 보조 범위를 초과합니다.`;
+  if (grade === "D") return en
+    ? "An OCR workload that needs CPU/RAM assistance or a smaller batch page count rather than GPU-only processing."
+    : "GPU 단독 처리보다 CPU/RAM 보조 또는 배치 페이지 축소가 필요한 OCR 워크로드입니다.";
+  if (grade === "C") return en
+    ? "Image resolution or batch size leaves little VRAM headroom. Lowering DPI or batch pages would be more stable."
+    : "이미지 해상도나 배치가 높아 VRAM 여유가 작습니다. DPI 또는 배치 페이지를 낮추는 편이 안정적입니다.";
+  return en
+    ? `A runnable OCR workload at ${formatMegapixels(megapixels)}, batch ${workload.batchSize} pages.`
+    : `${formatMegapixels(megapixels)}, 배치 ${workload.batchSize}페이지 기준으로 실행 가능한 OCR 워크로드입니다.`;
 }
 
 function gradeFromPressure(pressure, requiredGb, offloadRoom) {
@@ -4107,47 +4140,85 @@ function estimateConcurrencyCapacity(model, quant, hardware) {
 
 function renderConcurrencySection(model, quant, hardware) {
   const capacity = estimateConcurrencyCapacity(model, quant, hardware);
+  const title = uiLanguage === "en" ? "Concurrency capacity (beta)" : "동시 처리 용량 (베타)";
 
   if (capacity.maxN <= 0) {
+    const note = uiLanguage === "en"
+      ? `With the current settings (${quant.label} · ${formatContext(hardware.context)}), this GPU's VRAM alone can't comfortably handle even 1 concurrent user. Try a lower quantization or a shorter context length.`
+      : `현재 설정(${quant.label} · ${formatContext(hardware.context)})에서는 이 GPU VRAM 단독으로 1명도 여유 있게 처리하기 어렵습니다. 양자화를 낮추거나 컨텍스트 길이를 줄여보세요.`;
     return `
       <section class="detail-section">
-        <h3>동시 처리 용량 (베타)</h3>
-        <p class="detail-note">현재 설정(${escapeHtml(quant.label)} · ${escapeHtml(formatContext(hardware.context))})에서는 이 GPU VRAM 단독으로 1명도 여유 있게 처리하기 어렵습니다. 양자화를 낮추거나 컨텍스트 길이를 줄여보세요.</p>
+        <h3>${escapeHtml(title)}</h3>
+        <p class="detail-note">${escapeHtml(note)}</p>
       </section>
     `;
   }
 
+  const perUser = (speed) => uiLanguage === "en" ? `About ${formatSpeed(speed)} per user` : `1인당 약 ${formatSpeed(speed)}`;
+  const footnote = uiLanguage === "en"
+    ? "A theoretical estimate based only on KV cache and remaining VRAM. Real-world concurrent throughput can vary widely with the serving framework's continuous-batching efficiency (vLLM, TGI, etc.), request-length distribution, and scheduling policy — use this as a reference only."
+    : "KV cache와 VRAM 여유만 반영한 이론치입니다. 실제 동시접속 처리량은 vLLM·TGI 등 서빙 프레임워크의 연속 배칭 효율, 요청 길이 분포, 스케줄링 정책에 따라 크게 달라질 수 있으니 참고용으로만 사용하세요.";
+
   return `
     <section class="detail-section">
-      <h3>동시 처리 용량 (베타)</h3>
+      <h3>${escapeHtml(title)}</h3>
       <div class="detail-summary-grid">
-        ${renderDetailMetric("권장 동시 인원", `${capacity.recommendedN}명`, "VRAM 여유 있게(등급 A 이내)")}
-        ${renderDetailMetric("이론적 최대 인원", `${capacity.maxN}명`, "GPU VRAM 한계치(등급 B 경계)")}
-        ${renderDetailMetric("권장 인원 기준 처리량", formatThroughput(capacity.speedAtRecommended.total, "tok/s"), `1인당 약 ${formatSpeed(capacity.speedAtRecommended.perRequest)}`)}
-        ${renderDetailMetric("최대 인원 기준 처리량", formatThroughput(capacity.speedAtMax.total, "tok/s"), `1인당 약 ${formatSpeed(capacity.speedAtMax.perRequest)}`)}
+        ${renderDetailMetric(
+          uiLanguage === "en" ? "Recommended concurrency" : "권장 동시 인원",
+          uiLanguage === "en" ? pluralize(capacity.recommendedN, "user", "users") : `${capacity.recommendedN}명`,
+          uiLanguage === "en" ? "Keeps VRAM headroom (within grade A)" : "VRAM 여유 있게(등급 A 이내)",
+        )}
+        ${renderDetailMetric(
+          uiLanguage === "en" ? "Theoretical max users" : "이론적 최대 인원",
+          uiLanguage === "en" ? pluralize(capacity.maxN, "user", "users") : `${capacity.maxN}명`,
+          uiLanguage === "en" ? "GPU VRAM ceiling (grade B edge)" : "GPU VRAM 한계치(등급 B 경계)",
+        )}
+        ${renderDetailMetric(
+          uiLanguage === "en" ? "Throughput at recommended concurrency" : "권장 인원 기준 처리량",
+          formatThroughput(capacity.speedAtRecommended.total, "tok/s"),
+          perUser(capacity.speedAtRecommended.perRequest),
+        )}
+        ${renderDetailMetric(
+          uiLanguage === "en" ? "Throughput at max concurrency" : "최대 인원 기준 처리량",
+          formatThroughput(capacity.speedAtMax.total, "tok/s"),
+          perUser(capacity.speedAtMax.perRequest),
+        )}
       </div>
-      <p class="detail-note">KV cache와 VRAM 여유만 반영한 이론치입니다. 실제 동시접속 처리량은 vLLM·TGI 등 서빙 프레임워크의 연속 배칭 효율, 요청 길이 분포, 스케줄링 정책에 따라 크게 달라질 수 있으니 참고용으로만 사용하세요.</p>
+      <p class="detail-note">${escapeHtml(footnote)}</p>
     </section>
   `;
 }
 
 function buildReason(grade, requiredGb, effectiveVram, model, hardware, contextLimitTokens, contextSupported) {
+  const en = uiLanguage === "en";
   if (!contextSupported) {
-    return `선택한 ${formatContext(hardware.context)} 컨텍스트가 모델 한도 ${formatContext(contextLimitTokens)}를 초과합니다.`;
+    return en
+      ? `The selected ${formatContext(hardware.context)} context exceeds the model's ${formatContext(contextLimitTokens)} limit.`
+      : `선택한 ${formatContext(hardware.context)} 컨텍스트가 모델 한도 ${formatContext(contextLimitTokens)}를 초과합니다.`;
   }
   if (grade === "F") {
-    return `동시 ${hardware.concurrency}명 기준 필요 VRAM 추정치가 ${formatGb(requiredGb)}로 가용 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
+    return en
+      ? `At ${hardware.concurrency} concurrent, the estimated required VRAM of ${formatGb(requiredGb)} greatly exceeds the available VRAM of ${formatGb(effectiveVram)}.`
+      : `동시 ${hardware.concurrency}명 기준 필요 VRAM 추정치가 ${formatGb(requiredGb)}로 가용 VRAM ${formatGb(effectiveVram)}를 크게 초과합니다.`;
   }
   if (grade === "D") {
-    return `동시 ${hardware.concurrency}명 기준 GPU 단독 적재는 어렵고 RAM 오프로딩 전제가 필요합니다.`;
+    return en
+      ? `At ${hardware.concurrency} concurrent, this GPU alone can't hold the model — RAM offloading is required.`
+      : `동시 ${hardware.concurrency}명 기준 GPU 단독 적재는 어렵고 RAM 오프로딩 전제가 필요합니다.`;
   }
   if (grade === "C") {
-    return `가용 VRAM에 거의 맞습니다. 동시 요청, 컨텍스트 길이, KV cache 정밀도를 낮추는 편이 안정적입니다.`;
+    return en
+      ? "This nearly fills the available VRAM. It's more stable to lower concurrent requests, context length, or KV cache precision."
+      : "가용 VRAM에 거의 맞습니다. 동시 요청, 컨텍스트 길이, KV cache 정밀도를 낮추는 편이 안정적입니다.";
   }
   if (model.params >= 60 && hardware.count === 1) {
-    return `대형 모델이지만 예약/여유분 제외 가용 VRAM ${formatGb(effectiveVram)}에서 선택 양자화 기준 실행 가능 범위입니다.`;
+    return en
+      ? `A large model, but it's within the runnable range for the selected quantization on the available VRAM of ${formatGb(effectiveVram)} (after reservations/margin).`
+      : `대형 모델이지만 예약/여유분 제외 가용 VRAM ${formatGb(effectiveVram)}에서 선택 양자화 기준 실행 가능 범위입니다.`;
   }
-  return `선택한 GPU에서 ${model.params}B급 모델을 ${formatContext(hardware.context)}, 동시 ${hardware.concurrency}명 기준으로 실행 가능한 범위입니다.`;
+  return en
+    ? `On the selected GPU, this ${model.params}B-class model is within the runnable range at ${formatContext(hardware.context)} and ${hardware.concurrency} concurrent.`
+    : `선택한 GPU에서 ${model.params}B급 모델을 ${formatContext(hardware.context)}, 동시 ${hardware.concurrency}명 기준으로 실행 가능한 범위입니다.`;
 }
 
 function getFilteredEstimates() {
@@ -4375,70 +4446,84 @@ function getBenchmarkNumericValue(row) {
 function getEstimateConfidence(model, estimate, hardware) {
   const benchmarkRows = findBenchmarksForModel(model);
   const exactMatch = findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware);
+  const en = uiLanguage === "en";
 
   if (exactMatch) {
     return {
-      label: "높음",
+      label: en ? "High" : "높음",
       className: "confidence-high",
       spread: 0.08,
-      reason: `동일 모델/조건의 출처 연결 ${benchmarkEvidenceLabel(exactMatch)}값이 있습니다.`,
+      reason: en
+        ? `A source-linked ${benchmarkEvidenceLabel(exactMatch)} value exists for the same model/conditions.`
+        : `동일 모델/조건의 출처 연결 ${benchmarkEvidenceLabel(exactMatch)}값이 있습니다.`,
       matchedRow: exactMatch,
     };
   }
 
   if (benchmarkRows.length > 0) {
     return {
-      label: "보통",
+      label: en ? "Medium" : "보통",
       className: "confidence-medium",
       spread: 0.18,
-      reason: "같은 모델의 다른 실행 조건 사용자/자체 측정을 참고할 수 있습니다.",
+      reason: en
+        ? "User/project measurements for this same model under other run conditions can be used as a reference."
+        : "같은 모델의 다른 실행 조건 사용자/자체 측정을 참고할 수 있습니다.",
     };
   }
 
   if (isVisionModel(model) && model.reference?.pagesPerSecond) {
     return {
-      label: "보통",
+      label: en ? "Medium" : "보통",
       className: "confidence-medium",
       spread: 0.18,
-      reason: "모델별 OCR/VLM 외부 공개 참고값을 기준으로 보정합니다.",
+      reason: en
+        ? "Calibrated against this model's external public OCR/VLM reference figures."
+        : "모델별 OCR/VLM 외부 공개 참고값을 기준으로 보정합니다.",
     };
   }
 
   return {
-    label: "낮음",
+    label: en ? "Low" : "낮음",
     className: "confidence-low",
     spread: 0.32,
-    reason: "모델별 사용자/자체 측정 없이 파라미터, VRAM, 대역폭 기반 계산식으로 추정합니다.",
+    reason: en
+      ? "Estimated from a formula based on parameters, VRAM, and bandwidth, without user/project measurements for this model."
+      : "모델별 사용자/자체 측정 없이 파라미터, VRAM, 대역폭 기반 계산식으로 추정합니다.",
   };
 }
 
 function getModelReleaseInfo(model) {
+  const en = uiLanguage === "en";
   if (model.releaseDate) {
-    const year = Number(String(model.releaseDate).slice(0, 4));
-    const note = model.releaseNote || "공식";
+    const isModelCard = model.releaseNote === "모델 카드";
+    const note = en ? (isModelCard ? "Model card" : "Official") : (model.releaseNote || "공식");
     return {
       label: model.releaseDate,
       note,
-      className: releaseClassName(year),
-      title: note === "모델 카드" ? "공식 릴리스일이 아니라 공개 모델 카드의 createdAt 기준입니다." : "모델 데이터에 등록된 출시일입니다.",
+      className: releaseClassName(Number(String(model.releaseDate).slice(0, 4))),
+      title: en
+        ? (isModelCard ? "Based on the public model card's createdAt, not an official release date." : "The release date registered in this model's data.")
+        : (isModelCard ? "공식 릴리스일이 아니라 공개 모델 카드의 createdAt 기준입니다." : "모델 데이터에 등록된 출시일입니다."),
     };
   }
 
   const year = inferModelYear(model);
   if (!year) {
     return {
-      label: "미기재",
-      note: "출시일 없음",
+      label: en ? "Not stated" : "미기재",
+      note: en ? "No release date" : "출시일 없음",
       className: "release-unknown",
-      title: "정확한 출시일 메타데이터가 아직 없습니다.",
+      title: en ? "Accurate release-date metadata isn't available yet." : "정확한 출시일 메타데이터가 아직 없습니다.",
     };
   }
 
   return {
-    label: `${year} 계열`,
-    note: "세대 추정",
+    label: en ? `${year} series` : `${year} 계열`,
+    note: en ? "Estimated generation" : "세대 추정",
     className: releaseClassName(year),
-    title: "정확한 출시일이 아니라 모델명과 공개 세대 기준의 보수적 표시입니다.",
+    title: en
+      ? "A conservative estimate based on the model name and public generation, not an exact release date."
+      : "정확한 출시일이 아니라 모델명과 공개 세대 기준의 보수적 표시입니다.",
   };
 }
 
@@ -4569,12 +4654,14 @@ function qualityMissingLabel(model) {
 }
 
 function formatSpeedRange(estimate, confidence = getEstimateConfidence(estimate.model, estimate, getHardware())) {
-  if (!estimate.speed) return "불가";
+  if (!estimate.speed) return uiLanguage === "en" ? "N/A" : "불가";
   const spread = confidence.spread ?? 0.32;
   const unit = estimate.unitLabel || "tok/s";
   const low = estimate.speed * (1 - spread);
   const high = estimate.speed * (1 + spread);
-  return `약 ${formatMetricNumber(low, unit, false)}~${formatMetricNumber(high, unit, true)}`;
+  return uiLanguage === "en"
+    ? `Approx. ${formatMetricNumber(low, unit, false)}–${formatMetricNumber(high, unit, true)}`
+    : `약 ${formatMetricNumber(low, unit, false)}~${formatMetricNumber(high, unit, true)}`;
 }
 
 function formatMetricNumber(value, unit, includeUnit) {
@@ -4585,9 +4672,22 @@ function formatMetricNumber(value, unit, includeUnit) {
   return includeUnit ? `${text} ${unit}` : text;
 }
 
+const GRADE_LABEL_EN = { S: "Comfortable", A: "Runs well", B: "Possible", C: "Tight", D: "Offloading", F: "Not suitable" };
+
 function buildGradeTooltip(estimate) {
   const meta = GRADE_META[estimate.grade];
   const margin = estimate.effectiveVram - estimate.requiredGb;
+  const en = uiLanguage === "en";
+  if (en) {
+    return [
+      GRADE_LABEL_EN[estimate.grade] || meta.label,
+      `Required VRAM ${formatGb(estimate.requiredGb)}`,
+      `Available VRAM ${formatGb(estimate.effectiveVram)}`,
+      `${margin >= 0 ? "Remaining VRAM" : "VRAM shortfall"} ${formatGb(Math.abs(margin))}`,
+      `Utilization ${formatPercent(estimate.pressure)}`,
+      `Current basis: ${buildHardwareBasis(getHardware())}`,
+    ].join("\n");
+  }
   return [
     meta.label,
     `필요 VRAM ${formatGb(estimate.requiredGb)}`,
@@ -4689,23 +4789,31 @@ function buildHardwareBasis(hardware) {
     const workload = getWorkloadSettings();
     const precision = getPrecisionLabel(workload.precisionId, ENCODER_PRECISIONS);
     const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime]?.label || workload.runtime;
-    return `${workload.inputTokens} 토큰 · 배치 ${workload.batchSize}개 · ${runtime} · ${precision}`;
+    return uiLanguage === "en"
+      ? `${workload.inputTokens} tokens · batch ${workload.batchSize} · ${runtime} · ${precision}`
+      : `${workload.inputTokens} 토큰 · 배치 ${workload.batchSize}개 · ${runtime} · ${precision}`;
   }
   if (activeWorkload === "reranker") {
     const workload = getWorkloadSettings();
     const precision = getPrecisionLabel(workload.precisionId, ENCODER_PRECISIONS);
     const runtime = ENCODER_RUNTIME_PROFILES[workload.runtime]?.label || workload.runtime;
-    return `질의 ${workload.queryTokens} + 문서 ${workload.docTokens} · 후보 ${workload.candidates}개 · ${runtime} · ${precision}`;
+    return uiLanguage === "en"
+      ? `Query ${workload.queryTokens} + Document ${workload.docTokens} · ${workload.candidates} candidates · ${runtime} · ${precision}`
+      : `질의 ${workload.queryTokens} + 문서 ${workload.docTokens} · 후보 ${workload.candidates}개 · ${runtime} · ${precision}`;
   }
   if (isVisionWorkload(activeWorkload)) {
     const workload = getWorkloadSettings();
     const precision = getPrecisionLabel(workload.precisionId, OCR_PRECISIONS);
-    return `${workload.width}x${workload.height} · 배치 ${workload.batchSize}페이지 · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`;
+    return uiLanguage === "en"
+      ? `${workload.width}x${workload.height} · batch ${workload.batchSize} pages · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`
+      : `${workload.width}x${workload.height} · 배치 ${workload.batchSize}페이지 · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`;
   }
 
   const quant = QUANTS.find((item) => item.id === $("quantization").value);
-  const quantLabel = quant ? quant.label : "자동 추천";
-  return `${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명 · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`;
+  const quantLabel = quant ? quant.label : (uiLanguage === "en" ? "Auto" : "자동 추천");
+  return uiLanguage === "en"
+    ? `${formatContext(hardware.context)} · ${hardware.concurrency} concurrent · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`
+    : `${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명 · ${RUNTIME_LABELS[hardware.runtime] || hardware.runtime} · ${quantLabel}`;
 }
 
 function renderCalculationBasisStrip(hardware) {
@@ -5425,6 +5533,7 @@ function buildGenerativeDetailBodyHtml(model, hardware) {
   const licensePolicy = getLicensePolicy(model);
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
+  const en = uiLanguage === "en";
 
   return `
     <div class="detail-title">
@@ -5437,27 +5546,39 @@ function buildGenerativeDetailBodyHtml(model, hardware) {
     ${renderShareActions()}
 
     <div class="detail-summary-grid">
-      ${renderDetailMetric("실행 판정", meta.label)}
-      ${renderDetailMetric("권장 설정", `${estimate.quant.label} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`)}
-      ${renderDetailMetric("계산 VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
-      ${renderDetailMetric("VRAM 여유", formatGb(Math.abs(estimate.effectiveVram - estimate.requiredGb)), estimate.effectiveVram >= estimate.requiredGb ? "남음" : "부족")}
-      ${renderDetailMetric("추정 속도", formatSpeedRange(estimate, confidence), `신뢰도 ${confidence.label}`)}
-      ${renderDetailMetric("첫 응답", formatDuration(estimate.firstTokenSeconds))}
+      ${renderDetailMetric(en ? "Run verdict" : "실행 판정", meta.label)}
+      ${renderDetailMetric(
+        en ? "Recommended settings" : "권장 설정",
+        en
+          ? `${estimate.quant.label} · ${formatContext(hardware.context)} · ${hardware.concurrency} concurrent`
+          : `${estimate.quant.label} · ${formatContext(hardware.context)} · 동시 ${hardware.concurrency}명`,
+      )}
+      ${renderDetailMetric(
+        en ? "Calculated VRAM" : "계산 VRAM",
+        en
+          ? `${formatGb(estimate.requiredGb)} / available ${formatGb(estimate.effectiveVram)}`
+          : `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`,
+      )}
+      ${renderDetailMetric(en ? "VRAM headroom" : "VRAM 여유", formatGb(Math.abs(estimate.effectiveVram - estimate.requiredGb)), en ? (estimate.effectiveVram >= estimate.requiredGb ? "Remaining" : "Shortage") : (estimate.effectiveVram >= estimate.requiredGb ? "남음" : "부족"))}
+      ${renderDetailMetric(en ? "Estimated speed" : "추정 속도", formatSpeedRange(estimate, confidence), `${en ? "Confidence" : "신뢰도"} ${confidence.label}`)}
+      ${renderDetailMetric(en ? "First response" : "첫 응답", formatDuration(estimate.firstTokenSeconds))}
     </div>
     <section class="detail-section">
-      <h3>실제 측정과 차이가 나는 이유</h3>
-      <p class="detail-note">추정 속도는 대역폭 대비 활성 파라미터 기준 단순 계산이라 실제와 다를 수 있습니다. 특히 오프로딩이 걸리는 경우, 양자화 방식(IQ 계열 vs K 계열)이 다른 경우, 매우 긴 컨텍스트를 쓰는 경우 실제 측정과 몇 배 차이가 날 수 있으니 참고용으로만 사용하세요.</p>
+      <h3>${en ? "Why this differs from real measurements" : "실제 측정과 차이가 나는 이유"}</h3>
+      <p class="detail-note">${en
+        ? "The estimated speed is a simple calculation based on bandwidth vs. active parameters, so it can differ from reality. Actual measurements can be off by several times, especially with offloading, a different quantization family (IQ vs. K series), or very long context — use this as a reference only."
+        : "추정 속도는 대역폭 대비 활성 파라미터 기준 단순 계산이라 실제와 다를 수 있습니다. 특히 오프로딩이 걸리는 경우, 양자화 방식(IQ 계열 vs K 계열)이 다른 경우, 매우 긴 컨텍스트를 쓰는 경우 실제 측정과 몇 배 차이가 날 수 있으니 참고용으로만 사용하세요."}</p>
     </section>
 
     <section class="detail-section">
-      <h3>추천 이유</h3>
+      <h3>${en ? "Why this model" : "추천 이유"}</h3>
       ${renderRecommendationReasonList(recommendationReasons, estimate)}
     </section>
 
     ${renderEvidenceSection(model, estimate, hardware, confidence)}
 
     <section class="detail-section">
-      <h3>판정 근거</h3>
+      <h3>${en ? "Decision rationale" : "판정 근거"}</h3>
       ${renderFitRationale(estimate, hardware)}
       <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
@@ -5465,51 +5586,51 @@ function buildGenerativeDetailBodyHtml(model, hardware) {
     ${renderConcurrencySection(model, estimate.quant, hardware)}
 
     <section class="detail-section">
-      <h3>양자화별 비교</h3>
+      <h3>${en ? "Quantization comparison" : "양자화별 비교"}</h3>
       <div class="detail-table quant-table">
         <div class="detail-row detail-table-head">
-          <span>양자화</span>
-          <span>예상 VRAM</span>
-          <span>예상 속도</span>
-          <span>품질</span>
-          <span>실행 상태</span>
+          <span>${en ? "Quantization" : "양자화"}</span>
+          <span>${en ? "Expected VRAM" : "예상 VRAM"}</span>
+          <span>${en ? "Expected speed" : "예상 속도"}</span>
+          <span>${en ? "Quality" : "품질"}</span>
+          <span>${en ? "Run status" : "실행 상태"}</span>
         </div>
         ${renderQuantRows(model, hardware, estimate.quant.id)}
       </div>
     </section>
 
     <section class="detail-section">
-      <h3>VRAM 상세 분석</h3>
+      <h3>${en ? "VRAM breakdown" : "VRAM 상세 분석"}</h3>
       ${renderMemoryMap(
         [
-          { key: "weights", label: "모델 가중치", value: estimate.weightsGb },
+          { key: "weights", label: en ? "Model weights" : "모델 가중치", value: estimate.weightsGb },
           { key: "kv", label: "KV cache", value: estimate.kvGb },
-          { key: "runtime", label: "런타임 오버헤드", value: estimate.runtimeOverheadGb },
-          { key: "free", label: "여유", value: Math.max(0, hardware.availableVram - estimate.requiredGb) },
+          { key: "runtime", label: en ? "Runtime overhead" : "런타임 오버헤드", value: estimate.runtimeOverheadGb },
+          { key: "free", label: en ? "Free" : "여유", value: Math.max(0, hardware.availableVram - estimate.requiredGb) },
         ],
         Math.max(hardware.availableVram, estimate.requiredGb),
       )}
       <div class="memory-breakdown">
-        ${renderMemoryLine("모델 가중치", estimate.weightsGb, breakdownTotal)}
+        ${renderMemoryLine(en ? "Model weights" : "모델 가중치", estimate.weightsGb, breakdownTotal)}
         ${renderMemoryLine("KV cache", estimate.kvGb, breakdownTotal)}
-        ${renderMemoryLine("런타임 오버헤드", estimate.runtimeOverheadGb, breakdownTotal)}
+        ${renderMemoryLine(en ? "Runtime overhead" : "런타임 오버헤드", estimate.runtimeOverheadGb, breakdownTotal)}
       </div>
       <div class="memory-total">
-        <span>모델 필요 VRAM</span>
+        <span>${en ? "Model required VRAM" : "모델 필요 VRAM"}</span>
         <strong>${formatGb(estimate.requiredGb)}</strong>
       </div>
       ${renderVramBudget(hardware, estimate)}
     </section>
 
     <section class="detail-section">
-      <h3>실행 방식별 비교</h3>
+      <h3>${en ? "Runtime comparison" : "실행 방식별 비교"}</h3>
       <div class="runtime-grid">
         ${renderRuntimeRows(model, hardware)}
       </div>
     </section>
 
     <section class="detail-section">
-      <h3>실행 명령어</h3>
+      <h3>${en ? "Run command" : "실행 명령어"}</h3>
       <pre class="command-block"><code>${escapeHtml(buildOllamaCommand(model, estimate.quant, hardware))}
 ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre>
     </section>
@@ -5517,22 +5638,22 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
     ${renderLicenseSection(model)}
 
     <section class="detail-section">
-      <h3>모델 정보</h3>
+      <h3>${en ? "Model information" : "모델 정보"}</h3>
       <div class="model-info-grid">
-        ${renderInfoItem("파라미터", formatParams(model.params))}
-        ${renderInfoItem("활성 파라미터", formatParams(model.active))}
-        ${renderInfoItem("최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
-        ${renderInfoItem("라이선스", `${model.license} · ${licenseCommercialLabel(licensePolicy)}`)}
-        ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
-        ${renderInfoItem("대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
-        ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
-        ${renderInfoItem("측정 상태", findBenchmarksForModel(model).length ? "사용자/자체 측정값 있음" : "사용자/자체 측정값 없음")}
+        ${renderInfoItem(en ? "Parameters" : "파라미터", formatParams(model.params))}
+        ${renderInfoItem(en ? "Active parameters" : "활성 파라미터", formatParams(model.active))}
+        ${renderInfoItem(en ? "Max context" : "최대 컨텍스트", formatContext(estimate.contextLimitTokens))}
+        ${renderInfoItem(en ? "License" : "라이선스", `${model.license} · ${licenseCommercialLabel(licensePolicy)}`)}
+        ${renderInfoItem(en ? "Release/Gen" : "출시/세대", `${release.label} · ${release.note}`)}
+        ${renderInfoItem(en ? "Public benchmark" : "대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
+        ${renderInfoItem(en ? "Data updated" : "데이터 갱신", DATA_UPDATED_AT)}
+        ${renderInfoItem(en ? "Measurement status" : "측정 상태", findBenchmarksForModel(model).length ? (en ? "User/project measurements available" : "사용자/자체 측정값 있음") : (en ? "No user/project measurements" : "사용자/자체 측정값 없음"))}
       </div>
       <div class="external-links">
         ${renderExternalLink("Hugging Face", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
         ${renderExternalLink("Ollama", `https://ollama.com/search?q=${encodeURIComponent(model.name)}`)}
-        ${renderExternalLink("공식 문서 검색", `https://www.google.com/search?q=${encodeURIComponent(`${model.name} official`)}`)}
-        ${renderExternalLink("스펙 오류 신고", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
+        ${renderExternalLink(en ? "Search official docs" : "공식 문서 검색", `https://www.google.com/search?q=${encodeURIComponent(`${model.name} official`)}`)}
+        ${renderExternalLink(en ? "Report a spec issue" : "스펙 오류 신고", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
       </div>
     </section>
   `;
@@ -5561,7 +5682,10 @@ function buildNonGenerativeDetailBodyHtml(model, hardware) {
   const licensePolicy = getLicensePolicy(model);
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
-  const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
+  const en = uiLanguage === "en";
+  const detailKind = en
+    ? (model.type === "embedding" ? "Embedding" : model.type === "reranker" ? "Reranker" : ocrTypeLabel(model.type))
+    : (model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type));
 
   return `
     <div class="detail-title">
@@ -5574,43 +5698,53 @@ function buildNonGenerativeDetailBodyHtml(model, hardware) {
     ${renderShareActions()}
 
     <div class="detail-summary-grid">
-      ${renderDetailMetric("실행 판정", meta.label)}
-      ${renderDetailMetric("권장 설정", estimate.settingLabel)}
-      ${renderDetailMetric("계산 VRAM", `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`)}
-      ${renderDetailMetric("VRAM 여유", formatGb(Math.abs(estimate.effectiveVram - estimate.requiredGb)), estimate.effectiveVram >= estimate.requiredGb ? "남음" : "부족")}
-      ${renderDetailMetric("추정 처리량", formatSpeedRange(estimate, confidence), `신뢰도 ${confidence.label}`)}
-      ${renderDetailMetric(model.type === "reranker" ? "질의당 지연" : "처리 지연", formatDuration(estimate.firstTokenSeconds))}
+      ${renderDetailMetric(en ? "Run verdict" : "실행 판정", meta.label)}
+      ${renderDetailMetric(en ? "Recommended settings" : "권장 설정", estimate.settingLabel)}
+      ${renderDetailMetric(
+        en ? "Calculated VRAM" : "계산 VRAM",
+        en
+          ? `${formatGb(estimate.requiredGb)} / available ${formatGb(estimate.effectiveVram)}`
+          : `${formatGb(estimate.requiredGb)} / 가용 ${formatGb(estimate.effectiveVram)}`,
+      )}
+      ${renderDetailMetric(en ? "VRAM headroom" : "VRAM 여유", formatGb(Math.abs(estimate.effectiveVram - estimate.requiredGb)), en ? (estimate.effectiveVram >= estimate.requiredGb ? "Remaining" : "Shortage") : (estimate.effectiveVram >= estimate.requiredGb ? "남음" : "부족"))}
+      ${renderDetailMetric(en ? "Estimated throughput" : "추정 처리량", formatSpeedRange(estimate, confidence), `${en ? "Confidence" : "신뢰도"} ${confidence.label}`)}
+      ${renderDetailMetric(
+        en
+          ? (model.type === "reranker" ? "Latency per query" : "Processing latency")
+          : (model.type === "reranker" ? "질의당 지연" : "처리 지연"),
+        formatDuration(estimate.firstTokenSeconds),
+      )}
     </div>
 
     <section class="detail-section">
-      <h3>추천 이유</h3>
+      <h3>${en ? "Why this model" : "추천 이유"}</h3>
       ${renderRecommendationReasonList(recommendationReasons, estimate)}
     </section>
 
     ${renderEvidenceSection(model, estimate, hardware, confidence)}
 
     <section class="detail-section">
-      <h3>판정 근거</h3>
+      <h3>${en ? "Decision rationale" : "판정 근거"}</h3>
       ${renderFitRationale(estimate, hardware)}
       <p class="detail-note">${escapeHtml(estimate.reason)}</p>
     </section>
 
     <section class="detail-section">
-      <h3>정밀도별 비교</h3>
+      <h3>${en ? "Precision comparison" : "정밀도별 비교"}</h3>
       <div class="detail-table">
         <div class="detail-row detail-table-head">
-          <span>정밀도</span>
+          <span>${en ? "Precision" : "정밀도"}</span>
           <span>Peak VRAM</span>
-          <span>예상 처리량</span>
-          <span>품질</span>
-          <span>실행 상태</span>
+          <span>${en ? "Expected throughput" : "예상 처리량"}</span>
+          <span>${en ? "Quality" : "품질"}</span>
+          <span>${en ? "Run status" : "실행 상태"}</span>
         </div>
         ${renderPrecisionRows(model, hardware, estimate.precision.id)}
       </div>
     </section>
 
     <section class="detail-section">
-      <h3>${detailKind} 메모리 분석</h3>
+      <h3>${detailKind} ${en ? "memory analysis" : "메모리 분석"}</h3>
       ${renderMemoryMap(
         buildNonGenerativeMemorySegments(estimate, hardware),
         Math.max(hardware.availableVram, estimate.requiredGb),
@@ -5619,47 +5753,57 @@ function buildNonGenerativeDetailBodyHtml(model, hardware) {
         ${renderNonGenerativeMemoryLines(estimate, breakdownTotal)}
       </div>
       <div class="memory-total">
-        <span>모델 필요 VRAM</span>
+        <span>${en ? "Model required VRAM" : "모델 필요 VRAM"}</span>
         <strong>${formatGb(estimate.requiredGb)}</strong>
       </div>
       ${renderVramBudget(hardware, estimate)}
     </section>
 
     <section class="detail-section">
-      <h3>${isVisionModel(model) ? "기능별 비교" : "실행 방식별 비교"}</h3>
+      <h3>${en ? (isVisionModel(model) ? "Feature comparison" : "Runtime comparison") : (isVisionModel(model) ? "기능별 비교" : "실행 방식별 비교")}</h3>
       <div class="runtime-grid">
         ${renderNonGenerativeScenarioRows(model, hardware)}
       </div>
     </section>
 
     <section class="detail-section">
-      <h3>계산 근거</h3>
+      <h3>${en ? "Method details" : "계산 근거"}</h3>
       <pre class="formula-block"><code>${escapeHtml(buildFormulaText(model.type))}</code></pre>
     </section>
 
     <section class="detail-section">
-      <h3>실행 예시</h3>
+      <h3>${en ? "Example command" : "실행 예시"}</h3>
       <pre class="command-block"><code>${escapeHtml(buildNonGenerativeCommand(model, estimate))}</code></pre>
     </section>
 
     ${renderLicenseSection(model)}
 
     <section class="detail-section">
-      <h3>모델 정보</h3>
+      <h3>${en ? "Model information" : "모델 정보"}</h3>
       <div class="model-info-grid">
-        ${renderInfoItem("파라미터", formatParams(model.params || 0))}
-        ${renderInfoItem(isVisionModel(model) ? "처리 유형" : "최대 입력", isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens))}
-        ${renderInfoItem("구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
-        ${renderInfoItem("라이선스", `${model.license} · ${licenseCommercialLabel(licensePolicy)}`)}
-        ${renderInfoItem("출시/세대", `${release.label} · ${release.note}`)}
-        ${renderInfoItem("대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
-        ${renderInfoItem("데이터 갱신", DATA_UPDATED_AT)}
-        ${renderInfoItem("측정 상태", findBenchmarksForModel(model).length ? "사용자/자체 측정값 있음" : model.reference?.pagesPerSecond ? "외부 공개 참고값 있음" : "사용자/자체 측정값 없음")}
+        ${renderInfoItem(en ? "Parameters" : "파라미터", formatParams(model.params || 0))}
+        ${renderInfoItem(
+          en ? (isVisionModel(model) ? "Processing type" : "Max input") : (isVisionModel(model) ? "처리 유형" : "최대 입력"),
+          isVisionModel(model) ? ocrTypeLabel(model.type) : formatContext(model.maxTokens),
+        )}
+        ${renderInfoItem(en ? "Architecture" : "구조", model.hiddenSize ? `${model.layers || model.decoderLayers || "-"} layers · hidden ${model.hiddenSize}` : "pipeline")}
+        ${renderInfoItem(en ? "License" : "라이선스", `${model.license} · ${licenseCommercialLabel(licensePolicy)}`)}
+        ${renderInfoItem(en ? "Release/Gen" : "출시/세대", `${release.label} · ${release.note}`)}
+        ${renderInfoItem(en ? "Public benchmark" : "대표 공개 평가", `${benchmark.label} · ${benchmark.note}`)}
+        ${renderInfoItem(en ? "Data updated" : "데이터 갱신", DATA_UPDATED_AT)}
+        ${renderInfoItem(
+          en ? "Measurement status" : "측정 상태",
+          findBenchmarksForModel(model).length
+            ? (en ? "User/project measurements available" : "사용자/자체 측정값 있음")
+            : model.reference?.pagesPerSecond
+              ? (en ? "External public reference available" : "외부 공개 참고값 있음")
+              : (en ? "No user/project measurements" : "사용자/자체 측정값 없음"),
+        )}
       </div>
       <div class="external-links">
-        ${model.sourceUrl ? renderExternalLink("공식/모델 카드", model.sourceUrl) : ""}
-        ${renderExternalLink("Hugging Face 검색", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
-        ${renderExternalLink("스펙 오류 신고", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
+        ${model.sourceUrl ? renderExternalLink(en ? "Official/model card" : "공식/모델 카드", model.sourceUrl) : ""}
+        ${renderExternalLink(en ? "Search Hugging Face" : "Hugging Face 검색", `https://huggingface.co/models?search=${encodeURIComponent(model.name)}`)}
+        ${renderExternalLink(en ? "Report a spec issue" : "스펙 오류 신고", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}
       </div>
     </section>
   `;
@@ -5689,31 +5833,33 @@ function renderPrecisionRows(model, hardware, recommendedPrecisionId) {
 }
 
 function buildNonGenerativeMemorySegments(estimate, hardware) {
+  const en = uiLanguage === "en";
   const other = (estimate.activationGb || 0) + (estimate.attentionGb || 0) + (estimate.imageBufferGb || 0) + (estimate.outputGb || 0);
   const segments = [
     {
       key: "weights",
-      label: estimate.model.type === "ocr-pipeline" ? "상주 모델/모듈" : "모델 가중치",
+      label: estimate.model.type === "ocr-pipeline" ? (en ? "Resident models/modules" : "상주 모델/모듈") : (en ? "Model weights" : "모델 가중치"),
       value: estimate.weightsGb,
     },
   ];
   if (estimate.kvGb) segments.push({ key: "kv", label: "KV cache", value: estimate.kvGb });
-  if (other > 0) segments.push({ key: "other", label: "기타 버퍼", value: other });
-  segments.push({ key: "runtime", label: "런타임 오버헤드", value: estimate.runtimeOverheadGb });
-  segments.push({ key: "free", label: "여유", value: Math.max(0, hardware.availableVram - estimate.requiredGb) });
+  if (other > 0) segments.push({ key: "other", label: en ? "Other buffers" : "기타 버퍼", value: other });
+  segments.push({ key: "runtime", label: en ? "Runtime overhead" : "런타임 오버헤드", value: estimate.runtimeOverheadGb });
+  segments.push({ key: "free", label: en ? "Free" : "여유", value: Math.max(0, hardware.availableVram - estimate.requiredGb) });
   return segments;
 }
 
 function renderNonGenerativeMemoryLines(estimate, totalWithSafety) {
+  const en = uiLanguage === "en";
   const rows = [
-    renderMemoryLine(estimate.model.type === "ocr-pipeline" ? "상주 모델/모듈" : "모델 가중치", estimate.weightsGb, totalWithSafety),
+    renderMemoryLine(estimate.model.type === "ocr-pipeline" ? (en ? "Resident models/modules" : "상주 모델/모듈") : (en ? "Model weights" : "모델 가중치"), estimate.weightsGb, totalWithSafety),
   ];
   if (estimate.kvGb) rows.push(renderMemoryLine("Decoder KV cache", estimate.kvGb, totalWithSafety));
-  if (estimate.activationGb) rows.push(renderMemoryLine("활성화 메모리", estimate.activationGb, totalWithSafety));
-  if (estimate.attentionGb) rows.push(renderMemoryLine("Attention 작업공간", estimate.attentionGb, totalWithSafety));
-  if (estimate.imageBufferGb) rows.push(renderMemoryLine("이미지 버퍼", estimate.imageBufferGb, totalWithSafety));
-  if (estimate.outputGb) rows.push(renderMemoryLine("출력/점수 버퍼", estimate.outputGb, totalWithSafety));
-  rows.push(renderMemoryLine("런타임 오버헤드", estimate.runtimeOverheadGb, totalWithSafety));
+  if (estimate.activationGb) rows.push(renderMemoryLine(en ? "Activation memory" : "활성화 메모리", estimate.activationGb, totalWithSafety));
+  if (estimate.attentionGb) rows.push(renderMemoryLine(en ? "Attention workspace" : "Attention 작업공간", estimate.attentionGb, totalWithSafety));
+  if (estimate.imageBufferGb) rows.push(renderMemoryLine(en ? "Image buffer" : "이미지 버퍼", estimate.imageBufferGb, totalWithSafety));
+  if (estimate.outputGb) rows.push(renderMemoryLine(en ? "Output/score buffer" : "출력/점수 버퍼", estimate.outputGb, totalWithSafety));
+  rows.push(renderMemoryLine(en ? "Runtime overhead" : "런타임 오버헤드", estimate.runtimeOverheadGb, totalWithSafety));
   return rows.join("");
 }
 
@@ -5828,7 +5974,7 @@ docker run --gpus all -p 8080:80 \\
 reranker = FlagReranker("${model.name}", use_fp16=${String(estimate.precision.id === "fp16")})
 scores = reranker.compute_score([["query", "passage"]], normalize=True)
 
-# TEI 사용 시 /rerank endpoint로 후보 문서를 전달하세요.`;
+${uiLanguage === "en" ? "# With TEI, pass candidate documents via the /rerank endpoint." : "# TEI 사용 시 /rerank endpoint로 후보 문서를 전달하세요."}`;
   }
   if (lowerName.includes("paddleocr-vl")) {
     const paddleVersion = lowerName.includes("1.6") ? "v1.6" : "v1";
@@ -5843,12 +5989,12 @@ for result in output:
   if (lowerName.includes("mineru")) {
     return `vllm serve opendatalab/MinerU2.5-Pro-2604-1.2B
 
-# PDF to Markdown 파이프라인에서 페이지 이미지를 모델 입력으로 전달하세요.`;
+${uiLanguage === "en" ? "# In the PDF-to-Markdown pipeline, pass page images as the model input." : "# PDF to Markdown 파이프라인에서 페이지 이미지를 모델 입력으로 전달하세요."}`;
   }
   if (lowerName.includes("deepseek-ocr")) {
     return `vllm serve deepseek-ai/DeepSeek-OCR-2
 
-# Transformers 또는 SGLang 런타임도 모델 카드 예시를 기준으로 사용할 수 있습니다.`;
+${uiLanguage === "en" ? "# Transformers or the SGLang runtime can also be used — see the model card examples." : "# Transformers 또는 SGLang 런타임도 모델 카드 예시를 기준으로 사용할 수 있습니다."}`;
   }
   if (lowerName.includes("deepseek-vl2")) {
     return `git clone https://github.com/deepseek-ai/DeepSeek-VL2
@@ -5856,25 +6002,25 @@ cd DeepSeek-VL2
 pip install -e .
 CUDA_VISIBLE_DEVICES=0 python inference.py --model_path "${model.name}"
 
-# MoE 모델이라 total parameter와 activated parameter가 다릅니다. 큰 모델은 A100/H100급 VRAM을 기준으로 보세요.`;
+${uiLanguage === "en" ? "# This is a MoE model, so total and activated parameters differ. For larger sizes, plan around A100/H100-class VRAM." : "# MoE 모델이라 total parameter와 activated parameter가 다릅니다. 큰 모델은 A100/H100급 VRAM을 기준으로 보세요."}`;
   }
   if (lowerName.includes("deepseek-vl-7b")) {
     return `from transformers import AutoModelForCausalLM
 
 model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True).cuda()
 
-# 이전 세대 DeepSeek-VL 비교군입니다. 최신 운영 후보는 DeepSeek-VL2 계열을 먼저 보세요.`;
+${uiLanguage === "en" ? "# A previous-generation DeepSeek-VL comparison model. For a current production candidate, check the DeepSeek-VL2 family first." : "# 이전 세대 DeepSeek-VL 비교군입니다. 최신 운영 후보는 DeepSeek-VL2 계열을 먼저 보세요."}`;
   }
   if (lowerName.includes("qwen2.5-vl") || lowerName.includes("qwen2-vl")) {
     return `pip install qwen-vl-utils[decord]
 vllm serve ${model.name}
 
-# 이미지, 비디오, 문서 OCR-like extraction에 사용할 수 있습니다.`;
+${uiLanguage === "en" ? "# Usable for images, video, and document OCR-like extraction." : "# 이미지, 비디오, 문서 OCR-like extraction에 사용할 수 있습니다."}`;
   }
   if (lowerName.includes("qwen3-vl")) {
     return `vllm serve ${model.name}
 
-# 문서 이미지와 "Extract this page as Markdown." 같은 프롬프트를 함께 전달하세요.`;
+${uiLanguage === "en" ? '# Pass a document image along with a prompt like "Extract this page as Markdown."' : '# 문서 이미지와 "Extract this page as Markdown." 같은 프롬프트를 함께 전달하세요.'}`;
   }
   if (lowerName.includes("llama-3.2") && lowerName.includes("vision")) {
     return `from transformers import MllamaForConditionalGeneration, AutoProcessor
@@ -5882,7 +6028,7 @@ vllm serve ${model.name}
 processor = AutoProcessor.from_pretrained("${model.name}")
 model = MllamaForConditionalGeneration.from_pretrained("${model.name}", device_map="auto")
 
-# Meta 라이선스와 지역 제한 조건을 배포 전에 확인하세요.`;
+${uiLanguage === "en" ? "# Check the Meta license and regional restrictions before deploying." : "# Meta 라이선스와 지역 제한 조건을 배포 전에 확인하세요."}`;
   }
   if (lowerName.includes("pixtral-large")) {
     return `vllm serve ${model.name} \\
@@ -5892,17 +6038,17 @@ model = MllamaForConditionalGeneration.from_pretrained("${model.name}", device_m
   --tensor-parallel-size 8 \\
   --limit-mm-per-prompt '{"image": 10}'
 
-# Pixtral Large는 vLLM/tensor parallel 서버 환경을 권장합니다.`;
+${uiLanguage === "en" ? "# Pixtral Large is recommended to run on a vLLM/tensor-parallel server setup." : "# Pixtral Large는 vLLM/tensor parallel 서버 환경을 권장합니다."}`;
   }
   if (lowerName.includes("pixtral")) {
     return `vllm serve ${model.name}
 
-# 128K context와 가변 해상도 이미지를 쓰는 Pixtral 계열 비교군입니다.`;
+${uiLanguage === "en" ? "# A Pixtral-family comparison model with 128K context and variable-resolution images." : "# 128K context와 가변 해상도 이미지를 쓰는 Pixtral 계열 비교군입니다."}`;
   }
   if (lowerName.includes("llava-onevision")) {
     return `vllm serve ${model.name}
 
-# 단일 이미지, 다중 이미지, 비디오 시나리오를 같은 계열에서 비교하세요.`;
+${uiLanguage === "en" ? "# Compare single-image, multi-image, and video scenarios within the same family." : "# 단일 이미지, 다중 이미지, 비디오 시나리오를 같은 계열에서 비교하세요."}`;
   }
   if (lowerName.includes("molmo")) {
     return `from transformers import AutoProcessor, AutoModelForCausalLM
@@ -5910,7 +6056,7 @@ model = MllamaForConditionalGeneration.from_pretrained("${model.name}", device_m
 processor = AutoProcessor.from_pretrained("${model.name}", trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True, device_map="auto")
 
-# 이미지 이해와 pointing/grounding 비교용 모델입니다.`;
+${uiLanguage === "en" ? "# A model for comparing image understanding and pointing/grounding." : "# 이미지 이해와 pointing/grounding 비교용 모델입니다."}`;
   }
   if (lowerName.includes("smolvlm2")) {
     return `from transformers import pipeline
@@ -5918,7 +6064,7 @@ model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=
 pipe = pipeline("image-text-to-text", model="${model.name}", device_map="auto")
 result = pipe("./page.png", text="Read the document and summarize key fields.")
 
-# 저VRAM/온디바이스 비전 테스트에 적합합니다.`;
+${uiLanguage === "en" ? "# Suited for low-VRAM/on-device vision testing." : "# 저VRAM/온디바이스 비전 테스트에 적합합니다."}`;
   }
   if (lowerName.includes("phi-4-multimodal")) {
     return `from transformers import AutoModelForCausalLM, AutoProcessor
@@ -5926,12 +6072,12 @@ result = pipe("./page.png", text="Read the document and summarize key fields.")
 processor = AutoProcessor.from_pretrained("${model.name}", trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True, device_map="auto")
 
-# 이미지와 오디오 입력을 같이 다루는 멀티모달 모델입니다.`;
+${uiLanguage === "en" ? "# A multimodal model that handles image and audio input together." : "# 이미지와 오디오 입력을 같이 다루는 멀티모달 모델입니다."}`;
   }
   if (lowerName.includes("aya-vision")) {
     return `vllm serve ${model.name}
 
-# 다국어 이미지 QA와 OCR-like 추출을 테스트할 때 사용하세요.`;
+${uiLanguage === "en" ? "# Use this for testing multilingual image QA and OCR-like extraction." : "# 다국어 이미지 QA와 OCR-like 추출을 테스트할 때 사용하세요."}`;
   }
   if (lowerName.includes("glm-4.1v") || lowerName.includes("glm-4v")) {
     return `from transformers import AutoProcessor, AutoModelForCausalLM
@@ -5939,17 +6085,17 @@ model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=
 processor = AutoProcessor.from_pretrained("${model.name}", trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained("${model.name}", trust_remote_code=True, device_map="auto")
 
-# 문서, 비디오, GUI 에이전트 작업의 멀티모달 reasoning 비교군입니다.`;
+${uiLanguage === "en" ? "# A comparison model for multimodal reasoning over documents, video, and GUI-agent tasks." : "# 문서, 비디오, GUI 에이전트 작업의 멀티모달 reasoning 비교군입니다."}`;
   }
   if (lowerName.includes("internvl") || lowerName.includes("kimi-vl") || lowerName.includes("minicpm-v")) {
     return `vllm serve ${model.name}
 
-# 이미지 질의응답, 문서 요약, OCR-like extraction 용도로 프롬프트를 구성하세요.`;
+${uiLanguage === "en" ? "# Frame prompts for image QA, document summarization, and OCR-like extraction." : "# 이미지 질의응답, 문서 요약, OCR-like extraction 용도로 프롬프트를 구성하세요."}`;
   }
   if (lowerName.includes("olmocr")) {
     return `olmocr ./localworkspace --markdown --pdfs ./document.pdf --model allenai/olmOCR-2-7B-1025
 
-# PDF를 Markdown으로 변환하는 배치 파이프라인 기준입니다.`;
+${uiLanguage === "en" ? "# A batch pipeline for converting PDFs to Markdown." : "# PDF를 Markdown으로 변환하는 배치 파이프라인 기준입니다."}`;
   }
   if (lowerName.includes("dots.ocr") || lowerName.includes("dots.mocr")) {
     return `from transformers import pipeline
@@ -5963,17 +6109,17 @@ result = pipe(text=[{
     ],
 }])
 
-# 배포 저장소별 CLI 이름이 다를 수 있으므로 모델 카드의 최신 예시를 확인하세요.`;
+${uiLanguage === "en" ? "# CLI names can differ by deployment repo — check the model card for the latest example." : "# 배포 저장소별 CLI 이름이 다를 수 있으므로 모델 카드의 최신 예시를 확인하세요."}`;
   }
   if (lowerName.includes("paddle") || lowerName.includes("pp-")) {
     return `paddleocr ocr -i ./document.pdf --device gpu
 
-# 문서 구조 분석은 PP-StructureV3 파이프라인으로 실행하세요.`;
+${uiLanguage === "en" ? "# Run document-structure analysis through the PP-StructureV3 pipeline." : "# 문서 구조 분석은 PP-StructureV3 파이프라인으로 실행하세요."}`;
   }
   if (lowerName.includes("surya")) {
     return `surya_ocr ./document.pdf --images --langs ko,en
 
-# GPU Docker 실행 시 Surya 공식 README의 Docker 옵션을 확인하세요.`;
+${uiLanguage === "en" ? "# For GPU Docker runs, check the Docker options in the official Surya README." : "# GPU Docker 실행 시 Surya 공식 README의 Docker 옵션을 확인하세요."}`;
   }
   return `python got_ocr2_infer.py --image ./page.png --dtype ${estimate.precision.label}`;
 }
@@ -6004,12 +6150,13 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
   const userMeasurementCount = measuredRows.filter((row) => benchmarkEvidenceType(row) === "user").length;
   const projectMeasurementCount = measuredRows.filter((row) => benchmarkEvidenceType(row) === "project").length;
   const publicReferenceCount = Number(Boolean(qualityBenchmark)) + Number(Boolean(reference));
+  const en = uiLanguage === "en";
   const evidenceLabels = [
-    publicReferenceCount ? `외부 공개 참고값 ${publicReferenceCount}개` : "",
-    userMeasurementCount ? `사용자 측정 ${userMeasurementCount}개` : "",
-    projectMeasurementCount ? `자체 측정 ${projectMeasurementCount}개` : "",
+    publicReferenceCount ? (en ? `${publicReferenceCount} external public reference(s)` : `외부 공개 참고값 ${publicReferenceCount}개`) : "",
+    userMeasurementCount ? (en ? `${userMeasurementCount} user measurement(s)` : `사용자 측정 ${userMeasurementCount}개`) : "",
+    projectMeasurementCount ? (en ? `${projectMeasurementCount} project measurement(s)` : `자체 측정 ${projectMeasurementCount}개`) : "",
   ].filter(Boolean);
-  const evidenceLabel = evidenceLabels.length ? evidenceLabels.join(" · ") : "등록된 외부 참고·측정값 없음";
+  const evidenceLabel = evidenceLabels.length ? evidenceLabels.join(" · ") : (en ? "No external references or measurements registered" : "등록된 외부 참고·측정값 없음");
 
   const matchedMetric = getBenchmarkNumericValue(confidence.matchedRow);
   const errorLine = matchedMetric && estimate.speed
@@ -6023,16 +6170,16 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
 
   return `
     <section class="detail-section">
-      <h3>계산값과 근거 구분</h3>
+      <h3>${en ? "Estimate and evidence" : "계산값과 근거 구분"}</h3>
       <div class="evidence-grid">
         <div class="evidence-card estimate-card">
-          <span>계산 추정</span>
+          <span>${en ? "Calculated estimate" : "계산 추정"}</span>
           <strong>${formatGb(estimate.requiredGb)} · ${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
-          <small>신뢰도 ${escapeHtml(confidence.label)} · ${escapeHtml(confidence.reason)}</small>
+          <small>${en ? "Confidence" : "신뢰도"} ${escapeHtml(confidence.label)} · ${escapeHtml(confidence.reason)}</small>
           <small>${escapeHtml(formatHardwareName(hardware, true))} · ${escapeHtml(buildHardwareBasis(hardware))}</small>
         </div>
         <div class="evidence-card measured-card">
-          <span>외부 참고·측정 근거</span>
+          <span>${en ? "External reference / measurement basis" : "외부 참고·측정 근거"}</span>
           <strong>${escapeHtml(evidenceLabel)}</strong>
           ${renderBenchmarkMiniRows(measuredRows, reference, qualityBenchmark)}
         </div>
@@ -6042,14 +6189,15 @@ function renderEvidenceSection(model, estimate, hardware, confidence) {
   `;
 }
 
-function renderEstimateErrorLine(estimateValue, measuredValue, unit, measurementLabel = "사용자 측정") {
+function renderEstimateErrorLine(estimateValue, measuredValue, unit, measurementLabel = (uiLanguage === "en" ? "User measurement" : "사용자 측정")) {
   const errorPct = ((estimateValue - measuredValue) / measuredValue) * 100;
   const sign = errorPct >= 0 ? "+" : "";
+  const en = uiLanguage === "en";
   return `
     <div class="estimate-error-line">
-      <span>예상 ${escapeHtml(formatMetricNumber(estimateValue, unit, true))}</span>
+      <span>${en ? "Estimated" : "예상"} ${escapeHtml(formatMetricNumber(estimateValue, unit, true))}</span>
       <span>vs ${escapeHtml(measurementLabel)} ${escapeHtml(formatMetricNumber(measuredValue, unit, true))}</span>
-      <strong>추정 오차 ${sign}${errorPct.toFixed(1)}%</strong>
+      <strong>${en ? "Estimate error" : "추정 오차"} ${sign}${errorPct.toFixed(1)}%</strong>
     </div>
   `;
 }
@@ -6063,28 +6211,30 @@ function formatBenchmarkRuntime(row) {
 }
 
 function renderBenchmarkMiniRows(rows, reference, qualityBenchmark) {
+  const en = uiLanguage === "en";
+  const sourceLinkNote = en ? " · Source link available" : " · 출처 링크 있음";
   const entries = rows.slice(0, 3).map((row) => `
     <div>
-      <span>${escapeHtml(benchmarkEvidenceLabel(row))} · ${escapeHtml(row.gpu || row.gpuId || "GPU 미기재")} · ${escapeHtml(formatBenchmarkRuntime(row))}</span>
+      <span>${escapeHtml(benchmarkEvidenceLabel(row))} · ${escapeHtml(row.gpu || row.gpuId || (en ? "GPU not stated" : "GPU 미기재"))} · ${escapeHtml(formatBenchmarkRuntime(row))}</span>
       <strong>${escapeHtml(formatBenchmarkMetric(row))}</strong>
-      <small>${escapeHtml(row.date || "날짜 미기재")}${row.sourceUrl ? " · 출처 링크 있음" : ""}</small>
+      <small>${escapeHtml(row.date || (en ? "Date not stated" : "날짜 미기재"))}${row.sourceUrl ? sourceLinkNote : ""}</small>
     </div>
   `);
   if (qualityBenchmark) {
     entries.push(`
       <div>
-        <span>외부 공개 참고값 · ${escapeHtml(qualityBenchmark.metric || "대표 공개 평가")} · ${escapeHtml(qualityBenchmark.note || "공식 발표")}</span>
+        <span>${en ? "External public reference" : "외부 공개 참고값"} · ${escapeHtml(qualityBenchmark.metric || (en ? "Representative public evaluation" : "대표 공개 평가"))} · ${escapeHtml(qualityBenchmark.note || (en ? "Official announcement" : "공식 발표"))}</span>
         <strong>${escapeHtml(qualityBenchmark.label)}</strong>
-        <small>${qualityBenchmark.sourceUrl ? "출처 링크 있음 · " : ""}속도 측정과 분리 표시</small>
+        <small>${qualityBenchmark.sourceUrl ? (en ? "Source link available · " : "출처 링크 있음 · ") : ""}${en ? "Shown separately from speed measurements" : "속도 측정과 분리 표시"}</small>
       </div>
     `);
   }
   if (reference) {
     entries.push(`
       <div>
-        <span>외부 공개 참고값 · ${escapeHtml(reference.gpu)} · ${escapeHtml(reference.setting)}</span>
+        <span>${en ? "External public reference" : "외부 공개 참고값"} · ${escapeHtml(reference.gpu)} · ${escapeHtml(reference.setting)}</span>
         <strong>${escapeHtml(reference.metric)}</strong>
-        <small>사용자/자체 측정과 분리 표시</small>
+        <small>${en ? "Shown separately from user/project measurements" : "사용자/자체 측정과 분리 표시"}</small>
       </div>
     `);
   }
@@ -6093,24 +6243,29 @@ function renderBenchmarkMiniRows(rows, reference, qualityBenchmark) {
   }
 
   return `
-    <small>이 모델의 외부 공개 참고값과 사용자/자체 측정값은 아직 없습니다. 상세 수치는 계산 추정으로만 표시합니다.</small>
+    <small>${en
+      ? "No external public reference or user/project measurement exists for this model yet. Detail figures are shown as calculated estimates only."
+      : "이 모델의 외부 공개 참고값과 사용자/자체 측정값은 아직 없습니다. 상세 수치는 계산 추정으로만 표시합니다."}</small>
     ${BENCHMARK_META.reportingPaused
-      ? `<small>${escapeHtml(BENCHMARK_META.reportingStatus || "신규 벤치마크 제보 일시 중단")}</small>`
-      : `<div class="external-links evidence-links">${renderExternalLink("벤치마크 제보", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}</div>`}
+      ? `<small>${escapeHtml(BENCHMARK_META.reportingStatus || (en ? "New benchmark submissions temporarily paused" : "신규 벤치마크 제보 일시 중단"))}</small>`
+      : `<div class="external-links evidence-links">${renderExternalLink(en ? "Report a benchmark" : "벤치마크 제보", BENCHMARK_META.reportUrl || "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new/choose")}</div>`}
   `;
 }
 
 function renderFitRationale(estimate, hardware) {
   const meta = GRADE_META[estimate.grade];
   const margin = estimate.effectiveVram - estimate.requiredGb;
+  const marginLabel = uiLanguage === "en"
+    ? (margin >= 0 ? "Remaining VRAM" : "VRAM shortfall")
+    : (margin >= 0 ? "남는 VRAM" : "부족 VRAM");
   return `
     <div class="fit-rationale-grid">
-      ${renderInfoItem("판정", meta.label)}
-      ${renderInfoItem("필요 VRAM", formatGb(estimate.requiredGb))}
-      ${renderInfoItem("가용 VRAM", formatGb(estimate.effectiveVram))}
-      ${renderInfoItem(margin >= 0 ? "남는 VRAM" : "부족 VRAM", formatGb(Math.abs(margin)))}
-      ${renderInfoItem("사용률", formatPercent(estimate.pressure))}
-      ${renderInfoItem("계산 조건", buildHardwareBasis(hardware))}
+      ${renderInfoItem(uiLanguage === "en" ? "Verdict" : "판정", meta.label)}
+      ${renderInfoItem(uiLanguage === "en" ? "Required VRAM" : "필요 VRAM", formatGb(estimate.requiredGb))}
+      ${renderInfoItem(uiLanguage === "en" ? "Available VRAM" : "가용 VRAM", formatGb(estimate.effectiveVram))}
+      ${renderInfoItem(marginLabel, formatGb(Math.abs(margin)))}
+      ${renderInfoItem(uiLanguage === "en" ? "Utilization" : "사용률", formatPercent(estimate.pressure))}
+      ${renderInfoItem(uiLanguage === "en" ? "Calculation conditions" : "계산 조건", buildHardwareBasis(hardware))}
     </div>
   `;
 }
@@ -6136,17 +6291,20 @@ function renderQuantRows(model, hardware, recommendedQuantId) {
 }
 
 function quantQualityLabel(quant, recommendedQuantId) {
-  if (quant.id === recommendedQuantId) return "권장";
-  if (quant.id === "fp16") return "원본";
-  if (quant.rank >= 6) return "우수";
-  if (quant.rank >= 5) return "매우 높음";
-  if (quant.rank >= 4) return "높음";
-  if (quant.rank >= 3) return "보통";
-  return "낮음";
+  if (quant.id === recommendedQuantId) return uiLanguage === "en" ? "Recommended" : "권장";
+  if (quant.id === "fp16") return uiLanguage === "en" ? "Original" : "원본";
+  if (quant.rank >= 6) return uiLanguage === "en" ? "Excellent" : "우수";
+  if (quant.rank >= 5) return uiLanguage === "en" ? "Very high" : "매우 높음";
+  if (quant.rank >= 4) return uiLanguage === "en" ? "High" : "높음";
+  if (quant.rank >= 3) return uiLanguage === "en" ? "Medium" : "보통";
+  return uiLanguage === "en" ? "Low" : "낮음";
 }
 
+const PRECISION_QUALITY_LABEL_EN = { "자동": "Auto", "원본": "Original", "권장": "Recommended", "경량": "Light", "초경량": "Ultra-light" };
+
 function precisionQualityLabel(precision, recommendedPrecisionId) {
-  if (precision.id === recommendedPrecisionId) return "권장";
+  if (precision.id === recommendedPrecisionId) return uiLanguage === "en" ? "Recommended" : "권장";
+  if (uiLanguage === "en") return PRECISION_QUALITY_LABEL_EN[precision.quality] || precision.quality || "Comparison";
   return precision.quality || "비교";
 }
 
@@ -6176,7 +6334,7 @@ function renderMemoryMap(segments, capacity) {
     .join("");
   return `
     <div class="memory-map">
-      <div class="memmap-title">VRAM 메모리 맵 · 총 ${formatGb(safeCapacity)}</div>
+      <div class="memmap-title">${uiLanguage === "en" ? `VRAM memory map · total ${formatGb(safeCapacity)}` : `VRAM 메모리 맵 · 총 ${formatGb(safeCapacity)}`}</div>
       <div class="memmap-bar">${bar}</div>
       <div class="memmap-legend">${legend}</div>
     </div>
@@ -6198,33 +6356,43 @@ function renderMemoryLine(label, value, total) {
 }
 
 function renderVramBudget(hardware, estimate) {
+  const en = uiLanguage === "en";
   const remainder = hardware.availableVram - estimate.requiredGb;
-  const deltaLabel = remainder >= 0 ? "실행 후 잔여" : "가용 대비 부족";
+  const deltaLabel = en
+    ? (remainder >= 0 ? "Remaining after run" : "Shortfall vs. available")
+    : (remainder >= 0 ? "실행 후 잔여" : "가용 대비 부족");
   const deltaValue = Math.abs(remainder);
-  const gpuPoolLabel = hardware.heterogeneous
-    ? `이기종 병렬 반영 (${Math.round(hardware.shardingEfficiency * 100)}%)`
-    : hardware.count > 1
-      ? `병렬 반영 VRAM (${Math.round(hardware.shardingEfficiency * 100)}%)`
-      : "계산 기준 VRAM";
+  const gpuPoolLabel = en
+    ? (hardware.heterogeneous
+      ? `Heterogeneous parallel applied (${Math.round(hardware.shardingEfficiency * 100)}%)`
+      : hardware.count > 1
+        ? `Parallel-adjusted VRAM (${Math.round(hardware.shardingEfficiency * 100)}%)`
+        : "Calculation-basis VRAM")
+    : (hardware.heterogeneous
+      ? `이기종 병렬 반영 (${Math.round(hardware.shardingEfficiency * 100)}%)`
+      : hardware.count > 1
+        ? `병렬 반영 VRAM (${Math.round(hardware.shardingEfficiency * 100)}%)`
+        : "계산 기준 VRAM");
   return `
     <div class="vram-budget-grid">
-      ${renderInfoItem("총 GPU VRAM", formatGb(hardware.totalVram))}
+      ${renderInfoItem(en ? "Total GPU VRAM" : "총 GPU VRAM", formatGb(hardware.totalVram))}
       ${renderInfoItem(gpuPoolLabel, formatGb(hardware.baseEffectiveVram))}
-      ${renderInfoItem("다른 작업 예약", formatGb(hardware.reservedVram))}
-      ${renderInfoItem("안전 여유분", formatGb(hardware.safetyMarginGb))}
-      ${renderInfoItem("모델 가용 VRAM", formatGb(hardware.availableVram))}
+      ${renderInfoItem(en ? "Reserved for other work" : "다른 작업 예약", formatGb(hardware.reservedVram))}
+      ${renderInfoItem(en ? "Safety margin" : "안전 여유분", formatGb(hardware.safetyMarginGb))}
+      ${renderInfoItem(en ? "Model available VRAM" : "모델 가용 VRAM", formatGb(hardware.availableVram))}
       ${renderInfoItem(deltaLabel, formatGb(deltaValue))}
-      ${hardware.crossVendor ? renderInfoItem("런타임 호환성", "GPU 제조사 혼용 지원 확인 필요") : ""}
+      ${hardware.crossVendor ? renderInfoItem(en ? "Runtime compatibility" : "런타임 호환성", en ? "Check mixed-GPU-vendor support" : "GPU 제조사 혼용 지원 확인 필요") : ""}
     </div>
   `;
 }
 
 function renderRuntimeRows(model, hardware) {
+  const en = uiLanguage === "en";
   const selectedQuant = $("quantization").value;
   const scenarios = [
     { label: "llama.cpp / Ollama", hardware: { ...hardware, runtime: "llamacpp" } },
-    { label: "vLLM 단일 요청", hardware: { ...hardware, runtime: "vllm", concurrency: 1 } },
-    { label: `vLLM 동시 요청 ${hardware.concurrency}명`, hardware: { ...hardware, runtime: "vllm" } },
+    { label: en ? "vLLM single request" : "vLLM 단일 요청", hardware: { ...hardware, runtime: "vllm", concurrency: 1 } },
+    { label: en ? `vLLM ${pluralize(hardware.concurrency, "concurrent request", "concurrent requests")}` : `vLLM 동시 요청 ${hardware.concurrency}명`, hardware: { ...hardware, runtime: "vllm" } },
     { label: "Transformers", hardware: { ...hardware, runtime: "transformers" } },
   ];
 
@@ -6254,9 +6422,13 @@ function renderInfoItem(label, value) {
 function renderLicenseSection(model) {
   const policy = getLicensePolicy(model);
   const sourceUrl = model.hfImported ? model.sourceUrl : policy.sourceUrl || model.sourceUrl || "";
+  const en = uiLanguage === "en";
+  const disclaimer = en
+    ? "A brief reference summary, not legal advice. Check the checkpoint's latest LICENSE and usage policy yourself before commercial deployment."
+    : (LICENSE_META.disclaimer || "참고용 요약입니다. 실제 배포 전 최신 원문 약관을 확인하세요.");
   return `
     <section class="detail-section license-section">
-      <h3>라이선스 및 상업 이용</h3>
+      <h3>${en ? "License and commercial use" : "라이선스 및 상업 이용"}</h3>
       <div class="license-summary-card">
         <div class="license-badges">
           <span class="license-badge license-${escapeAttr(policy.commercialUse)}">${escapeHtml(licenseCommercialLabel(policy))}</span>
@@ -6264,8 +6436,8 @@ function renderLicenseSection(model) {
         </div>
         <strong>${escapeHtml(model.license)}</strong>
         <p>${escapeHtml(licenseSummary(policy))}</p>
-        <small>${escapeHtml(LICENSE_META.disclaimer || "참고용 요약입니다. 실제 배포 전 최신 원문 약관을 확인하세요.")}</small>
-        ${sourceUrl ? `<div class="external-links">${renderExternalLink("라이선스 원문 확인", sourceUrl)}</div>` : ""}
+        <small>${escapeHtml(disclaimer)}</small>
+        ${sourceUrl ? `<div class="external-links">${renderExternalLink(en ? "View license" : "라이선스 원문 확인", sourceUrl)}</div>` : ""}
       </div>
     </section>
   `;
@@ -6946,13 +7118,13 @@ function formatParams(value) {
 }
 
 function formatSpeed(value) {
-  if (!value) return "불가";
+  if (!value) return uiLanguage === "en" ? "N/A" : "불가";
   if (value < 1) return `${value.toFixed(1)} tok/s`;
   return `${Math.round(value)} tok/s`;
 }
 
 function formatThroughput(value, unit) {
-  if (!value) return `불가`;
+  if (!value) return uiLanguage === "en" ? "N/A" : "불가";
   if (value >= 1000) return `${Math.round(value).toLocaleString("ko-KR")} ${unit}`;
   if (value >= 10) return `${Math.round(value)} ${unit}`;
   return `${value.toFixed(1)} ${unit}`;
@@ -6963,10 +7135,13 @@ function formatMegapixels(value) {
 }
 
 function formatDuration(seconds) {
-  if (!seconds) return "불가";
-  if (seconds < 1) return `${seconds.toFixed(1)}초`;
-  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 1 : 0)}초`;
-  return `${Math.floor(seconds / 60)}분 ${Math.round(seconds % 60)}초`;
+  const en = uiLanguage === "en";
+  if (!seconds) return en ? "N/A" : "불가";
+  if (seconds < 1) return en ? `${seconds.toFixed(1)}s` : `${seconds.toFixed(1)}초`;
+  if (seconds < 60) return en ? `${seconds.toFixed(seconds < 10 ? 1 : 0)}s` : `${seconds.toFixed(seconds < 10 ? 1 : 0)}초`;
+  return en
+    ? `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
+    : `${Math.floor(seconds / 60)}분 ${Math.round(seconds % 60)}초`;
 }
 
 function ocrFeatureLabel(value) {
@@ -6980,9 +7155,10 @@ function ocrFeatureLabel(value) {
 }
 
 function ocrTypeLabel(value) {
-  if (value === "document-vlm" || value === "ocr-vlm") return "문서 특화 VLM";
-  if (value === "general-vlm") return "범용 VLM";
-  return "OCR 파이프라인";
+  const en = uiLanguage === "en";
+  if (value === "document-vlm" || value === "ocr-vlm") return en ? "Document-specialized VLM" : "문서 특화 VLM";
+  if (value === "general-vlm") return en ? "General VLM" : "범용 VLM";
+  return en ? "OCR pipeline" : "OCR 파이프라인";
 }
 
 function buildOllamaCommand(model, quant, hardware) {
