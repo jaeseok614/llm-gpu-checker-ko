@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/actions/workflows/ci.yml"><img src="https://github.com/jaeseok614/llm-gpu-checker-ko/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" /></a>
+  <a href="https://github.com/jaeseok614/llm-gpu-checker-ko"><img src="https://img.shields.io/github/stars/jaeseok614/llm-gpu-checker-ko?style=social" alt="GitHub stars" /></a>
+</p>
+
+<p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the English web app</strong></a>
   · <a href="./docs/methodology.md">Methodology</a>
   · <a href="./README.md">한국어</a>

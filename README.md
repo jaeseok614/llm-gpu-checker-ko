@@ -9,6 +9,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/actions/workflows/ci.yml"><img src="https://github.com/jaeseok614/llm-gpu-checker-ko/actions/workflows/ci.yml/badge.svg" alt="CI 상태" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License" /></a>
+  <a href="https://github.com/jaeseok614/llm-gpu-checker-ko"><img src="https://img.shields.io/github/stars/jaeseok614/llm-gpu-checker-ko?style=social" alt="GitHub 스타" /></a>
+</p>
+
+<p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 사용하기</strong></a>
   · <a href="./docs/methodology.md">계산 기준</a>
   · <a href="./README.en.md">English</a>
