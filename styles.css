@@ -968,28 +968,33 @@ button:focus-visible {
   max-width: 720px;
 }
 
+/* Plain inline stat text instead of three separate bordered badge boxes --
+   reads as one line of supporting detail rather than three more pills
+   competing for attention next to the heading. */
 .simple-data-coverage {
   display: flex;
   flex: 0 0 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  align-items: baseline;
+  gap: 4px;
   max-width: 410px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .simple-data-coverage span {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
-  min-height: 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 4px 9px;
-  background: #f8fafc;
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 700;
   white-space: nowrap;
+}
+
+.simple-data-coverage span + span::before {
+  content: "·";
+  margin-right: 4px;
+  color: var(--line-strong);
 }
 
 .simple-data-coverage strong {
@@ -1050,9 +1055,17 @@ button:focus-visible {
   background: var(--blue-soft);
 }
 
+/* The top pick gets a real, permanent visual weight difference (tinted
+   background + full border, not just a hover-only tint or thin accent
+   line) so it doesn't read as a 3rd identical box with a different-colored
+   badge -- there should be one clear place the eye lands first. */
 .simple-pick-card.is-top-pick {
-  border-color: var(--blue);
-  border-left: 3px solid var(--blue);
+  border: 2px solid var(--blue);
+  background: var(--blue-soft);
+}
+
+.simple-pick-card.is-top-pick .simple-pick-head strong {
+  font-size: 15px;
 }
 
 /* Clicking a card expands its detail inline (accordion) instead of opening
@@ -1068,6 +1081,7 @@ button:focus-visible {
 }
 
 .simple-pick-card.is-expanded.is-top-pick:hover {
+  background: var(--blue-soft);
   border-color: var(--blue);
 }
 
@@ -1090,14 +1104,20 @@ button:focus-visible {
   border-top: 1px dashed var(--line);
 }
 
+/* Plain colored text instead of a filled pill -- the card itself (border +
+   tint on the top pick) already carries the rank signal, so a solid badge
+   here was redundant emphasis and one more pill shape among many. */
 .simple-pick-rank {
   width: fit-content;
-  border-radius: var(--radius-sm);
-  padding: 2px 9px;
-  background: var(--blue);
-  color: #ffffff;
-  font-size: 10px;
+  color: var(--blue);
+  font-size: 11px;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.simple-pick-card.is-top-pick .simple-pick-rank {
+  font-size: 12px;
 }
 
 .simple-pick-head {
