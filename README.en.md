@@ -31,9 +31,12 @@
 
 ## Highlights
 
-- 90 GPU presets and 286 AI models
+- 90 GPU presets and 290 AI models
 - Six workloads: generative LLM, embedding, reranker, OCR, document VLM, and general VLM
 - Side-by-side comparison for two or three models, plus heterogeneous and multi-GPU placement
+- Multi-GPU placement diagnostics: compare balanced/throughput/model-preserving placement plans side by side, with usage mode (pipeline, independent services, or swap-in models), target concurrency, and primary-model priority
+- Light/dark mode with automatic system-preference detection and a saved choice
+- Benchmark sheet metric picker that auto-compares only models measured on the same metric
 - Source-linked representative public evaluations and plain-language license guidance
 - Direct calculation for public Hugging Face models and a local benchmark CLI
 

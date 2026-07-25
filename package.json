@@ -1,6 +1,6 @@
 {
   "name": "ai-hardware-fit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "description": "Korean static web app for estimating which LLM, embedding, reranker, OCR, and VLM models can run on a selected GPU, plus a local benchmark CLI.",
   "type": "module",
