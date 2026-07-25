@@ -188,6 +188,16 @@ window.LLM_GPU_CHECKER_DATA.licensePolicies = {
     },
     "https://huggingface.co/moonshotai/Kimi-K2-Instruct/blob/main/LICENSE",
   ),
+  "Upstage Solar License": licensePolicy(
+    "conditional",
+    "조건부 상업 이용",
+    "공개 가중치",
+    {
+      ko: "가중치를 그대로 쓰는 상업 이용은 가능하지만, 파생 모델을 만들 경우 이름에 'Solar' 접두사를 붙이고 'Built with Solar' 문구를 표시하는 등 별도 조건을 따라야 합니다.",
+      en: "Commercial use of the weights as-is is allowed, but creating a derivative model requires prefixing the name with \"Solar\" and displaying \"Built with Solar,\" among other conditions.",
+    },
+    "https://huggingface.co/upstage/Solar-Open2-250B/blob/main/LICENSE",
+  ),
   Jamba: licensePolicy(
     "conditional",
     "조건부 상업 이용",

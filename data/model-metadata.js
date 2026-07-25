@@ -680,23 +680,27 @@ mergeModelMetadata({
 
   "PaddlePaddle/PaddleOCR-VL-1.6": {
     ...cardDate("2026-05-27"),
-    qualityBenchmark: quality("96.33", "OmniDocBench v1.6", 96.33, "https://www.paddleocr.ai/main/en/version3.x/algorithm/PaddleOCR-VL/PaddleOCR-VL-1.6.html", "OmniDocBench v1.6"),
+    qualityBenchmark: quality("OmniDocBench v1.6 96.33", "OmniDocBench v1.6", 96.33, "https://www.paddleocr.ai/main/en/version3.x/algorithm/PaddleOCR-VL/PaddleOCR-VL-1.6.html", "OmniDocBench v1.6"),
   },
   "PaddlePaddle/PaddleOCR-VL-0.9B": {
     ...cardDate("2025-10-16"),
-    qualityBenchmark: quality("92.56", "OmniDocBench v1.5", 92.56, "https://www.paddleocr.ai/latest/en/version3.x/algorithm/PaddleOCR-VL/PaddleOCR-VL.html", "OmniDocBench v1.5"),
+    qualityBenchmark: quality("OmniDocBench v1.5 92.56", "OmniDocBench v1.5", 92.56, "https://www.paddleocr.ai/latest/en/version3.x/algorithm/PaddleOCR-VL/PaddleOCR-VL.html", "OmniDocBench v1.5"),
   },
   "opendatalab/MinerU2.5-Pro-2604-1.2B": {
     ...cardDate("2026-04-02"),
-    qualityBenchmark: quality("93.04", "OmniDocBench v1.6", 93.04, "https://github.com/opendatalab/OmniDocBench", "OmniDocBench v1.6"),
+    qualityBenchmark: quality("OmniDocBench v1.6 93.04", "OmniDocBench v1.6", 93.04, "https://github.com/opendatalab/OmniDocBench", "OmniDocBench v1.6"),
   },
   "deepseek-ai/DeepSeek-OCR-2": {
     ...cardDate("2026-01-27"),
-    qualityBenchmark: quality("90.25", "OmniDocBench v1.6", 90.25, "https://github.com/opendatalab/OmniDocBench", "OmniDocBench v1.6"),
+    qualityBenchmark: quality("OmniDocBench v1.6 90.25", "OmniDocBench v1.6", 90.25, "https://github.com/opendatalab/OmniDocBench", "OmniDocBench v1.6"),
   },
   "rednote-hilab/dots.ocr": {
     ...cardDate("2025-07-30"),
-    qualityBenchmark: quality("90.77", "OmniDocBench v1.6", 90.77, "https://github.com/opendatalab/OmniDocBench", "OmniDocBench v1.6"),
+    qualityBenchmark: quality("OmniDocBench v1.6 90.77", "OmniDocBench v1.6", 90.77, "https://github.com/opendatalab/OmniDocBench", "OmniDocBench v1.6"),
+  },
+  "zai-org/GLM-OCR": {
+    ...cardDate("2026-03-11"),
+    qualityBenchmark: quality("OmniDocBench v1.5 94.62", "OmniDocBench v1.5", 94.62, "https://huggingface.co/zai-org/GLM-OCR", "공식 카드"),
   },
   "Qwen/Qwen2.5-VL-32B-Instruct": {
     ...cardDate("2025-03-21"),
@@ -1242,6 +1246,21 @@ mergeModelMetadata({
     releaseDate: "2026-06-16",
     sourceUrl: "https://docs.bigmodel.cn/cn/update/new-releases",
     qualityBenchmark: quality("GPQA-D 91.2", "GPQA Diamond", 91.2, "https://z.ai/blog/glm-5.2", "공식 발표"),
+  },
+  "DeepSeek V4-Pro": {
+    releaseDate: "2026-04-24",
+    sourceUrl: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+    qualityBenchmark: quality("MMLU-Pro 73.5", "MMLU-Pro (EM, 5-shot, base model)", 73.5, "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro", "공식 카드"),
+  },
+  "DeepSeek V4-Flash": {
+    releaseDate: "2026-04-24",
+    sourceUrl: "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+    qualityBenchmark: quality("MMLU-Pro 68.3", "MMLU-Pro (EM, 5-shot, base model)", 68.3, "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash", "공식 카드"),
+  },
+  "Solar Open 2 250B A15B": {
+    releaseDate: "2026-07-24",
+    sourceUrl: "https://huggingface.co/upstage/Solar-Open2-250B",
+    qualityBenchmark: quality("KMMLU-Pro 78.4", "KMMLU-Pro", 78.4, "https://huggingface.co/upstage/Solar-Open2-250B", "공식 카드"),
   },
   "GPT-OSS 20B": {
     releaseDate: "2025-08-05",
