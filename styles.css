@@ -1042,7 +1042,6 @@ button:focus-visible {
   padding: 13px;
   background: #ffffff;
   text-align: left;
-  cursor: pointer;
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 }
 
@@ -1054,6 +1053,41 @@ button:focus-visible {
 .simple-pick-card.is-top-pick {
   border-color: var(--blue);
   border-left: 3px solid var(--blue);
+}
+
+/* Clicking a card expands its detail inline (accordion) instead of opening
+   the shared drawer/inspector, so it spans the full result row and drops
+   the hover tint once open (there's too much text underneath to tint). */
+.simple-pick-card.is-expanded {
+  grid-column: 1 / -1;
+}
+
+.simple-pick-card.is-expanded:hover {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+
+.simple-pick-card.is-expanded.is-top-pick:hover {
+  border-color: var(--blue);
+}
+
+.simple-pick-card-toggle {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.simple-pick-detail {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
 }
 
 .simple-pick-rank {
@@ -1102,6 +1136,7 @@ button:focus-visible {
   color: var(--blue);
   font-size: 11px;
   font-weight: 800;
+  cursor: pointer;
 }
 
 .simple-pick-actions {
@@ -2871,6 +2906,15 @@ button:focus-visible {
   font-family: var(--mono);
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
+}
+
+.benchmark-chart-group-analysis {
+  margin: 2px 0 0;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .benchmark-row:first-child {

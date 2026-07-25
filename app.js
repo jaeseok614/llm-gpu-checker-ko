@@ -146,6 +146,9 @@ const RUNTIME_LABELS = {
 let activeWorkload = "generative";
 let activeSummaryFilter = "all";
 let selectedModelKey = "";
+// Which quick-recommend (빠른 추천) card is expanded inline, kept separate
+// from selectedModelKey so it never opens the expert-mode drawer/inspector.
+let simpleExpandedKey = "";
 let viewMode = "list";
 let settingsExpanded = false;
 let compareKeys = [];
@@ -1505,9 +1508,21 @@ function bindEvents() {
       copyTextToClipboard(copyCommand.dataset.copyCommand, copyCommand);
       return;
     }
+    // Share/download buttons inside an expanded accordion card reuse the
+    // same detail-body markup as the drawer, so handle them here too.
+    if (event.target.closest("[data-share-link]")) {
+      copyTextToClipboard(window.location.href, event.target.closest("[data-share-link]"));
+      return;
+    }
+    if (event.target.closest("[data-download-share-card]")) {
+      downloadShareCard(simpleExpandedKey, event.target.closest("[data-download-share-card]"));
+      return;
+    }
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
-    selectedModelKey = target.dataset.modelKey;
+    // Quick-recommend cards expand inline (accordion) instead of opening the
+    // shared drawer/inspector, so this uses its own state var.
+    simpleExpandedKey = simpleExpandedKey === target.dataset.modelKey ? "" : target.dataset.modelKey;
     render();
   });
   $("simpleOpenExpert").addEventListener("click", () => setAppMode("expert"));
@@ -4170,34 +4185,53 @@ function renderSimpleMode(hardware, allEstimates) {
   }
 
   exploreActions.hidden = false;
+  // If a previous pick set no longer contains the expanded model (purpose/
+  // priority changed), collapse rather than leaving a dangling reference.
+  if (simpleExpandedKey && !picks.some((estimate) => modelKey(estimate.model) === simpleExpandedKey)) {
+    simpleExpandedKey = "";
+  }
+
   target.innerHTML = picks.map((estimate, index) => {
     const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
     const meta = GRADE_META[estimate.grade];
     const licensePolicy = getLicensePolicy(estimate.model);
     const reasons = buildRecommendationReasons(estimate).slice(0, 3).map(localizeRecommendationReason);
     const key = modelKey(estimate.model);
+    const isExpanded = simpleExpandedKey === key;
+    const ctaLabel = isExpanded
+      ? (uiLanguage === "en" ? "Hide details" : "상세 접기")
+      : t("detailCalculation");
 
     return `
-      <button type="button" class="simple-pick-card ${index === 0 ? "is-top-pick" : ""}" data-model-key="${escapeAttr(key)}">
-        <span class="simple-pick-rank">${uiLanguage === "en" ? `Rank ${index + 1}` : `${index + 1}순위`}</span>
-        <span class="simple-pick-head">
-          <strong>${escapeHtml(estimate.model.name)}</strong>
-          <span class="grade-pill ${meta.className}">${meta.label}</span>
-        </span>
-        <span class="simple-pick-specs">
-          <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
-          <span>VRAM ${formatGb(estimate.requiredGb)}</span>
-          <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
-          <span>${uiLanguage === "en" ? `Estimated · ${confidence.label}` : `추정 · ${confidence.label}`}</span>
-        </span>
-        ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
+      <div class="simple-pick-card ${index === 0 ? "is-top-pick" : ""} ${isExpanded ? "is-expanded" : ""}">
+        <button type="button" class="simple-pick-card-toggle" data-model-key="${escapeAttr(key)}" aria-expanded="${isExpanded ? "true" : "false"}">
+          <span class="simple-pick-rank">${uiLanguage === "en" ? `Rank ${index + 1}` : `${index + 1}순위`}</span>
+          <span class="simple-pick-head">
+            <strong>${escapeHtml(estimate.model.name)}</strong>
+            <span class="grade-pill ${meta.className}">${meta.label}</span>
+          </span>
+          <span class="simple-pick-specs">
+            <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
+            <span>VRAM ${formatGb(estimate.requiredGb)}</span>
+            <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
+            <span>${uiLanguage === "en" ? `Estimated · ${confidence.label}` : `추정 · ${confidence.label}`}</span>
+          </span>
+          ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
+        </button>
         <span class="simple-pick-actions">
-          <span class="simple-pick-cta">${t("detailCalculation")} →</span>
+          <span class="simple-pick-cta" data-model-key="${escapeAttr(key)}">${escapeHtml(ctaLabel)} ${isExpanded ? "↑" : "→"}</span>
           <span class="simple-pick-copy" role="button" tabindex="0" data-copy-command="${escapeAttr(estimate.model.type === "generative" ? buildOllamaCommand(estimate.model, estimate.quant, hardware) : buildNonGenerativeCommand(estimate.model, estimate))}">${uiLanguage === "en" ? "Copy run command" : "실행 명령어 복사"}</span>
         </span>
-      </button>
+        ${isExpanded ? `<div class="simple-pick-detail">${buildSimplePickDetailBodyHtml(estimate.model, hardware)}</div>` : ""}
+      </div>
     `;
   }).join("");
+}
+
+function buildSimplePickDetailBodyHtml(model, hardware) {
+  return model.type === "generative"
+    ? buildGenerativeDetailBodyHtml(model, hardware)
+    : buildNonGenerativeDetailBodyHtml(model, hardware);
 }
 
 function localizeRecommendationReason(reason) {
@@ -4649,6 +4683,22 @@ function renderDetail() {
     return;
   }
 
+  detail.hidden = false;
+  backdrop.hidden = true;
+  detail.innerHTML = `
+    <div class="detail-head">
+      <button type="button" class="back-button" data-close-detail>상세 닫기</button>
+      <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
+    </div>
+    ${buildGenerativeDetailBodyHtml(model, hardware)}
+  `;
+}
+
+// Shared by the drawer/inspector (renderDetail) and the quick-recommend
+// inline accordion (renderSimpleMode) so both surfaces show identical
+// content — only the surrounding chrome (close button vs. accordion toggle)
+// differs.
+function buildGenerativeDetailBodyHtml(model, hardware) {
   const estimate = estimateModel(model, $("quantization").value, hardware);
   const meta = GRADE_META[estimate.grade];
   const confidence = getEstimateConfidence(model, estimate, hardware);
@@ -4658,14 +4708,7 @@ function renderDetail() {
   const recommendationReasons = buildRecommendationReasons(estimate);
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
 
-  detail.hidden = false;
-  backdrop.hidden = true;
-  detail.innerHTML = `
-    <div class="detail-head">
-      <button type="button" class="back-button" data-close-detail>상세 닫기</button>
-      <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
-    </div>
-
+  return `
     <div class="detail-title">
       <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
@@ -4778,6 +4821,20 @@ ${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre
 }
 
 function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
+  detail.hidden = false;
+  backdrop.hidden = true;
+  detail.innerHTML = `
+    <div class="detail-head">
+      <button type="button" class="back-button" data-close-detail>상세 닫기</button>
+      <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
+    </div>
+    ${buildNonGenerativeDetailBodyHtml(model, hardware)}
+  `;
+}
+
+// Shared by the drawer/inspector (renderNonGenerativeDetail) and the
+// quick-recommend inline accordion (renderSimpleMode).
+function buildNonGenerativeDetailBodyHtml(model, hardware) {
   const estimate = estimateAnyModel(model, hardware);
   const meta = GRADE_META[estimate.grade];
   const confidence = getEstimateConfidence(model, estimate, hardware);
@@ -4788,14 +4845,7 @@ function renderNonGenerativeDetail(detail, backdrop, model, hardware) {
   const breakdownTotal = Math.max(estimate.requiredGb, 0.1);
   const detailKind = model.type === "embedding" ? "임베딩" : model.type === "reranker" ? "리랭커" : ocrTypeLabel(model.type);
 
-  detail.hidden = false;
-  backdrop.hidden = true;
-  detail.innerHTML = `
-    <div class="detail-head">
-      <button type="button" class="back-button" data-close-detail>상세 닫기</button>
-      <button type="button" class="icon-button" data-close-detail aria-label="상세 닫기">×</button>
-    </div>
-
+  return `
     <div class="detail-title">
       <span class="grade-pill ${meta.className}" title="${escapeAttr(buildGradeTooltip(estimate))}">${meta.label}</span>
       <h2>${escapeHtml(model.name)}</h2>
@@ -5574,10 +5624,34 @@ function benchmarkMetricValue(row) {
   return null;
 }
 
-function renderBenchmarkChart(selectedRows) {
+const BENCHMARK_THROUGHPUT_FAMILIES = new Set(["tok/s", "doc/s", "pair/s", "page/s"]);
+const BENCHMARK_DEFAULT_FAMILY_COUNT = 3;
+const BENCHMARK_DEFAULT_ROWS_PER_FAMILY = 5;
+
+function benchmarkGroupAnalysisText(family, sortedDesc) {
+  if (sortedDesc.length < 2) return null;
+  const best = sortedDesc[0];
+  const worst = sortedDesc[sortedDesc.length - 1];
+  if (best.value === worst.value) return null;
+  const isThroughput = BENCHMARK_THROUGHPUT_FAMILIES.has(family);
+  const diffPct = worst.value !== 0 ? Math.round(((best.value - worst.value) / Math.abs(worst.value)) * 100) : null;
+
+  if (uiLanguage === "en") {
+    const verb = isThroughput ? "fastest" : "highest";
+    const tail = diffPct !== null && diffPct > 0 ? ` — ${diffPct}% ahead of ${worst.row.modelName}` : "";
+    return `On ${family}, ${best.row.modelName} is ${verb} at ${best.value.toLocaleString()}${tail}.`;
+  }
+  const verb = isThroughput ? "가장 빠릅니다" : "가장 높습니다";
+  const tail = diffPct !== null && diffPct > 0 ? ` (${worst.row.modelName} 대비 +${diffPct}%)` : "";
+  return `${family} 기준 ${best.row.modelName}이(가) ${best.value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}로 ${verb}${tail}.`;
+}
+
+function renderBenchmarkChart(allRows, selectedRows) {
   const target = $("benchmarkChart");
   if (!target) return;
-  const chartable = selectedRows
+  const isDefault = !selectedRows;
+  const sourceRows = isDefault ? allRows : selectedRows;
+  const chartable = sourceRows
     .map((row) => ({ row, family: benchmarkMetricFamily(row), value: benchmarkMetricValue(row) }))
     .filter((entry) => entry.family && typeof entry.value === "number");
 
@@ -5594,16 +5668,34 @@ function renderBenchmarkChart(selectedRows) {
     groups.set(entry.family, group);
   });
 
+  let groupEntries = [...groups.entries()];
+  if (isDefault) {
+    // Nothing checked yet: surface the most-populated metric families so the
+    // chart isn't empty, rather than requiring a selection first.
+    groupEntries = groupEntries
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, BENCHMARK_DEFAULT_FAMILY_COUNT)
+      .map(([family, entries]) => [
+        family,
+        [...entries].sort((a, b) => b.value - a.value).slice(0, BENCHMARK_DEFAULT_ROWS_PER_FAMILY),
+      ]);
+  }
+
   target.hidden = false;
-  const intro = uiLanguage === "en"
-    ? "Only rows sharing the exact same metric are grouped into one bar chart — different metrics are never compared directly."
-    : "정확히 같은 지표를 가진 행끼리만 하나의 막대 그래프로 묶습니다. 서로 다른 지표는 직접 비교하지 않습니다.";
+  const intro = isDefault
+    ? (uiLanguage === "en"
+        ? "No rows selected yet — showing the top entries for the most common metrics below. Check rows in the table to compare specific models instead."
+        : "아직 선택한 행이 없어 가장 많이 등장하는 지표의 상위 항목을 보여주고 있습니다. 표에서 체크하면 원하는 모델로 바뀝니다.")
+    : (uiLanguage === "en"
+        ? "Only rows sharing the exact same metric are grouped into one bar chart — different metrics are never compared directly."
+        : "정확히 같은 지표를 가진 행끼리만 하나의 막대 그래프로 묶습니다. 서로 다른 지표는 직접 비교하지 않습니다.");
 
   target.innerHTML = `
     <p class="benchmark-chart-intro">${escapeHtml(intro)}</p>
-    ${[...groups.entries()].map(([family, entries]) => {
+    ${groupEntries.map(([family, entries]) => {
       const max = Math.max(...entries.map((entry) => entry.value));
       const sorted = [...entries].sort((a, b) => b.value - a.value);
+      const analysis = benchmarkGroupAnalysisText(family, sorted);
       return `
         <div class="benchmark-chart-group">
           <span class="benchmark-chart-group-title">${escapeHtml(family)}</span>
@@ -5614,6 +5706,7 @@ function renderBenchmarkChart(selectedRows) {
               <span class="benchmark-chart-bar-value">${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}</span>
             </div>
           `).join("")}
+          ${analysis ? `<p class="benchmark-chart-group-analysis">${escapeHtml(analysis)}</p>` : ""}
         </div>
       `;
     }).join("")}
@@ -5660,7 +5753,7 @@ function renderBenchmarkSheet() {
       `;
     }
   }
-  renderBenchmarkChart(rows.filter((row) => benchmarkCompareKeys.includes(row.rowKey)));
+  renderBenchmarkChart(rows, benchmarkCompareKeys.length ? rows.filter((row) => benchmarkCompareKeys.includes(row.rowKey)) : null);
 
   const query = benchmarkSearchQuery.trim().toLowerCase();
   const visibleRows = query
