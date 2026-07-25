@@ -179,10 +179,39 @@
                 <span class="gpu-placement-label">선택된 모델</span>
                 <div class="placement-model-selected" id="placementModelSelected"></div>
 
+                <span class="gpu-placement-label">운영 방식</span>
+                <div class="workload-tabs placement-usage-tabs" role="tablist" aria-label="운영 방식">
+                  <button type="button" class="workload-tab" data-placement-usage="pipeline" aria-selected="false">파이프라인</button>
+                  <button type="button" class="workload-tab is-active" data-placement-usage="independent" aria-selected="true">독립 서비스</button>
+                  <button type="button" class="workload-tab" data-placement-usage="alternate" aria-selected="false">대체 모델(순차 실행)</button>
+                </div>
+                <p class="gpu-placement-usage-hint" id="gpuPlacementUsageHint"></p>
+
                 <span class="gpu-placement-label">배치 기준</span>
                 <div class="workload-tabs placement-strategy-tabs" role="tablist" aria-label="배치 기준">
                   <button type="button" class="workload-tab is-active" data-placement-strategy="balanced" aria-selected="true">균형 우선</button>
                   <button type="button" class="workload-tab" data-placement-strategy="compact" aria-selected="false">모델 수 우선</button>
+                </div>
+
+                <div class="gpu-placement-goals">
+                  <label class="field">
+                    <span>목표 동시 사용자</span>
+                    <select id="placementTargetConcurrency">
+                      <option value="">설정 안 함</option>
+                      <option value="1">1명</option>
+                      <option value="2">2명</option>
+                      <option value="4">4명</option>
+                      <option value="8">8명</option>
+                      <option value="16">16명</option>
+                      <option value="32">32명</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>주 모델(우선 배정)</span>
+                    <select id="placementPrimaryModel">
+                      <option value="">지정 안 함</option>
+                    </select>
+                  </label>
                 </div>
 
                 <div class="gpu-placement-actions">

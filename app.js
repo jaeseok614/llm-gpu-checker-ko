@@ -333,6 +333,7 @@ const PRESET_OPTION_LABELS = {
   rerankerCandidatesPreset: { ko: (v) => `${v}개`, en: (v) => pluralize(v, "candidate", "candidates") },
   rerankerBatchSizePreset: { ko: (v) => `${v}쌍`, en: (v) => pluralize(v, "pair", "pairs") },
   ocrBatchSizePreset: { ko: (v) => `${v}페이지`, en: (v) => pluralize(v, "page", "pages") },
+  placementTargetConcurrency: { ko: (v) => (v ? `${v}명` : "설정 안 함"), en: (v) => (v ? pluralize(v, "user", "users") : "Not set") },
 };
 
 function translatePresetOptionLabels(language) {
@@ -515,6 +516,10 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["아직 선택된 모델이 없습니다.", "No models selected yet."],
   ["선택된 모델", "Selected models"],
   ["보유 GPU 목록", "GPU inventory"],
+  ["배치 기준", "Placement strategy"],
+  ["운영 방식", "Usage pattern"],
+  ["목표 동시 사용자", "Target concurrent users"],
+  ["주 모델(우선 배정)", "Primary model (priority)"],
   ["모델별 성능지표 시트", "Per-model benchmark sheet"],
   ["불러온 모델 지우기", "Clear imported models"],
   ["상세 계산 보기", "View detailed calculation"],
@@ -1006,6 +1011,14 @@ function setUiLanguage(language) {
   document.querySelectorAll("[data-placement-strategy]").forEach((button) => {
     button.textContent = PLACEMENT_STRATEGY_LABELS[button.dataset.placementStrategy][uiLanguage];
   });
+  // Usage-mode tab labels + hint paragraph, and the primary-model select's
+  // placeholder option — same pattern, set explicitly after the sweep.
+  document.querySelectorAll("[data-placement-usage]").forEach((button) => {
+    button.textContent = PLACEMENT_USAGE_LABELS[button.dataset.placementUsage][uiLanguage];
+  });
+  const usageHintEl = $("gpuPlacementUsageHint");
+  if (usageHintEl) usageHintEl.textContent = PLACEMENT_USAGE_HINTS[placementUsageMode][uiLanguage];
+  renderPlacementPrimarySelect();
 }
 
 function restoreUiLanguage() {
@@ -1026,6 +1039,12 @@ const THEME_TOGGLE_LABELS = {
 const PLACEMENT_STRATEGY_LABELS = {
   balanced: { ko: "균형 우선", en: "Balanced" },
   compact: { ko: "모델 수 우선", en: "Compact" },
+};
+
+const PLACEMENT_USAGE_LABELS = {
+  pipeline: { ko: "파이프라인", en: "Pipeline" },
+  independent: { ko: "독립 서비스", en: "Independent services" },
+  alternate: { ko: "대체 모델(순차 실행)", en: "Alternate (one at a time)" },
 };
 
 function setUiTheme(theme) {
@@ -1090,6 +1109,8 @@ function init() {
   renderGpuInventory();
   renderPlacementModelList();
   renderPlacementSelectedChips();
+  renderPlacementPrimarySelect();
+  setPlacementUsageMode(placementUsageMode);
   render({ syncUrl: false });
 }
 
@@ -1733,6 +1754,21 @@ function bindEvents() {
     button.addEventListener("click", () => setPlacementStrategy(button.dataset.placementStrategy));
   });
 
+  document.querySelectorAll("[data-placement-usage]").forEach((button) => {
+    button.addEventListener("click", () => setPlacementUsageMode(button.dataset.placementUsage));
+  });
+
+  $("placementTargetConcurrency")?.addEventListener("change", (event) => {
+    const value = event.target.value;
+    placementTargetN = value ? clampNumber(value, 1, 256, 1) : null;
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+  });
+
+  $("placementPrimaryModel")?.addEventListener("change", (event) => {
+    placementPrimaryKey = event.target.value;
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+  });
+
   $("gpuPlacementDiagnosis")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-apply-placement-strategy]");
     if (!button) return;
@@ -2026,6 +2062,16 @@ let placementActiveType = "generative";
 let placementSearchQuery = "";
 let placementSelectedKeys = new Set();
 let placementStrategy = "balanced";
+// "pipeline": one shared request flows through every selected model, so the
+// model with the least headroom sets the pace for all of them (the app's
+// original, only behavior). "independent": each model is its own service
+// called separately — show each model's own concurrency instead of
+// collapsing to one shared minimum. "alternate": only one model is ever
+// loaded at a time, so models never actually share VRAM — each is
+// evaluated against a whole GPU on its own (see computeAlternatePlacement).
+let placementUsageMode = "independent";
+let placementTargetN = null;
+let placementPrimaryKey = "";
 
 const PLACEMENT_DEFAULT_WORKLOADS = {
   embedding: { type: "embedding", inputTokens: 384, batchSize: 32, maxBatchTokens: 16384, runtime: "tei" },
@@ -2174,6 +2220,26 @@ function togglePlacementModel(key) {
   else placementSelectedKeys.add(key);
   renderPlacementModelList();
   renderPlacementSelectedChips();
+  renderPlacementPrimarySelect();
+}
+
+// Keeps the "주 모델" dropdown in sync with whatever's currently selected
+// for placement — options are rebuilt from placementSelectedKeys every call,
+// and the previous choice is kept only if that model is still selected.
+function renderPlacementPrimarySelect() {
+  const select = $("placementPrimaryModel");
+  if (!select) return;
+  const placeholder = uiLanguage === "en" ? "None" : "지정 안 함";
+  const keys = [...placementSelectedKeys];
+  if (placementPrimaryKey && !keys.includes(placementPrimaryKey)) placementPrimaryKey = "";
+  select.innerHTML = [
+    `<option value="">${escapeHtml(placeholder)}</option>`,
+    ...keys.map((key) => {
+      const model = getModelByKey(key);
+      return model ? `<option value="${escapeAttr(key)}">${escapeHtml(model.name)}</option>` : "";
+    }),
+  ].join("");
+  select.value = placementPrimaryKey;
 }
 
 function setPlacementStrategy(strategy) {
@@ -2185,6 +2251,33 @@ function setPlacementStrategy(strategy) {
   });
   // Re-run immediately if a result is already showing, so switching the
   // toggle updates the placement without a second click on "배치 계산".
+  if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+}
+
+const PLACEMENT_USAGE_HINTS = {
+  pipeline: {
+    ko: "선택한 모델들이 하나로 이어져 요청 한 건을 함께 처리한다고 가정합니다. 가장 여유가 적은 모델이 전체 처리 속도를 정합니다.",
+    en: "Assumes the selected models form a single pipeline handling one request together — whichever model has the least headroom sets the pace for all of them.",
+  },
+  independent: {
+    ko: "각 모델을 서로 다른 사용자가 독립적으로 호출하는 별도 서비스로 간주합니다. 하나의 공통 기준 대신 모델별 동시 접속 여유를 각각 보여줍니다.",
+    en: "Treats each model as a separate service called independently — shows each model's own concurrency headroom instead of one shared number.",
+  },
+  alternate: {
+    ko: "한 번에 모델 하나만 올려서 교체해가며 쓴다고 가정합니다. 모델끼리 VRAM을 나눠 쓰지 않고, 각자 GPU 전체를 기준으로 계산합니다.",
+    en: "Assumes only one model is loaded at a time and you swap between them — each model is evaluated against a whole GPU on its own, without sharing VRAM with the others.",
+  },
+};
+
+function setPlacementUsageMode(mode) {
+  placementUsageMode = ["pipeline", "independent", "alternate"].includes(mode) ? mode : "independent";
+  document.querySelectorAll("[data-placement-usage]").forEach((button) => {
+    const isActive = button.dataset.placementUsage === placementUsageMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  const hintEl = $("gpuPlacementUsageHint");
+  if (hintEl) hintEl.textContent = PLACEMENT_USAGE_HINTS[placementUsageMode][uiLanguage === "en" ? "en" : "ko"];
   if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
 }
 
@@ -2296,7 +2389,7 @@ function buildGpuPlacementHardware(baseHardware, gpu, availableVram) {
 // strategy "compact" keeps the previous best-fit behavior (minimize
 // leftover), which packs more models onto fewer GPUs at the cost of one GPU
 // running close to its limit while another goes unused.
-function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced") {
+function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryKey = "") {
   const hardwareBase = getHardware();
   const singleUserHardware = { ...hardwareBase, concurrency: 1 };
 
@@ -2324,21 +2417,35 @@ function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced") {
   // 가장 큰(무거운) 모델부터 배치해야 나중에 자투리 공간 낭비가 줄어듭니다 (Decreasing).
   modelOptions.sort((a, b) => b.bestRequiredGb - a.bestRequiredGb);
 
+  // 주 모델이 지정된 경우, 크기 순서와 무관하게 맨 먼저 배치해 GPU 중 가장
+  // 여유가 많은 곳을 우선적으로 차지하도록 합니다 (다른 모델들이 그 뒤를 채움).
+  if (primaryKey) {
+    const primaryIndex = modelOptions.findIndex((entry) => modelKey(entry.model) === primaryKey);
+    if (primaryIndex > 0) {
+      const [primaryEntry] = modelOptions.splice(primaryIndex, 1);
+      modelOptions.unshift(primaryEntry);
+    }
+  }
+
   const unplaced = [];
   for (const { model, options } of modelOptions) {
+    const isPrimary = primaryKey && modelKey(model) === primaryKey;
     let bestChoice = null;
     for (const gpu of gpus) {
       const fit = [...options].reverse().find((option) => option.requiredGb <= gpu.remaining);
       if (!fit) continue;
       const leftover = gpu.remaining - fit.requiredGb;
-      const isBetter = !bestChoice || (strategy === "compact" ? leftover < bestChoice.leftover : leftover > bestChoice.leftover);
+      // The primary model always goes on whichever GPU currently has the
+      // most room, regardless of strategy — everyone else still follows the
+      // chosen balanced/compact rule.
+      const isBetter = !bestChoice || (isPrimary || strategy !== "compact" ? leftover > bestChoice.leftover : leftover < bestChoice.leftover);
       if (isBetter) {
         bestChoice = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, leftover };
       }
     }
     if (bestChoice) {
       bestChoice.gpu.remaining -= bestChoice.requiredGb;
-      bestChoice.gpu.placements.push({ model, setting: bestChoice.setting, label: bestChoice.label, requiredGb: bestChoice.requiredGb });
+      bestChoice.gpu.placements.push({ model, setting: bestChoice.setting, label: bestChoice.label, requiredGb: bestChoice.requiredGb, isPrimary });
     } else {
       unplaced.push({ model, minRequiredGb: options[0]?.requiredGb ?? 0 });
     }
@@ -2385,17 +2492,44 @@ function runGpuPlacement() {
     return;
   }
 
-  const placement = computeGpuPlacement(gpuInventoryRows, modelKeys, placementStrategy);
+  const diagnosisEl = $("gpuPlacementDiagnosis");
+
+  // "대체 모델" mode: models never coexist in VRAM, so there's no bin-packing,
+  // no shared-GPU imbalance, and no single "공통" baseline to speak of — each
+  // model is evaluated on its own against a whole GPU. Render that separate
+  // (much simpler) path and skip the baseline/diagnosis/export UI, which all
+  // assume the co-resident placement shape.
+  if (placementUsageMode === "alternate") {
+    const altPlacement = computeAlternatePlacement(gpuInventoryRows, modelKeys);
+    result.innerHTML = renderAlternatePlacementResult(altPlacement);
+    if (baselineEl) {
+      baselineEl.hidden = true;
+      baselineEl.innerHTML = "";
+    }
+    if (diagnosisEl) {
+      diagnosisEl.hidden = true;
+      diagnosisEl.innerHTML = "";
+    }
+    if (exportEl) {
+      exportEl.hidden = true;
+      exportEl.innerHTML = "";
+    }
+    return;
+  }
+
+  const placement = computeGpuPlacement(gpuInventoryRows, modelKeys, placementStrategy, placementPrimaryKey);
   result.innerHTML = renderGpuPlacementResult(placement);
   renderPlacementExport(placement);
 
   if (baselineEl) {
-    const html = renderPlacementBaseline(computePlacementBaseline(placement));
+    const baseline = computePlacementBaseline(placement);
+    const html = placementUsageMode === "independent"
+      ? renderPlacementBaselineIndependent(baseline, placement)
+      : renderPlacementBaseline(baseline);
     baselineEl.innerHTML = html;
     baselineEl.hidden = !html;
   }
 
-  const diagnosisEl = $("gpuPlacementDiagnosis");
   if (diagnosisEl) {
     const diagnosis = diagnosePlacement(placement, placementStrategy, gpuInventoryRows, modelKeys);
     const html = renderPlacementDiagnosis(diagnosis);
@@ -2429,15 +2563,27 @@ function computePlacementBaseline(placement) {
   return { concurrencyBaseline, throughputBaseline };
 }
 
+// True when a target concurrency is set and this value falls short of it —
+// shared by the collapsed (pipeline) and per-model (independent) baseline
+// renderers so "below target" gets the same warning treatment as "0명".
+function isBelowPlacementTarget(recommendedN) {
+  return placementTargetN != null && recommendedN != null && recommendedN < placementTargetN;
+}
+
 function renderPlacementBaseline(baseline) {
   if (!baseline || (!baseline.concurrencyBaseline && !baseline.throughputBaseline)) return "";
   const parts = [];
   if (baseline.concurrencyBaseline) {
     const b = baseline.concurrencyBaseline;
-    if (b.recommendedN <= 0) {
+    const zero = b.recommendedN <= 0;
+    const belowTarget = isBelowPlacementTarget(b.recommendedN);
+    if (zero || belowTarget) {
+      const reason = zero
+        ? (uiLanguage === "en" ? "not recommended to run" : "운영 비권장")
+        : (uiLanguage === "en" ? `only ${b.recommendedN} (target ${placementTargetN} not met)` : `${b.recommendedN}명(목표 ${placementTargetN}명 미달)`);
       const msg = uiLanguage === "en"
-        ? `Common concurrency: not recommended to run (bottleneck: GPU${b.gpuIndex + 1} ${b.modelName}) — see the diagnosis below`
-        : `공통 동시 접속: 운영 비권장 (병목: GPU${b.gpuIndex + 1} ${b.modelName}) — 아래 진단을 확인하세요`;
+        ? `Common concurrency: ${reason} (bottleneck: GPU${b.gpuIndex + 1} ${b.modelName})${zero ? " — see the diagnosis below" : ""}`
+        : `공통 동시 접속: ${reason} (병목: GPU${b.gpuIndex + 1} ${b.modelName})${zero ? " — 아래 진단을 확인하세요" : ""}`;
       parts.push(`<span class="capacity-warning">${escapeHtml(msg)}</span>`);
     } else {
       const msg = uiLanguage === "en"
@@ -2454,6 +2600,33 @@ function renderPlacementBaseline(baseline) {
     parts.push(escapeHtml(msg));
   }
   return parts.join(" · ");
+}
+
+// "독립 서비스" usage mode: instead of collapsing every model down to the
+// single worst-off one, show each model's own concurrency headroom, since
+// they're assumed to be called independently rather than sharing one
+// bottleneck.
+function renderPlacementBaselineIndependent(baseline, placement) {
+  const placedItems = placement.gpus.flatMap((gpu) => gpu.placements.map((item) => ({ ...item, gpuIndex: gpu.index })));
+  const concurrencyItems = placedItems.filter((item) => item.capacity?.kind === "concurrency");
+  if (!concurrencyItems.length) return renderPlacementBaseline(baseline);
+
+  const label = uiLanguage === "en" ? "Per-model concurrency: " : "모델별 동시 접속: ";
+  const parts = concurrencyItems.map((item) => {
+    const n = item.capacity.recommendedN;
+    const warn = n <= 0 || isBelowPlacementTarget(n);
+    const text = uiLanguage === "en" ? `${item.model.name} ${n}` : `${item.model.name} ${n}명`;
+    return warn ? `<span class="capacity-warning">${escapeHtml(text)}</span>` : escapeHtml(text);
+  });
+  let html = escapeHtml(label) + parts.join(" · ");
+  if (baseline?.throughputBaseline) {
+    const b = baseline.throughputBaseline;
+    const msg = uiLanguage === "en"
+      ? ` · Throughput bottleneck ${formatThroughput(b.value, b.unit)} (GPU${b.gpuIndex + 1} ${b.modelName})`
+      : ` · 처리량 병목 ${formatThroughput(b.value, b.unit)} (GPU${b.gpuIndex + 1} ${b.modelName})`;
+    html += escapeHtml(msg);
+  }
+  return html;
 }
 
 function renderPlacementCapacityLine(capacity) {
@@ -2556,12 +2729,13 @@ function diagnosePlacement(placement, strategy, gpuRows, modelKeys) {
   const totalCapacity = loadedGpus.reduce((sum, gpu) => sum + gpu.capacityGb, 0);
   const isImbalanced = loadedGpus.length > 1 && imbalanceGb > totalCapacity * 0.15;
   const hasZeroBaseline = beforeN === 0;
+  const belowTarget = isBelowPlacementTarget(beforeN);
 
-  if (!isImbalanced && !hasZeroBaseline) return null;
+  if (!isImbalanced && !hasZeroBaseline && !belowTarget) return null;
 
   if (placement.gpus.length > 1) {
     const altStrategy = strategy === "balanced" ? "compact" : "balanced";
-    const altPlacement = computeGpuPlacement(gpuRows, modelKeys, altStrategy);
+    const altPlacement = computeGpuPlacement(gpuRows, modelKeys, altStrategy, placementPrimaryKey);
     const altBaseline = computePlacementBaseline(altPlacement);
     const altN = altBaseline?.concurrencyBaseline?.recommendedN ?? null;
     const altLoadedGpus = altPlacement.gpus.filter((gpu) => gpu.placements.length);
@@ -2588,7 +2762,7 @@ function diagnosePlacement(placement, strategy, gpuRows, modelKeys) {
   const move = suggestPlacementMove(placement);
   if (move) return { kind: "move", ...move };
 
-  return { kind: "generic", beforeImbalanceGb: imbalanceGb, beforeN };
+  return { kind: "generic", beforeImbalanceGb: imbalanceGb, beforeN, targetN: placementTargetN };
 }
 
 function renderPlacementDiagnosis(diagnosis) {
@@ -2616,8 +2790,8 @@ function renderPlacementDiagnosis(diagnosis) {
       ? `GPU${diagnosis.fromGpuIndex + 1} has little room left (${gb(diagnosis.beforeSourceRemaining)}) while GPU${diagnosis.toGpuIndex + 1} has ${gb(diagnosis.beforeTargetRemaining)} free. Moving <strong>${escapeHtml(diagnosis.model.name)}</strong> to GPU${diagnosis.toGpuIndex + 1} would change the remaining VRAM to ${gb(diagnosis.afterSourceRemaining)} / ${gb(diagnosis.afterTargetRemaining)}${diagnosis.afterN != null && diagnosis.beforeN != null ? `, and the common concurrency baseline from ${diagnosis.beforeN} to ${diagnosis.afterN}` : ""}.`
       : `GPU${diagnosis.fromGpuIndex + 1}은 여유 VRAM이 ${gb(diagnosis.beforeSourceRemaining)}인 반면 GPU${diagnosis.toGpuIndex + 1}에는 ${gb(diagnosis.beforeTargetRemaining)}이 남아 있습니다. <strong>${escapeHtml(diagnosis.model.name)}</strong>을(를) GPU${diagnosis.toGpuIndex + 1}로 옮기면 여유가 ${gb(diagnosis.afterSourceRemaining)} / ${gb(diagnosis.afterTargetRemaining)}(으)로 바뀌고${diagnosis.afterN != null && diagnosis.beforeN != null ? `, 공통 동시 접속 기준도 ${diagnosis.beforeN}명 → ${diagnosis.afterN}명이 됩니다` : ""}.`;
     const note = uiLanguage === "en"
-      ? "This app doesn't yet support pinning a model to a specific GPU. The Balanced toggle above applies this kind of spreading automatically — try switching to it, or remove and re-add the model."
-      : "아직 특정 모델을 특정 GPU에 직접 고정하는 기능은 없습니다. 위의 균형 우선 토글을 사용하면 이런 방식의 분산이 자동으로 반영됩니다.";
+      ? "This app doesn't yet support pinning a model to a specific GPU — remove and re-add the model to trigger a fresh placement, or set it as the 주 모델(primary model) above to give it priority."
+      : "아직 특정 모델을 특정 GPU에 직접 고정하는 기능은 없습니다. 모델을 껐다 다시 선택해 배치를 다시 계산하거나, 위의 '주 모델'로 지정해 우선순위를 줘보세요.";
     return `
       <div class="gpu-placement-diagnosis-box">
         <strong>${escapeHtml(title)}</strong>
@@ -2628,13 +2802,40 @@ function renderPlacementDiagnosis(diagnosis) {
   }
 
   const genericTitle = uiLanguage === "en" ? "Diagnosis: little to no headroom" : "배치 진단: 여유 부족";
-  const genericBody = uiLanguage === "en"
-    ? "The selected models leave little safety margin no matter how they're spread across your GPUs. Consider removing a model, choosing one with a smaller VRAM footprint, lowering its quantization/context, or adding another GPU."
-    : "선택한 모델들은 GPU에 어떻게 나눠 배치해도 여유가 거의 남지 않습니다. 모델을 하나 줄이거나, VRAM을 덜 쓰는 모델로 바꾸거나, 양자화/컨텍스트 길이를 낮추거나, GPU를 추가하는 것을 고려해보세요.";
+  const targetNote = diagnosis.targetN != null && diagnosis.beforeN != null
+    ? (uiLanguage === "en"
+        ? ` Target was ${diagnosis.targetN} concurrent users; this placement only reaches ${diagnosis.beforeN}.`
+        : ` 목표는 ${diagnosis.targetN}명이었지만 현재 배치로는 ${diagnosis.beforeN}명까지만 가능합니다.`)
+    : "";
+  const genericBody = (uiLanguage === "en"
+    ? "The selected models leave little safety margin no matter how they're spread across your GPUs."
+    : "선택한 모델들은 GPU에 어떻게 나눠 배치해도 여유가 거의 남지 않습니다.") + targetNote + (uiLanguage === "en"
+    ? " Consider removing a model, choosing one with a smaller VRAM footprint, lowering its quantization/context, or adding another GPU."
+    : " 모델을 하나 줄이거나, VRAM을 덜 쓰는 모델로 바꾸거나, 양자화/컨텍스트 길이를 낮추거나, GPU를 추가하는 것을 고려해보세요.");
   return `
     <div class="gpu-placement-diagnosis-box">
       <strong>${escapeHtml(genericTitle)}</strong>
       <p>${escapeHtml(genericBody)}</p>
+    </div>
+  `;
+}
+
+function renderPlacementUnplacedBlock(unplaced) {
+  if (!unplaced.length) return "";
+  const title = uiLanguage === "en" ? `${unplaced.length} model(s) couldn't be placed` : `배치하지 못한 모델 ${unplaced.length}개`;
+  const note = uiLanguage === "en"
+    ? "Consider adding a GPU, or run this one on its own instead of alongside the others."
+    : "GPU를 추가하거나, 다른 모델과 함께 띄우지 말고 순차 실행하는 것을 고려해보세요.";
+  const needLabel = uiLanguage === "en" ? "needs at least" : "최소";
+  return `
+    <div class="gpu-placement-unplaced">
+      <strong>${escapeHtml(title)}</strong>
+      ${unplaced
+        .map(
+          (item) => `<div class="gpu-placement-model-row"><span>${escapeHtml(item.model.name)}</span><span>${escapeHtml(needLabel)} ${escapeHtml(formatGb(item.minRequiredGb))}${uiLanguage === "en" ? "" : " 필요"}</span></div>`,
+        )
+        .join("")}
+      <p>${escapeHtml(note)}</p>
     </div>
   `;
 }
@@ -2647,20 +2848,20 @@ function renderGpuPlacementResult(placement) {
             .map(
               (item) => `
                 <div class="gpu-placement-model-row">
-                  <span>${escapeHtml(item.model.name)} · ${escapeHtml(item.label)}</span>
+                  <span>${escapeHtml(item.model.name)}${item.isPrimary ? ` <span class="placement-primary-badge">${escapeHtml(uiLanguage === "en" ? "Primary" : "주 모델")}</span>` : ""} · ${escapeHtml(item.label)}</span>
                   <span>${escapeHtml(formatGb(item.requiredGb))}</span>
                 </div>
                 <div class="gpu-placement-capacity-line">${renderPlacementCapacityLine(item.capacity)}</div>
               `,
             )
             .join("")
-        : `<p class="gpu-placement-empty">이 GPU에는 배치된 모델이 없습니다.</p>`;
+        : `<p class="gpu-placement-empty">${escapeHtml(uiLanguage === "en" ? "No models placed on this GPU." : "이 GPU에는 배치된 모델이 없습니다.")}</p>`;
 
       return `
         <div class="gpu-placement-card">
           <div class="gpu-placement-card-head">
             <span>GPU ${gpu.index + 1} · ${escapeHtml(gpu.preset.name)}${gpu.count > 1 ? ` × ${gpu.count}` : ""}</span>
-            <small>여유 ${escapeHtml(formatGb(gpu.remaining))} / 총 ${escapeHtml(formatGb(gpu.capacityGb))}</small>
+            <small>${uiLanguage === "en" ? "free" : "여유"} ${escapeHtml(formatGb(gpu.remaining))} / ${uiLanguage === "en" ? "total" : "총"} ${escapeHtml(formatGb(gpu.capacityGb))}</small>
           </div>
           ${rows}
         </div>
@@ -2668,21 +2869,74 @@ function renderGpuPlacementResult(placement) {
     })
     .join("");
 
-  const unplacedBlock = placement.unplaced.length
-    ? `
-      <div class="gpu-placement-unplaced">
-        <strong>배치하지 못한 모델 ${placement.unplaced.length}개</strong>
-        ${placement.unplaced
-          .map(
-            (item) => `<div class="gpu-placement-model-row"><span>${escapeHtml(item.model.name)}</span><span>최소 ${escapeHtml(formatGb(item.minRequiredGb))} 필요</span></div>`,
-          )
-          .join("")}
-        <p>GPU를 추가하거나, 다른 모델과 함께 띄우지 말고 순차 실행하는 것을 고려해보세요.</p>
-      </div>
-    `
-    : "";
+  return gpuCards + renderPlacementUnplacedBlock(placement.unplaced);
+}
 
-  return gpuCards + unplacedBlock;
+// "대체 모델" mode: models are never simultaneously resident, so each one is
+// evaluated independently against a whole GPU's full capacity (no sharing,
+// no bin-packing) — the estimator functions are the same ones the co-resident
+// path uses, just called with the GPU's full capacityGb as the budget.
+function computeAlternatePlacement(gpuRows, modelKeys) {
+  const hardwareBase = getHardware();
+  const singleUserHardware = { ...hardwareBase, concurrency: 1 };
+
+  const gpus = gpuRows.map((row, index) => {
+    const preset = GPU_PRESETS.find((gpu) => gpu.id === row.presetId) || GPU_PRESETS[0];
+    const count = clampNumber(row.count, 1, 8, 1);
+    const capacityGb = preset.vram * count * 0.92;
+    return { index, preset, count, capacityGb };
+  });
+
+  const models = modelKeys.map((key) => getModelByKey(key)).filter(Boolean);
+  const items = [];
+  const unplaced = [];
+
+  for (const model of models) {
+    const options = getPlacementBaselineOptions(model, singleUserHardware);
+    let best = null;
+    for (const gpu of gpus) {
+      const fit = [...options].reverse().find((option) => option.requiredGb <= gpu.capacityGb);
+      if (!fit) continue;
+      const hw = buildGpuPlacementHardware(singleUserHardware, gpu, gpu.capacityGb);
+      const capacity = getPlacementCapacity(model, fit.setting, hw, gpu.capacityGb);
+      const score = capacity.kind === "concurrency" ? capacity.recommendedN : capacity.value;
+      if (!best || score > best.score) {
+        best = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, capacity, score };
+      }
+    }
+    if (best) {
+      items.push({ model, gpuIndex: best.gpu.index, gpu: best.gpu, setting: best.setting, label: best.label, requiredGb: best.requiredGb, capacity: best.capacity });
+    } else {
+      unplaced.push({ model, minRequiredGb: options[0]?.requiredGb ?? 0 });
+    }
+  }
+
+  return { items, unplaced };
+}
+
+function renderAlternatePlacementResult(altPlacement) {
+  if (!altPlacement.items.length && !altPlacement.unplaced.length) {
+    return `<p class="gpu-placement-empty">${escapeHtml(uiLanguage === "en" ? "No models placed." : "배치된 모델이 없습니다.")}</p>`;
+  }
+  const runsOn = uiLanguage === "en" ? "Runs on" : "실행 GPU";
+  const cards = altPlacement.items
+    .map(
+      (item) => `
+        <div class="gpu-placement-card">
+          <div class="gpu-placement-card-head">
+            <span>${escapeHtml(item.model.name)} · ${escapeHtml(item.label)}</span>
+            <small>${escapeHtml(runsOn)}: GPU ${item.gpuIndex + 1} · ${escapeHtml(gpuPlacementPresetLabel(item.gpu))} · ${escapeHtml(formatGb(item.requiredGb))}</small>
+          </div>
+          <div class="gpu-placement-capacity-line">${renderPlacementCapacityLine(item.capacity)}</div>
+        </div>
+      `,
+    )
+    .join("");
+  return cards + renderPlacementUnplacedBlock(altPlacement.unplaced);
+}
+
+function gpuPlacementPresetLabel(gpu) {
+  return `${gpu.preset.name}${gpu.count > 1 ? ` × ${gpu.count}` : ""}`;
 }
 
 // 배치 계산 결과를 실제로 복사/붙여넣기 할 수 있는 실행 명령어와 docker-compose 초안으로 만듭니다.

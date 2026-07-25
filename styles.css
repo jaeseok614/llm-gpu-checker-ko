@@ -1486,6 +1486,26 @@ button:focus-visible {
   padding-bottom: 4px;
 }
 
+.gpu-placement-usage-hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.gpu-placement-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 10px;
+  max-width: 480px;
+}
+
+.gpu-placement-goals .field {
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+
 .gpu-placement-actions {
   display: flex;
   align-items: center;
@@ -1593,6 +1613,18 @@ button:focus-visible {
 .gpu-placement-model-row:first-of-type {
   border-top: none;
   margin-top: 6px;
+}
+
+.placement-primary-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .gpu-placement-empty {
