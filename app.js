@@ -519,6 +519,7 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["배치 기준", "Placement strategy"],
   ["운영 방식", "Usage pattern"],
   ["목표 동시 사용자", "Target concurrent users"],
+  ["3개 배치안 비교", "Compare 3 plans"],
   ["주 모델(우선 배정)", "Primary model (priority)"],
   ["모델별 성능지표 시트", "Per-model benchmark sheet"],
   ["불러온 모델 지우기", "Clear imported models"],
@@ -1039,6 +1040,7 @@ const THEME_TOGGLE_LABELS = {
 const PLACEMENT_STRATEGY_LABELS = {
   balanced: { ko: "균형 우선", en: "Balanced" },
   compact: { ko: "모델 수 우선", en: "Compact" },
+  throughput: { ko: "처리량 우선", en: "Throughput" },
 };
 
 const PLACEMENT_USAGE_LABELS = {
@@ -1775,6 +1777,15 @@ function bindEvents() {
     setPlacementStrategy(button.dataset.applyPlacementStrategy);
   });
 
+  $("comparePlacementPlansButton")?.addEventListener("click", comparePlacementPlans);
+
+  $("gpuPlacementPlanCompare")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-apply-placement-plan]");
+    if (!button) return;
+    setPlacementStrategy(button.dataset.applyPlacementPlan);
+    comparePlacementPlans();
+  });
+
   $("quantRecommendations").addEventListener("click", (event) => {
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
@@ -2243,7 +2254,7 @@ function renderPlacementPrimarySelect() {
 }
 
 function setPlacementStrategy(strategy) {
-  placementStrategy = strategy === "compact" ? "compact" : "balanced";
+  placementStrategy = ["compact", "throughput"].includes(strategy) ? strategy : "balanced";
   document.querySelectorAll("[data-placement-strategy]").forEach((button) => {
     const isActive = button.dataset.placementStrategy === placementStrategy;
     button.classList.toggle("is-active", isActive);
@@ -2388,7 +2399,13 @@ function buildGpuPlacementHardware(baseHardware, gpu, availableVram) {
 // GPU 2 sitting mostly empty" outcome that a naive tight-pack produces.
 // strategy "compact" keeps the previous best-fit behavior (minimize
 // leftover), which packs more models onto fewer GPUs at the cost of one GPU
-// running close to its limit while another goes unused.
+// running close to its limit while another goes unused ("모델 보존형" — most
+// likely to fit every selected model somewhere).
+// strategy "throughput" picks, for each model, whichever available GPU
+// would actually give IT the highest recommended concurrency/throughput
+// right now (a real capacity read via buildGpuPlacementHardware +
+// getPlacementCapacity, not just a leftover-VRAM proxy) — favors total
+// output over an even spread or a tight pack.
 function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryKey = "") {
   const hardwareBase = getHardware();
   const singleUserHardware = { ...hardwareBase, concurrency: 1 };
@@ -2437,10 +2454,21 @@ function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryK
       const leftover = gpu.remaining - fit.requiredGb;
       // The primary model always goes on whichever GPU currently has the
       // most room, regardless of strategy — everyone else still follows the
-      // chosen balanced/compact rule.
-      const isBetter = !bestChoice || (isPrimary || strategy !== "compact" ? leftover > bestChoice.leftover : leftover < bestChoice.leftover);
-      if (isBetter) {
-        bestChoice = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, leftover };
+      // chosen strategy's scoring rule (higher score always wins below).
+      let score;
+      if (isPrimary) {
+        score = leftover;
+      } else if (strategy === "compact") {
+        score = -leftover;
+      } else if (strategy === "throughput") {
+        const hw = buildGpuPlacementHardware(singleUserHardware, gpu, gpu.remaining);
+        const capacity = getPlacementCapacity(model, fit.setting, hw, gpu.remaining);
+        score = capacity.kind === "concurrency" ? capacity.recommendedN : capacity.value;
+      } else {
+        score = leftover;
+      }
+      if (!bestChoice || score > bestChoice.score) {
+        bestChoice = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, leftover, score };
       }
     }
     if (bestChoice) {
@@ -2536,6 +2564,94 @@ function runGpuPlacement() {
     diagnosisEl.innerHTML = html;
     diagnosisEl.hidden = !html;
   }
+}
+
+const PLACEMENT_PLAN_DEFS = [
+  { key: "balanced", titleKo: "균형형", titleEn: "Balanced", descKo: "GPU 간 여유 VRAM을 고르게 분산", descEn: "Spreads remaining VRAM evenly across GPUs" },
+  { key: "throughput", titleKo: "처리량형", titleEn: "Throughput", descKo: "총 예상 처리량이 가장 높은 배치를 우선", descEn: "Prioritizes whichever placement gives the highest total throughput" },
+  { key: "compact", titleKo: "모델 보존형", titleEn: "Model-preserving", descKo: "선택한 모델을 최대한 모두 담는 배치", descEn: "Packs in as many of the selected models as possible" },
+];
+
+// Runs the full placement computation once per strategy and boils each down
+// to the handful of numbers the comparison cards need (common concurrency,
+// total throughput, how many models didn't fit). Reuses computeGpuPlacement/
+// computePlacementBaseline exactly as the single-result view does — nothing
+// here is a separate, simplified estimate.
+function computePlacementPlanSummary(gpuRows, modelKeys, strategy, primaryKey) {
+  const placement = computeGpuPlacement(gpuRows, modelKeys, strategy, primaryKey);
+  const baseline = computePlacementBaseline(placement);
+  const placedItems = placement.gpus.flatMap((gpu) => gpu.placements);
+  const concurrencyItems = placedItems.filter((item) => item.capacity?.kind === "concurrency");
+  const totalTokThroughput = concurrencyItems.reduce((sum, item) => sum + (item.capacity.speedAtRecommended?.total || 0), 0);
+  return {
+    placement,
+    commonN: baseline?.concurrencyBaseline?.recommendedN ?? null,
+    throughputBaseline: baseline?.throughputBaseline ?? null,
+    totalTokThroughput,
+    unplacedCount: placement.unplaced.length,
+  };
+}
+
+function comparePlacementPlans() {
+  const modelKeys = [...placementSelectedKeys];
+  const container = $("gpuPlacementPlanCompare");
+  if (!container) return;
+  if (!modelKeys.length) {
+    container.hidden = true;
+    container.innerHTML = "";
+    return;
+  }
+  const summaries = PLACEMENT_PLAN_DEFS.map((def) => ({
+    def,
+    summary: computePlacementPlanSummary(gpuInventoryRows, modelKeys, def.key, placementPrimaryKey),
+  }));
+  container.hidden = false;
+  container.innerHTML = renderPlacementPlanCompare(summaries);
+}
+
+function renderPlacementPlanCompare(summaries) {
+  const intro = uiLanguage === "en"
+    ? "The same selected models, computed under three different placement strategies — apply whichever trade-off fits best."
+    : "같은 모델을 세 가지 배치 기준으로 각각 계산한 결과입니다. 원하는 방식을 골라 바로 적용할 수 있습니다.";
+
+  const cards = summaries
+    .map(({ def, summary }) => {
+      const title = uiLanguage === "en" ? def.titleEn : def.titleKo;
+      const desc = uiLanguage === "en" ? def.descEn : def.descKo;
+      const isActive = def.key === placementStrategy;
+
+      const commonLine = summary.commonN != null
+        ? (uiLanguage === "en" ? `Common concurrency: ${summary.commonN}` : `공통 동시 접속: ${summary.commonN}명`)
+        : (uiLanguage === "en" ? "No concurrency-type models selected" : "동시 접속 대상 모델 없음");
+      const throughputLine = summary.totalTokThroughput > 0
+        ? (uiLanguage === "en" ? `Total throughput: ${formatThroughput(summary.totalTokThroughput, "tok/s")}` : `총 예상 처리량: ${formatThroughput(summary.totalTokThroughput, "tok/s")}`)
+        : "";
+      const unplacedLine = summary.unplacedCount > 0
+        ? (uiLanguage === "en" ? `${summary.unplacedCount} model(s) don't fit anywhere` : `배치 못한 모델 ${summary.unplacedCount}개`)
+        : (uiLanguage === "en" ? "All selected models fit" : "선택한 모델 전부 배치됨");
+
+      const buttonLabel = isActive
+        ? (uiLanguage === "en" ? "Currently applied" : "현재 적용됨")
+        : (uiLanguage === "en" ? "Apply this plan" : "이 배치안 적용");
+
+      return `
+        <div class="placement-plan-card${isActive ? " is-active" : ""}">
+          <div class="placement-plan-card-head">
+            <strong>${escapeHtml(title)}</strong>
+            <p>${escapeHtml(desc)}</p>
+          </div>
+          <div class="placement-plan-card-body">
+            <p class="${summary.commonN === 0 ? "capacity-warning" : ""}">${escapeHtml(commonLine)}</p>
+            ${throughputLine ? `<p>${escapeHtml(throughputLine)}</p>` : ""}
+            <p class="${summary.unplacedCount > 0 ? "capacity-warning" : ""}">${escapeHtml(unplacedLine)}</p>
+          </div>
+          <button type="button" class="ghost-button" data-apply-placement-plan="${escapeAttr(def.key)}" ${isActive ? "disabled" : ""}>${escapeHtml(buttonLabel)}</button>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `<p class="gpu-placement-plan-compare-intro">${escapeHtml(intro)}</p><div class="placement-plan-cards">${cards}</div>`;
 }
 
 // 배치된 모델 전체를 통틀어 "운영 시 병목 없이 공통으로 맞출 기준값"을 찾습니다.

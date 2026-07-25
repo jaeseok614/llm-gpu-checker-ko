@@ -191,6 +191,7 @@
                 <div class="workload-tabs placement-strategy-tabs" role="tablist" aria-label="배치 기준">
                   <button type="button" class="workload-tab is-active" data-placement-strategy="balanced" aria-selected="true">균형 우선</button>
                   <button type="button" class="workload-tab" data-placement-strategy="compact" aria-selected="false">모델 수 우선</button>
+                  <button type="button" class="workload-tab" data-placement-strategy="throughput" aria-selected="false">처리량 우선</button>
                 </div>
 
                 <div class="gpu-placement-goals">
@@ -216,9 +217,11 @@
 
                 <div class="gpu-placement-actions">
                   <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
+                  <button type="button" class="ghost-button" id="comparePlacementPlansButton">3개 배치안 비교</button>
                   <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
                 </div>
 
+                <div class="gpu-placement-plan-compare" id="gpuPlacementPlanCompare" hidden></div>
                 <div class="gpu-placement-diagnosis" id="gpuPlacementDiagnosis" hidden></div>
                 <div class="gpu-placement-result" id="gpuPlacementResult"></div>
                 <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
