@@ -1500,14 +1500,14 @@ button:focus-visible {
 
 .quant-recommendation-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  padding-bottom: 2px;
-  overflow-x: auto;
 }
 
 .quant-recommendation-card {
   display: grid;
-  flex: 0 0 210px;
+  flex: 1 1 190px;
+  max-width: 240px;
   gap: 4px;
   min-width: 0;
   border: 1px solid var(--line);
@@ -2762,18 +2762,115 @@ button:focus-visible {
 }
 
 .benchmark-table {
-  min-width: 920px;
+  min-width: 950px;
 }
 
 .benchmark-row {
   display: grid;
-  grid-template-columns: 96px minmax(260px, 1.5fr) 180px 210px 140px 86px;
+  grid-template-columns: 34px 92px minmax(240px, 1.5fr) 170px 200px 130px 80px;
   gap: 12px;
   align-items: center;
   min-height: 44px;
   padding: 8px 10px;
   border-top: 1px solid var(--line);
   font-size: 12px;
+}
+
+.benchmark-row-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.benchmark-toolbar {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.benchmark-toolbar input[type="search"] {
+  max-width: 360px;
+}
+
+.benchmark-compare-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--blue-soft);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.benchmark-chart {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: #fbfcfd;
+}
+
+.benchmark-chart-intro {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.benchmark-chart-group {
+  display: grid;
+  gap: 6px;
+}
+
+.benchmark-chart-group-title {
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.benchmark-chart-bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 240px) 1fr 68px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.benchmark-chart-bar-label {
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.benchmark-chart-bar-track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--radius-sm);
+  background: #eef2f6;
+  overflow: hidden;
+}
+
+.benchmark-chart-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--blue);
+}
+
+.benchmark-chart-bar-value {
+  text-align: right;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .benchmark-row:first-child {

@@ -151,6 +151,9 @@ let settingsExpanded = false;
 let compareKeys = [];
 let compareModalOpen = false;
 const MAX_COMPARE_MODELS = 3;
+let benchmarkSearchQuery = "";
+let benchmarkCompareKeys = [];
+const MAX_BENCHMARK_COMPARE = 6;
 let appMode = "simple";
 let hasPrimaryGpuSelection = false;
 let uiLanguage = "ko";
@@ -189,6 +192,7 @@ const MESSAGES = {
     metric: "지표",
     source: "출처",
     view: "보기",
+    clearFilters: "선택 해제",
   },
   en: {
     settings: "Detailed settings",
@@ -223,6 +227,7 @@ const MESSAGES = {
     metric: "Metric",
     source: "Source",
     view: "View",
+    clearFilters: "Clear selection",
   },
 };
 
@@ -694,6 +699,7 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["다른 GPU 검색", "Search other GPUs"],
   ["예: RTX 4070, A100, M3 Max", "e.g. RTX 4070, A100, M3 Max"],
   ["시작하기", "Get started"],
+  ["모델명, GPU, 지표로 검색", "Search by model, GPU, or metric"],
 ];
 
 // Hangul syllable + jamo range, used to guard dictionary substring matches
@@ -1729,6 +1735,40 @@ function bindEvents() {
     applyUrlState();
     render({ syncUrl: false });
   });
+
+  const benchmarkSearchInput = $("benchmarkSearch");
+  if (benchmarkSearchInput) {
+    benchmarkSearchInput.addEventListener("input", (event) => {
+      benchmarkSearchQuery = event.target.value;
+      renderBenchmarkSheet();
+    });
+  }
+
+  const benchmarkTableEl = $("benchmarkTable");
+  if (benchmarkTableEl) {
+    benchmarkTableEl.addEventListener("change", (event) => {
+      const checkbox = event.target.closest("[data-benchmark-key]");
+      if (!checkbox) return;
+      const key = checkbox.dataset.benchmarkKey;
+      if (checkbox.checked) {
+        if (!benchmarkCompareKeys.includes(key) && benchmarkCompareKeys.length < MAX_BENCHMARK_COMPARE) {
+          benchmarkCompareKeys = [...benchmarkCompareKeys, key];
+        }
+      } else {
+        benchmarkCompareKeys = benchmarkCompareKeys.filter((existing) => existing !== key);
+      }
+      renderBenchmarkSheet();
+    });
+  }
+
+  const benchmarkCompareBarEl = $("benchmarkCompareBar");
+  if (benchmarkCompareBarEl) {
+    benchmarkCompareBarEl.addEventListener("click", (event) => {
+      if (!event.target.closest("[data-clear-benchmark-compare]")) return;
+      benchmarkCompareKeys = [];
+      renderBenchmarkSheet();
+    });
+  }
 }
 
 function clearFilter(kind) {
@@ -5513,6 +5553,73 @@ function computeBenchmarkErrorStats() {
   };
 }
 
+function benchmarkMetricFamily(row) {
+  if (row.tokensPerSecond) return "tok/s";
+  if (row.docsPerSecond) return "doc/s";
+  if (row.pairsPerSecond) return "pair/s";
+  if (row.pagesPerSecond) return "page/s";
+  if (typeof row.qualityValue === "number" && row.metric) {
+    const stripped = String(row.metric).replace(/\s+[\d.]+%?$/, "").trim();
+    return stripped || row.metric;
+  }
+  return null;
+}
+
+function benchmarkMetricValue(row) {
+  if (row.tokensPerSecond) return row.tokensPerSecond;
+  if (row.docsPerSecond) return row.docsPerSecond;
+  if (row.pairsPerSecond) return row.pairsPerSecond;
+  if (row.pagesPerSecond) return row.pagesPerSecond;
+  if (typeof row.qualityValue === "number") return row.qualityValue;
+  return null;
+}
+
+function renderBenchmarkChart(selectedRows) {
+  const target = $("benchmarkChart");
+  if (!target) return;
+  const chartable = selectedRows
+    .map((row) => ({ row, family: benchmarkMetricFamily(row), value: benchmarkMetricValue(row) }))
+    .filter((entry) => entry.family && typeof entry.value === "number");
+
+  if (!chartable.length) {
+    target.hidden = true;
+    target.innerHTML = "";
+    return;
+  }
+
+  const groups = new Map();
+  chartable.forEach((entry) => {
+    const group = groups.get(entry.family) || [];
+    group.push(entry);
+    groups.set(entry.family, group);
+  });
+
+  target.hidden = false;
+  const intro = uiLanguage === "en"
+    ? "Only rows sharing the exact same metric are grouped into one bar chart — different metrics are never compared directly."
+    : "정확히 같은 지표를 가진 행끼리만 하나의 막대 그래프로 묶습니다. 서로 다른 지표는 직접 비교하지 않습니다.";
+
+  target.innerHTML = `
+    <p class="benchmark-chart-intro">${escapeHtml(intro)}</p>
+    ${[...groups.entries()].map(([family, entries]) => {
+      const max = Math.max(...entries.map((entry) => entry.value));
+      const sorted = [...entries].sort((a, b) => b.value - a.value);
+      return `
+        <div class="benchmark-chart-group">
+          <span class="benchmark-chart-group-title">${escapeHtml(family)}</span>
+          ${sorted.map(({ row, value }) => `
+            <div class="benchmark-chart-bar-row">
+              <span class="benchmark-chart-bar-label" title="${escapeAttr(`${row.modelName} · ${row.gpu || row.gpuId || ""}`)}">${escapeHtml(row.modelName)}</span>
+              <span class="benchmark-chart-bar-track"><span class="benchmark-chart-bar-fill" style="width:${Math.max(2, Math.round((value / max) * 100))}%"></span></span>
+              <span class="benchmark-chart-bar-value">${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }).join("")}
+  `;
+}
+
 function renderBenchmarkSheet() {
   const table = $("benchmarkTable");
   if (!table) return;
@@ -5523,6 +5630,7 @@ function renderBenchmarkSheet() {
   const qualityRows = collectQualityBenchmarks();
   const referenceRows = collectReferenceBenchmarks();
   const rows = [...qualityRows, ...externalBenchmarkRows, ...referenceRows, ...userMeasurementRows, ...projectMeasurementRows];
+  rows.forEach((row, index) => { row.rowKey = String(index); });
   const errorStats = computeBenchmarkErrorStats();
   const externalReferenceCount = qualityRows.length + externalBenchmarkRows.length + referenceRows.length;
 
@@ -5530,6 +5638,36 @@ function renderBenchmarkSheet() {
   const userTypeLabel = uiLanguage === "en" ? "User measurement" : "사용자 측정";
   const projectTypeLabel = uiLanguage === "en" ? "Project measurement" : "자체 측정";
   $("benchmarkMeta").textContent = `${t("updated")} ${DATA_UPDATED_AT} · ${benchmarkTypeLabel} ${externalReferenceCount}${uiLanguage === "en" ? "" : "개"} · ${userTypeLabel} ${userMeasurementRows.length}${uiLanguage === "en" ? "" : "개"} · ${projectTypeLabel} ${projectMeasurementRows.length}${uiLanguage === "en" ? "" : "개"}${errorStats ? ` · ${uiLanguage === "en" ? "Average estimate error" : "평균 추정 오차"} ${errorStats.avgAbsErrorPct.toFixed(1)}%` : ""}`;
+
+  // Drop selections for rows that no longer exist (defensive; row set only
+  // changes with the underlying data, not with search/filtering).
+  const validKeys = new Set(rows.map((row) => row.rowKey));
+  benchmarkCompareKeys = benchmarkCompareKeys.filter((key) => validKeys.has(key));
+
+  const compareBar = $("benchmarkCompareBar");
+  if (compareBar) {
+    if (!benchmarkCompareKeys.length) {
+      compareBar.hidden = true;
+      compareBar.innerHTML = "";
+    } else {
+      compareBar.hidden = false;
+      const label = uiLanguage === "en"
+        ? `${benchmarkCompareKeys.length} / ${MAX_BENCHMARK_COMPARE} selected for the chart below`
+        : `아래 그래프에 ${benchmarkCompareKeys.length} / ${MAX_BENCHMARK_COMPARE}개 선택됨`;
+      compareBar.innerHTML = `
+        <span>${escapeHtml(label)}</span>
+        <button type="button" class="ghost-button" data-clear-benchmark-compare>${t("clearFilters")}</button>
+      `;
+    }
+  }
+  renderBenchmarkChart(rows.filter((row) => benchmarkCompareKeys.includes(row.rowKey)));
+
+  const query = benchmarkSearchQuery.trim().toLowerCase();
+  const visibleRows = query
+    ? rows.filter((row) => [row.modelName, row.gpu, row.gpuId, row.metric, row.setting, row.runtime, row.workload]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(query)))
+    : rows;
 
   if (!rows.length) {
     table.innerHTML = `
@@ -5540,9 +5678,19 @@ function renderBenchmarkSheet() {
     return;
   }
 
+  if (!visibleRows.length) {
+    table.innerHTML = `
+      <div class="empty-state">
+        ${uiLanguage === "en" ? "No benchmark rows match this search." : "검색 조건에 맞는 벤치마크 행이 없습니다."}
+      </div>
+    `;
+    return;
+  }
+
   table.innerHTML = `
     <div class="benchmark-table">
       <div class="benchmark-row benchmark-table-head">
+        <span></span>
         <span>${t("type")}</span>
         <span>${t("model")}</span>
         <span>${t("gpu")}</span>
@@ -5550,8 +5698,15 @@ function renderBenchmarkSheet() {
         <span>${t("metric")}</span>
         <span>${t("source")}</span>
       </div>
-      ${rows.map((row) => `
+      ${visibleRows.map((row) => {
+        const checked = benchmarkCompareKeys.includes(row.rowKey);
+        const disabled = !checked && benchmarkCompareKeys.length >= MAX_BENCHMARK_COMPARE;
+        const chartable = benchmarkMetricFamily(row) && typeof benchmarkMetricValue(row) === "number";
+        return `
         <div class="benchmark-row">
+          <span class="benchmark-row-select">
+            ${chartable ? `<input type="checkbox" data-benchmark-key="${escapeAttr(row.rowKey)}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""} title="${escapeAttr(uiLanguage === "en" ? "Add to chart (max 6)" : "그래프에 추가 (최대 6개)")}" aria-label="${escapeAttr(row.modelName)}" />` : ""}
+          </span>
           <span><span class="data-kind ${row.rowType === "사용자 측정" || row.rowType === "자체 측정" ? "is-measured" : "is-reference"}"><span class="evidence-code">${benchmarkEvidenceCode(row.rowType)}</span>${escapeHtml(row.rowType === "외부 공개 참고값" ? benchmarkTypeLabel : row.rowType === "사용자 측정" ? userTypeLabel : projectTypeLabel)}</span></span>
           <span>${escapeHtml(row.modelName)}</span>
           <span>${escapeHtml(row.gpu || row.gpuId || "-")}</span>
@@ -5559,7 +5714,8 @@ function renderBenchmarkSheet() {
           <span>${escapeHtml(formatBenchmarkMetric(row))}</span>
           <span>${row.sourceUrl ? renderExternalLink(t("view"), row.sourceUrl) : "-"}</span>
         </div>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   `;
 }
@@ -5583,6 +5739,8 @@ function collectQualityBenchmarks() {
       setting: model.qualityBenchmark.note || "대표 공개 평가",
       metric: model.qualityBenchmark.label,
       sourceUrl: model.qualityBenchmark.sourceUrl,
+      qualityValue: typeof model.qualityBenchmark.value === "number" ? model.qualityBenchmark.value : null,
+      qualityMetricName: model.qualityBenchmark.metric || model.qualityBenchmark.label,
     }));
 }
 
