@@ -1,7 +1,12 @@
 name: Deploy to GitHub Pages
 
+# CI 워크플로("CI")가 main에서 성공적으로 끝난 뒤에만 배포합니다. push 이벤트로
+# 직접 트리거하면 CI와 배포가 동시에 시작되어 CI가 실패해도 이미 배포가 끝나
+# 있을 수 있으므로, workflow_run으로 CI 완료를 기다립니다.
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -18,9 +23,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4

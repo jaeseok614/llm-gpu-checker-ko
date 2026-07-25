@@ -27,7 +27,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "matryoshka", "codeRetrieval", "classification"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B",
-    summary: "32K 입력, 100개 이상 언어, 사용자 정의 임베딩 차원을 지원하는 Qwen3 소형 임베딩 모델입니다.",
+    summary: { ko: "32K 입력, 100개 이상 언어, 사용자 정의 임베딩 차원을 지원하는 Qwen3 소형 임베딩 모델입니다.", en: "A small Qwen3 embedding model supporting 32K input, 100+ languages, and user-defined embedding dimensions." },
   }),
   embeddingModel({
     name: "Qwen/Qwen3-Embedding-4B",
@@ -43,7 +43,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "matryoshka", "codeRetrieval", "classification"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-Embedding-4B",
-    summary: "품질 우선 RAG와 다국어 검색에 적합한 4B급 Qwen3 임베딩 모델입니다.",
+    summary: { ko: "품질 우선 RAG와 다국어 검색에 적합한 4B급 Qwen3 임베딩 모델입니다.", en: "A 4B-class Qwen3 embedding model suited for quality-first RAG and multilingual search." },
   }),
   embeddingModel({
     name: "Qwen/Qwen3-Embedding-8B",
@@ -59,7 +59,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "matryoshka", "codeRetrieval", "classification"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Qwen/Qwen3-Embedding-8B",
-    summary: "대형 GPU에서 품질을 우선할 때 쓰는 8B급 Qwen3 임베딩 모델입니다.",
+    summary: { ko: "대형 GPU에서 품질을 우선할 때 쓰는 8B급 Qwen3 임베딩 모델입니다.", en: "An 8B-class Qwen3 embedding model for prioritizing quality on a large GPU." },
   }),
   embeddingModel({
     name: "BAAI/bge-m3",
@@ -74,7 +74,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "MIT",
     tags: ["embedding", "retrieval", "korean", "long", "sparse", "multilingual"],
     sourceUrl: "https://huggingface.co/BAAI/bge-m3",
-    summary: "Dense, sparse, multi-vector 검색을 함께 지원하는 다국어 장문 임베딩 모델입니다.",
+    summary: { ko: "Dense, sparse, multi-vector 검색을 함께 지원하는 다국어 장문 임베딩 모델입니다.", en: "A multilingual long-context embedding model supporting dense, sparse, and multi-vector retrieval together." },
   }),
   embeddingModel({
     name: "BAAI/bge-large-en-v1.5",
@@ -89,7 +89,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/BAAI/bge-large-en-v1.5",
-    summary: "영문 검색 기준점으로 널리 쓰이는 BGE large 임베딩 모델입니다.",
+    summary: { ko: "영문 검색 기준점으로 널리 쓰이는 BGE large 임베딩 모델입니다.", en: "A BGE large embedding model widely used as an English-search baseline." },
   }),
   embeddingModel({
     name: "BAAI/bge-base-en-v1.5",
@@ -104,7 +104,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/BAAI/bge-base-en-v1.5",
-    summary: "낮은 VRAM에서 검색 품질과 속도를 균형 있게 보는 BGE base 모델입니다.",
+    summary: { ko: "낮은 VRAM에서 검색 품질과 속도를 균형 있게 보는 BGE base 모델입니다.", en: "A BGE base model that balances search quality and speed on low VRAM." },
   }),
   embeddingModel({
     name: "BAAI/bge-small-en-v1.5",
@@ -119,7 +119,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/BAAI/bge-small-en-v1.5",
-    summary: "CPU나 소형 GPU에서도 부담이 작은 경량 BGE 임베딩 모델입니다.",
+    summary: { ko: "CPU나 소형 GPU에서도 부담이 작은 경량 BGE 임베딩 모델입니다.", en: "A lightweight BGE embedding model with a low footprint, even on CPU or small GPUs." },
   }),
   embeddingModel({
     name: "intfloat/multilingual-e5-large-instruct",
@@ -134,7 +134,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/intfloat/multilingual-e5-large-instruct",
-    summary: "짧은 질의와 문서 검색에서 널리 쓰이는 0.6B급 다국어 E5 임베딩 모델입니다.",
+    summary: { ko: "짧은 질의와 문서 검색에서 널리 쓰이는 0.6B급 다국어 E5 임베딩 모델입니다.", en: "A 0.6B-class multilingual E5 embedding model widely used for short-query and document search." },
   }),
   embeddingModel({
     name: "intfloat/multilingual-e5-base",
@@ -149,7 +149,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/intfloat/multilingual-e5-base",
-    summary: "한국어 포함 다국어 RAG에서 비용을 낮추기 좋은 E5 base 모델입니다.",
+    summary: { ko: "한국어 포함 다국어 RAG에서 비용을 낮추기 좋은 E5 base 모델입니다.", en: "An E5 base model good for lowering cost in multilingual RAG, including Korean." },
   }),
   embeddingModel({
     name: "intfloat/multilingual-e5-small",
@@ -164,7 +164,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/intfloat/multilingual-e5-small",
-    summary: "대량 문서 인덱싱을 저렴하게 돌리는 경량 다국어 E5 모델입니다.",
+    summary: { ko: "대량 문서 인덱싱을 저렴하게 돌리는 경량 다국어 E5 모델입니다.", en: "A lightweight multilingual E5 model for running large-scale document indexing cheaply." },
   }),
   embeddingModel({
     name: "intfloat/e5-large-v2",
@@ -179,7 +179,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/intfloat/e5-large-v2",
-    summary: "영문 dense retrieval에서 강한 E5 large v2 기준 모델입니다.",
+    summary: { ko: "영문 dense retrieval에서 강한 E5 large v2 기준 모델입니다.", en: "An E5 large v2 baseline model that's strong at English dense retrieval." },
   }),
   embeddingModel({
     name: "intfloat/e5-base-v2",
@@ -194,7 +194,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/intfloat/e5-base-v2",
-    summary: "검색 품질과 처리량의 균형을 보는 E5 base v2 모델입니다.",
+    summary: { ko: "검색 품질과 처리량의 균형을 보는 E5 base v2 모델입니다.", en: "An E5 base v2 model that balances search quality and throughput." },
   }),
   embeddingModel({
     name: "intfloat/e5-small-v2",
@@ -209,7 +209,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/intfloat/e5-small-v2",
-    summary: "빠른 색인과 낮은 메모리 사용량을 우선할 때 적합한 E5 small 모델입니다.",
+    summary: { ko: "빠른 색인과 낮은 메모리 사용량을 우선할 때 적합한 E5 small 모델입니다.", en: "An E5 small model suited for prioritizing fast indexing and low memory usage." },
   }),
   embeddingModel({
     name: "Alibaba-NLP/gte-multilingual-base",
@@ -224,7 +224,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "korean", "long", "sparse", "multilingual"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-multilingual-base",
-    summary: "8192 토큰 입력과 sparse vector를 지원하는 경량 다국어 GTE 임베딩 모델입니다.",
+    summary: { ko: "8192 토큰 입력과 sparse vector를 지원하는 경량 다국어 GTE 임베딩 모델입니다.", en: "A lightweight multilingual GTE embedding model supporting 8,192-token input and sparse vectors." },
   }),
   embeddingModel({
     name: "thenlper/gte-large",
@@ -239,7 +239,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/thenlper/gte-large",
-    summary: "GTE large 계열의 영문 검색 기준점으로 비교용으로 쓰기 좋습니다.",
+    summary: { ko: "GTE large 계열의 영문 검색 기준점으로 비교용으로 쓰기 좋습니다.", en: "A GTE large model good as an English-search baseline for comparisons." },
   }),
   embeddingModel({
     name: "thenlper/gte-base",
@@ -254,7 +254,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/thenlper/gte-base",
-    summary: "검색 품질과 VRAM 사용량을 균형 있게 비교하는 GTE base 모델입니다.",
+    summary: { ko: "검색 품질과 VRAM 사용량을 균형 있게 비교하는 GTE base 모델입니다.", en: "A GTE base model for comparing search quality against VRAM usage." },
   }),
   embeddingModel({
     name: "jinaai/jina-embeddings-v5-text-small",
@@ -270,7 +270,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "matryoshka", "multilingual"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/jinaai/jina-embeddings-v5-text-small",
-    summary: "32K 입력과 Matryoshka 차원 축소를 지원하는 최신 다국어 장문 임베딩 모델입니다.",
+    summary: { ko: "32K 입력과 Matryoshka 차원 축소를 지원하는 최신 다국어 장문 임베딩 모델입니다.", en: "A recent multilingual long-context embedding model supporting 32K input and Matryoshka dimension reduction." },
   }),
   embeddingModel({
     name: "jinaai/jina-embeddings-v5-text-nano",
@@ -286,7 +286,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "matryoshka", "multilingual", "edge"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano",
-    summary: "Jina v5 계열의 경량 장문 임베딩 모델로, 저사양 GPU에서 긴 문서 검색을 시험하기 좋습니다.",
+    summary: { ko: "Jina v5 계열의 경량 장문 임베딩 모델로, 저사양 GPU에서 긴 문서 검색을 시험하기 좋습니다.", en: "A lightweight long-context embedding model in the Jina v5 family, good for testing long-document search on low-spec GPUs." },
   }),
   embeddingModel({
     name: "jinaai/jina-embeddings-v3",
@@ -301,7 +301,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "matryoshka", "multilingual", "classification"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/jinaai/jina-embeddings-v3",
-    summary: "다중 작업 adapter와 Matryoshka 차원 축소를 지원하는 Jina v3 임베딩 모델입니다.",
+    summary: { ko: "다중 작업 adapter와 Matryoshka 차원 축소를 지원하는 Jina v3 임베딩 모델입니다.", en: "A Jina v3 embedding model supporting multi-task adapters and Matryoshka dimension reduction." },
   }),
   embeddingModel({
     name: "Snowflake/snowflake-arctic-embed-l-v2.0",
@@ -315,7 +315,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0",
-    summary: "장문 입력을 지원하는 Snowflake Arctic large 임베딩 모델입니다.",
+    summary: { ko: "장문 입력을 지원하는 Snowflake Arctic large 임베딩 모델입니다.", en: "A Snowflake Arctic large embedding model supporting long-context input." },
   }),
   embeddingModel({
     name: "Snowflake/snowflake-arctic-embed-m-v2.0",
@@ -329,7 +329,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "multilingual", "edge"],
     sourceUrl: "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0",
-    summary: "Arctic embed v2 계열의 중형 모델로 장문 검색과 처리량을 함께 봅니다.",
+    summary: { ko: "Arctic embed v2 계열의 중형 모델로 장문 검색과 처리량을 함께 봅니다.", en: "A medium-sized model in the Arctic Embed v2 family, evaluated for both long-document search and throughput." },
   }),
   embeddingModel({
     name: "nomic-ai/nomic-embed-text-v1.5",
@@ -343,7 +343,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "matryoshka", "edge"],
     sourceUrl: "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5",
-    summary: "8192 토큰과 Matryoshka 차원 축소를 지원하는 가벼운 장문 임베딩 모델입니다.",
+    summary: { ko: "8192 토큰과 Matryoshka 차원 축소를 지원하는 가벼운 장문 임베딩 모델입니다.", en: "A lightweight long-context embedding model supporting 8,192 tokens and Matryoshka dimension reduction." },
   }),
   embeddingModel({
     name: "mixedbread-ai/mxbai-embed-large-v1",
@@ -358,7 +358,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1",
-    summary: "검색 품질이 강한 Mixedbread large 임베딩 모델입니다.",
+    summary: { ko: "검색 품질이 강한 Mixedbread large 임베딩 모델입니다.", en: "A Mixedbread large embedding model with strong search quality." },
   }),
   embeddingModel({
     name: "sentence-transformers/all-mpnet-base-v2",
@@ -373,7 +373,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/sentence-transformers/all-mpnet-base-v2",
-    summary: "문장 유사도와 짧은 문서 검색에서 오래 쓰인 MPNet 기반 기준 모델입니다.",
+    summary: { ko: "문장 유사도와 짧은 문서 검색에서 오래 쓰인 MPNet 기반 기준 모델입니다.", en: "A long-standing MPNet-based baseline for sentence similarity and short-document search." },
   }),
   embeddingModel({
     name: "sentence-transformers/all-MiniLM-L6-v2",
@@ -388,7 +388,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2",
-    summary: "매우 가벼운 문장 임베딩 모델로 CPU/저사양 GPU 기준선에 적합합니다.",
+    summary: { ko: "매우 가벼운 문장 임베딩 모델로 CPU/저사양 GPU 기준선에 적합합니다.", en: "A very lightweight sentence embedding model, suited as a CPU/low-spec-GPU baseline." },
   }),
   embeddingModel({
     name: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
@@ -403,7 +403,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-    summary: "한국어 포함 다국어 문장 유사도와 가벼운 검색에 쓰기 좋은 MiniLM 모델입니다.",
+    summary: { ko: "한국어 포함 다국어 문장 유사도와 가벼운 검색에 쓰기 좋은 MiniLM 모델입니다.", en: "A MiniLM model good for multilingual sentence similarity and lightweight search, including Korean." },
   }),
   embeddingModel({
     name: "sentence-transformers/LaBSE",
@@ -418,7 +418,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "matching"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/sentence-transformers/LaBSE",
-    summary: "언어 간 문장 매칭과 다국어 검색 비교에 유용한 LaBSE 모델입니다.",
+    summary: { ko: "언어 간 문장 매칭과 다국어 검색 비교에 유용한 LaBSE 모델입니다.", en: "A LaBSE model useful for cross-lingual sentence matching and multilingual search comparisons." },
   }),
   embeddingModel({
     name: "google/embeddinggemma-300m",
@@ -435,7 +435,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     precisions: ["fp32", "bf16"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/google/embeddinggemma-300m",
-    summary: "Gemma 3 계열 기반의 300M급 다국어 임베딩 모델입니다. 공식 권장에 맞춰 FP32/BF16 중심으로 비교합니다.",
+    summary: { ko: "Gemma 3 계열 기반의 300M급 다국어 임베딩 모델입니다. 공식 권장에 맞춰 FP32/BF16 중심으로 비교합니다.", en: "A 300M-class multilingual embedding model built on the Gemma 3 family, compared primarily in FP32/BF16 per the official recommendation." },
   }),
   embeddingModel({
     name: "jinaai/jina-embeddings-v4",
@@ -451,7 +451,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "matryoshka", "multilingual", "codeRetrieval", "document", "vision"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/jinaai/jina-embeddings-v4",
-    summary: "Qwen2.5-VL 기반의 멀티모달·다국어 임베딩 모델입니다. 텍스트, 이미지, 시각 문서 검색과 2048차원 Matryoshka 출력을 지원합니다.",
+    summary: { ko: "Qwen2.5-VL 기반의 멀티모달·다국어 임베딩 모델입니다. 텍스트, 이미지, 시각 문서 검색과 2048차원 Matryoshka 출력을 지원합니다.", en: "A multimodal, multilingual embedding model based on Qwen2.5-VL, supporting text, image, and visual-document search with 2,048-dim Matryoshka output." },
   }),
   embeddingModel({
     name: "BAAI/bge-multilingual-gemma2",
@@ -467,7 +467,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/BAAI/bge-multilingual-gemma2",
-    summary: "Gemma 2 9B 기반의 대형 BGE 다국어 임베딩 모델입니다. 한국어 포함 다국어 검색 품질 우선 환경에서 비교합니다.",
+    summary: { ko: "Gemma 2 9B 기반의 대형 BGE 다국어 임베딩 모델입니다. 한국어 포함 다국어 검색 품질 우선 환경에서 비교합니다.", en: "A large BGE multilingual embedding model built on Gemma 2 9B, compared in quality-first multilingual search settings, including Korean." },
   }),
   embeddingModel({
     name: "BAAI/bge-en-icl",
@@ -483,7 +483,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/BAAI/bge-en-icl",
-    summary: "few-shot/in-context instruction을 검색 질의에 함께 넣어 성능을 끌어올리는 7B급 BGE 임베딩 모델입니다.",
+    summary: { ko: "few-shot/in-context instruction을 검색 질의에 함께 넣어 성능을 끌어올리는 7B급 BGE 임베딩 모델입니다.", en: "A 7B-class BGE embedding model that boosts performance by embedding few-shot/in-context instructions in the search query." },
   }),
   embeddingModel({
     name: "BAAI/bge-code-v1",
@@ -499,7 +499,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "codeRetrieval", "multilingual", "long"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/BAAI/bge-code-v1",
-    summary: "코드 검색, 텍스트 검색, 다국어 검색을 함께 목표로 한 BGE 코드 임베딩 모델입니다.",
+    summary: { ko: "코드 검색, 텍스트 검색, 다국어 검색을 함께 목표로 한 BGE 코드 임베딩 모델입니다.", en: "A BGE code embedding model aimed at code search, text search, and multilingual search together." },
   }),
   embeddingModel({
     name: "Alibaba-NLP/gte-Qwen2-1.5B-instruct",
@@ -515,7 +515,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-Qwen2-1.5B-instruct",
-    summary: "Qwen2 1.5B 기반의 32K 다국어 GTE instruct 임베딩 모델입니다. 7B보다 가볍게 장문 검색을 비교할 수 있습니다.",
+    summary: { ko: "Qwen2 1.5B 기반의 32K 다국어 GTE instruct 임베딩 모델입니다. 7B보다 가볍게 장문 검색을 비교할 수 있습니다.", en: "A 32K multilingual GTE instruct embedding model built on Qwen2 1.5B, for comparing long-document search more cheaply than the 7B version." },
   }),
   embeddingModel({
     name: "Alibaba-NLP/gte-Qwen2-7B-instruct",
@@ -531,7 +531,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-Qwen2-7B-instruct",
-    summary: "Qwen2 7B 기반의 32K 다국어 GTE instruct 모델입니다. 품질 우선 RAG 임베딩 비교군입니다.",
+    summary: { ko: "Qwen2 7B 기반의 32K 다국어 GTE instruct 모델입니다. 품질 우선 RAG 임베딩 비교군입니다.", en: "A 32K multilingual GTE instruct model built on Qwen2 7B, a comparison model for quality-first RAG embeddings." },
   }),
   embeddingModel({
     name: "Alibaba-NLP/gte-large-en-v1.5",
@@ -546,7 +546,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "dense"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5",
-    summary: "8192 토큰 입력을 지원하는 GTE v1.5 large 영어 임베딩 모델입니다.",
+    summary: { ko: "8192 토큰 입력을 지원하는 GTE v1.5 large 영어 임베딩 모델입니다.", en: "A GTE v1.5 large English embedding model supporting 8,192-token input." },
   }),
   embeddingModel({
     name: "Alibaba-NLP/gte-base-en-v1.5",
@@ -561,7 +561,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "dense", "edge"],
     sourceUrl: "https://huggingface.co/Alibaba-NLP/gte-base-en-v1.5",
-    summary: "GTE v1.5 base 영어 모델입니다. 긴 입력과 낮은 추론 비용의 균형을 봅니다.",
+    summary: { ko: "GTE v1.5 base 영어 모델입니다. 긴 입력과 낮은 추론 비용의 균형을 봅니다.", en: "A GTE v1.5 base English model, balancing long input against low inference cost." },
   }),
   embeddingModel({
     name: "intfloat/e5-mistral-7b-instruct",
@@ -577,7 +577,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/intfloat/e5-mistral-7b-instruct",
-    summary: "LLM 기반 임베딩 성능을 대표하는 E5 Mistral 7B instruct 모델입니다.",
+    summary: { ko: "LLM 기반 임베딩 성능을 대표하는 E5 Mistral 7B instruct 모델입니다.", en: "An E5 Mistral 7B instruct model representative of LLM-based embedding performance." },
   }),
   embeddingModel({
     name: "Salesforce/SFR-Embedding-Mistral",
@@ -593,7 +593,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Salesforce/SFR-Embedding-Mistral",
-    summary: "E5-Mistral 계열 위에서 학습된 Salesforce 7B급 연구용 임베딩 모델입니다.",
+    summary: { ko: "E5-Mistral 계열 위에서 학습된 Salesforce 7B급 연구용 임베딩 모델입니다.", en: "A 7B-class Salesforce research embedding model trained on top of the E5-Mistral family." },
   }),
   embeddingModel({
     name: "Salesforce/SFR-Embedding-2_R",
@@ -609,7 +609,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/Salesforce/SFR-Embedding-2_R",
-    summary: "Salesforce SFR Embedding 2 계열 연구용 7B급 임베딩 모델입니다. instruction query 기반 검색 비교에 적합합니다.",
+    summary: { ko: "Salesforce SFR Embedding 2 계열 연구용 7B급 임베딩 모델입니다. instruction query 기반 검색 비교에 적합합니다.", en: "A 7B-class research embedding model in the Salesforce SFR Embedding 2 family, suited for comparing instruction-query-based search." },
   }),
   embeddingModel({
     name: "GritLM/GritLM-7B",
@@ -625,7 +625,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "long", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/GritLM/GritLM-7B",
-    summary: "생성형 LLM과 임베딩 모델을 함께 지향하는 7B급 GritLM 검색 비교군입니다.",
+    summary: { ko: "생성형 LLM과 임베딩 모델을 함께 지향하는 7B급 GritLM 검색 비교군입니다.", en: "A 7B-class GritLM search comparison model that targets both generative LLM and embedding roles." },
   }),
   embeddingModel({
     name: "WhereIsAI/UAE-Large-V1",
@@ -640,7 +640,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "dense"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/WhereIsAI/UAE-Large-V1",
-    summary: "Universal AnglE Embedding large 모델입니다. 영어 검색과 문장 유사도 기준선으로 활용합니다.",
+    summary: { ko: "Universal AnglE Embedding large 모델입니다. 영어 검색과 문장 유사도 기준선으로 활용합니다.", en: "The Universal AnglE Embedding large model, used as a baseline for English search and sentence similarity." },
   }),
   embeddingModel({
     name: "NovaSearch/stella_en_1.5B_v5",
@@ -656,7 +656,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "matryoshka", "classification", "clustering"],
     precisions: ["fp32", "fp16", "bf16", "int8", "int4"],
     sourceUrl: "https://huggingface.co/NovaSearch/stella_en_1.5B_v5",
-    summary: "Stella v5 1.5B 계열 모델입니다. 여러 출력 차원을 지원하며 영어 검색 품질 우선 비교군으로 사용합니다.",
+    summary: { ko: "Stella v5 1.5B 계열 모델입니다. 여러 출력 차원을 지원하며 영어 검색 품질 우선 비교군으로 사용합니다.", en: "A 1.5B-class model in the Stella v5 family, supporting multiple output dimensions, used as a quality-first English-search comparison." },
   }),
   embeddingModel({
     name: "NovaSearch/stella_en_400M_v5",
@@ -671,7 +671,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "MIT",
     tags: ["embedding", "retrieval", "matryoshka", "classification", "clustering"],
     sourceUrl: "https://huggingface.co/NovaSearch/stella_en_400M_v5",
-    summary: "Stella v5 400M급 영어 임베딩 모델입니다. 높은 품질과 상대적으로 낮은 VRAM 사용량을 비교합니다.",
+    summary: { ko: "Stella v5 400M급 영어 임베딩 모델입니다. 높은 품질과 상대적으로 낮은 VRAM 사용량을 비교합니다.", en: "A 400M-class Stella v5 English embedding model, compared for high quality against relatively low VRAM usage." },
   }),
   embeddingModel({
     name: "nomic-ai/nomic-embed-text-v2-moe",
@@ -685,7 +685,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "korean", "multilingual", "matryoshka", "edge"],
     sourceUrl: "https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe-GGUF",
-    summary: "475M total / 305M active MoE 구조의 Nomic 다국어 임베딩 모델입니다. GGUF 배포와 Matryoshka 차원을 지원합니다.",
+    summary: { ko: "475M total / 305M active MoE 구조의 Nomic 다국어 임베딩 모델입니다. GGUF 배포와 Matryoshka 차원을 지원합니다.", en: "A Nomic multilingual embedding model with a 475M total / 305M active MoE structure, supporting GGUF deployment and Matryoshka dimensions." },
   }),
   embeddingModel({
     name: "nomic-ai/modernbert-embed-base",
@@ -699,7 +699,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "matryoshka", "edge"],
     sourceUrl: "https://huggingface.co/nomic-ai/modernbert-embed-base",
-    summary: "ModernBERT-base 기반의 Nomic 임베딩 모델입니다. 8192 토큰과 256차원 축소 옵션을 지원합니다.",
+    summary: { ko: "ModernBERT-base 기반의 Nomic 임베딩 모델입니다. 8192 토큰과 256차원 축소 옵션을 지원합니다.", en: "A Nomic embedding model built on ModernBERT-base, supporting 8,192 tokens and a 256-dim reduction option." },
   }),
   embeddingModel({
     name: "ibm-granite/granite-embedding-311m-multilingual-r2",
@@ -714,7 +714,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "matryoshka", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2",
-    summary: "ModernBERT 기반 Granite R2 다국어 임베딩 모델입니다. 32K context, 52개 강화 언어, 코드 검색을 지원합니다.",
+    summary: { ko: "ModernBERT 기반 Granite R2 다국어 임베딩 모델입니다. 32K context, 52개 강화 언어, 코드 검색을 지원합니다.", en: "A ModernBERT-based Granite R2 multilingual embedding model, supporting 32K context, 52 enhanced languages, and code search." },
   }),
   embeddingModel({
     name: "ibm-granite/granite-embedding-97m-multilingual-r2",
@@ -729,7 +729,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "korean", "long", "multilingual", "matryoshka", "codeRetrieval", "edge"],
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2",
-    summary: "Granite R2의 97M급 다국어 임베딩 모델입니다. 장문과 다국어를 유지하면서 처리량을 우선합니다.",
+    summary: { ko: "Granite R2의 97M급 다국어 임베딩 모델입니다. 장문과 다국어를 유지하면서 처리량을 우선합니다.", en: "A 97M-class multilingual embedding model in Granite R2, prioritizing throughput while keeping long-context and multilingual support." },
   }),
   embeddingModel({
     name: "ibm-granite/granite-embedding-english-r2",
@@ -744,7 +744,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "matryoshka", "codeRetrieval"],
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-english-r2",
-    summary: "Granite R2 영어 임베딩 모델입니다. 8192 토큰과 엔터프라이즈 친화 라이선스 기준 비교군입니다.",
+    summary: { ko: "Granite R2 영어 임베딩 모델입니다. 8192 토큰과 엔터프라이즈 친화 라이선스 기준 비교군입니다.", en: "A Granite R2 English embedding model, a comparison model for 8,192-token support and an enterprise-friendly license." },
   }),
   embeddingModel({
     name: "ibm-granite/granite-embedding-small-english-r2",
@@ -759,7 +759,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "long", "matryoshka", "codeRetrieval", "edge"],
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-small-english-r2",
-    summary: "Granite R2의 47M급 영어 소형 임베딩 모델입니다. 저사양과 고처리량 환경을 위한 기준선입니다.",
+    summary: { ko: "Granite R2의 47M급 영어 소형 임베딩 모델입니다. 저사양과 고처리량 환경을 위한 기준선입니다.", en: "A 47M-class small English embedding model in Granite R2, a baseline for low-spec, high-throughput settings." },
   }),
   embeddingModel({
     name: "ibm-granite/granite-embedding-278m-multilingual",
@@ -775,7 +775,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "legacy"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual",
-    summary: "Granite Embedding R1 278M 다국어 모델입니다. R2 계열과 비교하기 위한 이전 세대 기준선입니다.",
+    summary: { ko: "Granite Embedding R1 278M 다국어 모델입니다. R2 계열과 비교하기 위한 이전 세대 기준선입니다.", en: "A 278M multilingual model in Granite Embedding R1, a previous-generation baseline for comparison against the R2 family." },
   }),
   embeddingModel({
     name: "ibm-granite/granite-embedding-107m-multilingual",
@@ -791,7 +791,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "edge", "legacy"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/ibm-granite/granite-embedding-107m-multilingual",
-    summary: "Granite Embedding R1 107M 다국어 소형 모델입니다. R2 소형 모델과 비교합니다.",
+    summary: { ko: "Granite Embedding R1 107M 다국어 소형 모델입니다. R2 소형 모델과 비교합니다.", en: "A 107M small multilingual model in Granite Embedding R1, compared against the R2 small model." },
   }),
   embeddingModel({
     name: "nlpai-lab/KURE-v1",
@@ -806,7 +806,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "MIT",
     tags: ["embedding", "retrieval", "korean", "long"],
     sourceUrl: "https://huggingface.co/nlpai-lab/KURE-v1",
-    summary: "BAAI/bge-m3를 한국어 검색 데이터로 파인튜닝한 Korea University Retrieval Embedding 모델입니다.",
+    summary: { ko: "BAAI/bge-m3를 한국어 검색 데이터로 파인튜닝한 Korea University Retrieval Embedding 모델입니다.", en: "The Korea University Retrieval Embedding model, a fine-tune of BAAI/bge-m3 on Korean search data." },
   }),
   embeddingModel({
     name: "nlpai-lab/KoE5",
@@ -821,7 +821,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/nlpai-lab/KoE5",
-    summary: "multilingual-e5-large를 한국어 triplet 데이터로 파인튜닝한 KoE5 모델입니다.",
+    summary: { ko: "multilingual-e5-large를 한국어 triplet 데이터로 파인튜닝한 KoE5 모델입니다.", en: "The KoE5 model, a fine-tune of multilingual-e5-large on Korean triplet data." },
   }),
   embeddingModel({
     name: "dragonkue/BGE-m3-ko",
@@ -836,7 +836,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "korean", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/dragonkue/BGE-m3-ko",
-    summary: "BGE-m3를 한국어 검색 데이터로 추가 학습한 모델입니다. 한국어 RAG 후보군으로 바로 비교하기 좋습니다.",
+    summary: { ko: "BGE-m3를 한국어 검색 데이터로 추가 학습한 모델입니다. 한국어 RAG 후보군으로 바로 비교하기 좋습니다.", en: "A model further trained on BGE-m3 with Korean search data, a ready comparison candidate for Korean RAG." },
   }),
   embeddingModel({
     name: "dragonkue/snowflake-arctic-embed-l-v2.0-ko",
@@ -850,7 +850,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     license: "Apache 2.0",
     tags: ["embedding", "retrieval", "korean", "long", "multilingual"],
     sourceUrl: "https://huggingface.co/dragonkue/snowflake-arctic-embed-l-v2.0-ko",
-    summary: "Snowflake Arctic Embed v2.0 large를 한국어 검색 데이터로 파인튜닝한 모델입니다.",
+    summary: { ko: "Snowflake Arctic Embed v2.0 large를 한국어 검색 데이터로 파인튜닝한 모델입니다.", en: "A fine-tune of Snowflake Arctic Embed v2.0 large on Korean search data." },
   }),
   embeddingModel({
     name: "dragonkue/multilingual-e5-small-ko-v2",
@@ -865,7 +865,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/dragonkue/multilingual-e5-small-ko-v2",
-    summary: "multilingual-e5-small 기반의 한국어 소형 임베딩 모델입니다. CPU/저VRAM 대량 색인 비교에 적합합니다.",
+    summary: { ko: "multilingual-e5-small 기반의 한국어 소형 임베딩 모델입니다. CPU/저VRAM 대량 색인 비교에 적합합니다.", en: "A small Korean embedding model built on multilingual-e5-small, suited for comparing large-scale indexing on CPU/low VRAM." },
   }),
   embeddingModel({
     name: "dragonkue/colbert-ko-0.1b",
@@ -881,7 +881,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/dragonkue/colbert-ko-0.1b",
-    summary: "한국어 ColBERT late-interaction 검색 모델입니다. dense 단일 벡터가 아닌 MaxSim 계열 비교군으로 표시합니다.",
+    summary: { ko: "한국어 ColBERT late-interaction 검색 모델입니다. dense 단일 벡터가 아닌 MaxSim 계열 비교군으로 표시합니다.", en: "A Korean ColBERT late-interaction search model, listed as a MaxSim-family comparison rather than a single dense vector." },
   }),
   embeddingModel({
     name: "maidalun1020/bce-embedding-base_v1",
@@ -897,7 +897,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/maidalun1020/bce-embedding-base_v1",
-    summary: "중국어/영어 교차언어 RAG에 맞춘 BCEmbedding bi-encoder 모델입니다.",
+    summary: { ko: "중국어/영어 교차언어 RAG에 맞춘 BCEmbedding bi-encoder 모델입니다.", en: "A BCEmbedding bi-encoder model tuned for Chinese/English cross-lingual RAG." },
   }),
   embeddingModel({
     name: "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
@@ -912,7 +912,7 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "korean", "multilingual", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
-    summary: "한국어 포함 다국어 문장 유사도 기준선으로 오래 사용된 MPNet 기반 모델입니다.",
+    summary: { ko: "한국어 포함 다국어 문장 유사도 기준선으로 오래 사용된 MPNet 기반 모델입니다.", en: "A long-used MPNet-based baseline for multilingual sentence similarity, including Korean." },
   }),
   embeddingModel({
     name: "sentence-transformers/multi-qa-mpnet-base-dot-v1",
@@ -927,6 +927,6 @@ window.LLM_GPU_CHECKER_DATA.embeddingModels = [
     tags: ["embedding", "retrieval", "matching", "edge"],
     supportsFlashAttention: false,
     sourceUrl: "https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1",
-    summary: "질문-답변 검색에 맞춰 학습된 MPNet 기반 bi-encoder 기준 모델입니다.",
+    summary: { ko: "질문-답변 검색에 맞춰 학습된 MPNet 기반 bi-encoder 기준 모델입니다.", en: "An MPNet-based bi-encoder baseline trained for question-answer retrieval." },
   }),
 ];
