@@ -23,6 +23,12 @@
   --radius-sm: 3px;
   --radius-md: 5px;
   --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  /* Matches .app-shell's own centering math (width: min(1540px, 100vw - 48px);
+     margin: 18px auto) so the desktop split-view inspector panel can align
+     its right edge with the app-shell's right edge without being its DOM
+     sibling. */
+  --shell-gutter: max(24px, calc((100vw - 1540px) / 2));
+  --inspector-width: clamp(360px, 28vw, 520px);
 }
 
 .num,
@@ -3253,4 +3259,89 @@ button:focus-visible {
   .header-nav .github-link {
     display: none;
   }
+}
+
+/* Desktop split-view: in 전체 모델 탐색 (expert) mode on wide viewports,
+   show the model detail as a persistent right-hand inspector next to the
+   list instead of the fixed-overlay drawer used everywhere else (narrower
+   viewports, and 빠른 추천 mode, are untouched — see .model-detail /
+   .drawer-backdrop base rules above and refreshAppModeUi() in app.js for
+   the body.model-workbench-active toggle).
+
+   #modelDetail deliberately stays outside #expertModeSection in the DOM
+   (it's shared with quick-recommend mode, which would otherwise hide it
+   whenever #expertModeSection has the `hidden` attribute), so this uses
+   position: fixed with --shell-gutter to align its right edge with
+   .app-shell's right edge, rather than true CSS Grid participation.
+
+   Breakpoint is 1536px, not the 1280px a naive "list 1fr + 400px" split
+   would suggest: the existing model-row grid has 10 columns (status, name,
+   release, benchmark, provider, setting, VRAM, speed, context-limit,
+   chevron) whose fixed-width tracks alone already total ~850px before the
+   name column's own 270px minimum, so reserving a 360-520px inspector
+   column out of a 1540px-max-width shell genuinely does not fit below
+   ~1500px. Below this breakpoint the list keeps every column and the
+   detail panel keeps using the normal overlay drawer instead of forcing
+   an overflow. Within the split-view itself, the release-date and
+   recommended-setting columns are hidden (both are still one click away
+   in the inspector) to recover enough width for the remaining six to sit
+   comfortably beside a 360px-minimum inspector — this matches the
+   trimmed "상태 | 모델 | 대표 평가 | 라이선스 | VRAM | 속도" column set. */
+@media (min-width: 1536px) {
+  body.model-workbench-active #expertModeSection {
+    padding-right: calc(var(--inspector-width) + 24px);
+  }
+
+  body.model-workbench-active #drawerBackdrop {
+    display: none;
+  }
+
+  body.model-workbench-active #modelDetail {
+    display: block;
+    inset: 88px var(--shell-gutter) 24px auto;
+    width: var(--inspector-width);
+    height: auto;
+    z-index: 6;
+    border-left: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+  }
+
+  /* Recover width by hiding the two columns that duplicate information
+     already shown one click away in the inspector (release/generation,
+     and the recommended quant/precision/runtime setting). Both header and
+     row share the same 10-cell order, so the same nth-child positions
+     (3rd = release, 6th = setting) hide the matching cell in each. */
+  body.model-workbench-active .model-list-head > :nth-child(3),
+  body.model-workbench-active .model-row > :nth-child(3),
+  body.model-workbench-active .model-list-head > :nth-child(6),
+  body.model-workbench-active .model-row > :nth-child(6) {
+    display: none;
+  }
+
+  body.model-workbench-active .model-list-head,
+  body.model-workbench-active .model-row {
+    grid-template-columns: 82px minmax(270px, 1fr) 116px 132px 92px 126px 68px 18px;
+  }
+}
+
+.detail-empty-state {
+  display: grid;
+  gap: 8px;
+  height: 100%;
+  padding: 32px 22px;
+  color: var(--muted);
+  text-align: center;
+  align-content: center;
+}
+
+.detail-empty-state strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.detail-empty-state p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
 }

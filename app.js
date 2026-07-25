@@ -949,6 +949,11 @@ function refreshAppModeUi() {
   $("simpleModePanel").hidden = !isSimple;
   $("expertModeSection").hidden = isSimple;
   $("calculationBasisStrip").hidden = isSimple;
+  // Drives the desktop (>=1280px) split-view layout in styles.css: only the
+  // "전체 모델 탐색" (expert) mode gets a fixed right-hand inspector panel
+  // beside the model list. Quick-recommend mode keeps the existing
+  // fixed-overlay detail drawer untouched.
+  document.body.classList.toggle("model-workbench-active", !isSimple);
   document.querySelectorAll("[data-app-mode]").forEach((button) => {
     const active = button.dataset.appMode === appMode;
     button.classList.toggle("is-active", active);
@@ -4556,6 +4561,28 @@ function getRecommendationRanks() {
   return new Map(ranked.map((estimate, index) => [modelKey(estimate.model), index + 1]));
 }
 
+function renderDetailEmptyStateHtml() {
+  // Only ever visible in the desktop (>=1280px) split-view inspector panel —
+  // styles.css forces #modelDetail to display:block there regardless of the
+  // `hidden` attribute set below, so an unselected state must still render
+  // something other than a blank white column. In every other layout
+  // (narrower widths, quick-recommend mode) #modelDetail stays truly hidden
+  // via the `hidden` attribute, so this markup never becomes visible there.
+  return uiLanguage === "en"
+    ? `
+      <div class="detail-empty-state">
+        <strong>Select a model</strong>
+        <p>Pick a model from the list to see required VRAM, estimated speed, recommended settings, and the run command.</p>
+      </div>
+    `
+    : `
+      <div class="detail-empty-state">
+        <strong>모델을 선택하세요</strong>
+        <p>목록에서 모델을 선택하면 필요 VRAM, 예상 속도, 권장 설정과 실행 명령을 확인할 수 있습니다.</p>
+      </div>
+    `;
+}
+
 function renderDetail() {
   const detail = $("modelDetail");
   const backdrop = $("drawerBackdrop");
@@ -4563,7 +4590,7 @@ function renderDetail() {
   if (!selectedModelKey) {
     detail.hidden = true;
     backdrop.hidden = true;
-    detail.innerHTML = "";
+    detail.innerHTML = renderDetailEmptyStateHtml();
     return;
   }
 
@@ -4572,7 +4599,7 @@ function renderDetail() {
     selectedModelKey = "";
     detail.hidden = true;
     backdrop.hidden = true;
-    detail.innerHTML = "";
+    detail.innerHTML = renderDetailEmptyStateHtml();
     return;
   }
 
