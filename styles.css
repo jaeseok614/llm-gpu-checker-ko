@@ -671,6 +671,91 @@ button:focus-visible {
   padding: 18px 22px 20px;
 }
 
+.onboarding-screen {
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.onboarding-inner {
+  display: grid;
+  gap: 14px;
+  max-width: 720px;
+  padding: 36px 32px 34px;
+}
+
+.onboarding-inner h2 {
+  margin: 0;
+}
+
+.onboarding-inner > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.onboarding-quickpicks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.onboarding-gpu-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.onboarding-gpu-card:hover,
+.onboarding-gpu-card:focus-visible {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.onboarding-gpu-card strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.onboarding-gpu-card span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-search {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.onboarding-search .field {
+  flex: 1 1 260px;
+  gap: 6px;
+}
+
+.onboarding-search-hint {
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
 .summary-filterbar {
   position: sticky;
   top: 0;

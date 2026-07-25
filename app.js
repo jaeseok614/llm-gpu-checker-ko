@@ -1,5 +1,15 @@
 const DATA = window.LLM_GPU_CHECKER_DATA || {};
 const GPU_PRESETS = DATA.gpus || [];
+const ONBOARDING_QUICK_GPU_IDS = [
+  "rtx5090-32",
+  "rtx4090-24",
+  "rtx4080super-16",
+  "rtx4070tisuper-16",
+  "rtx4060ti-16",
+  "rtx3090-24",
+  "rtx3060-12",
+  "rx7900xtx-24",
+];
 const QUANTS = DATA.quantizations || [];
 const MODEL_METADATA = DATA.modelMetadata || {};
 const LICENSE_POLICIES = DATA.licensePolicies || {};
@@ -674,6 +684,16 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["상주 모델/모듈", "Resident model/module"],
   ["런타임 오버헤드", "Runtime overhead"],
   ["여유", "Free"],
+  ["시작하기: GPU 선택", "Get started: choose a GPU"],
+  ["내 GPU를 선택하면 바로 계산을 시작합니다", "Select your GPU to start calculating"],
+  [
+    "VRAM과 대역폭을 기준으로 실행 가능한 AI 모델과 예상 속도를 바로 계산합니다.",
+    "See runnable AI models and estimated speed based on your VRAM and bandwidth.",
+  ],
+  ["자주 찾는 GPU", "Popular GPUs"],
+  ["다른 GPU 검색", "Search other GPUs"],
+  ["예: RTX 4070, A100, M3 Max", "e.g. RTX 4070, A100, M3 Max"],
+  ["시작하기", "Get started"],
 ];
 
 // Hangul syllable + jamo range, used to guard dictionary substring matches
@@ -868,6 +888,15 @@ function focusPrimaryGpuSelector() {
   $("gpuPreset")?.focus();
 }
 
+function selectOnboardingGpu(id) {
+  const preset = GPU_PRESETS.find((gpu) => gpu.id === id);
+  if (!preset) return;
+  $("gpuPreset").value = preset.id;
+  selectPrimaryGpu(preset.id, { persist: true });
+  refreshSecondaryGpuUi();
+  render();
+}
+
 function setAppMode(mode) {
   if (mode !== "simple" && mode !== "expert") return;
   appMode = mode;
@@ -897,6 +926,11 @@ function setUiLanguage(language) {
       button.setAttribute("aria-pressed", String(active));
     });
   }
+  // Regenerate language-conditional dynamic text (e.g. the onboarding GPU
+  // count hint) BEFORE the dictionary sweep below, so translateDynamicUi
+  // only ever sees fully-Korean or fully-English text nodes to swap —
+  // never a half-translated leftover from the previous render() call.
+  renderOnboardingQuickPicks();
   translateDynamicUi(uiLanguage);
 }
 
@@ -953,6 +987,7 @@ function populateSelects() {
   ].join("");
   $("secondaryGpuPreset").value = "none";
   populateGpuPresetDatalist();
+  renderOnboardingQuickPicks();
 
   $("quantization").innerHTML = QUANTS.map(
     (quant) => `<option value="${escapeAttr(quant.id)}">${escapeHtml(quant.label)}</option>`,
@@ -966,6 +1001,32 @@ function populateSelects() {
   refreshFilterOptions();
 
   refreshSecondaryGpuUi();
+}
+
+function renderOnboardingQuickPicks() {
+  const target = $("onboardingQuickpicks");
+  if (!target) return;
+  const picks = ONBOARDING_QUICK_GPU_IDS
+    .map((id) => GPU_PRESETS.find((gpu) => gpu.id === id))
+    .filter(Boolean);
+  target.innerHTML = picks
+    .map(
+      (gpu) => `
+        <button type="button" class="onboarding-gpu-card" data-quick-gpu="${escapeAttr(gpu.id)}">
+          <strong>${escapeHtml(shortGpuName(gpu.name))}</strong>
+          <span>VRAM ${formatGb(gpu.vram)} · ${Math.round(gpu.bandwidth).toLocaleString("ko-KR")} GB/s</span>
+        </button>
+      `,
+    )
+    .join("");
+
+  const hint = $("onboardingSearchHint");
+  if (hint) {
+    const count = GPU_PRESETS.filter((gpu) => gpu.id !== "custom").length;
+    hint.textContent = uiLanguage === "en"
+      ? `${count} GPU presets available · custom entry supported`
+      : `GPU 프리셋 ${count}개 지원 · 직접 입력도 가능`;
+  }
 }
 
 function populateGpuPresetDatalist() {
@@ -1394,6 +1455,17 @@ function bindEvents() {
       $("gpuPreset").value = preset.id;
       $("gpuPreset").dispatchEvent(new Event("change"));
     }
+  });
+
+  $("onboardingQuickpicks")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-quick-gpu]");
+    if (!button) return;
+    selectOnboardingGpu(button.dataset.quickGpu);
+  });
+
+  $("onboardingGpuSearch")?.addEventListener("change", (event) => {
+    const preset = findGpuPresetByName(event.target.value, false);
+    if (preset) selectOnboardingGpu(preset.id);
   });
 
   $("secondaryGpuPresetSearch").addEventListener("change", () => {
@@ -3762,6 +3834,14 @@ function escapeTextLabel(value) {
 
 function render(options = {}) {
   const { syncUrl = true } = options;
+  renderOnboardingQuickPicks();
+  const onboardingScreen = $("onboardingScreen");
+  const hardwarePanel = $("hardwarePanel");
+  const resultsPanel = $("resultsPanel");
+  if (onboardingScreen) onboardingScreen.hidden = hasPrimaryGpuSelection;
+  if (hardwarePanel) hardwarePanel.hidden = !hasPrimaryGpuSelection;
+  if (resultsPanel) resultsPanel.hidden = !hasPrimaryGpuSelection;
+
   const hardware = getHardware();
   const allEstimates = hasPrimaryGpuSelection
     ? getActiveModels().map((model) => estimateAnyModel(model, hardware))

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Hardware Fit — 내 GPU에서 돌아가는 AI 모델 찾기</title>
-    <link rel="stylesheet" href="./styles.css?v=20260725-share-card1" />
+    <link rel="stylesheet" href="./styles.css?v=20260725-onboarding1" />
   </head>
   <body>
     <header class="app-header">
@@ -30,7 +30,25 @@
     </header>
 
     <main class="app-shell">
-      <section class="hardware-panel" aria-label="하드웨어 설정">
+      <section class="onboarding-screen" id="onboardingScreen" aria-label="시작하기: GPU 선택" hidden>
+        <div class="onboarding-inner">
+          <span class="section-kicker">시작하기</span>
+          <h2>내 GPU를 선택하면 바로 계산을 시작합니다</h2>
+          <p>VRAM과 대역폭을 기준으로 실행 가능한 AI 모델과 예상 속도를 바로 계산합니다.</p>
+
+          <div class="onboarding-quickpicks" id="onboardingQuickpicks" role="group" aria-label="자주 찾는 GPU"></div>
+
+          <div class="onboarding-search">
+            <label class="field" for="onboardingGpuSearch">
+              <span>다른 GPU 검색</span>
+              <input type="text" id="onboardingGpuSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="예: RTX 4070, A100, M3 Max" />
+            </label>
+            <span class="onboarding-search-hint" id="onboardingSearchHint"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="hardware-panel" id="hardwarePanel" aria-label="하드웨어 설정">
         <div class="hardware-topline">
           <div class="primary-gpu-control">
             <label class="field">
@@ -433,7 +451,7 @@
         </div>
       </section>
 
-      <section class="results-panel" aria-label="모델 검색 결과">
+      <section class="results-panel" id="resultsPanel" aria-label="모델 검색 결과">
         <div class="calculation-basis-strip" id="calculationBasisStrip"></div>
 
         <div class="simple-mode-panel" id="simpleModePanel">
