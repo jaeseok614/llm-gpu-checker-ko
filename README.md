@@ -15,7 +15,8 @@
 </p>
 
 <p align="center">
-  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 사용하기</strong></a>
+  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 모델 찾기</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=ko"><strong>AI 스택 배치</strong></a>
   · <a href="./docs/methodology.md">계산 기준</a>
   · <a href="./README.en.md">English</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">벤치마크 제보</a>
@@ -34,7 +35,7 @@
 - GPU 프리셋 90개, AI 모델 290개
 - 생성형 LLM·임베딩·리랭커·OCR·문서 VLM·범용 VLM 6개 워크로드
 - 모델 2~3개 비교와 이기종·다중 GPU 배치
-- 다중 GPU 배치 진단: 균형/처리량/모델 보존 3가지 배치안을 나란히 비교하고, 운영 방식(파이프라인·독립 서비스·대체 모델)·목표 동시 사용자·주 모델 우선 배정까지 지정
+- AI 스택 배치 플래너: 균형형·처리량형·주 모델형 배치안을 나란히 비교하고, 운영 방식(파이프라인·독립 서비스·순차 실행)·목표 동시 사용자·주 모델 우선 배정까지 지정
 - 라이트/다크 모드 지원 (시스템 설정 자동 감지, 선택값 저장)
 - 벤치마크 시트에서 동일 지표로 측정된 모델만 골라 자동 비교
 - 빠른 추천 결과 링크 공유와 PNG 요약 카드 다운로드
@@ -49,12 +50,26 @@
 3. 실행 가능한 모델과 권장 설정을 확인합니다.
 4. 모델 상세에서 VRAM·속도 계산 근거와 라이선스를 확인합니다.
 
+## 여러 모델을 함께 실행하려면
+
+[AI 스택 배치 플래너 바로 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&lang=ko)
+
+LLM 하나뿐 아니라 임베딩·리랭커·OCR/VLM을 함께 실행하려면 `AI 스택 배치 플래너`를 사용하세요.
+
+1. RAG·문서 AI·여러 LLM 중 추천 구성을 고르거나 직접 구성을 시작합니다.
+2. 보유한 GPU와 수량을 추가합니다.
+3. 동시에 실행할 모델을 검색해 선택합니다.
+4. 파이프라인·독립 서비스·순차 실행 중 운영 방식을 선택합니다.
+5. 균형형·처리량형·주 모델형 배치안을 비교하고 병목과 개선 방법을 확인합니다.
+
+플래너는 GPU별 모델·정밀도 배치, 권장 동시 접속 수, 예상 총 처리량, 남은 VRAM, 목표 미달 원인과 실행 설정 초안을 함께 제공합니다.
+
 ## 대표 사용 사례
 
 | 확인할 내용 | 앱에서 할 일 |
 | --- | --- |
 | RTX 3060에서 실행 가능한 LLM | RTX 3060 선택 후 생성형 LLM 목록 확인 |
-| RTX 4090에 LLM+임베딩+리랭커 동시 배치 | 여러 GPU 모델 배치에서 세 워크로드를 함께 선택 |
+| RTX 4090에 LLM+임베딩+리랭커 동시 배치 | AI 스택 배치에서 RAG 기본 구성 선택 |
 | A100 여러 장을 이용한 서빙 | A100과 GPU 수를 지정하고 동시 처리 용량 확인 |
 | 문서 VLM의 VRAM과 처리량 비교 | 문서 VLM 탭에서 모델 2~3개 비교 |
 

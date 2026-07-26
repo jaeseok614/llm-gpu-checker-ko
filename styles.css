@@ -283,6 +283,67 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin: 18px auto;
 }
 
+.core-task-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel-raised);
+}
+
+.core-task-switcher > div:first-child {
+  flex: 0 1 310px;
+}
+
+.core-task-switcher strong {
+  display: block;
+  font-size: 15px;
+}
+
+.core-task-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(230px, 1fr));
+  gap: 8px;
+  width: min(680px, 100%);
+}
+
+.core-task-button {
+  display: grid;
+  gap: 3px;
+  min-height: 54px;
+  padding: 9px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.core-task-button:hover {
+  border-color: var(--blue);
+}
+
+.core-task-button.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.core-task-button span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.core-task-button small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .hardware-panel,
 .results-panel {
   min-width: 0;
@@ -388,6 +449,24 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .settings-toggle {
   align-self: center;
   white-space: nowrap;
+}
+
+.hardware-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.placement-entry-button {
+  white-space: nowrap;
+}
+
+body.placement-task-active #hardwarePanel {
+  border-radius: var(--radius-md);
+}
+
+body.placement-task-active #hardwarePanel > :not(#gpuPlacementPanel) {
+  display: none !important;
 }
 
 .view-toggle {
@@ -1277,6 +1356,315 @@ button:focus-visible {
   font-size: 11px;
 }
 
+.placement-workspace {
+  min-width: 0;
+  background: var(--panel);
+}
+
+.placement-workspace-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-raised);
+}
+
+.placement-workspace-head h2 {
+  margin: 0 0 6px;
+}
+
+.placement-workspace-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.placement-welcome {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(520px, 1.3fr);
+  gap: 28px;
+  padding: 30px 24px 34px;
+}
+
+.placement-welcome-copy {
+  align-self: center;
+}
+
+.placement-welcome-copy h3 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.placement-welcome-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.placement-starter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.placement-starter-card {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  min-height: 96px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.placement-starter-card:hover {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.placement-starter-card.is-direct {
+  border-style: dashed;
+}
+
+.placement-starter-card strong {
+  font-size: 14px;
+}
+
+.placement-starter-card span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.gpu-placement-body.placement-builder {
+  display: grid;
+  gap: 12px;
+  padding: 18px 24px 26px;
+}
+
+.placement-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.placement-stepper li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.placement-stepper li::after {
+  position: absolute;
+  right: 14px;
+  left: 40px;
+  bottom: 0;
+  height: 2px;
+  background: var(--line);
+  content: "";
+}
+
+.placement-stepper li:last-child::after {
+  display: none;
+}
+
+.placement-stepper li > span {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--panel-raised);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.placement-stepper li.is-ready {
+  color: var(--blue);
+}
+
+.placement-stepper li.is-ready > span {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.placement-step-card {
+  padding: 16px 18px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel-raised);
+}
+
+.placement-step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.placement-step-head > span {
+  display: inline-grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: var(--radius-sm);
+  background: var(--blue);
+  color: var(--on-blue);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.placement-step-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.placement-step-head strong {
+  font-size: 14px;
+}
+
+.placement-step-head small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.placement-step-card .placement-type-tabs,
+.placement-step-card .placement-usage-tabs,
+.placement-step-card .placement-strategy-tabs {
+  gap: 16px;
+  margin-bottom: 10px;
+  padding: 0;
+  border: 0;
+}
+
+.placement-step-card .workload-tab {
+  min-height: 38px;
+}
+
+.placement-model-gate {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  padding: 18px;
+  color: var(--muted);
+}
+
+.placement-model-gate strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.placement-model-gate span {
+  font-size: 11.5px;
+}
+
+.placement-model-gate .ghost-button {
+  margin-top: 4px;
+}
+
+.placement-advanced-conditions {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.placement-advanced-conditions > summary,
+.placement-calculation-details > summary {
+  padding: 10px 12px;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.placement-advanced-goals {
+  padding: 0 11px;
+}
+
+.placement-advanced-conditions .gpu-placement-policy-toggles {
+  margin: 10px;
+  background: var(--panel-raised);
+}
+
+.placement-result-overview {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 10px;
+  padding: 15px 16px;
+  border: 1px solid var(--blue);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  background: var(--blue-soft);
+}
+
+.placement-result-overview > strong {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.placement-overview-kicker {
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.placement-overview-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.placement-result-stage > .gpu-placement-baseline {
+  margin-bottom: 10px;
+}
+
+.placement-calculation-details {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.placement-calculation-details[open] {
+  padding-bottom: 12px;
+}
+
+.placement-calculation-details > .gpu-placement-result,
+.placement-calculation-details > .gpu-placement-export {
+  margin-right: 12px;
+  margin-left: 12px;
+}
+
+.simple-next-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .gpu-placement-body {
   padding: 0 13px 13px;
 }
@@ -1792,8 +2180,7 @@ button:focus-visible {
 }
 
 .placement-plan-search-mode {
-  color: var(--muted) !important;
-  font-size: 10.5px !important;
+  display: none;
 }
 
 .placement-plan-card .ghost-button {
@@ -4081,6 +4468,21 @@ button:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .core-task-switcher {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .core-task-switcher > div:first-child,
+  .core-task-actions {
+    width: 100%;
+  }
+
+  .placement-welcome {
+    grid-template-columns: 1fr;
+  }
+
   .header-nav a:not(.github-link) {
     display: none;
   }
@@ -4091,6 +4493,52 @@ button:focus-visible {
 }
 
 @media (max-width: 600px) {
+  .core-task-switcher,
+  .placement-workspace-head,
+  .gpu-placement-body.placement-builder {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .core-task-actions,
+  .placement-starter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .placement-workspace-head {
+    flex-direction: column;
+  }
+
+  .placement-welcome {
+    padding: 22px 12px;
+  }
+
+  .placement-stepper {
+    grid-template-columns: repeat(4, minmax(92px, 1fr));
+    overflow-x: auto;
+  }
+
+  .placement-step-card {
+    padding: 13px 12px;
+  }
+
+  .placement-step-head {
+    align-items: flex-start;
+  }
+
+  .hardware-top-actions,
+  .simple-next-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .hardware-top-actions .ghost-button,
+  .hardware-top-actions .primary-button,
+  .simple-next-actions .ghost-button,
+  .simple-next-actions .primary-button {
+    width: 100%;
+  }
+
   .header-nav .github-link {
     display: none;
   }

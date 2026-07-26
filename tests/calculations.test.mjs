@@ -324,7 +324,7 @@ describe("first-visit GPU onboarding", () => {
     assert.equal(fresh.document.getElementById("gpuPresetSearch").hidden, false);
   });
 
-  test("opens hardware settings as three compact groups with two advanced tools", () => {
+  test("keeps hardware settings compact and moves placement out of advanced tools", () => {
     const fresh = loadApp();
     fresh.document.getElementById("settingsToggle")
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
@@ -334,9 +334,30 @@ describe("first-visit GPU onboarding", () => {
       .map((title) => title.childNodes[0].textContent.trim());
     assert.equal(drawer.hidden, false);
     assert.deepEqual(groupTitles, ["기본 하드웨어", "보조 GPU", "메모리 보정"]);
-    assert.equal(drawer.querySelectorAll(".advanced-tools-inline > details").length, 2);
+    assert.equal(drawer.querySelectorAll(".advanced-tools-inline > details").length, 1);
+    assert.equal(fresh.document.getElementById("gpuPlacementPanel").closest("#settingsDrawer"), null);
     assert.equal(fresh.document.querySelector('[data-workload-settings="generative"]').hidden, false);
     assert.equal(fresh.document.getElementById("vramGb").value, "24");
+  });
+
+  test("opens the placement planner directly with a simple starter screen", () => {
+    const fresh = loadApp("https://example.com/?mode=placement");
+    assert.equal(fresh.document.getElementById("onboardingScreen").hidden, true);
+    assert.equal(fresh.document.getElementById("hardwarePanel").hidden, false);
+    assert.equal(fresh.document.getElementById("gpuPlacementPanel").hidden, false);
+    assert.equal(fresh.document.getElementById("placementWelcome").hidden, false);
+    assert.equal(fresh.document.getElementById("placementBuilder").hidden, true);
+    assert.equal(fresh.document.getElementById("resultsPanel").hidden, true);
+    assert.equal(new URLSearchParams(fresh.location.search).get("mode"), "placement");
+
+    fresh.document.querySelector("[data-placement-starter='rag']")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("placementWelcome").hidden, true);
+    assert.equal(fresh.document.getElementById("placementBuilder").hidden, false);
+    assert.equal(fresh.document.querySelectorAll(".placement-stepper li").length, 4);
+    assert.equal(fresh.document.querySelectorAll(".placement-model-config").length, 3);
+    assert.ok(fresh.document.querySelector(".placement-model-gate"), "full model catalog should stay gated before search/category browse");
+    assert.equal(fresh.document.getElementById("placementResultStage").hidden, true);
   });
 });
 
@@ -406,6 +427,13 @@ describe("quick recommendation navigation", () => {
     assert.equal(linked.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(linked.document.getElementById("expertModeSection").hidden, false);
     assert.equal(linked.document.getElementById("modelDetail").hidden, false);
+
+    linked.document.querySelector("[data-add-detail-to-placement]")
+      .dispatchEvent(new linked.MouseEvent("click", { bubbles: true }));
+    assert.equal(linked.document.getElementById("gpuPlacementPanel").hidden, false);
+    assert.equal(linked.document.getElementById("placementBuilder").hidden, false);
+    assert.equal(linked.document.querySelectorAll(".placement-model-config").length, 1);
+    assert.equal(new URLSearchParams(linked.location.search).get("mode"), "placement");
   });
 });
 
@@ -473,6 +501,8 @@ describe("multi-GPU placement optimizer", () => {
     assert.equal(fresh.document.getElementById("placementMinHeadroom").value, "15");
     assert.equal(fresh.document.getElementById("placementAllowQuantChange").checked, true);
 
+    fresh.document.querySelector("[data-open-placement-browser]")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     const firstCheckbox = fresh.document.querySelector("#placementModelList [data-model-key]");
     fresh.controlModelKey = firstCheckbox.dataset.modelKey;
     fresh.eval("togglePlacementModel(controlModelKey)");
@@ -540,6 +570,25 @@ describe("multi-GPU placement optimizer", () => {
     assert.ok(reducedContexts.includes(32768));
     assert.ok(reducedContexts.some((value) => value < 32768));
   });
+
+  test("renders a plain-language overview, three plans, and collapsed calculation details", () => {
+    if (!fresh.document.querySelector(".placement-model-config")) {
+      fresh.document.querySelector("[data-open-placement-browser]")
+        ?.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+      const checkbox = fresh.document.querySelector("#placementModelList [data-model-key]");
+      fresh.overviewModelKey = checkbox.dataset.modelKey;
+      fresh.eval("togglePlacementModel(overviewModelKey)");
+    }
+    fresh.document.querySelector("[data-placement-usage='independent']")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    fresh.document.getElementById("runPlacementButton")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("placementResultStage").hidden, false);
+    assert.match(fresh.document.getElementById("placementResultOverview").textContent, /추천:|현재 안전 동시 접속|예상 총 처리량/);
+    assert.equal(fresh.document.querySelectorAll(".placement-plan-card").length, 3);
+    assert.equal(fresh.document.getElementById("placementCalculationDetails").open, false);
+    assert.ok(fresh.document.getElementById("gpuPlacementResult").textContent.trim());
+  });
 });
 
 describe("model comparison table rendering", () => {
@@ -584,6 +633,11 @@ describe("model comparison table rendering", () => {
     const caveats = [...modal.querySelectorAll(".compare-caveat")].map((node) => node.textContent.trim());
     assert.ok(caveats.length > 0);
     assert.ok(caveats.every((text) => text === "서로 다른 벤치마크로 직접 비교할 수 없습니다."));
+
+    fresh.document.querySelector("[data-add-compare-to-placement]")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(fresh.document.getElementById("gpuPlacementPanel").hidden, false);
+    assert.equal(fresh.document.querySelectorAll(".placement-model-config").length, 2);
   });
 });
 
@@ -596,15 +650,25 @@ describe("URL state save / restore", () => {
     english.document.getElementById("gpuPreset").dispatchEvent(new english.Event("change", { bubbles: true }));
     assert.equal(english.document.getElementById("settingsToggle").textContent, "Detailed settings");
     assert.equal(new URLSearchParams(english.location.search).get("lang"), "en");
-    assert.match(english.document.querySelector(".gpu-placement-goals").textContent, /Minimum VRAM headroom/);
+    assert.match(english.document.querySelector(".placement-advanced-conditions").textContent, /Minimum VRAM headroom/);
     assert.match(english.document.querySelector(".gpu-placement-policy-toggles").textContent, /automatic quantization\/precision changes/);
 
+    english.document.querySelector("[data-open-placement-browser]")
+      .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
     const placementCheckbox = english.document.querySelector("#placementModelList [data-model-key]");
     placementCheckbox.checked = true;
     placementCheckbox.dispatchEvent(new english.Event("change", { bubbles: true }));
     const modelControls = english.document.querySelector(".placement-model-config-grid").textContent;
     assert.match(modelControls, /Preferred setting/);
     assert.doesNotMatch(modelControls, /선호|요청 비율|최소 동시|GPU 고정/);
+
+    english.document.querySelector(".core-task-actions [data-core-task='placement']")
+      .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
+    english.document.querySelector("[data-placement-starter='rag']")
+      .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
+    const placementText = english.document.getElementById("gpuPlacementPanel").textContent;
+    assert.match(placementText, /AI Stack Placement Planner|Basic RAG stack|Operating goals/);
+    assert.doesNotMatch(placementText, /여러 모델|처음이라면|하드웨어|모델 선택|운영 목표|세부 조건|배치 결과/);
   });
 
   test("share URL encodes the current GPU and context settings", () => {
@@ -636,6 +700,8 @@ describe("URL state save / restore", () => {
 
   test("multi-GPU placement constraints survive a shared URL", () => {
     const source = loadApp();
+    source.document.querySelector("[data-open-placement-browser]")
+      .dispatchEvent(new source.MouseEvent("click", { bubbles: true }));
     const checkbox = source.document.querySelector("#placementModelList [data-model-key]");
     checkbox.checked = true;
     checkbox.dispatchEvent(new source.Event("change", { bubbles: true }));

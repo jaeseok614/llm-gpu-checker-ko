@@ -16,7 +16,7 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260726-placement-optimizer1" />
+    <link rel="stylesheet" href="./styles.css?v=20260726-placement-workspace1" />
   </head>
   <body>
     <header class="app-header">
@@ -43,6 +43,23 @@
     </header>
 
     <main class="app-shell">
+      <section class="core-task-switcher" id="coreTaskSwitcher" aria-label="주요 작업 선택">
+        <div>
+          <span class="section-kicker">무엇을 하시나요?</span>
+          <strong>원하는 작업부터 선택하세요</strong>
+        </div>
+        <div class="core-task-actions" role="tablist" aria-label="주요 작업">
+          <button type="button" class="core-task-button is-active" data-core-task="finder" aria-selected="true">
+            <span>내 GPU에 맞는 모델 찾기</span>
+            <small>빠른 추천과 전체 모델 탐색</small>
+          </button>
+          <button type="button" class="core-task-button" data-core-task="placement" aria-selected="false">
+            <span>여러 모델 함께 돌리기</span>
+            <small>AI 스택 배치 플래너</small>
+          </button>
+        </div>
+      </section>
+
       <section class="onboarding-screen" id="onboardingScreen" aria-label="시작하기: GPU 선택" hidden>
         <div class="onboarding-inner">
           <h2>내 GPU를 선택하면 바로 계산을 시작합니다</h2>
@@ -79,7 +96,10 @@
             <p id="hardwareSubline">선택 즉시 현재 환경에 맞는 모델을 계산합니다.</p>
             <div class="gpu-source-links" id="gpuSourceLinks" hidden></div>
           </div>
-          <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">상세 설정</button>
+          <div class="hardware-top-actions">
+            <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">상세 설정</button>
+            <button type="button" class="primary-button placement-entry-button" id="openPlacementFromHardware">AI 스택 배치</button>
+          </div>
         </div>
 
         <div class="settings-drawer" id="settingsDrawer" hidden>
@@ -157,16 +177,69 @@
                 <output id="hfImportStatus" aria-live="polite"></output>
               </form>
             </details>
+          </div>
+        </div>
 
-            <details class="hf-import-panel gpu-placement-panel" id="gpuPlacementPanel">
-              <summary>여러 GPU에 모델 동시 배치 추천 (베타)</summary>
-              <div class="gpu-placement-body">
-                <p>보유한 GPU 여러 대에 LLM·임베딩·리랭커·OCR/VLM 모델을 어떤 GPU에 올리면 좋을지 계산합니다. 각 모델은 기본 부하(동시 1명 또는 기본 배치) 기준 필요 VRAM으로 배치하며, 실제 서빙 프레임워크·스케줄링에 따라 달라질 수 있는 참고용 추정치입니다.</p>
+        <section class="gpu-placement-panel placement-workspace" id="gpuPlacementPanel" aria-labelledby="placementPlannerTitle" hidden>
+          <div class="placement-workspace-head">
+            <div>
+              <span class="section-kicker">여러 모델 함께 돌리기</span>
+              <h2 id="placementPlannerTitle">AI 스택 배치 플래너</h2>
+              <p>LLM·임베딩·리랭커·OCR/VLM을 보유 GPU에 나눠 배치합니다.</p>
+            </div>
+            <button type="button" class="ghost-button" data-core-task="finder">모델 찾기로 돌아가기</button>
+          </div>
+
+          <div class="placement-welcome" id="placementWelcome">
+            <div class="placement-welcome-copy">
+              <span class="section-kicker">처음이라면 여기서 시작하세요</span>
+              <h3>AI 스택을 GPU에 배치해 보세요</h3>
+              <p>보유 GPU와 함께 실행할 모델을 선택하면 GPU별 배치, 권장 동시 접속, 예상 처리량, 병목과 개선 방법을 계산합니다.</p>
+            </div>
+            <div class="placement-starter-grid">
+              <button type="button" class="placement-starter-card" data-placement-starter="rag">
+                <strong>RAG 기본 구성</strong>
+                <span>LLM + 임베딩 + 리랭커</span>
+              </button>
+              <button type="button" class="placement-starter-card" data-placement-starter="document">
+                <strong>문서 AI 구성</strong>
+                <span>LLM/VLM + OCR + 임베딩</span>
+              </button>
+              <button type="button" class="placement-starter-card" data-placement-starter="multi-llm">
+                <strong>여러 LLM 서비스</strong>
+                <span>여러 모델을 독립 API로 운영</span>
+              </button>
+              <button type="button" class="placement-starter-card is-direct" data-placement-starter="custom">
+                <strong>직접 선택</strong>
+                <span>원하는 GPU와 모델을 직접 구성</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="gpu-placement-body placement-builder" id="placementBuilder" hidden>
+            <ol class="placement-stepper" aria-label="배치 플래너 진행 단계">
+              <li class="is-ready"><span>1</span>하드웨어</li>
+              <li><span>2</span>모델 선택</li>
+              <li><span>3</span>운영 목표</li>
+              <li><span>4</span>배치 결과</li>
+            </ol>
+
+            <section class="placement-step-card" data-placement-step="1">
+              <div class="placement-step-head">
+                <span>1</span>
+                <div><strong>하드웨어</strong><small>보유한 GPU와 수량을 입력하세요.</small></div>
+              </div>
 
                 <span class="gpu-placement-label">보유 GPU 목록</span>
                 <div class="gpu-inventory-list" id="gpuInventoryList"></div>
                 <button type="button" class="ghost-button" id="addGpuInventoryButton">+ GPU 추가</button>
+            </section>
 
+            <section class="placement-step-card" data-placement-step="2">
+              <div class="placement-step-head">
+                <span>2</span>
+                <div><strong>모델 선택</strong><small>검색하거나 워크로드 종류를 골라 함께 실행할 모델을 추가하세요.</small></div>
+              </div>
                 <span class="gpu-placement-label">동시에 띄울 모델 검색 후 클릭해서 선택 (여러 종류 섞어서 선택 가능)</span>
                 <div class="workload-tabs placement-type-tabs" role="tablist" aria-label="배치할 모델 종류">
                   <button type="button" class="workload-tab is-active" data-placement-type="generative" aria-selected="true">생성형 LLM</button>
@@ -178,7 +251,13 @@
                 <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>
                 <span class="gpu-placement-label">선택된 모델</span>
                 <div class="placement-model-selected" id="placementModelSelected"></div>
+            </section>
 
+            <section class="placement-step-card" data-placement-step="3">
+              <div class="placement-step-head">
+                <span>3</span>
+                <div><strong>운영 목표</strong><small>기본 목표 세 가지만 선택하면 계산할 수 있습니다.</small></div>
+              </div>
                 <span class="gpu-placement-label">운영 방식</span>
                 <div class="workload-tabs placement-usage-tabs" role="tablist" aria-label="운영 방식">
                   <button type="button" class="workload-tab" data-placement-usage="pipeline" aria-selected="false">파이프라인</button>
@@ -219,6 +298,11 @@
                       <option value="">지정 안 함</option>
                     </select>
                   </label>
+                </div>
+
+                <details class="placement-advanced-conditions">
+                  <summary>세부 조건</summary>
+                  <div class="gpu-placement-goals placement-advanced-goals">
                   <label class="field">
                     <span>최소 VRAM 여유율</span>
                     <div class="field-control-pair">
@@ -231,27 +315,37 @@
                       <input id="placementMinHeadroomCustom" data-direct-preset="placementMinHeadroom" type="number" min="0" max="40" step="1" value="15" aria-label="최소 VRAM 여유율 직접 입력" />
                     </div>
                   </label>
-                </div>
-                <div class="gpu-placement-policy-toggles">
-                  <label><input type="checkbox" id="placementAllowQuantChange" checked /> 양자화·정밀도 자동 변경 허용</label>
-                  <label><input type="checkbox" id="placementAllowContextReduction" /> 컨텍스트 자동 축소 허용</label>
-                  <label><input type="checkbox" id="placementAllowReplication" /> 독립 서비스 모델 복제 허용</label>
-                </div>
+                  </div>
+                  <div class="gpu-placement-policy-toggles">
+                    <label><input type="checkbox" id="placementAllowQuantChange" checked /> 양자화·정밀도 자동 변경 허용</label>
+                    <label><input type="checkbox" id="placementAllowContextReduction" /> 컨텍스트 자동 축소 허용</label>
+                    <label><input type="checkbox" id="placementAllowReplication" /> 독립 서비스 모델 복제 허용</label>
+                  </div>
+                </details>
 
                 <div class="gpu-placement-actions">
                   <button type="button" class="primary-button" id="runPlacementButton">배치 계산</button>
                   <button type="button" class="ghost-button" id="comparePlacementPlansButton">3개 배치안 비교</button>
-                  <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
                 </div>
+            </section>
 
+            <section class="placement-step-card placement-result-stage" id="placementResultStage" data-placement-step="4" hidden>
+              <div class="placement-step-head">
+                <span>4</span>
+                <div><strong>배치 결과</strong><small>결론과 배치안을 먼저 보고, 필요할 때 계산 상세를 펼치세요.</small></div>
+              </div>
+                <div class="placement-result-overview" id="placementResultOverview"></div>
+                <span class="gpu-placement-baseline" id="gpuPlacementBaseline" hidden></span>
                 <div class="gpu-placement-plan-compare" id="gpuPlacementPlanCompare" hidden></div>
                 <div class="gpu-placement-diagnosis" id="gpuPlacementDiagnosis" hidden></div>
-                <div class="gpu-placement-result" id="gpuPlacementResult"></div>
-                <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
-              </div>
-            </details>
+                <details class="placement-calculation-details" id="placementCalculationDetails">
+                  <summary>계산 상세 보기</summary>
+                  <div class="gpu-placement-result" id="gpuPlacementResult"></div>
+                  <div class="gpu-placement-export" id="gpuPlacementExport" hidden></div>
+                </details>
+            </section>
           </div>
-        </div>
+        </section>
 
         <div class="app-mode-toggle" role="tablist" aria-label="사용 모드">
           <button type="button" class="app-mode-tab is-active" data-app-mode="simple" aria-selected="true">빠른 추천</button>
@@ -570,7 +664,10 @@
                 <button type="button" class="ghost-button" data-download-share-card>요약 카드 PNG</button>
                 <button type="button" class="ghost-button" data-share-3060>RTX 3060 링크</button>
               </div>
-              <button type="button" class="ghost-button" id="simpleOpenExpert">전체 모델에서 비교하기</button>
+              <div class="simple-next-actions">
+                <button type="button" class="ghost-button" id="simpleOpenExpert">전체 모델에서 비교하기</button>
+                <button type="button" class="primary-button" id="simpleOpenPlacement">LLM과 RAG 모델 함께 배치</button>
+              </div>
             </div>
           </div>
         </div>
@@ -686,6 +783,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260726-placement-optimizer1" defer></script>
+    <script src="./app.js?v=20260726-placement-workspace1" defer></script>
   </body>
 </html>

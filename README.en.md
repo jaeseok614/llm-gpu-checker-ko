@@ -15,7 +15,8 @@
 </p>
 
 <p align="center">
-  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the English web app</strong></a>
+  <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Find models for your GPU</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=en"><strong>AI Stack Placement</strong></a>
   · <a href="./docs/methodology.md">Methodology</a>
   · <a href="./README.md">한국어</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">Report a benchmark</a>
@@ -34,7 +35,7 @@
 - 90 GPU presets and 290 AI models
 - Six workloads: generative LLM, embedding, reranker, OCR, document VLM, and general VLM
 - Side-by-side comparison for two or three models, plus heterogeneous and multi-GPU placement
-- Multi-GPU placement diagnostics: compare balanced/throughput/model-preserving placement plans side by side, with usage mode (pipeline, independent services, or swap-in models), target concurrency, and primary-model priority
+- AI Stack Placement Planner: compare balanced, throughput, and primary-first plans side by side, with pipeline, independent-service, or one-at-a-time usage, target concurrency, and primary-model priority
 - Light/dark mode with automatic system-preference detection and a saved choice
 - Benchmark sheet metric picker that auto-compares only models measured on the same metric
 - Source-linked representative public evaluations and plain-language license guidance
@@ -47,12 +48,26 @@
 3. Review the models and recommended settings that fit.
 4. Open a model to inspect the VRAM and throughput basis and its license.
 
+## Running multiple models together
+
+[Open the AI Stack Placement Planner](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&lang=en)
+
+Use the planner when an LLM, embedding model, reranker, OCR pipeline, or VLM must share the same hardware:
+
+1. Start from the RAG, document AI, or multiple-LLM preset—or build manually.
+2. Add the GPUs you own and their quantities.
+3. Search for the models that will run together.
+4. Choose pipeline, independent services, or one-at-a-time operation.
+5. Compare balanced, throughput, and primary-first plans, then review bottlenecks and suggested changes.
+
+The planner reports model and precision placement by GPU, recommended concurrency, estimated total throughput, remaining VRAM, target shortfalls, and deployment-command drafts.
+
 ## Typical questions
 
 | Question | What to do |
 | --- | --- |
 | Which LLMs run on an RTX 3060? | Select the RTX 3060 and open the generative LLM list |
-| Can an RTX 4090 host an LLM, embedding model, and reranker together? | Select all three in multi-model GPU placement |
+| Can an RTX 4090 host an LLM, embedding model, and reranker together? | Open AI Stack Placement and choose the basic RAG stack |
 | How should I serve on several A100 GPUs? | Select the A100 and GPU count, then inspect concurrency capacity |
 | How do document VLMs compare on VRAM and throughput? | Compare two or three models in the document VLM tab |
 
