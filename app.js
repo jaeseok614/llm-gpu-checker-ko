@@ -146,8 +146,10 @@ const RUNTIME_LABELS = {
 let activeWorkload = "generative";
 let activeSummaryFilter = "all";
 let selectedModelKey = "";
-// Which quick-recommend (빠른 추천) card is expanded inline, kept separate
-// from selectedModelKey so it never opens the expert-mode drawer/inspector.
+// Which quick-recommend card is shown in the dedicated compact inspector.
+// This stays separate from selectedModelKey so opening a quick pick never
+// disturbs the full-catalog detail state or reflows the three recommendation
+// cards.
 let simpleExpandedKey = "";
 let viewMode = "list";
 let settingsExpanded = false;
@@ -520,8 +522,16 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["배치 기준", "Placement strategy"],
   ["운영 방식", "Usage pattern"],
   ["목표 동시 사용자", "Target concurrent users"],
+  ["최소 VRAM 여유율", "Minimum VRAM headroom"],
+  ["양자화·정밀도 자동 변경 허용", "Allow automatic quantization/precision changes"],
+  ["컨텍스트 자동 축소 허용", "Allow automatic context reduction"],
+  ["독립 서비스 모델 복제 허용", "Allow independent-service replicas"],
   ["3개 배치안 비교", "Compare 3 plans"],
   ["주 모델(우선 배정)", "Primary model (priority)"],
+  ["균형 우선", "Balanced"],
+  ["모델 수 우선", "Model count"],
+  ["처리량 우선", "Throughput"],
+  ["주 모델 우선", "Primary model"],
   ["모델별 성능지표 시트", "Per-model benchmark sheet"],
   ["불러온 모델 지우기", "Clear imported models"],
   ["상세 계산 보기", "View detailed calculation"],
@@ -962,6 +972,7 @@ function selectOnboardingGpu(id) {
 function setAppMode(mode) {
   if (mode !== "simple" && mode !== "expert") return;
   appMode = mode;
+  if (mode !== "simple") simpleExpandedKey = "";
   refreshAppModeUi();
   render();
 }
@@ -1004,7 +1015,7 @@ function setUiLanguage(language) {
   // the export panel's <pre> code blocks) that only re-running the real
   // render functions can translate correctly.
   if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
-  comparePlacementPlans();
+  if (!$("gpuPlacementPlanCompare")?.hidden) comparePlacementPlans();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
   // Refresh the theme-toggle button labels ("라이트"/"다크" vs "Light"/"Dark"),
@@ -1027,6 +1038,7 @@ function setUiLanguage(language) {
   const usageHintEl = $("gpuPlacementUsageHint");
   if (usageHintEl) usageHintEl.textContent = PLACEMENT_USAGE_HINTS[placementUsageMode][uiLanguage];
   renderPlacementPrimarySelect();
+  renderPlacementSelectedChips();
 }
 
 function restoreUiLanguage() {
@@ -1048,6 +1060,7 @@ const PLACEMENT_STRATEGY_LABELS = {
   balanced: { ko: "균형 우선", en: "Balanced" },
   compact: { ko: "모델 수 우선", en: "Compact" },
   throughput: { ko: "처리량 우선", en: "Throughput" },
+  primary: { ko: "주 모델 우선", en: "Primary model" },
 };
 
 const PLACEMENT_USAGE_LABELS = {
@@ -1099,6 +1112,7 @@ function refreshAppModeUi() {
   // to 빠른 추천's full-width layout. Quick-recommend mode keeps the
   // existing fixed-overlay detail drawer untouched.
   document.body.classList.toggle("model-workbench-active", !isSimple && Boolean(selectedModelKey));
+  document.body.classList.toggle("simple-inspector-active", isSimple && Boolean(simpleExpandedKey));
   document.querySelectorAll("[data-app-mode]").forEach((button) => {
     const active = button.dataset.appMode === appMode;
     button.classList.toggle("is-active", active);
@@ -1121,6 +1135,12 @@ function init() {
   renderPlacementPrimarySelect();
   setPlacementUsageMode(placementUsageMode);
   render({ syncUrl: false });
+  if (placementSelectedKeys.size) {
+    settingsExpanded = true;
+    refreshWorkloadUi();
+    if ($("gpuPlacementPanel")) $("gpuPlacementPanel").open = true;
+    runGpuPlacement();
+  }
 }
 
 function populateSelects() {
@@ -1647,22 +1667,46 @@ function bindEvents() {
       copyTextToClipboard(copyCommand.dataset.copyCommand, copyCommand);
       return;
     }
-    // Share/download buttons inside an expanded accordion card reuse the
-    // same detail-body markup as the drawer, so handle them here too.
-    if (event.target.closest("[data-share-link]")) {
-      copyTextToClipboard(window.location.href, event.target.closest("[data-share-link]"));
-      return;
-    }
-    if (event.target.closest("[data-download-share-card]")) {
-      downloadShareCard(simpleExpandedKey, event.target.closest("[data-download-share-card]"));
-      return;
-    }
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
-    // Quick-recommend cards expand inline (accordion) instead of opening the
-    // shared drawer/inspector, so this uses its own state var.
-    simpleExpandedKey = simpleExpandedKey === target.dataset.modelKey ? "" : target.dataset.modelKey;
+    // Keep all three cards fixed and swap only the dedicated inspector.
+    const nextKey = simpleExpandedKey === target.dataset.modelKey ? "" : target.dataset.modelKey;
+    if (!nextKey) {
+      closeSimpleRecommendationPanel();
+      return;
+    }
+    simpleExpandedKey = nextKey;
     render();
+    $("simpleRecommendationPanel")?.focus();
+  });
+  $("simpleInspectorBackdrop")?.addEventListener("click", () => closeSimpleRecommendationPanel());
+  $("simpleRecommendationPanel")?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-simple-inspector]")) {
+      closeSimpleRecommendationPanel();
+      return;
+    }
+    const copyCommand = event.target.closest("[data-copy-command]");
+    if (copyCommand) {
+      copyTextToClipboard(copyCommand.dataset.copyCommand, copyCommand);
+      return;
+    }
+    const shareButton = event.target.closest("[data-share-model-link]");
+    if (shareButton) {
+      copyTextToClipboard(buildModelShareUrl(shareButton.dataset.shareModelLink, "simple"), shareButton);
+      return;
+    }
+    const downloadButton = event.target.closest("[data-download-simple-card]");
+    if (downloadButton) {
+      downloadShareCard(downloadButton.dataset.downloadSimpleCard, downloadButton);
+      return;
+    }
+    const fullDetailButton = event.target.closest("[data-open-full-simple-detail]");
+    if (fullDetailButton) {
+      selectedModelKey = fullDetailButton.dataset.openFullSimpleDetail;
+      simpleExpandedKey = "";
+      appMode = "expert";
+      render();
+    }
   });
   $("simpleOpenExpert").addEventListener("click", () => setAppMode("expert"));
   $("simpleExploreActions").addEventListener("click", (event) => {
@@ -1725,6 +1769,7 @@ function bindEvents() {
         gpuInventorySearchRows.delete(rowId);
         updateGpuInventoryRow(rowId, "presetId", target.value);
         renderGpuInventory();
+        renderPlacementSelectedChips();
       }
     } else if (target.classList.contains("gpu-inventory-preset-search")) {
       const preset = findGpuPresetByName(target.value, false);
@@ -1732,6 +1777,7 @@ function bindEvents() {
         gpuInventorySearchRows.delete(rowId);
         updateGpuInventoryRow(rowId, "presetId", preset.id);
         renderGpuInventory();
+        renderPlacementSelectedChips();
       }
     } else if (target.classList.contains("gpu-inventory-count")) {
       updateGpuInventoryRow(rowId, "count", target.value);
@@ -1756,8 +1802,25 @@ function bindEvents() {
   $("placementModelSelected").addEventListener("click", (event) => {
     const button = event.target.closest("[data-remove-placement-key]");
     if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
     togglePlacementModel(button.dataset.removePlacementKey);
   });
+  const updatePlacementModelConfig = (event) => {
+    const field = event.target.closest("[data-placement-config-field]");
+    const wrapper = event.target.closest("[data-placement-config-key]");
+    if (!field || !wrapper) return;
+    const config = getPlacementModelConfig(wrapper.dataset.placementConfigKey);
+    const key = field.dataset.placementConfigField;
+    if (key === "requestShare") config.requestShare = clampNumber(field.value, 1, 1000, 100);
+    else if (key === "minConcurrency") config.minConcurrency = clampNumber(field.value, 0, 256, 1);
+    else if (key === "contextTokens") config.contextTokens = clampNumber(field.value, 2048, 1048576, 8192);
+    else if (key === "allowReplica") config.allowReplica = field.checked;
+    else config[key] = field.value;
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
+  };
+  $("placementModelSelected").addEventListener("change", updatePlacementModelConfig);
 
   document.querySelectorAll("[data-placement-strategy]").forEach((button) => {
     button.addEventListener("click", () => setPlacementStrategy(button.dataset.placementStrategy));
@@ -1777,16 +1840,72 @@ function bindEvents() {
       placementTargetN = clampNumber(select.value, 1, 256, 1);
     }
     if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
   };
   $("placementTargetConcurrency")?.addEventListener("change", updatePlacementTargetConcurrency);
   $("placementTargetConcurrencyCustom")?.addEventListener("input", updatePlacementTargetConcurrency);
+  const updatePlacementHeadroom = () => {
+    const preset = $("placementMinHeadroom");
+    placementMinHeadroomPct = preset?.value === "custom"
+      ? clampNumber($("placementMinHeadroomCustom")?.value, 0, 40, 15)
+      : clampNumber(preset?.value, 0, 40, 15);
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
+  };
+  $("placementMinHeadroom")?.addEventListener("change", updatePlacementHeadroom);
+  $("placementMinHeadroomCustom")?.addEventListener("input", updatePlacementHeadroom);
+  $("placementAllowQuantChange")?.addEventListener("change", (event) => {
+    placementAllowQuantChange = event.target.checked;
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
+  });
+  $("placementAllowContextReduction")?.addEventListener("change", (event) => {
+    placementAllowContextReduction = event.target.checked;
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
+  });
+  $("placementAllowReplication")?.addEventListener("change", (event) => {
+    placementAllowReplication = event.target.checked;
+    if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
+  });
 
   $("placementPrimaryModel")?.addEventListener("change", (event) => {
     placementPrimaryKey = event.target.value;
     if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+    else syncUrlState();
   });
 
   $("gpuPlacementDiagnosis")?.addEventListener("click", (event) => {
+    const adjustmentButton = event.target.closest("[data-apply-placement-adjustment]");
+    if (adjustmentButton) {
+      const adjustment = placementAdjustmentRegistry.get(adjustmentButton.dataset.applyPlacementAdjustment);
+      if (!adjustment) return;
+      if (adjustment.kind === "pin") {
+        getPlacementModelConfig(adjustment.modelKey).pinnedGpu = String(adjustment.gpuIndex);
+      } else if (adjustment.kind === "allow-quant") {
+        placementAllowQuantChange = true;
+        if ($("placementAllowQuantChange")) $("placementAllowQuantChange").checked = true;
+      } else if (adjustment.kind === "allow-context") {
+        placementAllowContextReduction = true;
+        if ($("placementAllowContextReduction")) $("placementAllowContextReduction").checked = true;
+      } else if (adjustment.kind === "remove") {
+        placementSelectedKeys.delete(adjustment.modelKey);
+        placementModelConfigs.delete(adjustment.modelKey);
+        if (placementPrimaryKey === adjustment.modelKey) placementPrimaryKey = "";
+        renderPlacementModelList();
+        renderPlacementPrimarySelect();
+      } else if (adjustment.kind === "target") {
+        placementTargetN = adjustment.nextTarget;
+        const targetSelect = $("placementTargetConcurrency");
+        const presetValues = ["1", "2", "4", "8", "16", "32", "64"];
+        if (targetSelect) targetSelect.value = presetValues.includes(String(adjustment.nextTarget)) ? String(adjustment.nextTarget) : "custom";
+        if ($("placementTargetConcurrencyCustom")) $("placementTargetConcurrencyCustom").value = String(adjustment.nextTarget);
+      }
+      renderPlacementSelectedChips();
+      runGpuPlacement();
+      return;
+    }
     const button = event.target.closest("[data-apply-placement-strategy]");
     if (!button) return;
     setPlacementStrategy(button.dataset.applyPlacementStrategy);
@@ -1928,6 +2047,10 @@ function bindEvents() {
     if (event.key !== "Escape") return;
     if (compareModalOpen) {
       closeCompareModal();
+      return;
+    }
+    if (simpleExpandedKey) {
+      closeSimpleRecommendationPanel();
       return;
     }
     if (selectedModelKey) closeModelDetail();
@@ -2098,6 +2221,13 @@ let placementStrategy = "balanced";
 let placementUsageMode = "independent";
 let placementTargetN = null;
 let placementPrimaryKey = "";
+let placementMinHeadroomPct = 15;
+let placementAllowQuantChange = true;
+let placementAllowContextReduction = false;
+let placementAllowReplication = false;
+const placementModelConfigs = new Map();
+let lastPlacementRun = null;
+const placementAdjustmentRegistry = new Map();
 
 const PLACEMENT_DEFAULT_WORKLOADS = {
   embedding: { type: "embedding", inputTokens: 384, batchSize: 32, maxBatchTokens: 16384, runtime: "tei" },
@@ -2136,13 +2266,20 @@ function addGpuInventoryRow() {
   gpuInventoryIdCounter += 1;
   gpuInventoryRows.push({ id: `gpu-row-${gpuInventoryIdCounter}`, presetId: "rtx4090-24", count: 1 });
   renderGpuInventory();
+  renderPlacementSelectedChips();
+  syncUrlState();
 }
 
 function removeGpuInventoryRow(rowId) {
   if (gpuInventoryRows.length <= 1) return;
   gpuInventorySearchRows.delete(rowId);
   gpuInventoryRows = gpuInventoryRows.filter((row) => row.id !== rowId);
+  for (const config of placementModelConfigs.values()) {
+    if (config.pinnedGpu !== "" && Number(config.pinnedGpu) >= gpuInventoryRows.length) config.pinnedGpu = "";
+  }
   renderGpuInventory();
+  renderPlacementSelectedChips();
+  syncUrlState();
 }
 
 function updateGpuInventoryRow(rowId, field, value) {
@@ -2150,6 +2287,7 @@ function updateGpuInventoryRow(rowId, field, value) {
   if (!row) return;
   if (field === "presetId") row.presetId = value;
   if (field === "count") row.count = clampNumber(value, 1, 8, 1);
+  syncUrlState();
 }
 
 function getModelsForPlacementType(type) {
@@ -2220,6 +2358,30 @@ function renderPlacementModelList() {
     .join("");
 }
 
+function getPlacementModelConfig(key) {
+  if (!placementModelConfigs.has(key)) {
+    placementModelConfigs.set(key, {
+      requestShare: 100,
+      minConcurrency: 1,
+      pinnedGpu: "",
+      preferredSetting: "auto",
+      contextTokens: null,
+      allowReplica: true,
+    });
+  }
+  return placementModelConfigs.get(key);
+}
+
+function renderPlacementSettingOptions(model, config) {
+  const options = getPlacementBaselineOptions(model, { ...getHardware(), concurrency: 1 });
+  return [
+    `<option value="auto">${uiLanguage === "en" ? "Recommended / auto" : "권장 설정 / 자동"}</option>`,
+    ...options.map((option) => (
+      `<option value="${escapeAttr(option.setting.id)}" ${config.preferredSetting === option.setting.id ? "selected" : ""}>${escapeHtml(option.label)}</option>`
+    )),
+  ].join("");
+}
+
 function renderPlacementSelectedChips() {
   const container = $("placementModelSelected");
   if (!container) return;
@@ -2231,22 +2393,68 @@ function renderPlacementSelectedChips() {
     .map((key) => {
       const model = getModelByKey(key);
       if (!model) return "";
+      const config = getPlacementModelConfig(key);
+      const isGenerative = !model.type || model.type === "generative";
+      const contextValue = config.contextTokens || getHardware().context || 8192;
       return `
-        <span class="placement-chip">
-          ${escapeHtml(model.name)}
-          <button type="button" data-remove-placement-key="${escapeAttr(key)}" aria-label="선택 해제">×</button>
-        </span>
+        <details class="placement-model-config" data-placement-config-key="${escapeAttr(key)}">
+          <summary>
+            <span>${escapeHtml(model.name)}</span>
+            <small>${escapeHtml(model.maker || "")}</small>
+            <button type="button" data-remove-placement-key="${escapeAttr(key)}" aria-label="${uiLanguage === "en" ? "Remove selection" : "선택 해제"}">×</button>
+          </summary>
+          <div class="placement-model-config-grid">
+            <label class="field">
+              <span>${uiLanguage === "en" ? "Preferred setting" : "선호 양자화/정밀도"}</span>
+              <select data-placement-config-field="preferredSetting">${renderPlacementSettingOptions(model, config)}</select>
+            </label>
+            <label class="field">
+              <span>${uiLanguage === "en" ? "Request share (%)" : "요청 비율 (%)"}</span>
+              <input type="number" min="1" max="1000" step="1" value="${config.requestShare}" data-placement-config-field="requestShare" ${placementUsageMode === "independent" ? "" : "disabled"} />
+            </label>
+            <label class="field">
+              <span>${uiLanguage === "en" ? "Minimum concurrency" : "최소 동시 접속"}</span>
+              <input type="number" min="0" max="256" step="1" value="${config.minConcurrency}" data-placement-config-field="minConcurrency" />
+            </label>
+            <label class="field">
+              <span>${uiLanguage === "en" ? "Pin to GPU" : "GPU 고정"}</span>
+              <select data-placement-config-field="pinnedGpu">
+                <option value="">${uiLanguage === "en" ? "No pin" : "고정 안 함"}</option>
+                ${gpuInventoryRows.map((row, index) => {
+                  const preset = GPU_PRESETS.find((gpu) => gpu.id === row.presetId);
+                  return `<option value="${index}" ${String(config.pinnedGpu) === String(index) ? "selected" : ""}>GPU ${index + 1}${preset ? ` · ${escapeHtml(preset.name)}` : ""}</option>`;
+                }).join("")}
+              </select>
+            </label>
+            ${isGenerative ? `
+              <label class="field">
+                <span>${uiLanguage === "en" ? "Preferred context" : "선호 컨텍스트"}</span>
+                <input type="number" min="2048" max="${Math.max(2048, model.maxContext || 1048576)}" step="1024" value="${contextValue}" data-placement-config-field="contextTokens" />
+              </label>
+            ` : ""}
+            <label class="placement-model-replica">
+              <input type="checkbox" data-placement-config-field="allowReplica" ${config.allowReplica ? "checked" : ""} ${placementUsageMode === "independent" ? "" : "disabled"} />
+              <span>${uiLanguage === "en" ? "Allow replicas for this model" : "이 모델 복제 허용"}</span>
+            </label>
+          </div>
+        </details>
       `;
     })
     .join("");
 }
 
 function togglePlacementModel(key) {
-  if (placementSelectedKeys.has(key)) placementSelectedKeys.delete(key);
-  else placementSelectedKeys.add(key);
+  if (placementSelectedKeys.has(key)) {
+    placementSelectedKeys.delete(key);
+    placementModelConfigs.delete(key);
+  } else {
+    placementSelectedKeys.add(key);
+    getPlacementModelConfig(key);
+  }
   renderPlacementModelList();
   renderPlacementSelectedChips();
   renderPlacementPrimarySelect();
+  syncUrlState();
 }
 
 // Keeps the "주 모델" dropdown in sync with whatever's currently selected
@@ -2269,7 +2477,11 @@ function renderPlacementPrimarySelect() {
 }
 
 function setPlacementStrategy(strategy) {
-  placementStrategy = ["compact", "throughput"].includes(strategy) ? strategy : "balanced";
+  placementStrategy = ["compact", "throughput", "primary"].includes(strategy) ? strategy : "balanced";
+  if (placementStrategy === "primary" && !placementPrimaryKey && placementSelectedKeys.size) {
+    placementPrimaryKey = [...placementSelectedKeys][0];
+    renderPlacementPrimarySelect();
+  }
   document.querySelectorAll("[data-placement-strategy]").forEach((button) => {
     const isActive = button.dataset.placementStrategy === placementStrategy;
     button.classList.toggle("is-active", isActive);
@@ -2278,6 +2490,7 @@ function setPlacementStrategy(strategy) {
   // Re-run immediately if a result is already showing, so switching the
   // toggle updates the placement without a second click on "배치 계산".
   if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+  else syncUrlState();
 }
 
 const PLACEMENT_USAGE_HINTS = {
@@ -2304,7 +2517,14 @@ function setPlacementUsageMode(mode) {
   });
   const hintEl = $("gpuPlacementUsageHint");
   if (hintEl) hintEl.textContent = PLACEMENT_USAGE_HINTS[placementUsageMode][uiLanguage === "en" ? "en" : "ko"];
+  const replicationControl = $("placementAllowReplication");
+  if (replicationControl) {
+    replicationControl.disabled = placementUsageMode !== "independent";
+    replicationControl.closest("label")?.classList.toggle("is-disabled", replicationControl.disabled);
+  }
+  renderPlacementSelectedChips();
   if ($("gpuPlacementResult")?.innerHTML.trim()) runGpuPlacement();
+  else syncUrlState();
 }
 
 function setPlacementActiveType(type) {
@@ -2421,7 +2641,7 @@ function buildGpuPlacementHardware(baseHardware, gpu, availableVram) {
 // right now (a real capacity read via buildGpuPlacementHardware +
 // getPlacementCapacity, not just a leftover-VRAM proxy) — favors total
 // output over an even spread or a tight pack.
-function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryKey = "") {
+function computeGreedyGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryKey = "") {
   const hardwareBase = getHardware();
   const singleUserHardware = { ...hardwareBase, concurrency: 1 };
 
@@ -2507,6 +2727,404 @@ function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryK
   return { gpus, unplaced };
 }
 
+function getPlacementContextCandidates(model, config) {
+  if (model.type && model.type !== "generative") return [null];
+  const modelMax = model.maxContext || 1048576;
+  const preferred = Math.min(modelMax, Math.max(2048, config.contextTokens || getHardware().context || 8192));
+  if (!placementAllowContextReduction) return [preferred];
+  const values = [preferred];
+  let next = preferred;
+  while (next > 2048 && values.length < 5) {
+    next = Math.max(2048, Math.floor(next / 2 / 1024) * 1024);
+    if (!values.includes(next)) values.push(next);
+  }
+  return values;
+}
+
+function getPlacementSearchCandidates(model, config, baseHardware, maxCapacityGb) {
+  const contexts = getPlacementContextCandidates(model, config);
+  const all = [];
+
+  contexts.forEach((contextTokens) => {
+    const contextHardware = contextTokens ? { ...baseHardware, context: contextTokens } : baseHardware;
+    let options = getPlacementBaselineOptions(model, contextHardware);
+    const requested = config.preferredSetting;
+    const selected = requested !== "auto"
+      ? options.find((option) => option.setting.id === requested)
+      : null;
+    const preferred = selected || [...options].sort((a, b) => (b.setting.rank || 0) - (a.setting.rank || 0))[0];
+
+    if (!placementAllowQuantChange) {
+      options = preferred ? [preferred] : [];
+    } else if (selected) {
+      options = options.filter((option) => (option.setting.rank || 0) <= (selected.setting.rank || 0));
+    }
+
+    for (const option of options) {
+      if (!Number.isFinite(option.requiredGb) || option.requiredGb > maxCapacityGb + 0.001) continue;
+      const settingDelta = Math.max(0, (preferred?.setting.rank || 0) - (option.setting.rank || 0));
+      const preferredContext = contexts[0] || contextTokens;
+      const contextDelta = contextTokens && preferredContext
+        ? Math.max(0, Math.log2(preferredContext / contextTokens))
+        : 0;
+      all.push({
+        ...option,
+        contextTokens,
+        qualityRank: option.setting.rank || 0,
+        changeCost: settingDelta + contextDelta * 1.5,
+        isPreferredSetting: option.setting.id === preferred?.setting.id,
+        contextReduced: Boolean(contextTokens && preferredContext && contextTokens < preferredContext),
+      });
+    }
+  });
+
+  const deduped = [...new Map(
+    all
+      .sort((a, b) => b.qualityRank - a.qualityRank || b.contextTokens - a.contextTokens || a.requiredGb - b.requiredGb)
+      .map((candidate) => [`${candidate.setting.id}:${candidate.contextTokens || 0}:${candidate.requiredGb.toFixed(3)}`, candidate]),
+  ).values()];
+
+  // Preserve both the highest-quality and smallest-memory ends of the
+  // frontier while bounding browser work for very large selections.
+  if (deduped.length <= 10) return deduped;
+  const sampled = [];
+  const indexes = [0, 1, 2, Math.floor(deduped.length * 0.35), Math.floor(deduped.length * 0.55), Math.floor(deduped.length * 0.75), deduped.length - 3, deduped.length - 2, deduped.length - 1];
+  indexes.forEach((index) => {
+    const candidate = deduped[Math.max(0, Math.min(deduped.length - 1, index))];
+    if (candidate && !sampled.includes(candidate)) sampled.push(candidate);
+  });
+  return sampled;
+}
+
+function placementVariance(values) {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+}
+
+function getPlacementPartialScore(state, strategy, primaryKey) {
+  const usedGpuCount = state.placements.reduce((set, item) => set.add(item.gpuIndex), new Set()).size;
+  const remainingVariance = placementVariance(state.remaining);
+  const primaryPlaced = primaryKey && state.placements.some((item) => item.key === primaryKey) ? 1 : 0;
+  const quality = state.placements.reduce((sum, item) => sum + item.candidate.qualityRank, 0);
+  const changeCost = state.placements.reduce((sum, item) => sum + item.candidate.changeCost, 0);
+  const requestWeight = state.placements.reduce((sum, item) => {
+    const share = placementUsageMode === "independent" ? item.config.requestShare : 100;
+    return sum + share * item.candidate.qualityRank;
+  }, 0);
+  const placed = state.placements.length;
+  const unplaced = state.unplaced.length;
+
+  if (strategy === "throughput") return placed * 1e9 - unplaced * 1e9 + requestWeight * 1e4 - changeCost * 100 - remainingVariance;
+  if (strategy === "compact") return placed * 1e9 - unplaced * 1e9 + quality * 1e4 - usedGpuCount * 1000 - changeCost * 100;
+  if (strategy === "primary") return primaryPlaced * 1e12 + placed * 1e9 - unplaced * 1e9 + quality * 1e4 - changeCost * 100 - remainingVariance;
+  return placed * 1e9 - unplaced * 1e9 + primaryPlaced * 1e7 - changeCost * 1e4 - remainingVariance * 1000 + quality * 100;
+}
+
+function buildPlacementGpuRows(gpuRows) {
+  const headroomRatio = Math.max(0, Math.min(0.4, placementMinHeadroomPct / 100));
+  return gpuRows.map((row, index) => {
+    const preset = GPU_PRESETS.find((gpu) => gpu.id === row.presetId) || GPU_PRESETS[0];
+    const count = clampNumber(row.count, 1, 8, 1);
+    const physicalCapacityGb = preset.vram * count;
+    const reservedHeadroomGb = physicalCapacityGb * headroomRatio;
+    const capacityGb = physicalCapacityGb - reservedHeadroomGb;
+    return {
+      index,
+      preset,
+      count,
+      physicalCapacityGb,
+      reservedHeadroomGb,
+      capacityGb,
+      remaining: capacityGb,
+      placements: [],
+    };
+  });
+}
+
+function recomputePlacementCapacities(placement) {
+  const hardwareBase = { ...getHardware(), concurrency: 1 };
+  for (const gpu of placement.gpus) {
+    for (const item of gpu.placements) {
+      const budgetGb = gpu.remaining + item.requiredGb;
+      const placementHardware = buildGpuPlacementHardware(
+        item.contextTokens ? { ...hardwareBase, context: item.contextTokens } : hardwareBase,
+        gpu,
+        budgetGb,
+      );
+      item.capacity = getPlacementCapacity(item.model, item.setting, placementHardware, budgetGb);
+    }
+  }
+  return placement;
+}
+
+function getPlacementServiceGroups(placement) {
+  const groups = new Map();
+  placement.gpus.forEach((gpu) => {
+    gpu.placements.forEach((item) => {
+      const key = modelKey(item.model);
+      if (!groups.has(key)) groups.set(key, { key, model: item.model, config: item.config, items: [] });
+      groups.get(key).items.push({ ...item, gpuIndex: gpu.index });
+    });
+  });
+  return [...groups.values()].map((group) => {
+    const concurrency = group.items.filter((item) => item.capacity?.kind === "concurrency");
+    const throughput = group.items.filter((item) => item.capacity?.kind === "throughput");
+    return {
+      ...group,
+      recommendedN: concurrency.length ? concurrency.reduce((sum, item) => sum + item.capacity.recommendedN, 0) : null,
+      maxN: concurrency.length ? concurrency.reduce((sum, item) => sum + item.capacity.maxN, 0) : null,
+      speed: concurrency.reduce((sum, item) => sum + (item.capacity.speedAtRecommended?.total || 0), 0),
+      throughput: throughput.reduce((sum, item) => sum + (item.capacity.value || 0), 0),
+      unit: throughput[0]?.capacity?.unit || null,
+    };
+  });
+}
+
+function getPlacementStats(placement) {
+  const groups = getPlacementServiceGroups(placement);
+  const concurrencyGroups = groups.filter((group) => group.recommendedN != null);
+  const target = placementTargetN;
+  const shortfallCount = concurrencyGroups.filter((group) => {
+    const minimum = Math.max(group.config?.minConcurrency || 0, target || 0);
+    return group.recommendedN < minimum;
+  }).length;
+  const minimumViolationCount = concurrencyGroups.filter((group) => (
+    group.recommendedN < (group.config?.minConcurrency || 0)
+  )).length + placement.unplaced.length;
+  const zeroCount = concurrencyGroups.filter((group) => group.recommendedN <= 0).length;
+  const serviceFloor = concurrencyGroups.length ? Math.min(...concurrencyGroups.map((group) => group.recommendedN)) : null;
+  const weightedCapacity = groups.reduce((sum, group) => {
+    const value = group.recommendedN ?? group.throughput ?? 0;
+    const requestWeight = placementUsageMode === "independent" ? Math.max(1, group.config?.requestShare || 100) : 100;
+    return sum + value * requestWeight;
+  }, 0);
+  const totalTokThroughput = groups.reduce((sum, group) => sum + group.speed, 0);
+  const used = placement.gpus.filter((gpu) => gpu.placements.length);
+  const headroomRatios = used.map((gpu) => gpu.capacityGb ? gpu.remaining / gpu.capacityGb : 0);
+  const primaryGroup = groups.find((group) => group.key === placementPrimaryKey);
+  const configuredFloor = Math.max(1, placementTargetN || 0, ...groups.map((group) => group.config?.minConcurrency || 0));
+  return {
+    groups,
+    placedCount: groups.length,
+    unplacedCount: placement.unplaced.length,
+    zeroCount,
+    shortfallCount,
+    minimumViolationCount,
+    serviceFloor,
+    goalSatisfaction: serviceFloor == null ? 0 : Math.min(serviceFloor, configuredFloor),
+    weightedCapacity,
+    totalTokThroughput,
+    headroomVariance: placementVariance(headroomRatios),
+    usedGpuCount: used.length,
+    primaryCapacity: primaryGroup ? (primaryGroup.recommendedN ?? primaryGroup.throughput ?? 0) : 0,
+    primaryGoalSatisfaction: primaryGroup
+      ? Math.min(primaryGroup.recommendedN ?? primaryGroup.throughput ?? 0, Math.max(1, placementTargetN || 0, primaryGroup.config?.minConcurrency || 0))
+      : 0,
+    changeCost: placement.gpus.flatMap((gpu) => gpu.placements).reduce((sum, item) => sum + (item.changeCost || 0), 0),
+  };
+}
+
+function comparePlacementStats(a, b, strategy) {
+  const tuples = {
+    balanced: (value) => [-value.minimumViolationCount, -value.unplacedCount, -value.zeroCount, -value.shortfallCount, value.goalSatisfaction, -value.changeCost, -value.headroomVariance, value.weightedCapacity],
+    throughput: (value) => [-value.minimumViolationCount, -value.unplacedCount, value.weightedCapacity, -value.shortfallCount, value.totalTokThroughput, -value.changeCost, -value.headroomVariance],
+    compact: (value) => [-value.minimumViolationCount, value.placedCount, -value.unplacedCount, -value.usedGpuCount, -value.changeCost, value.weightedCapacity],
+    primary: (value) => [-value.minimumViolationCount, value.primaryGoalSatisfaction, -value.unplacedCount, -value.zeroCount, -value.shortfallCount, value.goalSatisfaction, -value.changeCost, value.primaryCapacity, value.weightedCapacity],
+  };
+  const getTuple = tuples[strategy] || tuples.balanced;
+  const left = getTuple(a);
+  const right = getTuple(b);
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return right[index] - left[index];
+  }
+  return 0;
+}
+
+function addPlacementReplicas(placement, strategy) {
+  if (!placementAllowReplication || placementUsageMode !== "independent" || !["throughput", "primary"].includes(strategy)) return placement;
+  const groupKeys = getPlacementServiceGroups(placement)
+    .filter((group) => group.config?.allowReplica)
+    .sort((a, b) => (b.config?.requestShare || 100) - (a.config?.requestShare || 100))
+    .map((group) => group.key);
+
+  for (const key of groupKeys) {
+    const group = getPlacementServiceGroups(placement).find((candidate) => candidate.key === key);
+    const original = group?.items[0];
+    if (!original) continue;
+    const requiredTarget = Math.max(placementTargetN || 0, group.config?.minConcurrency || 0);
+    if (strategy !== "throughput" && group.recommendedN >= requiredTarget) continue;
+    const targetGpu = placement.gpus
+      .filter((gpu) => gpu.remaining >= original.requiredGb && !gpu.placements.some((item) => modelKey(item.model) === group.key))
+      .sort((a, b) => b.remaining - a.remaining)[0];
+    if (!targetGpu) continue;
+    const trial = {
+      ...placement,
+      gpus: placement.gpus.map((gpu) => ({
+        ...gpu,
+        placements: gpu.placements.map((item) => ({ ...item })),
+      })),
+    };
+    const trialGpu = trial.gpus.find((gpu) => gpu.index === targetGpu.index);
+    trialGpu.remaining -= original.requiredGb;
+    trialGpu.placements.push({
+      ...original,
+      capacity: null,
+      isReplica: true,
+      replicaIndex: group.items.length + 1,
+    });
+    recomputePlacementCapacities(trial);
+    const beforeStats = getPlacementStats(placement);
+    const afterStats = getPlacementStats(trial);
+    const improvesCapacity = afterStats.weightedCapacity > beforeStats.weightedCapacity + 0.001;
+    const preservesConstraints = afterStats.minimumViolationCount <= beforeStats.minimumViolationCount;
+    const preservesPrimary = strategy !== "primary" || afterStats.primaryCapacity >= beforeStats.primaryCapacity;
+    if (improvesCapacity && preservesConstraints && preservesPrimary) {
+      placement.gpus = trial.gpus;
+    }
+  }
+  return placement;
+}
+
+function finalizePlacementState(state, gpuTemplate, entries, strategy, searchMeta) {
+  const gpus = gpuTemplate.map((gpu, index) => ({
+    ...gpu,
+    remaining: state.remaining[index],
+    placements: [],
+  }));
+  state.placements.forEach((assignment) => {
+    const { entry, candidate, gpuIndex } = assignment;
+    gpus[gpuIndex].placements.push({
+      model: entry.model,
+      setting: candidate.setting,
+      label: candidate.contextReduced
+        ? `${candidate.label} · ${formatContext(candidate.contextTokens)}`
+        : candidate.label,
+      requiredGb: candidate.requiredGb,
+      contextTokens: candidate.contextTokens,
+      contextReduced: candidate.contextReduced,
+      settingChanged: !candidate.isPreferredSetting,
+      changeCost: candidate.changeCost,
+      config: entry.config,
+      isPrimary: entry.key === placementPrimaryKey,
+      pinnedGpu: entry.config.pinnedGpu,
+    });
+  });
+  const unplaced = state.unplaced.map((entry) => ({
+    model: entry.model,
+    minRequiredGb: (() => {
+      const minimum = entry.candidates.reduce(
+        (value, candidate) => Math.min(value, candidate.requiredGb),
+        Infinity,
+      );
+      return Number.isFinite(minimum) ? minimum : 0;
+    })(),
+    reason: entry.config.pinnedGpu !== "" ? "pinned-capacity" : "capacity",
+  }));
+  const placement = recomputePlacementCapacities({
+    gpus,
+    unplaced,
+    searchMeta,
+    strategy,
+    constraints: {
+      minHeadroomPct: placementMinHeadroomPct,
+      allowQuantChange: placementAllowQuantChange,
+      allowContextReduction: placementAllowContextReduction,
+      allowReplication: placementAllowReplication && placementUsageMode === "independent",
+    },
+  });
+  addPlacementReplicas(placement, strategy);
+  placement.stats = getPlacementStats(placement);
+  return placement;
+}
+
+function computeGpuPlacement(gpuRows, modelKeys, strategy = "balanced", primaryKey = "") {
+  const baseHardware = { ...getHardware(), concurrency: 1 };
+  const gpuTemplate = buildPlacementGpuRows(gpuRows);
+  const maxCapacityGb = Math.max(0, ...gpuTemplate.map((gpu) => gpu.capacityGb));
+  const entries = modelKeys
+    .map((key) => {
+      const model = getModelByKey(key);
+      if (!model) return null;
+      const config = getPlacementModelConfig(key);
+      return {
+        key,
+        model,
+        config,
+        candidates: getPlacementSearchCandidates(model, config, baseHardware, maxCapacityGb),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.key === primaryKey) return -1;
+      if (b.key === primaryKey) return 1;
+      const aMin = Math.min(...a.candidates.map((candidate) => candidate.requiredGb), Infinity);
+      const bMin = Math.min(...b.candidates.map((candidate) => candidate.requiredGb), Infinity);
+      return bMin - aMin;
+    });
+
+  let frontier = [{
+    remaining: gpuTemplate.map((gpu) => gpu.capacityGb),
+    placements: [],
+    unplaced: [],
+  }];
+  let exploredStates = 1;
+  let pruned = false;
+  const beamWidth = entries.length <= 8 ? 5000 : 1400;
+
+  for (const entry of entries) {
+    const next = [];
+    const pin = entry.config.pinnedGpu === "" ? null : Number(entry.config.pinnedGpu);
+    for (const state of frontier) {
+      let foundChoice = false;
+      gpuTemplate.forEach((gpu, gpuIndex) => {
+        if (pin != null && gpuIndex !== pin) return;
+        entry.candidates.forEach((candidate) => {
+          if (candidate.requiredGb > state.remaining[gpuIndex] + 0.0001) return;
+          foundChoice = true;
+          const remaining = [...state.remaining];
+          remaining[gpuIndex] -= candidate.requiredGb;
+          next.push({
+            remaining,
+            placements: [...state.placements, { entry, key: entry.key, config: entry.config, candidate, gpuIndex }],
+            unplaced: state.unplaced,
+          });
+        });
+      });
+      // Keep an explicit unplaced branch so "model count" and target
+      // feasibility are evaluated rather than silently forcing a bad fit.
+      next.push({
+        remaining: state.remaining,
+        placements: state.placements,
+        unplaced: [...state.unplaced, entry],
+      });
+      if (!foundChoice && !entry.candidates.length) exploredStates += 1;
+    }
+    exploredStates += next.length;
+    next.sort((a, b) => getPlacementPartialScore(b, strategy, primaryKey) - getPlacementPartialScore(a, strategy, primaryKey));
+    if (next.length > beamWidth) pruned = true;
+    frontier = next.slice(0, beamWidth);
+  }
+
+  const finalists = frontier
+    .slice(0, Math.min(frontier.length, 120))
+    .map((state) => finalizePlacementState(state, gpuTemplate, entries, strategy, {
+      mode: pruned ? "approximate" : "exact",
+      exploredStates,
+      candidateFrontier: frontier.length,
+    }))
+    .sort((a, b) => comparePlacementStats(a.stats, b.stats, strategy));
+
+  const hardConstraintMatches = finalists.filter((placement) => placement.stats.minimumViolationCount === 0);
+  const best = (hardConstraintMatches.length ? hardConstraintMatches : finalists)[0];
+  if (best) return best;
+  const fallback = computeGreedyGpuPlacement(gpuRows, modelKeys, strategy, primaryKey);
+  fallback.searchMeta = { mode: "fallback", exploredStates, candidateFrontier: 0 };
+  fallback.constraints = { minHeadroomPct: placementMinHeadroomPct };
+  fallback.stats = getPlacementStats(fallback);
+  return fallback;
+}
+
 function runGpuPlacement() {
   const modelKeys = [...placementSelectedKeys];
   const result = $("gpuPlacementResult");
@@ -2557,10 +3175,12 @@ function runGpuPlacement() {
       exportEl.hidden = true;
       exportEl.innerHTML = "";
     }
+    syncUrlState();
     return;
   }
 
   const placement = computeGpuPlacement(gpuInventoryRows, modelKeys, placementStrategy, placementPrimaryKey);
+  lastPlacementRun = placement;
   result.innerHTML = renderGpuPlacementResult(placement);
   renderPlacementExport(placement);
 
@@ -2579,12 +3199,14 @@ function runGpuPlacement() {
     diagnosisEl.innerHTML = html;
     diagnosisEl.hidden = !html;
   }
+  syncUrlState();
 }
 
 const PLACEMENT_PLAN_DEFS = [
   { key: "balanced", titleKo: "균형형", titleEn: "Balanced", descKo: "GPU 간 여유 VRAM을 고르게 분산", descEn: "Spreads remaining VRAM evenly across GPUs" },
   { key: "throughput", titleKo: "처리량형", titleEn: "Throughput", descKo: "총 예상 처리량이 가장 높은 배치를 우선", descEn: "Prioritizes whichever placement gives the highest total throughput" },
   { key: "compact", titleKo: "모델 보존형", titleEn: "Model-preserving", descKo: "선택한 모델을 최대한 모두 담는 배치", descEn: "Packs in as many of the selected models as possible" },
+  { key: "primary", titleKo: "주 모델형", titleEn: "Primary-first", descKo: "주 모델의 목표와 품질을 먼저 확보", descEn: "Reserves capacity and quality for the primary model first" },
 ];
 
 // Runs the full placement computation once per strategy and boils each down
@@ -2595,15 +3217,18 @@ const PLACEMENT_PLAN_DEFS = [
 function computePlacementPlanSummary(gpuRows, modelKeys, strategy, primaryKey) {
   const placement = computeGpuPlacement(gpuRows, modelKeys, strategy, primaryKey);
   const baseline = computePlacementBaseline(placement);
-  const placedItems = placement.gpus.flatMap((gpu) => gpu.placements);
-  const concurrencyItems = placedItems.filter((item) => item.capacity?.kind === "concurrency");
-  const totalTokThroughput = concurrencyItems.reduce((sum, item) => sum + (item.capacity.speedAtRecommended?.total || 0), 0);
+  const stats = placement.stats || getPlacementStats(placement);
   return {
     placement,
-    commonN: baseline?.concurrencyBaseline?.recommendedN ?? null,
+    commonN: stats.serviceFloor ?? baseline?.concurrencyBaseline?.recommendedN ?? null,
     throughputBaseline: baseline?.throughputBaseline ?? null,
-    totalTokThroughput,
+    totalTokThroughput: stats.totalTokThroughput,
     unplacedCount: placement.unplaced.length,
+    shortfallCount: stats.shortfallCount,
+    changeCost: stats.changeCost,
+    searchMode: placement.searchMeta?.mode || "fallback",
+    remaining: placement.gpus.map((gpu) => gpu.remaining),
+    automaticChanges: placement.gpus.flatMap((gpu) => gpu.placements).filter((item) => item.settingChanged || item.contextReduced).length,
   };
 }
 
@@ -2616,7 +3241,10 @@ function comparePlacementPlans() {
     container.innerHTML = "";
     return;
   }
-  const summaries = PLACEMENT_PLAN_DEFS.map((def) => ({
+  const defs = placementPrimaryKey
+    ? PLACEMENT_PLAN_DEFS.filter((def) => ["balanced", "throughput", "primary"].includes(def.key))
+    : PLACEMENT_PLAN_DEFS.filter((def) => ["balanced", "throughput", "compact"].includes(def.key));
+  const summaries = defs.map((def) => ({
     def,
     summary: computePlacementPlanSummary(gpuInventoryRows, modelKeys, def.key, placementPrimaryKey),
   }));
@@ -2644,6 +3272,18 @@ function renderPlacementPlanCompare(summaries) {
       const unplacedLine = summary.unplacedCount > 0
         ? (uiLanguage === "en" ? `${summary.unplacedCount} model(s) don't fit anywhere` : `배치 못한 모델 ${summary.unplacedCount}개`)
         : (uiLanguage === "en" ? "All selected models fit" : "선택한 모델 전부 배치됨");
+      const targetLine = summary.shortfallCount > 0
+        ? (uiLanguage === "en" ? `${summary.shortfallCount} service(s) miss their target` : `목표 미달 서비스 ${summary.shortfallCount}개`)
+        : (uiLanguage === "en" ? "Configured targets met" : "설정한 목표 충족");
+      const searchLine = summary.searchMode === "exact"
+        ? (uiLanguage === "en" ? "Exact candidate search" : "정확 후보 탐색")
+        : (uiLanguage === "en" ? "Bounded approximate search" : "제한된 근사 탐색");
+      const remainingLine = uiLanguage === "en"
+        ? `Free VRAM: ${summary.remaining.map(formatGb).join(" / ")}`
+        : `GPU별 여유: ${summary.remaining.map(formatGb).join(" / ")}`;
+      const changesLine = uiLanguage === "en"
+        ? `Automatic setting changes: ${summary.automaticChanges}`
+        : `자동 설정 변경: ${summary.automaticChanges}개`;
 
       const buttonLabel = isActive
         ? (uiLanguage === "en" ? "Currently applied" : "현재 적용됨")
@@ -2659,6 +3299,10 @@ function renderPlacementPlanCompare(summaries) {
             <p class="${summary.commonN === 0 ? "capacity-warning" : ""}">${escapeHtml(commonLine)}</p>
             ${throughputLine ? `<p>${escapeHtml(throughputLine)}</p>` : ""}
             <p class="${summary.unplacedCount > 0 ? "capacity-warning" : ""}">${escapeHtml(unplacedLine)}</p>
+            <p class="${summary.shortfallCount > 0 ? "capacity-warning" : ""}">${escapeHtml(targetLine)}</p>
+            <p>${escapeHtml(remainingLine)}</p>
+            <p>${escapeHtml(changesLine)}</p>
+            <p class="placement-plan-search-mode">${escapeHtml(searchLine)}</p>
           </div>
           <button type="button" class="ghost-button" data-apply-placement-plan="${escapeAttr(def.key)}" ${isActive ? "disabled" : ""}>${escapeHtml(buttonLabel)}</button>
         </div>
@@ -2738,15 +3382,18 @@ function renderPlacementBaseline(baseline) {
 // they're assumed to be called independently rather than sharing one
 // bottleneck.
 function renderPlacementBaselineIndependent(baseline, placement) {
-  const placedItems = placement.gpus.flatMap((gpu) => gpu.placements.map((item) => ({ ...item, gpuIndex: gpu.index })));
-  const concurrencyItems = placedItems.filter((item) => item.capacity?.kind === "concurrency");
-  if (!concurrencyItems.length) return renderPlacementBaseline(baseline);
+  const concurrencyGroups = getPlacementServiceGroups(placement).filter((group) => group.recommendedN != null);
+  if (!concurrencyGroups.length) return renderPlacementBaseline(baseline);
 
   const label = uiLanguage === "en" ? "Per-model concurrency: " : "모델별 동시 접속: ";
-  const parts = concurrencyItems.map((item) => {
-    const n = item.capacity.recommendedN;
-    const warn = n <= 0 || isBelowPlacementTarget(n);
-    const text = uiLanguage === "en" ? `${item.model.name} ${n}` : `${item.model.name} ${n}명`;
+  const parts = concurrencyGroups.map((group) => {
+    const n = group.recommendedN;
+    const minimum = Math.max(placementTargetN || 0, group.config?.minConcurrency || 0);
+    const warn = n <= 0 || n < minimum;
+    const replicaLabel = group.items.length > 1
+      ? (uiLanguage === "en" ? ` · ${group.items.length} replicas` : ` · ${group.items.length}개 복제`)
+      : "";
+    const text = uiLanguage === "en" ? `${group.model.name} ${n}${replicaLabel}` : `${group.model.name} ${n}명${replicaLabel}`;
     return warn ? `<span class="capacity-warning">${escapeHtml(text)}</span>` : escapeHtml(text);
   });
   let html = escapeHtml(label) + parts.join(" · ");
@@ -2843,110 +3490,231 @@ function suggestPlacementMove(placement) {
   return best;
 }
 
-// Top-level diagnosis for the placement result: first checks whether simply
-// switching the balanced/compact strategy toggle would help (cheap — just
-// another computeGpuPlacement call), then falls back to a single-model move
-// suggestion within the current strategy, then a generic capacity-shortfall
-// note if neither structural change helps. Returns null when the placement
-// is already fine (no gap, no zero-concurrency bottleneck).
+function summarizePlacementForAdjustment(placement) {
+  const stats = placement.stats || getPlacementStats(placement);
+  return {
+    remaining: placement.gpus.map((gpu) => gpu.remaining),
+    serviceFloor: stats.serviceFloor,
+    totalTokThroughput: stats.totalTokThroughput,
+    weightedCapacity: stats.weightedCapacity,
+    unplacedCount: stats.unplacedCount,
+    zeroCount: stats.zeroCount,
+    shortfallCount: stats.shortfallCount,
+    headroomVariance: stats.headroomVariance,
+  };
+}
+
+function adjustmentImprovement(before, after) {
+  return (
+    (before.unplacedCount - after.unplacedCount) * 1e8
+    + (before.zeroCount - after.zeroCount) * 1e7
+    + (before.shortfallCount - after.shortfallCount) * 1e6
+    + ((after.serviceFloor || 0) - (before.serviceFloor || 0)) * 1e4
+    + (after.weightedCapacity - before.weightedCapacity)
+    + (before.headroomVariance - after.headroomVariance) * 100
+  );
+}
+
+function simulatePlacementAdjustment(gpuRows, modelKeys, strategy, mutate, nextModelKeys = modelKeys) {
+  const globals = {
+    allowQuant: placementAllowQuantChange,
+    allowContext: placementAllowContextReduction,
+    allowReplication: placementAllowReplication,
+    target: placementTargetN,
+  };
+  const configs = new Map([...placementModelConfigs].map(([key, config]) => [key, { ...config }]));
+  try {
+    mutate?.();
+    return computeGpuPlacement(gpuRows, nextModelKeys, strategy, placementPrimaryKey);
+  } finally {
+    placementAllowQuantChange = globals.allowQuant;
+    placementAllowContextReduction = globals.allowContext;
+    placementAllowReplication = globals.allowReplication;
+    placementTargetN = globals.target;
+    placementModelConfigs.clear();
+    configs.forEach((config, key) => placementModelConfigs.set(key, config));
+  }
+}
+
 function diagnosePlacement(placement, strategy, gpuRows, modelKeys) {
+  const stats = placement.stats || getPlacementStats(placement);
   const loadedGpus = placement.gpus.filter((gpu) => gpu.placements.length);
   if (!loadedGpus.length) return null;
-
-  const baseline = computePlacementBaseline(placement);
-  const beforeN = baseline?.concurrencyBaseline?.recommendedN ?? null;
-  const remainingValues = loadedGpus.map((gpu) => gpu.remaining);
-  const imbalanceGb = loadedGpus.length > 1 ? Math.max(...remainingValues) - Math.min(...remainingValues) : 0;
-  const totalCapacity = loadedGpus.reduce((sum, gpu) => sum + gpu.capacityGb, 0);
-  const isImbalanced = loadedGpus.length > 1 && imbalanceGb > totalCapacity * 0.15;
-  const hasZeroBaseline = beforeN === 0;
-  const belowTarget = isBelowPlacementTarget(beforeN);
-
-  if (!isImbalanced && !hasZeroBaseline && !belowTarget) return null;
-
-  if (placement.gpus.length > 1) {
-    const altStrategy = strategy === "balanced" ? "compact" : "balanced";
-    const altPlacement = computeGpuPlacement(gpuRows, modelKeys, altStrategy, placementPrimaryKey);
-    const altBaseline = computePlacementBaseline(altPlacement);
-    const altN = altBaseline?.concurrencyBaseline?.recommendedN ?? null;
-    const altLoadedGpus = altPlacement.gpus.filter((gpu) => gpu.placements.length);
-    const altRemainingValues = altLoadedGpus.map((gpu) => gpu.remaining);
-    const altImbalanceGb = altLoadedGpus.length > 1 ? Math.max(...altRemainingValues) - Math.min(...altRemainingValues) : 0;
-
-    const strategyClearlyBetter =
-      (hasZeroBaseline && altN > 0) ||
-      (beforeN != null && altN != null && altN > beforeN) ||
-      (altImbalanceGb < imbalanceGb * 0.6 && (altN == null || beforeN == null || altN >= beforeN));
-
-    if (strategyClearlyBetter) {
-      return {
-        kind: "strategy",
-        altStrategy,
-        beforeImbalanceGb: imbalanceGb,
-        beforeN,
-        afterImbalanceGb: altImbalanceGb,
-        afterN: altN,
-      };
-    }
+  const before = summarizePlacementForAdjustment(placement);
+  const remaining = loadedGpus.map((gpu) => gpu.remaining);
+  const imbalanceGb = loadedGpus.length > 1 ? Math.max(...remaining) - Math.min(...remaining) : 0;
+  const physicalTotal = loadedGpus.reduce((sum, gpu) => sum + (gpu.physicalCapacityGb || gpu.capacityGb), 0);
+  const isImbalanced = loadedGpus.length > 1 && imbalanceGb > physicalTotal * 0.12;
+  const status = stats.unplacedCount || stats.zeroCount || stats.shortfallCount
+    ? "warning"
+    : isImbalanced
+      ? "unbalanced"
+      : "balanced";
+  const adjustments = [];
+  if (status === "balanced") {
+    placementAdjustmentRegistry.clear();
+    return {
+      status,
+      isImbalanced,
+      imbalanceGb,
+      stats,
+      adjustments,
+      bottleneck: [...stats.groups].filter((group) => group.recommendedN != null).sort((a, b) => a.recommendedN - b.recommendedN)[0] || null,
+      searchMeta: placement.searchMeta,
+    };
   }
 
-  const move = suggestPlacementMove(placement);
-  if (move) return { kind: "move", ...move };
+  const addAdjustment = (adjustment, afterPlacement) => {
+    if (!afterPlacement) return;
+    const after = summarizePlacementForAdjustment(afterPlacement);
+    const improvement = adjustmentImprovement(before, after);
+    if (improvement <= 0 && adjustment.kind !== "target") return;
+    adjustments.push({ ...adjustment, before, after, improvement });
+  };
 
-  return { kind: "generic", beforeImbalanceGb: imbalanceGb, beforeN, targetN: placementTargetN };
+  const move = suggestPlacementMove(placement);
+  if (move) {
+    const key = modelKey(move.model);
+    const afterPlacement = simulatePlacementAdjustment(gpuRows, modelKeys, strategy, () => {
+      getPlacementModelConfig(key).pinnedGpu = String(move.toGpuIndex);
+    });
+    addAdjustment({ kind: "pin", modelKey: key, modelName: move.model.name, gpuIndex: move.toGpuIndex }, afterPlacement);
+  }
+
+  if (!placementAllowQuantChange) {
+    addAdjustment(
+      { kind: "allow-quant" },
+      simulatePlacementAdjustment(gpuRows, modelKeys, strategy, () => { placementAllowQuantChange = true; }),
+    );
+  }
+  if (!placementAllowContextReduction && stats.shortfallCount + stats.zeroCount + stats.unplacedCount > 0) {
+    addAdjustment(
+      { kind: "allow-context" },
+      simulatePlacementAdjustment(gpuRows, modelKeys, strategy, () => { placementAllowContextReduction = true; }),
+    );
+  }
+
+  const bottleneck = [...stats.groups]
+    .filter((group) => group.recommendedN != null)
+    .sort((a, b) => a.recommendedN - b.recommendedN)[0];
+  if (bottleneck && modelKeys.length > 1) {
+    const reducedKeys = modelKeys.filter((key) => key !== bottleneck.key);
+    addAdjustment(
+      { kind: "remove", modelKey: bottleneck.key, modelName: bottleneck.model.name },
+      simulatePlacementAdjustment(gpuRows, modelKeys, strategy, null, reducedKeys),
+    );
+  }
+
+  if (placementTargetN != null && stats.serviceFloor != null && stats.serviceFloor < placementTargetN) {
+    adjustments.push({
+      kind: "target",
+      nextTarget: Math.max(1, stats.serviceFloor),
+      before,
+      after: { ...before, serviceFloor: stats.serviceFloor, shortfallCount: 0 },
+      improvement: 1,
+    });
+  }
+
+  adjustments.sort((a, b) => b.improvement - a.improvement);
+  placementAdjustmentRegistry.clear();
+  adjustments.slice(0, 4).forEach((adjustment, index) => placementAdjustmentRegistry.set(`adjustment-${index}`, adjustment));
+
+  return {
+    status,
+    isImbalanced,
+    imbalanceGb,
+    stats,
+    adjustments: [...placementAdjustmentRegistry.entries()].map(([id, adjustment]) => ({ id, ...adjustment })),
+    bottleneck,
+    searchMeta: placement.searchMeta,
+  };
+}
+
+function renderPlacementAdjustmentDelta(adjustment) {
+  const beforeN = adjustment.before.serviceFloor;
+  const afterN = adjustment.after.serviceFloor;
+  const remainingBefore = adjustment.before.remaining.map(formatGb).join(" / ");
+  const remainingAfter = adjustment.after.remaining.map(formatGb).join(" / ");
+  const concurrency = beforeN != null || afterN != null
+    ? (uiLanguage === "en" ? `Concurrency ${beforeN ?? "-"} → ${afterN ?? "-"}` : `동시 접속 ${beforeN ?? "-"}명 → ${afterN ?? "-"}명`)
+    : "";
+  const throughput = adjustment.before.totalTokThroughput || adjustment.after.totalTokThroughput
+    ? (uiLanguage === "en"
+        ? `Throughput ${formatThroughput(adjustment.before.totalTokThroughput, "tok/s")} → ${formatThroughput(adjustment.after.totalTokThroughput, "tok/s")}`
+        : `총 처리량 ${formatThroughput(adjustment.before.totalTokThroughput, "tok/s")} → ${formatThroughput(adjustment.after.totalTokThroughput, "tok/s")}`)
+    : "";
+  const remaining = uiLanguage === "en"
+    ? `Free VRAM by GPU ${remainingBefore} → ${remainingAfter}`
+    : `GPU별 여유 VRAM ${remainingBefore} → ${remainingAfter}`;
+  return [concurrency, throughput, remaining].filter(Boolean).map((line) => `<span>${escapeHtml(line)}</span>`).join("");
+}
+
+function placementAdjustmentLabel(adjustment) {
+  if (adjustment.kind === "pin") {
+    return uiLanguage === "en"
+      ? `Move ${adjustment.modelName} to GPU ${adjustment.gpuIndex + 1}`
+      : `${adjustment.modelName}을 GPU ${adjustment.gpuIndex + 1}로 이동`;
+  }
+  if (adjustment.kind === "allow-quant") return uiLanguage === "en" ? "Allow automatic precision changes" : "양자화·정밀도 자동 변경 허용";
+  if (adjustment.kind === "allow-context") return uiLanguage === "en" ? "Allow automatic context reduction" : "컨텍스트 자동 축소 허용";
+  if (adjustment.kind === "remove") return uiLanguage === "en" ? `Remove ${adjustment.modelName}` : `${adjustment.modelName} 제외`;
+  if (adjustment.kind === "target") return uiLanguage === "en" ? `Adjust target to ${adjustment.nextTarget}` : `목표를 ${adjustment.nextTarget}명으로 조정`;
+  return uiLanguage === "en" ? "Apply adjustment" : "조정 적용";
 }
 
 function renderPlacementDiagnosis(diagnosis) {
   if (!diagnosis) return "";
-  const gb = (value) => escapeHtml(formatGb(value));
-  const title = uiLanguage === "en" ? "Diagnosis: unbalanced placement" : "배치 진단: 불균형";
-
-  if (diagnosis.kind === "strategy") {
-    const stratLabel = PLACEMENT_STRATEGY_LABELS[diagnosis.altStrategy][uiLanguage];
-    const body = uiLanguage === "en"
-      ? `Switching to <strong>${escapeHtml(stratLabel)}</strong> mode would spread VRAM more evenly (remaining-VRAM gap between GPUs: ${gb(diagnosis.beforeImbalanceGb)} → ${gb(diagnosis.afterImbalanceGb)})${diagnosis.afterN != null ? `, and the common concurrency baseline would go from ${diagnosis.beforeN ?? "-"} to ${diagnosis.afterN}` : ""}.`
-      : `<strong>${escapeHtml(stratLabel)}</strong> 모드로 바꾸면 GPU 간 여유 VRAM 격차가 ${gb(diagnosis.beforeImbalanceGb)} → ${gb(diagnosis.afterImbalanceGb)}(으)로 줄어듭니다${diagnosis.afterN != null ? `. 공통 동시 접속 기준도 ${diagnosis.beforeN ?? "-"}명 → ${diagnosis.afterN}명으로 바뀝니다` : ""}.`;
-    const button = uiLanguage === "en" ? `Switch to ${stratLabel}` : `${stratLabel}으로 전환`;
-    return `
-      <div class="gpu-placement-diagnosis-box">
-        <strong>${escapeHtml(title)}</strong>
-        <p>${body}</p>
-        <button type="button" class="ghost-button" data-apply-placement-strategy="${escapeAttr(diagnosis.altStrategy)}">${escapeHtml(button)}</button>
-      </div>
-    `;
-  }
-
-  if (diagnosis.kind === "move") {
-    const body = uiLanguage === "en"
-      ? `GPU${diagnosis.fromGpuIndex + 1} has little room left (${gb(diagnosis.beforeSourceRemaining)}) while GPU${diagnosis.toGpuIndex + 1} has ${gb(diagnosis.beforeTargetRemaining)} free. Moving <strong>${escapeHtml(diagnosis.model.name)}</strong> to GPU${diagnosis.toGpuIndex + 1} would change the remaining VRAM to ${gb(diagnosis.afterSourceRemaining)} / ${gb(diagnosis.afterTargetRemaining)}${diagnosis.afterN != null && diagnosis.beforeN != null ? `, and the common concurrency baseline from ${diagnosis.beforeN} to ${diagnosis.afterN}` : ""}.`
-      : `GPU${diagnosis.fromGpuIndex + 1}은 여유 VRAM이 ${gb(diagnosis.beforeSourceRemaining)}인 반면 GPU${diagnosis.toGpuIndex + 1}에는 ${gb(diagnosis.beforeTargetRemaining)}이 남아 있습니다. <strong>${escapeHtml(diagnosis.model.name)}</strong>을(를) GPU${diagnosis.toGpuIndex + 1}로 옮기면 여유가 ${gb(diagnosis.afterSourceRemaining)} / ${gb(diagnosis.afterTargetRemaining)}(으)로 바뀌고${diagnosis.afterN != null && diagnosis.beforeN != null ? `, 공통 동시 접속 기준도 ${diagnosis.beforeN}명 → ${diagnosis.afterN}명이 됩니다` : ""}.`;
-    const note = uiLanguage === "en"
-      ? "This app doesn't yet support pinning a model to a specific GPU — remove and re-add the model to trigger a fresh placement, or set it as the 주 모델(primary model) above to give it priority."
-      : "아직 특정 모델을 특정 GPU에 직접 고정하는 기능은 없습니다. 모델을 껐다 다시 선택해 배치를 다시 계산하거나, 위의 '주 모델'로 지정해 우선순위를 줘보세요.";
-    return `
-      <div class="gpu-placement-diagnosis-box">
-        <strong>${escapeHtml(title)}</strong>
-        <p>${body}</p>
-        <p class="gpu-placement-diagnosis-note">${escapeHtml(note)}</p>
-      </div>
-    `;
-  }
-
-  const genericTitle = uiLanguage === "en" ? "Diagnosis: little to no headroom" : "배치 진단: 여유 부족";
-  const targetNote = diagnosis.targetN != null && diagnosis.beforeN != null
+  const labels = {
+    balanced: { ko: "균형", en: "Balanced" },
+    unbalanced: { ko: "불균형", en: "Unbalanced" },
+    warning: { ko: "운영 비권장", en: "Not recommended for serving" },
+  };
+  const statusLabel = labels[diagnosis.status][uiLanguage === "en" ? "en" : "ko"];
+  const bottleneckText = diagnosis.bottleneck
     ? (uiLanguage === "en"
-        ? ` Target was ${diagnosis.targetN} concurrent users; this placement only reaches ${diagnosis.beforeN}.`
-        : ` 목표는 ${diagnosis.targetN}명이었지만 현재 배치로는 ${diagnosis.beforeN}명까지만 가능합니다.`)
+        ? `Bottleneck: ${diagnosis.bottleneck.model.name} (${diagnosis.bottleneck.recommendedN} recommended concurrent)`
+        : `병목: ${diagnosis.bottleneck.model.name} (권장 동시 ${diagnosis.bottleneck.recommendedN}명)`)
     : "";
-  const genericBody = (uiLanguage === "en"
-    ? "The selected models leave little safety margin no matter how they're spread across your GPUs."
-    : "선택한 모델들은 GPU에 어떻게 나눠 배치해도 여유가 거의 남지 않습니다.") + targetNote + (uiLanguage === "en"
-    ? " Consider removing a model, choosing one with a smaller VRAM footprint, lowering its quantization/context, or adding another GPU."
-    : " 모델을 하나 줄이거나, VRAM을 덜 쓰는 모델로 바꾸거나, 양자화/컨텍스트 길이를 낮추거나, GPU를 추가하는 것을 고려해보세요.");
+  const searchText = diagnosis.searchMeta?.mode === "exact"
+    ? (uiLanguage === "en" ? "Exact candidate search" : "정확 후보 탐색")
+    : (uiLanguage === "en" ? "Bounded approximate search" : "제한된 근사 탐색");
+  const intro = diagnosis.status === "balanced"
+    ? (uiLanguage === "en" ? "The selected constraints are met without a large GPU headroom gap." : "큰 GPU 여유 격차 없이 설정한 제약을 충족합니다.")
+    : diagnosis.status === "unbalanced"
+      ? (uiLanguage === "en" ? `Remaining VRAM differs by ${formatGb(diagnosis.imbalanceGb)} across active GPUs.` : `사용 중인 GPU의 여유 VRAM 차이가 ${formatGb(diagnosis.imbalanceGb)}입니다.`)
+      : (uiLanguage === "en" ? "At least one model is unplaced, has zero safe concurrency, or misses its configured target." : "배치 실패, 안전 동시 접속 0명 또는 설정한 목표 미달 모델이 있습니다.");
+
+  const adjustmentHtml = diagnosis.adjustments.length
+    ? `
+      <div class="placement-adjustment-list">
+        ${diagnosis.adjustments.map((adjustment) => `
+          <article class="placement-adjustment-card">
+            <strong>${escapeHtml(placementAdjustmentLabel(adjustment))}</strong>
+            <div class="placement-adjustment-delta">${renderPlacementAdjustmentDelta(adjustment)}</div>
+            <button type="button" class="ghost-button" data-apply-placement-adjustment="${escapeAttr(adjustment.id)}">${uiLanguage === "en" ? "Apply" : "적용"}</button>
+          </article>
+        `).join("")}
+      </div>
+    `
+    : diagnosis.status === "balanced"
+      ? `<p class="gpu-placement-diagnosis-note">${uiLanguage === "en" ? "No adjustment is required for the selected objective and constraints." : "선택한 목표와 제약 기준에서 추가 조정이 필요하지 않습니다."}</p>`
+    : `<p class="gpu-placement-diagnosis-note">${uiLanguage === "en" ? "No safe automatic adjustment improves this result. Consider adding a GPU or changing the selected models." : "현재 조건에서 안전하게 개선되는 자동 조정이 없습니다. GPU 추가 또는 선택 모델 변경을 검토하세요."}</p>`;
+
   return `
-    <div class="gpu-placement-diagnosis-box">
-      <strong>${escapeHtml(genericTitle)}</strong>
-      <p>${escapeHtml(genericBody)}</p>
+    <div class="gpu-placement-diagnosis-box is-${escapeAttr(diagnosis.status)}">
+      <div class="placement-diagnosis-head">
+        <strong>${uiLanguage === "en" ? "Placement diagnosis" : "배치 진단"}: ${escapeHtml(statusLabel)}</strong>
+        <small>${escapeHtml(searchText)} · ${diagnosis.searchMeta?.exploredStates?.toLocaleString() || 0}${uiLanguage === "en" ? " states" : "개 상태"}</small>
+      </div>
+      <p>${escapeHtml(intro)}</p>
+      ${bottleneckText ? `<p>${escapeHtml(bottleneckText)}</p>` : ""}
+      ${adjustmentHtml}
+      <details class="placement-calculation-basis">
+        <summary>${uiLanguage === "en" ? "Calculation constraints" : "계산 제약 및 근거"}</summary>
+        <p>${uiLanguage === "en"
+          ? `VRAM headroom ${placementMinHeadroomPct}% · precision changes ${placementAllowQuantChange ? "allowed" : "locked"} · context reduction ${placementAllowContextReduction ? "allowed" : "disabled"} · replicas ${placementAllowReplication && placementUsageMode === "independent" ? "allowed" : "disabled"}`
+          : `VRAM 여유 ${placementMinHeadroomPct}% · 양자화 변경 ${placementAllowQuantChange ? "허용" : "고정"} · 컨텍스트 축소 ${placementAllowContextReduction ? "허용" : "사용 안 함"} · 복제 ${placementAllowReplication && placementUsageMode === "independent" ? "허용" : "사용 안 함"}`}</p>
+      </details>
     </div>
   `;
 }
@@ -2971,6 +3739,56 @@ function renderPlacementUnplacedBlock(unplaced) {
   `;
 }
 
+function getPlacementItemMemoryParts(item, gpu) {
+  const hardware = buildGpuPlacementHardware(
+    item.contextTokens ? { ...getHardware(), concurrency: 1, context: item.contextTokens } : { ...getHardware(), concurrency: 1 },
+    gpu,
+    item.requiredGb,
+  );
+  let estimate = null;
+  if (!item.model.type || item.model.type === "generative") {
+    estimate = estimateWithQuant(item.model, item.setting, hardware);
+  } else if (item.model.type === "embedding") {
+    estimate = estimateEncoderWithPrecision(item.model, hardware, getPlacementWorkload(item.model), item.setting);
+  } else if (item.model.type === "reranker") {
+    estimate = estimateRerankerWithPrecision(item.model, hardware, getPlacementWorkload(item.model), item.setting);
+  } else {
+    estimate = estimateOcrWithPrecision(item.model, hardware, getPlacementWorkload(item.model), item.setting);
+  }
+  const weights = Math.max(0, estimate.weightsGb || estimate.residentGb || item.requiredGb * 0.72);
+  const kv = Math.max(0, estimate.kvGb || estimate.decoderKvGb || 0);
+  const runtime = Math.max(0, item.requiredGb - weights - kv);
+  return { weights, kv, runtime };
+}
+
+function renderPlacementMemoryBar(gpu) {
+  const totals = gpu.placements.reduce((sum, item) => {
+    const parts = getPlacementItemMemoryParts(item, gpu);
+    sum.weights += parts.weights;
+    sum.kv += parts.kv;
+    sum.runtime += parts.runtime;
+    return sum;
+  }, { weights: 0, kv: 0, runtime: 0 });
+  const total = gpu.physicalCapacityGb || (gpu.capacityGb + (gpu.reservedHeadroomGb || 0));
+  const segments = [
+    { key: "weights", label: uiLanguage === "en" ? "Weights" : "가중치", value: totals.weights },
+    { key: "kv", label: "KV", value: totals.kv },
+    { key: "runtime", label: uiLanguage === "en" ? "Runtime" : "런타임", value: totals.runtime },
+    { key: "safety", label: uiLanguage === "en" ? "Safety" : "안전 여유", value: gpu.reservedHeadroomGb || 0 },
+    { key: "free", label: uiLanguage === "en" ? "Free" : "남음", value: gpu.remaining },
+  ];
+  return `
+    <div class="placement-memory-map" role="img" aria-label="${escapeAttr(segments.map((segment) => `${segment.label} ${formatGb(segment.value)}`).join(", "))}">
+      <div class="placement-memory-track">
+        ${segments.map((segment) => `<span class="placement-memory-${escapeAttr(segment.key)}" style="width:${Math.max(0, Math.min(100, segment.value / Math.max(total, 0.1) * 100))}%"></span>`).join("")}
+      </div>
+      <div class="placement-memory-legend">
+        ${segments.map((segment) => `<span><i class="placement-memory-${escapeAttr(segment.key)}"></i>${escapeHtml(segment.label)} ${escapeHtml(formatGb(segment.value))}</span>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderGpuPlacementResult(placement) {
   const gpuCards = placement.gpus
     .map((gpu) => {
@@ -2979,7 +3797,7 @@ function renderGpuPlacementResult(placement) {
             .map(
               (item) => `
                 <div class="gpu-placement-model-row">
-                  <span>${escapeHtml(item.model.name)}${item.isPrimary ? ` <span class="placement-primary-badge">${escapeHtml(uiLanguage === "en" ? "Primary" : "주 모델")}</span>` : ""} · ${escapeHtml(item.label)}</span>
+                  <span>${escapeHtml(item.model.name)}${item.isPrimary ? ` <span class="placement-primary-badge">${escapeHtml(uiLanguage === "en" ? "Primary" : "주 모델")}</span>` : ""}${item.isReplica ? ` <span class="placement-replica-badge">${escapeHtml(uiLanguage === "en" ? `Replica ${item.replicaIndex}` : `복제 ${item.replicaIndex}`)}</span>` : ""} · ${escapeHtml(item.label)}${item.settingChanged ? ` · ${escapeHtml(uiLanguage === "en" ? "precision adjusted" : "정밀도 자동 조정")}` : ""}${item.contextReduced ? ` · ${escapeHtml(uiLanguage === "en" ? "context reduced" : "컨텍스트 축소")}` : ""}</span>
                   <span>${escapeHtml(formatGb(item.requiredGb))}</span>
                 </div>
                 <div class="gpu-placement-capacity-line">${renderPlacementCapacityLine(item.capacity)}</div>
@@ -2992,15 +3810,22 @@ function renderGpuPlacementResult(placement) {
         <div class="gpu-placement-card">
           <div class="gpu-placement-card-head">
             <span>GPU ${gpu.index + 1} · ${escapeHtml(gpu.preset.name)}${gpu.count > 1 ? ` × ${gpu.count}` : ""}</span>
-            <small>${uiLanguage === "en" ? "free" : "여유"} ${escapeHtml(formatGb(gpu.remaining))} / ${uiLanguage === "en" ? "total" : "총"} ${escapeHtml(formatGb(gpu.capacityGb))}</small>
+            <small>${uiLanguage === "en" ? "free" : "여유"} ${escapeHtml(formatGb(gpu.remaining))} / ${uiLanguage === "en" ? "physical" : "물리"} ${escapeHtml(formatGb(gpu.physicalCapacityGb || gpu.capacityGb))}</small>
           </div>
+          ${renderPlacementMemoryBar(gpu)}
           ${rows}
         </div>
       `;
     })
     .join("");
+  const searchMeta = placement.searchMeta;
+  const searchNote = searchMeta
+    ? `<p class="placement-search-note">${escapeHtml(searchMeta.mode === "exact"
+        ? (uiLanguage === "en" ? `Exact search · ${searchMeta.exploredStates.toLocaleString()} states` : `정확 탐색 · ${searchMeta.exploredStates.toLocaleString()}개 상태`)
+        : (uiLanguage === "en" ? `Bounded approximate search · ${searchMeta.exploredStates.toLocaleString()} states` : `제한된 근사 탐색 · ${searchMeta.exploredStates.toLocaleString()}개 상태`))}</p>`
+    : "";
 
-  return gpuCards + renderPlacementUnplacedBlock(placement.unplaced);
+  return searchNote + gpuCards + renderPlacementUnplacedBlock(placement.unplaced);
 }
 
 // "대체 모델" mode: models are never simultaneously resident, so each one is
@@ -3010,35 +3835,38 @@ function renderGpuPlacementResult(placement) {
 function computeAlternatePlacement(gpuRows, modelKeys) {
   const hardwareBase = getHardware();
   const singleUserHardware = { ...hardwareBase, concurrency: 1 };
-
-  const gpus = gpuRows.map((row, index) => {
-    const preset = GPU_PRESETS.find((gpu) => gpu.id === row.presetId) || GPU_PRESETS[0];
-    const count = clampNumber(row.count, 1, 8, 1);
-    const capacityGb = preset.vram * count * 0.92;
-    return { index, preset, count, capacityGb };
-  });
+  const gpus = buildPlacementGpuRows(gpuRows);
 
   const models = modelKeys.map((key) => getModelByKey(key)).filter(Boolean);
   const items = [];
   const unplaced = [];
 
   for (const model of models) {
-    const options = getPlacementBaselineOptions(model, singleUserHardware);
+    const key = modelKey(model);
+    const config = getPlacementModelConfig(key);
+    const options = getPlacementSearchCandidates(model, config, singleUserHardware, Math.max(...gpus.map((gpu) => gpu.capacityGb)));
     let best = null;
     for (const gpu of gpus) {
-      const fit = [...options].reverse().find((option) => option.requiredGb <= gpu.capacityGb);
-      if (!fit) continue;
-      const hw = buildGpuPlacementHardware(singleUserHardware, gpu, gpu.capacityGb);
-      const capacity = getPlacementCapacity(model, fit.setting, hw, gpu.capacityGb);
-      const score = capacity.kind === "concurrency" ? capacity.recommendedN : capacity.value;
-      if (!best || score > best.score) {
-        best = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, capacity, score };
+      if (config.pinnedGpu !== "" && Number(config.pinnedGpu) !== gpu.index) continue;
+      for (const fit of options) {
+        if (fit.requiredGb > gpu.capacityGb) continue;
+        const hw = buildGpuPlacementHardware(
+          fit.contextTokens ? { ...singleUserHardware, context: fit.contextTokens } : singleUserHardware,
+          gpu,
+          gpu.capacityGb,
+        );
+        const capacity = getPlacementCapacity(model, fit.setting, hw, gpu.capacityGb);
+        const score = (capacity.kind === "concurrency" ? capacity.recommendedN : capacity.value) * config.requestShare - fit.changeCost;
+        if (!best || score > best.score) {
+          best = { gpu, setting: fit.setting, label: fit.label, requiredGb: fit.requiredGb, capacity, score, contextTokens: fit.contextTokens, config };
+        }
       }
     }
     if (best) {
       items.push({ model, gpuIndex: best.gpu.index, gpu: best.gpu, setting: best.setting, label: best.label, requiredGb: best.requiredGb, capacity: best.capacity });
     } else {
-      unplaced.push({ model, minRequiredGb: options[0]?.requiredGb ?? 0 });
+      const minimum = options.reduce((value, option) => Math.min(value, option.requiredGb), Infinity);
+      unplaced.push({ model, minRequiredGb: Number.isFinite(minimum) ? minimum : 0 });
     }
   }
 
@@ -3432,7 +4260,7 @@ function syncPresetForInput(inputId) {
 function syncPresetControls() {
   document.querySelectorAll("[data-direct-preset]").forEach((input) => {
     const select = $(input.dataset.directPreset);
-    if (select?.value !== "custom") syncPresetForInput(input.id);
+    if (select?.value !== "custom" && select?.value !== "") syncPresetForInput(input.id);
     const pair = input.closest(".field-control-pair");
     const isCustom = select?.value === "custom";
     input.hidden = !isCustom;
@@ -4737,6 +5565,7 @@ function render(options = {}) {
   renderCompareModal(allEstimates);
   renderActiveFilterChips(estimates, allEstimates);
   renderDetail();
+  renderSimpleRecommendationPanel(hardware);
   renderViewToggle();
   renderBenchmarkSheet();
   const benchmarkSheet = $("benchmarkSheet");
@@ -5011,8 +5840,9 @@ function renderSimpleMode(hardware, allEstimates) {
   }
 
   exploreActions.hidden = false;
-  // If a previous pick set no longer contains the expanded model (purpose/
-  // priority changed), collapse rather than leaving a dangling reference.
+  // If a previous pick set no longer contains the selected model (purpose/
+  // priority changed), close the inspector rather than leaving a dangling
+  // reference.
   if (simpleExpandedKey && !picks.some((estimate) => modelKey(estimate.model) === simpleExpandedKey)) {
     simpleExpandedKey = "";
   }
@@ -5023,14 +5853,14 @@ function renderSimpleMode(hardware, allEstimates) {
     const licensePolicy = getLicensePolicy(estimate.model);
     const reasons = buildRecommendationReasons(estimate).slice(0, 3).map(localizeRecommendationReason);
     const key = modelKey(estimate.model);
-    const isExpanded = simpleExpandedKey === key;
-    const ctaLabel = isExpanded
-      ? (uiLanguage === "en" ? "Hide details" : "상세 접기")
+    const isSelected = simpleExpandedKey === key;
+    const ctaLabel = isSelected
+      ? (uiLanguage === "en" ? "Viewing details" : "상세 보는 중")
       : t("detailCalculation");
 
     return `
-      <div class="simple-pick-card ${index === 0 ? "is-top-pick" : ""} ${isExpanded ? "is-expanded" : ""}">
-        <button type="button" class="simple-pick-card-toggle" data-model-key="${escapeAttr(key)}" aria-expanded="${isExpanded ? "true" : "false"}">
+      <div class="simple-pick-card ${index === 0 ? "is-top-pick" : ""} ${isSelected ? "is-selected" : ""}">
+        <button type="button" class="simple-pick-card-toggle" data-model-key="${escapeAttr(key)}" aria-expanded="${isSelected ? "true" : "false"}" aria-controls="simpleRecommendationPanel">
           <span class="simple-pick-rank">${uiLanguage === "en" ? `Rank ${index + 1}` : `${index + 1}순위`}</span>
           <span class="simple-pick-head">
             <strong>${escapeHtml(estimate.model.name)}</strong>
@@ -5045,19 +5875,117 @@ function renderSimpleMode(hardware, allEstimates) {
           ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
         </button>
         <span class="simple-pick-actions">
-          <span class="simple-pick-cta" data-model-key="${escapeAttr(key)}">${escapeHtml(ctaLabel)} ${isExpanded ? "↑" : "→"}</span>
+          <span class="simple-pick-cta" data-model-key="${escapeAttr(key)}">${escapeHtml(ctaLabel)} ${isSelected ? "✓" : "→"}</span>
           <span class="simple-pick-copy" role="button" tabindex="0" data-copy-command="${escapeAttr(estimate.model.type === "generative" ? buildOllamaCommand(estimate.model, estimate.quant, hardware) : buildNonGenerativeCommand(estimate.model, estimate))}">${uiLanguage === "en" ? "Copy run command" : "실행 명령어 복사"}</span>
         </span>
-        ${isExpanded ? `<div class="simple-pick-detail">${buildSimplePickDetailBodyHtml(estimate.model, hardware)}</div>` : ""}
       </div>
     `;
   }).join("");
 }
 
-function buildSimplePickDetailBodyHtml(model, hardware) {
-  return model.type === "generative"
-    ? buildGenerativeDetailBodyHtml(model, hardware)
-    : buildNonGenerativeDetailBodyHtml(model, hardware);
+function buildModelShareUrl(key, mode = "expert") {
+  const url = new URL(window.location.href);
+  url.searchParams.set("model", key);
+  url.searchParams.set("ui", mode);
+  return url.toString();
+}
+
+function closeSimpleRecommendationPanel({ restoreFocus = true } = {}) {
+  const previousKey = simpleExpandedKey;
+  simpleExpandedKey = "";
+  render();
+  if (restoreFocus && previousKey) {
+    [...document.querySelectorAll(".simple-pick-card-toggle")]
+      .find((button) => button.dataset.modelKey === previousKey)
+      ?.focus();
+  }
+}
+
+function renderSimpleRecommendationPanel(hardware) {
+  const panel = $("simpleRecommendationPanel");
+  const backdrop = $("simpleInspectorBackdrop");
+  if (!panel || !backdrop) return;
+
+  if (appMode !== "simple" || !simpleExpandedKey) {
+    panel.hidden = true;
+    backdrop.hidden = true;
+    panel.innerHTML = "";
+    document.body.classList.remove("simple-inspector-active");
+    return;
+  }
+
+  const model = getModelByKey(simpleExpandedKey);
+  if (!model) {
+    simpleExpandedKey = "";
+    panel.hidden = true;
+    backdrop.hidden = true;
+    panel.innerHTML = "";
+    document.body.classList.remove("simple-inspector-active");
+    return;
+  }
+
+  const estimate = estimateAnyModel(model, hardware);
+  const meta = GRADE_META[estimate.grade];
+  const confidence = getEstimateConfidence(model, estimate, hardware);
+  const reasons = buildRecommendationReasons(estimate).slice(0, 4).map(localizeRecommendationReason);
+  const licensePolicy = getLicensePolicy(model);
+  const en = uiLanguage === "en";
+  const setting = estimate.settingLabel || estimate.quant?.label || estimate.precision?.label || "-";
+  const command = model.type === "generative"
+    ? buildOllamaCommand(model, estimate.quant, hardware)
+    : buildNonGenerativeCommand(model, estimate);
+  const memoryParts = [
+    { key: "weights", label: en ? "Weights" : "가중치", value: estimate.weightsGb || 0 },
+    { key: "kv", label: "KV cache", value: estimate.kvGb || estimate.decoderKvGb || 0 },
+    { key: "runtime", label: en ? "Runtime" : "런타임", value: estimate.runtimeOverheadGb || estimate.activationGb || 0 },
+    { key: "free", label: en ? "Free" : "여유", value: Math.max(0, (estimate.effectiveVram || hardware.availableVram) - estimate.requiredGb) },
+  ].filter((part) => part.value > 0);
+
+  panel.hidden = false;
+  backdrop.hidden = false;
+  panel.setAttribute("aria-label", en ? "Quick recommendation details" : "빠른 추천 상세");
+  panel.innerHTML = `
+    <div class="simple-inspector-head">
+      <div>
+        <span class="simple-inspector-kicker">${en ? "Quick recommendation" : "빠른 추천 상세"}</span>
+        <strong>${escapeHtml(model.name)}</strong>
+      </div>
+      <button type="button" class="icon-button" data-close-simple-inspector aria-label="${en ? "Close recommendation details" : "추천 상세 닫기"}">×</button>
+    </div>
+    <div class="simple-inspector-body">
+      <div class="simple-inspector-title">
+        <span class="grade-pill ${meta.className}">${escapeHtml(meta.label)}</span>
+        <p>${escapeHtml(model.maker)} · ${escapeHtml(model.license)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))}</p>
+        <p>${escapeHtml(modelSummary(model))}</p>
+      </div>
+      <div class="simple-inspector-metrics">
+        ${renderDetailMetric(en ? "Run verdict" : "실행 판정", meta.label)}
+        ${renderDetailMetric(en ? "Recommended setting" : "권장 설정", setting)}
+        ${renderDetailMetric(en ? "Calculated VRAM" : "계산 VRAM", formatGb(estimate.requiredGb), `${en ? "Available" : "가용"} ${formatGb(estimate.effectiveVram || hardware.availableVram)}`)}
+        ${renderDetailMetric(en ? "Estimated speed" : "예상 속도", formatSpeedRange(estimate, confidence), `${en ? "Confidence" : "신뢰도"} ${confidence.label}`)}
+      </div>
+      ${memoryParts.length ? `
+        <section class="simple-inspector-section">
+          <h3>${en ? "VRAM at a glance" : "VRAM 한눈에 보기"}</h3>
+          ${renderMemoryMap(memoryParts, Math.max(hardware.availableVram, estimate.requiredGb))}
+        </section>
+      ` : ""}
+      <section class="simple-inspector-section">
+        <h3>${en ? "Why it was recommended" : "추천 이유"}</h3>
+        <ul class="simple-inspector-reasons">${reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>
+      </section>
+      <section class="simple-inspector-section">
+        <h3>${en ? "Run command" : "실행 명령어"}</h3>
+        <pre class="command-block"><code>${escapeHtml(command)}</code></pre>
+        <button type="button" class="ghost-button" data-copy-command="${escapeAttr(command)}">${en ? "Copy command" : "명령어 복사"}</button>
+      </section>
+      <div class="simple-inspector-actions">
+        <button type="button" class="primary-button" data-open-full-simple-detail="${escapeAttr(simpleExpandedKey)}">${en ? "Open full analysis" : "전체 상세 분석"}</button>
+        <button type="button" class="ghost-button" data-share-model-link="${escapeAttr(simpleExpandedKey)}">${en ? "Copy result link" : "결과 링크 복사"}</button>
+        <button type="button" class="ghost-button" data-download-simple-card="${escapeAttr(simpleExpandedKey)}">${en ? "Download PNG card" : "요약 카드 PNG"}</button>
+      </div>
+    </div>
+  `;
 }
 
 function localizeRecommendationReason(reason) {
@@ -7258,6 +8186,20 @@ function syncUrlState() {
   params.set("purpose", $("simplePurpose").value);
   params.set("priority", $("simplePriority").value);
   if (selectedModelKey) params.set("model", selectedModelKey);
+  else if (appMode === "simple" && simpleExpandedKey) params.set("model", simpleExpandedKey);
+  if (placementSelectedKeys.size) {
+    params.set("pgUsage", placementUsageMode);
+    params.set("pgStrategy", placementStrategy);
+    if (placementTargetN != null) params.set("pgTarget", String(placementTargetN));
+    params.set("pgHeadroom", String(placementMinHeadroomPct));
+    params.set("pgQuant", placementAllowQuantChange ? "1" : "0");
+    params.set("pgContext", placementAllowContextReduction ? "1" : "0");
+    params.set("pgReplicas", placementAllowReplication ? "1" : "0");
+    if (placementPrimaryKey) params.set("pgPrimary", placementPrimaryKey);
+    params.set("pgGpus", JSON.stringify(gpuInventoryRows.map((row) => ({ presetId: row.presetId, count: row.count }))));
+    params.set("pgModels", JSON.stringify([...placementSelectedKeys]));
+    params.set("pgConfig", JSON.stringify([...placementSelectedKeys].map((key) => [key, getPlacementModelConfig(key)])));
+  }
 
   const nextUrl = `${window.location.pathname}?${params.toString()}`;
   window.history.replaceState({}, "", nextUrl);
@@ -7334,11 +8276,95 @@ function applyUrlState() {
   viewMode = nextView === "card" ? "card" : "list";
   setSelectIfValid("simplePurpose", params.get("purpose"));
   setSelectIfValid("simplePriority", params.get("priority"));
+  restorePlacementUrlState(params);
 
   syncPresetControls();
 
   const model = params.get("model");
-  selectedModelKey = hasPrimaryGpuSelection && model && getModelByKey(model) ? model : "";
+  const validModelKey = hasPrimaryGpuSelection && model && getModelByKey(model) ? model : "";
+  if (appMode === "simple") {
+    simpleExpandedKey = validModelKey;
+    selectedModelKey = "";
+  } else {
+    selectedModelKey = validModelKey;
+    simpleExpandedKey = "";
+  }
+}
+
+function restorePlacementUrlState(params) {
+  const modelPayload = params.get("pgModels");
+  if (!modelPayload) return;
+  try {
+    const models = JSON.parse(modelPayload);
+    const validKeys = Array.isArray(models)
+      ? models.filter((key) => typeof key === "string" && getModelByKey(key)).slice(0, 24)
+      : [];
+    placementSelectedKeys = new Set(validKeys);
+
+    const gpuPayload = JSON.parse(params.get("pgGpus") || "[]");
+    if (Array.isArray(gpuPayload) && gpuPayload.length) {
+      const validRows = gpuPayload
+        .filter((row) => row && GPU_PRESETS.some((gpu) => gpu.id === row.presetId))
+        .slice(0, 8)
+        .map((row, index) => ({
+          id: `gpu-row-${index + 1}`,
+          presetId: row.presetId,
+          count: clampNumber(row.count, 1, 8, 1),
+        }));
+      if (validRows.length) {
+        gpuInventoryRows = validRows;
+        gpuInventoryIdCounter = validRows.length;
+      }
+    }
+
+    placementModelConfigs.clear();
+    const configs = JSON.parse(params.get("pgConfig") || "[]");
+    if (Array.isArray(configs)) {
+      configs.forEach(([key, raw]) => {
+        if (!placementSelectedKeys.has(key) || !raw || typeof raw !== "object") return;
+        placementModelConfigs.set(key, {
+          requestShare: clampNumber(raw.requestShare, 1, 1000, 100),
+          minConcurrency: clampNumber(raw.minConcurrency, 0, 256, 1),
+          pinnedGpu: raw.pinnedGpu === "" || (
+            Number.isInteger(Number(raw.pinnedGpu))
+            && Number(raw.pinnedGpu) >= 0
+            && Number(raw.pinnedGpu) < gpuInventoryRows.length
+          ) ? String(raw.pinnedGpu ?? "") : "",
+          preferredSetting: typeof raw.preferredSetting === "string" ? raw.preferredSetting : "auto",
+          contextTokens: raw.contextTokens == null ? null : clampNumber(raw.contextTokens, 2048, 1048576, 8192),
+          allowReplica: raw.allowReplica !== false,
+        });
+      });
+    }
+    validKeys.forEach(getPlacementModelConfig);
+
+    placementUsageMode = ["pipeline", "independent", "alternate"].includes(params.get("pgUsage")) ? params.get("pgUsage") : "independent";
+    placementStrategy = ["balanced", "compact", "throughput", "primary"].includes(params.get("pgStrategy")) ? params.get("pgStrategy") : "balanced";
+    placementTargetN = params.has("pgTarget") ? clampNumber(params.get("pgTarget"), 1, 256, 1) : null;
+    placementMinHeadroomPct = clampNumber(params.get("pgHeadroom"), 0, 40, 15);
+    placementAllowQuantChange = params.get("pgQuant") !== "0";
+    placementAllowContextReduction = params.get("pgContext") === "1";
+    placementAllowReplication = params.get("pgReplicas") === "1";
+    placementPrimaryKey = placementSelectedKeys.has(params.get("pgPrimary")) ? params.get("pgPrimary") : "";
+
+    if ($("placementTargetConcurrency")) {
+      const targetValue = placementTargetN == null ? "" : String(placementTargetN);
+      const presets = [...$("placementTargetConcurrency").options].map((option) => option.value);
+      $("placementTargetConcurrency").value = presets.includes(targetValue) ? targetValue : placementTargetN == null ? "" : "custom";
+      $("placementTargetConcurrencyCustom").value = String(placementTargetN || 32);
+    }
+    if ($("placementMinHeadroom")) {
+      const headroomValue = String(placementMinHeadroomPct);
+      $("placementMinHeadroom").value = ["10", "15", "20"].includes(headroomValue) ? headroomValue : "custom";
+      $("placementMinHeadroomCustom").value = headroomValue;
+    }
+    if ($("placementAllowQuantChange")) $("placementAllowQuantChange").checked = placementAllowQuantChange;
+    if ($("placementAllowContextReduction")) $("placementAllowContextReduction").checked = placementAllowContextReduction;
+    if ($("placementAllowReplication")) $("placementAllowReplication").checked = placementAllowReplication;
+  } catch {
+    placementSelectedKeys = new Set();
+    placementModelConfigs.clear();
+  }
 }
 
 function setSelectIfValid(id, value) {

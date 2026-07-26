@@ -5,7 +5,7 @@
 // jsdom is a devDependency (`npm install`) — it is not shipped to the
 // browser build, only used here for testing.
 
-import { test, describe, before } from "node:test";
+import { test, describe, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import fs from "node:fs";
@@ -42,9 +42,14 @@ const BRIDGED_NAMES = [
   "BENCHMARKS", "PRIMARY_GPU_STORAGE_KEY",
 ];
 
-function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}) {
+const openTestWindows = new Set();
+const persistentTestWindows = new Set();
+
+function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { persistent = false } = {}) {
   const dom = new JSDOM(read("index.html"), { url, runScripts: "outside-only" });
   const { window } = dom;
+  openTestWindows.add(window);
+  if (persistent) persistentTestWindows.add(window);
   Object.entries(storage).forEach(([key, value]) => window.localStorage.setItem(key, value));
   let combined = DATA_FILES.map(read).join("\n;\n");
   combined += "\n;\n" + read("app.js");
@@ -54,10 +59,24 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}) {
   return window;
 }
 
+afterEach(() => {
+  [...openTestWindows].forEach((window) => {
+    if (persistentTestWindows.has(window)) return;
+    window.close();
+    openTestWindows.delete(window);
+  });
+});
+
+after(() => {
+  openTestWindows.forEach((window) => window.close());
+  openTestWindows.clear();
+  persistentTestWindows.clear();
+});
+
 let win;
 
 before(() => {
-  win = loadApp();
+  win = loadApp("https://example.com/?gpu=rtx4090-24", {}, { persistent: true });
 });
 
 describe("weights: dense vs MoE (active vs total params)", () => {
@@ -175,16 +194,15 @@ describe("embedding batch memory", () => {
 
 describe("reranker candidate latency", () => {
   test("more candidates require more rerank passes and higher query latency", () => {
-    const fresh = loadApp();
-    const model = fresh.eval("RERANKER_MODELS[0]");
-    fresh.rModel = model;
-    const hardware = fresh.eval(`(() => {
+    const model = win.eval("RERANKER_MODELS[0]");
+    win.rModel = model;
+    const hardware = win.eval(`(() => {
       $("gpuPreset").value = "h100-sxm-80";
       applyPreset("h100-sxm-80");
       return getHardware();
     })()`);
-    fresh.rHardware = hardware;
-    const few = fresh.eval(`estimateRerankerModel(rModel, rHardware, {
+    win.rHardware = hardware;
+    const few = win.eval(`estimateRerankerModel(rModel, rHardware, {
       queryTokens: 64,
       docTokens: 512,
       candidates: 16,
@@ -192,7 +210,7 @@ describe("reranker candidate latency", () => {
       precisionId: "fp16",
       runtime: "tei",
     })`);
-    const many = fresh.eval(`estimateRerankerModel(rModel, rHardware, {
+    const many = win.eval(`estimateRerankerModel(rModel, rHardware, {
       queryTokens: 64,
       docTokens: 512,
       candidates: 80,
@@ -341,18 +359,25 @@ describe("quick recommendation navigation", () => {
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "ko");
 
-    // Quick-recommend cards expand inline (accordion) instead of opening
-    // the shared expert-mode drawer, so the click target is the card's own
-    // toggle button, and the assertions check for the inline detail region.
+    const cardOrderBefore = [...fresh.document.querySelectorAll(".simple-pick-card-toggle")]
+      .map((button) => button.dataset.modelKey);
     card.querySelector(".simple-pick-card-toggle")
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.getElementById("modelDetail").hidden, true, "quick-recommend clicks must not open the expert-mode drawer");
-    const expandedCard = fresh.document.querySelector(".simple-pick-card.is-expanded");
-    assert.ok(expandedCard, "expected the clicked card to expand inline");
-    const inlineDetail = expandedCard.querySelector(".simple-pick-detail");
-    assert.ok(inlineDetail, "expected inline detail content inside the expanded card");
-    assert.equal(inlineDetail.querySelector("[data-share-link]") !== null, true);
-    assert.equal(inlineDetail.querySelector("[data-download-share-card]") !== null, true);
+    const inspector = fresh.document.getElementById("simpleRecommendationPanel");
+    assert.equal(inspector.hidden, false, "expected the compact recommendation inspector to open");
+    assert.ok(fresh.document.querySelector(".simple-pick-card.is-selected"));
+    assert.equal(fresh.document.querySelector(".simple-pick-card.is-expanded"), null, "cards must never span/reflow the grid");
+    assert.ok(inspector.querySelector("[data-share-model-link]"));
+    assert.ok(inspector.querySelector("[data-download-simple-card]"));
+    assert.ok(inspector.querySelector("[data-open-full-simple-detail]"));
+
+    const secondCard = fresh.document.querySelectorAll(".simple-pick-card-toggle")[1];
+    secondCard.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    const cardOrderAfter = [...fresh.document.querySelectorAll(".simple-pick-card-toggle")]
+      .map((button) => button.dataset.modelKey);
+    assert.deepEqual(cardOrderAfter, cardOrderBefore, "opening rank 2 must not reorder ranks 1 and 3");
+    assert.equal(fresh.document.querySelector(".simple-pick-card.is-selected .simple-pick-card-toggle").dataset.modelKey, cardOrderBefore[1]);
 
     const purpose = fresh.document.getElementById("simplePurpose");
     const priority = fresh.document.getElementById("simplePriority");
@@ -376,12 +401,144 @@ describe("quick recommendation navigation", () => {
     assert.equal(explicit.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(explicit.document.getElementById("expertModeSection").hidden, false);
 
-    const keySource = loadApp();
-    const key = keySource.eval("modelKey(GENERATIVE_MODELS[0])");
+    const key = win.eval("modelKey(GENERATIVE_MODELS[0])");
     const linked = loadApp(`https://example.com/?gpu=rtx4090-24&model=${encodeURIComponent(key)}`);
     assert.equal(linked.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(linked.document.getElementById("expertModeSection").hidden, false);
     assert.equal(linked.document.getElementById("modelDetail").hidden, false);
+  });
+});
+
+describe("multi-GPU placement optimizer", () => {
+  let fresh;
+
+  before(() => {
+    fresh = loadApp("https://example.com/?gpu=rtx4090-24", {}, { persistent: true });
+  });
+
+  test("rebalances the reported 3B/1.7B/0.6B two-GPU scenario", () => {
+    fresh.testScenarioKeys = fresh.eval(`
+      [
+        "Llama 3.2 3B Instruct",
+        "Qwen2.5 3B Instruct",
+        "SmolLM2 1.7B Instruct",
+        "Qwen3 1.7B",
+        "Qwen3 0.6B",
+      ].map((name) => modelKey(GENERATIVE_MODELS.find((model) => model.name === name))).filter(Boolean)
+    `);
+    fresh.testRows = [
+      { id: "scenario-gpu-1", presetId: "rtx4090-24", count: 1 },
+      { id: "scenario-gpu-2", presetId: "rtx4090-24", count: 1 },
+    ];
+    const placement = fresh.eval("computeGpuPlacement(testRows, testScenarioKeys, 'balanced', '')");
+    const free = placement.gpus.map((gpu) => gpu.remaining);
+    assert.equal(placement.unplaced.length, 0);
+    assert.ok(Math.max(...free) - Math.min(...free) < 4, `expected balanced free VRAM, got ${free.join(" / ")}`);
+    assert.ok(placement.stats.serviceFloor >= 1, "balanced mode must avoid a zero-concurrency recommendation when a safe alternative exists");
+  });
+
+  test("honors user headroom, explores alternatives, and can pin a model", () => {
+    fresh.testKeys = fresh.eval(`
+      GENERATIVE_MODELS
+        .filter((model) => model.params >= 1 && model.params <= 4)
+        .slice(0, 5)
+        .map(modelKey)
+    `);
+    assert.equal(fresh.testKeys.length, 5);
+    fresh.testRows = [
+      { id: "test-gpu-1", presetId: "rtx4090-24", count: 1 },
+      { id: "test-gpu-2", presetId: "rtx4090-24", count: 1 },
+    ];
+    const placement = fresh.eval("computeGpuPlacement(testRows, testKeys, 'balanced', '')");
+    assert.equal(placement.gpus.length, 2);
+    assert.equal(Math.round(placement.gpus[0].physicalCapacityGb), 24);
+    assert.equal(Math.round(placement.gpus[0].reservedHeadroomGb * 10) / 10, 3.6);
+    assert.ok(["exact", "approximate"].includes(placement.searchMeta.mode));
+    assert.ok(placement.searchMeta.exploredStates > 0);
+    assert.ok(placement.gpus.some((gpu) => gpu.placements.length), "expected at least one placed model");
+
+    fresh.firstPlacementKey = fresh.testKeys[0];
+    const pinned = fresh.eval(`
+      getPlacementModelConfig(firstPlacementKey).pinnedGpu = "1";
+      computeGpuPlacement(testRows, testKeys, "balanced", "")
+    `);
+    const actualPinnedGpu = pinned.gpus.findIndex((gpu) => gpu.placements.some((item) => item.model.name === fresh.eval("getModelByKey(firstPlacementKey).name")));
+    assert.equal(actualPinnedGpu, 1);
+  });
+
+  test("renders four optimization strategies and model-level controls", () => {
+    const strategyKeys = [...fresh.document.querySelectorAll("[data-placement-strategy]")]
+      .map((button) => button.dataset.placementStrategy);
+    assert.deepEqual(strategyKeys, ["balanced", "compact", "throughput", "primary"]);
+    assert.equal(fresh.document.getElementById("placementMinHeadroom").value, "15");
+    assert.equal(fresh.document.getElementById("placementAllowQuantChange").checked, true);
+
+    const firstCheckbox = fresh.document.querySelector("#placementModelList [data-model-key]");
+    fresh.controlModelKey = firstCheckbox.dataset.modelKey;
+    fresh.eval("togglePlacementModel(controlModelKey)");
+    assert.ok(fresh.document.querySelector(".placement-model-config"));
+    assert.ok(fresh.document.querySelector("[data-placement-config-field='pinnedGpu']"));
+    assert.ok(fresh.document.querySelector("[data-placement-config-field='requestShare']"));
+    assert.ok(fresh.document.querySelector("[data-placement-config-field='minConcurrency']"));
+  });
+
+  test("locks a preferred precision and only creates replicas in independent mode", () => {
+    fresh.singleKey = fresh.eval(`modelKey(GENERATIVE_MODELS.find((model) => model.name === "Qwen3 0.6B"))`);
+    fresh.testRows = [
+      { id: "replica-gpu-1", presetId: "rtx4090-24", count: 1 },
+      { id: "replica-gpu-2", presetId: "rtx4090-24", count: 1 },
+    ];
+    fresh.eval(`getPlacementModelConfig(singleKey).preferredSetting = "fp16"`);
+    const quantToggle = fresh.document.getElementById("placementAllowQuantChange");
+    quantToggle.checked = false;
+    quantToggle.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    const locked = fresh.eval("computeGpuPlacement(testRows, [singleKey], 'balanced', '')");
+    const lockedItems = locked.gpus.flatMap((gpu) => gpu.placements);
+    assert.ok(lockedItems.length > 0);
+    assert.ok(lockedItems.every((item) => item.setting.id === "fp16"));
+
+    quantToggle.checked = true;
+    quantToggle.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    const replicaToggle = fresh.document.getElementById("placementAllowReplication");
+    replicaToggle.checked = true;
+    replicaToggle.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    const replicated = fresh.eval("computeGpuPlacement(testRows, [singleKey], 'throughput', '')");
+    assert.equal(replicated.gpus.flatMap((gpu) => gpu.placements).filter((item) => item.model.name === "Qwen3 0.6B").length, 2);
+
+    fresh.document.querySelector("[data-placement-usage='pipeline']")
+      .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    const pipeline = fresh.eval("computeGpuPlacement(testRows, [singleKey], 'throughput', '')");
+    assert.equal(pipeline.gpus.flatMap((gpu) => gpu.placements).filter((item) => item.model.name === "Qwen3 0.6B").length, 1);
+    assert.equal(replicaToggle.disabled, true);
+  });
+
+  test("only explores shorter contexts after the user allows reduction", () => {
+    fresh.contextKey = fresh.eval(`modelKey(GENERATIVE_MODELS.find((model) => model.name === "Llama 3.2 3B Instruct"))`);
+    fresh.eval(`getPlacementModelConfig(contextKey).contextTokens = 32768`);
+    const lockedContexts = fresh.eval(`
+      [...new Set(getPlacementSearchCandidates(
+        getModelByKey(contextKey),
+        getPlacementModelConfig(contextKey),
+        { ...getHardware(), concurrency: 1 },
+        24,
+      ).map((candidate) => candidate.contextTokens))]
+    `);
+    assert.equal(lockedContexts.length, 1);
+    assert.equal(lockedContexts[0], 32768);
+
+    const contextToggle = fresh.document.getElementById("placementAllowContextReduction");
+    contextToggle.checked = true;
+    contextToggle.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    const reducedContexts = fresh.eval(`
+      [...new Set(getPlacementSearchCandidates(
+        getModelByKey(contextKey),
+        getPlacementModelConfig(contextKey),
+        { ...getHardware(), concurrency: 1 },
+        24,
+      ).map((candidate) => candidate.contextTokens))]
+    `);
+    assert.ok(reducedContexts.includes(32768));
+    assert.ok(reducedContexts.some((value) => value < 32768));
   });
 });
 
@@ -439,6 +596,15 @@ describe("URL state save / restore", () => {
     english.document.getElementById("gpuPreset").dispatchEvent(new english.Event("change", { bubbles: true }));
     assert.equal(english.document.getElementById("settingsToggle").textContent, "Detailed settings");
     assert.equal(new URLSearchParams(english.location.search).get("lang"), "en");
+    assert.match(english.document.querySelector(".gpu-placement-goals").textContent, /Minimum VRAM headroom/);
+    assert.match(english.document.querySelector(".gpu-placement-policy-toggles").textContent, /automatic quantization\/precision changes/);
+
+    const placementCheckbox = english.document.querySelector("#placementModelList [data-model-key]");
+    placementCheckbox.checked = true;
+    placementCheckbox.dispatchEvent(new english.Event("change", { bubbles: true }));
+    const modelControls = english.document.querySelector(".placement-model-config-grid").textContent;
+    assert.match(modelControls, /Preferred setting/);
+    assert.doesNotMatch(modelControls, /선호|요청 비율|최소 동시|GPU 고정/);
   });
 
   test("share URL encodes the current GPU and context settings", () => {
@@ -467,6 +633,30 @@ describe("URL state save / restore", () => {
     assert.equal(restored.document.getElementById("simplePurpose").value, "coding");
     assert.equal(restored.document.getElementById("simplePriority").value, "quality");
   });
+
+  test("multi-GPU placement constraints survive a shared URL", () => {
+    const source = loadApp();
+    const checkbox = source.document.querySelector("#placementModelList [data-model-key]");
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new source.Event("change", { bubbles: true }));
+    source.document.getElementById("placementMinHeadroom").value = "20";
+    source.document.getElementById("placementMinHeadroom")
+      .dispatchEvent(new source.Event("change", { bubbles: true }));
+    source.document.getElementById("placementAllowContextReduction").checked = true;
+    source.document.getElementById("placementAllowContextReduction")
+      .dispatchEvent(new source.Event("change", { bubbles: true }));
+    source.eval("syncUrlState()");
+
+    const params = new URLSearchParams(source.location.search);
+    assert.ok(params.get("pgModels"));
+    assert.equal(params.get("pgHeadroom"), "20");
+    assert.equal(params.get("pgContext"), "1");
+
+    const restored = loadApp(source.location.href);
+    assert.equal(restored.document.querySelectorAll(".placement-model-config").length, 1);
+    assert.equal(restored.document.getElementById("placementMinHeadroom").value, "20");
+    assert.equal(restored.document.getElementById("placementAllowContextReduction").checked, true);
+  });
 });
 
 describe("benchmark estimate-error aggregate stats", () => {
@@ -476,12 +666,16 @@ describe("benchmark estimate-error aggregate stats", () => {
   });
 
   test("averages |error%| across measured rows once they exist", () => {
-    const fresh = loadApp();
+    const fresh = win;
     const model = fresh.eval(`GENERATIVE_MODELS.find((m) => m.params < 10 && m.params > 3)`);
     const gpuId = "rtx4090-24";
     fresh.eval(`
       $("gpuPreset").value = "${gpuId}";
       applyPreset("${gpuId}");
+      $("contextSize").value = "8192";
+      $("concurrency").value = "1";
+      $("outputTokens").value = "512";
+      $("runtimeMode").value = "llamacpp";
     `);
     const estimate = fresh.eval(`estimateModel(GENERATIVE_MODELS.find((m) => m.name === ${JSON.stringify(model.name)}), "auto", getHardware())`);
 

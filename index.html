@@ -16,7 +16,7 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260725-onboarding1" />
+    <link rel="stylesheet" href="./styles.css?v=20260726-placement-optimizer1" />
   </head>
   <body>
     <header class="app-header">
@@ -192,6 +192,7 @@
                   <button type="button" class="workload-tab is-active" data-placement-strategy="balanced" aria-selected="true">균형 우선</button>
                   <button type="button" class="workload-tab" data-placement-strategy="compact" aria-selected="false">모델 수 우선</button>
                   <button type="button" class="workload-tab" data-placement-strategy="throughput" aria-selected="false">처리량 우선</button>
+                  <button type="button" class="workload-tab" data-placement-strategy="primary" aria-selected="false">주 모델 우선</button>
                 </div>
 
                 <div class="gpu-placement-goals">
@@ -218,6 +219,23 @@
                       <option value="">지정 안 함</option>
                     </select>
                   </label>
+                  <label class="field">
+                    <span>최소 VRAM 여유율</span>
+                    <div class="field-control-pair">
+                      <select id="placementMinHeadroom" data-preset-target="placementMinHeadroomCustom">
+                        <option value="10">10%</option>
+                        <option value="15" selected>15%</option>
+                        <option value="20">20%</option>
+                        <option value="custom">직접</option>
+                      </select>
+                      <input id="placementMinHeadroomCustom" data-direct-preset="placementMinHeadroom" type="number" min="0" max="40" step="1" value="15" aria-label="최소 VRAM 여유율 직접 입력" />
+                    </div>
+                  </label>
+                </div>
+                <div class="gpu-placement-policy-toggles">
+                  <label><input type="checkbox" id="placementAllowQuantChange" checked /> 양자화·정밀도 자동 변경 허용</label>
+                  <label><input type="checkbox" id="placementAllowContextReduction" /> 컨텍스트 자동 축소 허용</label>
+                  <label><input type="checkbox" id="placementAllowReplication" /> 독립 서비스 모델 복제 허용</label>
                 </div>
 
                 <div class="gpu-placement-actions">
@@ -648,6 +666,8 @@
 
     <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
     <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
+    <div class="simple-inspector-backdrop" id="simpleInspectorBackdrop" hidden></div>
+    <aside class="simple-recommendation-inspector" id="simpleRecommendationPanel" role="dialog" aria-label="빠른 추천 상세" tabindex="-1" hidden></aside>
 
     <div class="compare-modal-backdrop" id="compareModalBackdrop" hidden></div>
     <div class="compare-modal" id="compareModal" role="dialog" aria-modal="true" aria-label="모델 비교" hidden></div>
@@ -666,6 +686,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260725-share-card1" defer></script>
+    <script src="./app.js?v=20260726-placement-optimizer1" defer></script>
   </body>
 </html>
