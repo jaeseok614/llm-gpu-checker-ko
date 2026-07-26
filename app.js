@@ -3428,6 +3428,10 @@ function runGpuPlacement() {
       emptyDiagnosisEl.hidden = true;
       emptyDiagnosisEl.innerHTML = "";
     }
+    if ($("gpuPlacementPlanCompare")) {
+      $("gpuPlacementPlanCompare").hidden = true;
+      $("gpuPlacementPlanCompare").innerHTML = "";
+    }
     if ($("placementResultOverview")) $("placementResultOverview").innerHTML = "";
     if ($("placementResultStage")) $("placementResultStage").hidden = true;
     lastPlacementRun = null;
