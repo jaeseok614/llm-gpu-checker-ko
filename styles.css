@@ -1381,6 +1381,114 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.placement-workspace-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.placement-guide {
+  position: relative;
+}
+
+.placement-guide > summary {
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.placement-guide > summary::-webkit-details-marker {
+  display: none;
+}
+
+.placement-guide > summary::after {
+  content: " +";
+  color: var(--blue);
+}
+
+.placement-guide[open] > summary {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.placement-guide[open] > summary::after {
+  content: " −";
+}
+
+.placement-guide-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(420px, calc(100vw - 48px));
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--panel-raised);
+}
+
+.placement-guide-popover > strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.placement-guide-popover ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.placement-guide-popover dl {
+  display: grid;
+  gap: 7px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.placement-guide-popover dl > div {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.placement-guide-popover dt,
+.placement-guide-popover dd {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.placement-guide-popover dt {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.placement-guide-popover dd,
+.placement-guide-popover > p {
+  color: var(--muted);
+}
+
+.placement-guide-popover > p {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .placement-welcome {
   display: grid;
   grid-template-columns: minmax(260px, 0.7fr) minmax(520px, 1.3fr);
@@ -4507,6 +4615,30 @@ button:focus-visible {
 
   .placement-workspace-head {
     flex-direction: column;
+  }
+
+  .placement-workspace-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .placement-workspace-actions > button,
+  .placement-guide {
+    flex: 1 1 auto;
+  }
+
+  .placement-guide > summary {
+    text-align: center;
+  }
+
+  .placement-guide[open] {
+    flex-basis: 100%;
+  }
+
+  .placement-guide-popover {
+    position: static;
+    width: 100%;
+    margin-top: 8px;
   }
 
   .placement-welcome {

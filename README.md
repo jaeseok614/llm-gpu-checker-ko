@@ -22,7 +22,7 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">벤치마크 제보</a>
 </p>
 
-![AI Hardware Fit 현재 UI 미리보기](./docs/english-ui-desktop.png)
+![GPU에 맞는 모델을 찾는 AI Hardware Fit 화면](./docs/model-finder-ko.png)
 
 ## 왜 만들었나요?
 
@@ -43,7 +43,14 @@
 - Hugging Face 공개 모델 직접 계산과 로컬 벤치마크 CLI
 - 첫 실측 10개 수집 계획: [benchmark-first-10.md](docs/benchmark-first-10.md)
 
-## 30초 사용법
+## 두 가지로 시작하세요
+
+| 원하는 작업 | 시작 위치 |
+| --- | --- |
+| GPU 한 대에서 실행할 모델 찾기 | [웹에서 모델 찾기](https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko) |
+| LLM·임베딩·리랭커·OCR/VLM 함께 배치 | [AI 스택 배치](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&lang=ko) |
+
+### 내 GPU에 맞는 모델 찾기
 
 1. GPU를 선택합니다.
 2. 모델 종류를 선택합니다.
@@ -54,6 +61,8 @@
 
 [AI 스택 배치 플래너 바로 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&lang=ko)
 
+![추천 구성에서 시작하는 AI 스택 배치 플래너](./docs/placement-planner-ko.png)
+
 LLM 하나뿐 아니라 임베딩·리랭커·OCR/VLM을 함께 실행하려면 `AI 스택 배치 플래너`를 사용하세요.
 
 1. RAG·문서 AI·여러 LLM 중 추천 구성을 고르거나 직접 구성을 시작합니다.
@@ -63,6 +72,15 @@ LLM 하나뿐 아니라 임베딩·리랭커·OCR/VLM을 함께 실행하려면 
 5. 균형형·처리량형·주 모델형 배치안을 비교하고 병목과 개선 방법을 확인합니다.
 
 플래너는 GPU별 모델·정밀도 배치, 권장 동시 접속 수, 예상 총 처리량, 남은 VRAM, 목표 미달 원인과 실행 설정 초안을 함께 제공합니다.
+웹 화면 우측 상단의 `사용 가이드`를 열면 운영 방식의 차이와 기본 진행 순서를 페이지를 벗어나지 않고 확인할 수 있습니다.
+
+| 운영 방식 | 이런 경우 선택 |
+| --- | --- |
+| 파이프라인 | 한 요청이 임베딩 → 리랭커 → LLM처럼 여러 모델을 순서대로 사용 |
+| 독립 서비스 | 모델별로 별도 API와 사용자가 존재 |
+| 순차 실행 | 여러 모델을 설치하되 한 번에 하나만 실행 |
+
+처음 사용한다면 `RAG 기본 구성 → 균형 우선 → 목표 4명`에서 시작한 뒤 결과의 병목 안내에 따라 조정하는 것을 권장합니다.
 
 ## 대표 사용 사례
 

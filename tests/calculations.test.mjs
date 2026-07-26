@@ -346,6 +346,14 @@ describe("first-visit GPU onboarding", () => {
     assert.equal(fresh.document.getElementById("hardwarePanel").hidden, false);
     assert.equal(fresh.document.getElementById("gpuPlacementPanel").hidden, false);
     assert.equal(fresh.document.getElementById("placementWelcome").hidden, false);
+    assert.equal(
+      fresh.document.querySelector("#placementGuide > summary")?.textContent.trim(),
+      "사용 가이드",
+    );
+    assert.match(
+      fresh.document.querySelector(".placement-guide-popover")?.textContent || "",
+      /파이프라인.*독립 서비스.*순차 실행/s,
+    );
     assert.equal(fresh.document.getElementById("placementBuilder").hidden, true);
     assert.equal(fresh.document.getElementById("resultsPanel").hidden, true);
     assert.equal(new URLSearchParams(fresh.location.search).get("mode"), "placement");
@@ -667,8 +675,8 @@ describe("URL state save / restore", () => {
     english.document.querySelector("[data-placement-starter='rag']")
       .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
     const placementText = english.document.getElementById("gpuPlacementPanel").textContent;
-    assert.match(placementText, /AI Stack Placement Planner|Basic RAG stack|Operating goals/);
-    assert.doesNotMatch(placementText, /여러 모델|처음이라면|하드웨어|모델 선택|운영 목표|세부 조건|배치 결과/);
+    assert.match(placementText, /AI Stack Placement Planner|Basic RAG stack|Operating goals|Quick guide/);
+    assert.doesNotMatch(placementText, /여러 모델|처음이라면|하드웨어|모델 선택|운영 목표|세부 조건|배치 결과|사용 가이드/);
   });
 
   test("share URL encodes the current GPU and context settings", () => {

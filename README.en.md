@@ -22,7 +22,7 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml">Report a benchmark</a>
 </p>
 
-![AI Hardware Fit current UI preview](./docs/english-ui-desktop.png)
+![AI Hardware Fit model finder](./docs/model-finder-en.png)
 
 ## Why this project?
 
@@ -41,7 +41,14 @@
 - Source-linked representative public evaluations and plain-language license guidance
 - Direct calculation for public Hugging Face models and a local benchmark CLI
 
-## 30-second guide
+## Choose your starting point
+
+| Goal | Start here |
+| --- | --- |
+| Find a model that fits one GPU | [Model Finder](https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en) |
+| Place an LLM, embedding, reranker, OCR, or VLM stack together | [AI Stack Placement](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&lang=en) |
+
+### Find models for your GPU
 
 1. Select your GPU.
 2. Select a workload.
@@ -52,6 +59,8 @@
 
 [Open the AI Stack Placement Planner](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&lang=en)
 
+![AI Stack Placement Planner starter screen](./docs/placement-planner-en.png)
+
 Use the planner when an LLM, embedding model, reranker, OCR pipeline, or VLM must share the same hardware:
 
 1. Start from the RAG, document AI, or multiple-LLM preset—or build manually.
@@ -61,6 +70,15 @@ Use the planner when an LLM, embedding model, reranker, OCR pipeline, or VLM mus
 5. Compare balanced, throughput, and primary-first plans, then review bottlenecks and suggested changes.
 
 The planner reports model and precision placement by GPU, recommended concurrency, estimated total throughput, remaining VRAM, target shortfalls, and deployment-command drafts.
+Open `Quick guide` in the planner header to review the workflow and usage-pattern definitions without leaving the app.
+
+| Usage pattern | Choose it when |
+| --- | --- |
+| Pipeline | One request passes through several models, such as embedding → reranker → LLM |
+| Independent services | Each model has its own API and users |
+| One at a time | Several models stay installed, but only one runs at a time |
+
+For a first run, start with `Basic RAG stack → Balanced → target 4`, then follow the bottleneck suggestions in the result.
 
 ## Typical questions
 

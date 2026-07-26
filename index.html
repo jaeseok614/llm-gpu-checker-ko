@@ -16,7 +16,7 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260726-placement-workspace1" />
+    <link rel="stylesheet" href="./styles.css?v=20260726-placement-guide1" />
   </head>
   <body>
     <header class="app-header">
@@ -187,7 +187,27 @@
               <h2 id="placementPlannerTitle">AI 스택 배치 플래너</h2>
               <p>LLM·임베딩·리랭커·OCR/VLM을 보유 GPU에 나눠 배치합니다.</p>
             </div>
-            <button type="button" class="ghost-button" data-core-task="finder">모델 찾기로 돌아가기</button>
+            <div class="placement-workspace-actions">
+              <details class="placement-guide" id="placementGuide">
+                <summary>사용 가이드</summary>
+                <div class="placement-guide-popover">
+                  <strong>처음에는 균형형으로 시작하세요</strong>
+                  <ol>
+                    <li>RAG·문서 AI·여러 LLM 중 가까운 구성을 선택합니다.</li>
+                    <li>보유 GPU와 동시에 실행할 모델을 확인합니다.</li>
+                    <li>운영 방식과 목표 동시 사용자를 정합니다.</li>
+                    <li>배치 계산 후 병목과 세 가지 대안을 비교합니다.</li>
+                  </ol>
+                  <dl>
+                    <div><dt>파이프라인</dt><dd>한 요청이 여러 모델을 순서대로 사용</dd></div>
+                    <div><dt>독립 서비스</dt><dd>모델마다 별도 API와 사용자를 운영</dd></div>
+                    <div><dt>순차 실행</dt><dd>설치해 두고 한 번에 하나만 실행</dd></div>
+                  </dl>
+                  <p>결과는 계산 추정치입니다. 실제 운영 전에는 내 환경에서 검증하세요.</p>
+                </div>
+              </details>
+              <button type="button" class="ghost-button" data-core-task="finder">모델 찾기로 돌아가기</button>
+            </div>
           </div>
 
           <div class="placement-welcome" id="placementWelcome">
@@ -783,6 +803,6 @@
     <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
     <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
     <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260726-placement-workspace1" defer></script>
+    <script src="./app.js?v=20260726-placement-guide1" defer></script>
   </body>
 </html>
