@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the app</strong></a>
-  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en&amp;studio=consulting"><strong>SI sizing mode</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en&amp;studio=consulting"><strong>AI infrastructure sizing</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=en">AI Stack Placement</a>
   · <a href="./README.md">한국어</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">Request a GPU</a>
@@ -26,7 +26,7 @@
 ## In 10 seconds
 
 - **Developers and individuals** can find LLM, VLM, image, and video models that fit their GPU.
-- **SIs, MSPs, and server vendors** can turn model, QPS, concurrency, p95, and availability requirements into economy, recommended, and scalable plans.
+- **Infrastructure teams, MSPs, and server vendors** can turn model, QPS, concurrency, p95, and availability requirements into economy, recommended, and scalable plans.
 - **Outputs** include per-server GPU, CPU, RAM, NVMe, NIC, power, TCO, placement, confidence, PoC checks, Excel/PDF, and a deployment draft.
 
 > This tool supports preliminary sizing, comparison, and pre-PoC hypotheses. It does not guarantee performance or produce a final vendor-approved bill of materials.
@@ -37,6 +37,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v3.6** — Added STT/TTS to AI stack placement and an avatar-chat preset spanning speech input, LLM response, speech synthesis, and avatar video.
 - **v3.5** — Completed detailed SLA inputs, per-server placement and failover capacity, PCIe/NIC/UPS/cooling BOM, TCO outputs, and measured PoC validation.
 - **v3.4** — Added an editable Excel estimate, purchase/energy/three-year TCO, PDF proposal summary, and Docker Compose draft.
 - **v3.3** — Added PCIe, NVLink/NVSwitch review, NIC, storage, UPS, cooling, backup, and monitoring BOM items.
@@ -61,7 +62,7 @@
 
 ## Highlights
 
-- **v3.1 SI sizing consultation** turns customer traffic, availability, and growth assumptions into three infrastructure plans with shareable links, Excel/PDF outputs, and a PoC checklist.
+- **AI infrastructure sizing** turns customer traffic, availability, and growth assumptions into three infrastructure plans with shareable links, Excel/PDF outputs, and a PoC checklist.
 - **v2.0 Decision Hub** combines measurement confidence, Benchmark 2.0, GPU/model deep links, purchase TCO, and launch recipes.
 - Measurement groups expose sample count, median, range, 95% confidence interval, and estimator error.
 - Purchase Advisor supports new/used prices, KRW conversion, current-GPU resale value, electricity, and ownership period.

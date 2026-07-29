@@ -247,6 +247,10 @@
                 <strong>여러 LLM 서비스</strong>
                 <span>여러 모델을 독립 API로 운영</span>
               </button>
+              <button type="button" class="placement-starter-card" data-placement-starter="voice-avatar">
+                <strong>AI 아바타 채팅</strong>
+                <span>STT + LLM + TTS + 아바타 영상</span>
+              </button>
               <button type="button" class="placement-starter-card is-direct" data-placement-starter="custom">
                 <strong>직접 선택</strong>
                 <span>원하는 GPU와 모델을 직접 구성</span>
@@ -284,6 +288,8 @@
                   <button type="button" class="workload-tab" data-placement-type="embedding" aria-selected="false">임베딩</button>
                   <button type="button" class="workload-tab" data-placement-type="reranker" aria-selected="false">리랭커</button>
                   <button type="button" class="workload-tab" data-placement-type="vision" aria-selected="false">OCR·VLM</button>
+                  <button type="button" class="workload-tab" data-placement-type="audio-stt" aria-selected="false">STT</button>
+                  <button type="button" class="workload-tab" data-placement-type="audio-tts" aria-selected="false">TTS</button>
                 </div>
                 <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" aria-label="배치할 모델 검색" autocomplete="off" />
                 <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>

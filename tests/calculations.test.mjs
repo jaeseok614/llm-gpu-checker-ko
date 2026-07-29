@@ -1114,7 +1114,7 @@ describe("v2.2 user build calculator", () => {
   });
 });
 
-describe("v3.5 purchase decision studio", () => {
+describe("v3.6 infrastructure sizing and multimodal stack", () => {
   test("renders seven decision tools and source-linked Korean prices", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);
@@ -1145,7 +1145,7 @@ describe("v3.5 purchase decision studio", () => {
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 
-  test("creates three SI sizing options with infrastructure and PoC outputs", () => {
+  test("creates three infrastructure sizing options with infrastructure and PoC outputs", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko&studio=consulting", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll(".si-plan-card").length, 3);
     assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /경제형|권장형|확장형/);
@@ -1166,5 +1166,16 @@ describe("v3.5 purchase decision studio", () => {
     ttft.dispatchEvent(new platform.Event("change", { bubbles: true }));
     assert.match(platform.document.querySelector(".si-poc-verdict").textContent, /adjustment|required|passed/i);
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+
+  test("builds an avatar chat stack with STT, LLM, TTS, and video models", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx4090-24&mode=placement&lang=en");
+    platform.document.querySelector("[data-placement-starter='voice-avatar']").click();
+    assert.equal(platform.document.querySelector("[data-placement-usage='pipeline']").getAttribute("aria-selected"), "true");
+    assert.equal(platform.document.querySelectorAll(".placement-model-config").length, 4);
+    assert.match(platform.document.querySelector("#placementModelSelected").textContent, /Whisper small|Kokoro-82M|LTX-Video/);
+    assert.equal(platform.document.querySelectorAll("[data-placement-type='audio-stt'], [data-placement-type='audio-tts']").length, 2);
+    assert.equal(platform.eval("getPlacementBaselineOptions(AUDIO_MODELS.find((model) => model.type === 'audio-stt'), { ...getHardware(), concurrency: 1 })[0].setting.id"), "fp16");
+    assert.equal(platform.eval("getPlacementCapacity(AUDIO_MODELS.find((model) => model.type === 'audio-tts'), { id: 'fp16' }, getHardware(), getHardware().availableVram).unit"), "× realtime");
   });
 });

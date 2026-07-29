@@ -6,7 +6,7 @@ const DECISION_STUDIO_COPY = {
   ko: {
     title: "구매 결정 스튜디오",
     note: "가격·목표 작업·시스템 호환성과 실측 근거를 한 흐름에서 비교합니다.",
-    consulting: "SI 상담",
+    consulting: "인프라 견적",
     recommend: "맞춤 추천",
     market: "국내 시세",
     custom: "직접 모델",
@@ -17,7 +17,7 @@ const DECISION_STUDIO_COPY = {
   en: {
     title: "Purchase decision studio",
     note: "Compare price, workload goals, system compatibility, and measured evidence in one flow.",
-    consulting: "SI sizing",
+    consulting: "Infra sizing",
     recommend: "Guided picks",
     market: "Korean market",
     custom: "Custom model",

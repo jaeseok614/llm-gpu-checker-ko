@@ -713,6 +713,8 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["LLM/VLM + OCR + 임베딩", "LLM/VLM + OCR + embedding"],
   ["여러 LLM 서비스", "Multiple LLM services"],
   ["여러 모델을 독립 API로 운영", "Run multiple models as independent APIs"],
+  ["AI 아바타 채팅", "AI avatar chat"],
+  ["STT + LLM + TTS + 아바타 영상", "STT + LLM + TTS + avatar video"],
   ["직접 선택", "Build manually"],
   ["원하는 GPU와 모델을 직접 구성", "Choose your own GPUs and models"],
   ["하드웨어", "Hardware"],
@@ -2785,10 +2787,16 @@ const PLACEMENT_STARTER_PRESETS = {
     target: 4,
     modelNames: ["Llama 3.2 3B Instruct", "Qwen3 4B", "SmolLM2 1.7B Instruct"],
   },
+  "voice-avatar": {
+    usage: "pipeline",
+    strategy: "throughput",
+    target: 2,
+    modelNames: ["Whisper small", "Qwen3 4B", "Kokoro-82M", "Lightricks/LTX-Video"],
+  },
 };
 
 function allPlacementModels() {
-  return [...GENERATIVE_MODELS, ...EMBEDDING_MODELS, ...RERANKER_MODELS, ...OCR_MODELS];
+  return [...GENERATIVE_MODELS, ...EMBEDDING_MODELS, ...RERANKER_MODELS, ...OCR_MODELS, ...AUDIO_MODELS];
 }
 
 function clearPlacementResults() {
@@ -2933,6 +2941,8 @@ function getModelsForPlacementType(type) {
   if (type === "embedding") return EMBEDDING_MODELS;
   if (type === "reranker") return RERANKER_MODELS;
   if (type === "vision") return OCR_MODELS;
+  if (type === "audio-stt") return AUDIO_STT_MODELS;
+  if (type === "audio-tts") return AUDIO_TTS_MODELS;
   return GENERATIVE_MODELS;
 }
 
@@ -2961,6 +2971,9 @@ function getPlacementWorkload(model) {
   }
   if (isVisionModel(model)) {
     return { type: model.type, ...PLACEMENT_DEFAULT_WORKLOADS.vision };
+  }
+  if (model.type === "audio-stt" || model.type === "audio-tts") {
+    return { type: model.type };
   }
   return null;
 }
@@ -3190,6 +3203,14 @@ function setPlacementActiveType(type) {
 }
 
 function getPlacementBaselineOptions(model, hardware) {
+  if (model.type === "audio-stt" || model.type === "audio-tts") {
+    const estimate = estimateAudioModel(model, { ...hardware, concurrency: 1 });
+    return [{
+      setting: { id: "fp16", label: "FP16", rank: 4 },
+      label: "FP16",
+      requiredGb: estimate.requiredGb,
+    }];
+  }
   if (model.type === "embedding") {
     const workload = getPlacementWorkload(model);
     return getPlacementPrecisions(model, ENCODER_PRECISIONS)
@@ -3236,6 +3257,10 @@ function getPlacementCapacity(model, setting, hardware, budgetGb) {
     return { kind: "concurrency", ...computeConcurrencyBounds(model, setting, { ...hardware, concurrency: 1 }, budgetGb) };
   }
   const budgetHardware = { ...hardware, availableVram: budgetGb, baseEffectiveVram: budgetGb };
+  if (model.type === "audio-stt" || model.type === "audio-tts") {
+    const estimate = estimateAudioModel(model, budgetHardware);
+    return { kind: "throughput", unit: "× realtime", value: estimate.speed };
+  }
   if (model.type === "embedding") {
     const estimate = estimateEncoderWithPrecision(model, budgetHardware, getPlacementWorkload(model), setting);
     return { kind: "throughput", unit: "doc/s", value: estimate.speed, tokenUnit: "tok/s", tokenValue: estimate.throughput };
@@ -8339,6 +8364,22 @@ function buildFormulaText(type) {
 
 function buildNonGenerativeCommand(model, estimate, batchSizeOverride) {
   const lowerName = model.name.toLowerCase();
+  if (model.type === "audio-stt") {
+    return `from transformers import pipeline
+
+transcriber = pipeline(
+    "automatic-speech-recognition",
+    model="${model.name}",
+    device="cuda",
+)
+result = transcriber("./speech.wav")`;
+  }
+  if (model.type === "audio-tts") {
+    return `${uiLanguage === "en"
+      ? `# Start a GPU-backed TTS worker for ${model.name} and stream its audio to the avatar service.`
+      : `# ${model.name} GPU TTS 워커를 실행하고 스트리밍 음성을 아바타 서비스에 전달하세요.`}
+# Check the model card for the current inference API and license terms.`;
+  }
   if (model.type === "embedding") {
     const torchDtype = ["fp16", "bf16", "fp32"].includes(estimate.precision.id)
       ? estimate.precision.id.replace("fp", "float").replace("bf", "bfloat")

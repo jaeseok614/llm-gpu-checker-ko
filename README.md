@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 바로 사용</strong></a>
-  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko&amp;studio=consulting"><strong>SI 상담 모드</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko&amp;studio=consulting"><strong>AI 인프라 견적</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=ko">AI 스택 배치</a>
   · <a href="./README.en.md">English</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">GPU 추가 요청</a>
@@ -26,7 +26,7 @@
 ## 10초 요약
 
 - **개발자·개인 사용자**: 내 GPU에서 실행할 수 있는 LLM·VLM·이미지·영상 모델을 찾습니다.
-- **SI·MSP·서버 업체**: 고객의 모델·QPS·동시 요청·p95·가용성을 경제형·권장형·확장형 인프라 3안으로 변환합니다.
+- **인프라 구축·MSP·서버 업체**: 고객의 모델·QPS·동시 요청·p95·가용성을 경제형·권장형·확장형 인프라 3안으로 변환합니다.
 - **산출물**: 서버별 GPU·CPU·RAM·NVMe·NIC·전력·TCO, 모델 배치, 신뢰도, PoC 체크리스트, Excel·PDF·배포 초안.
 
 > 이 프로젝트는 정확한 자동 견적이나 성능 보장을 제공하지 않습니다. 사전 산정·비교 검토·PoC 전 가설 수립을 지원하며 실제 구축 전 검증이 필요합니다.
@@ -37,12 +37,13 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v3.6** — AI 스택 배치에 STT·TTS를 연결하고, 음성 입력부터 LLM 응답·음성 합성·아바타 영상까지 묶은 AI 아바타 채팅 프리셋을 추가했습니다.
 - **v3.5** — 상세 SLA 입력, 서버별 배치·장애 여유, PCIe·NIC·UPS·냉각 BOM, TCO·제안 산출물과 실측 PoC 판정을 완성했습니다.
 - **v3.4** — 편집형 Excel 견적서, 도입비·전력비·3년 TCO, PDF 제안 요약과 Docker Compose 초안을 추가했습니다.
 - **v3.3** — PCIe·NVLink/NVSwitch·NIC·스토리지·UPS·냉각·백업·모니터링 BOM을 추가했습니다.
 - **v3.2** — 경제형·권장형·확장형의 서버별 GPU 구성, 모델 배치와 장애 시 잔여 처리량을 추가했습니다.
 - **v3.1.1** — 고객 업종·담당자·반출 정책·QPS·최대 토큰·TTFT/p95·운영시간 입력을 추가했습니다.
-- **v3.1** — SI 상담 요구를 경제형·권장형·확장형 인프라 3안으로 산정하고 CPU·RAM·NVMe·네트워크·전력·Excel·PoC 산출물을 추가했습니다.
+- **v3.1** — AI 인프라 견적 요구를 경제형·권장형·확장형 3안으로 산정하고 CPU·RAM·NVMe·네트워크·전력·Excel·PoC 산출물을 추가했습니다.
 - **v3.0** — 최저 비용·균형·최고 성능 3개 결과와 국내 시세·질문형 추천·직접 모델·부품 호환·런타임·실측 제보를 하나의 구매 결정 흐름으로 통합했습니다.
 - **v2.8** — 브라우저 실측 제보, 환경·기여자 기록, 동일 조건 비교와 이상치 검사를 추가했습니다.
 - **v2.7** — NVIDIA·AMD·Intel·Apple의 운영체제별 런타임 난이도와 권장 실행 명령을 추가했습니다.
@@ -61,7 +62,7 @@
 
 ## 주요 기능
 
-- **v3.1 SI 사전 견적 상담**: 고객 요구·동시 요청·가용성·성장 여유를 입력해 경제형·권장형·확장형 3안과 Excel·PDF·PoC 체크리스트를 생성합니다.
+- **AI 인프라 사전 견적**: 고객 요구·동시 요청·가용성·성장 여유를 입력해 경제형·권장형·확장형 3안과 Excel·PDF·PoC 체크리스트를 생성합니다.
 - **v2.0 의사결정 허브**: 실측 신뢰구간, 벤치마크 2.0, GPU·모델 상세 링크, 구매 TCO, 실행 설정을 한곳에서 제공합니다.
 - 동일 조건 실측의 표본 수·중앙값·범위·95% 신뢰구간과 추정 오차를 표시합니다.
 - 신품·중고 가격, 원화 환산, 현재 GPU 처분가, 전기요금과 사용 기간으로 업그레이드 가치를 계산합니다.
@@ -77,7 +78,7 @@
 - 동일 GPU·모델 조건의 사용자 측정값을 이용한 속도 보정과 신뢰도 표시
 - 공식/추정 사양, 검증일, 측정 표본 수를 구분하는 데이터 품질 표시
 - 실측 데이터·GPU·모델 범위와 우선 측정 대상을 보여주는 벤치마크 대시보드
-- 여러 GPU에 여러 모델을 배치하는 AI 스택 배치 플래너
+- 여러 GPU에 LLM·VLM·이미지·영상·STT·TTS 모델을 함께 배치하는 AI 스택 플래너와 AI 아바타 채팅 프리셋
 - 한국어/영어 UI, 반응형 모바일 화면, 키보드 포커스와 모션 감소 지원
 
 ## 자동화된 기여 파이프라인
@@ -115,8 +116,8 @@ npm run check
 - [계산 방법](./docs/methodology.md)
 - [정확도와 한계](./docs/accuracy-and-limits.md)
 - [데이터 출처](./docs/data-sources.md)
-- [SI 상담 모드 가이드와 가상 사례](./docs/si-consulting-guide.md)
-- [SI 견적 Excel 예제](./docs/examples/si-sizing-example.xlsx)
+- [AI 인프라 견적 가이드와 가상 사례](./docs/si-consulting-guide.md)
+- [AI 인프라 견적 Excel 예제](./docs/examples/si-sizing-example.xlsx)
 - [GPU 기여 파이프라인](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor 계산과 한계](./docs/v1.4-advisor-methodology.md)
 - [v1.5 카탈로그·음성·대시보드](./docs/v1.5-catalog-audio-dashboard.md)
