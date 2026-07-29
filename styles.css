@@ -941,9 +941,46 @@ html[lang="en"] .simple-mode-head > div:first-child {
   grid-column: span 2;
 }
 
+.advisor-model-select-field {
+  position: relative;
+}
+
 .advisor-model-select-field small {
+  position: absolute;
+  top: 0;
+  right: 0;
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.advisor-alternative-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  border: 1px solid var(--amber);
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.advisor-difference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.advisor-difference span {
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .gpu-advisor-list {
@@ -1060,6 +1097,11 @@ html[lang="en"] .simple-mode-head > div:first-child {
   .advisor-model-search-field,
   .advisor-model-select-field {
     grid-column: span 1;
+  }
+
+  .advisor-alternative-notice {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .benchmark-dashboard-grid {

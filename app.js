@@ -6689,11 +6689,60 @@ function gpuComparisonSnapshot(preset) {
 }
 
 function estimateAnyModelForHardware(model, hardware) {
-  if (model.type === "embedding") return estimateEncoderModel(model, hardware, getWorkloadSettings());
-  if (model.type === "reranker") return estimateRerankerModel(model, hardware, getWorkloadSettings());
+  const workload = getAdvisorWorkloadSettings(model, hardware);
+  if (model.type === "embedding") return estimateEncoderModel(model, hardware, workload);
+  if (model.type === "reranker") return estimateRerankerModel(model, hardware, workload);
   if (model.type === "audio-stt" || model.type === "audio-tts") return estimateAudioModel(model, hardware);
-  if (isVisionModel(model)) return estimateOcrModel(model, hardware, getWorkloadSettings());
+  if (isVisionModel(model)) return estimateOcrModel(model, hardware, workload);
   return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
+}
+
+function getAdvisorWorkloadSettings(model, hardware) {
+  if (model.type === "embedding") {
+    return {
+      type: "embedding",
+      inputTokens: clampNumber($("embeddingInputTokens")?.value, 1, 32768, 384),
+      batchSize: clampNumber($("embeddingBatchSize")?.value, 1, 1024, 32),
+      precisionId: $("encoderPrecision")?.value || "fp16",
+      runtime: $("encoderRuntime")?.value || "tei",
+      maxBatchTokens: clampNumber($("embeddingBatchTokens")?.value, 512, 1048576, 16384),
+    };
+  }
+  if (model.type === "reranker") {
+    return {
+      type: "reranker",
+      queryTokens: clampNumber($("rerankerQueryTokens")?.value, 1, 8192, 64),
+      docTokens: clampNumber($("rerankerDocTokens")?.value, 1, 32768, 512),
+      candidates: clampNumber($("rerankerCandidates")?.value, 1, 10000, 40),
+      batchSize: clampNumber($("rerankerBatchSize")?.value, 1, 1024, 16),
+      precisionId: $("rerankerPrecision")?.value || "fp16",
+      runtime: $("rerankerRuntime")?.value || "tei",
+    };
+  }
+  if (isVisionModel(model)) {
+    return {
+      type: model.type === "image-generation" ? "imageGeneration" : model.type === "video-generation" ? "videoGeneration" : model.type,
+      resolutionPreset: $("ocrResolutionPreset")?.value || "custom",
+      width: clampNumber($("ocrWidth")?.value, 320, 10000, model.type === "image-generation" ? 1024 : 832),
+      height: clampNumber($("ocrHeight")?.value, 320, 14000, model.type === "image-generation" ? 1024 : 480),
+      batchSize: clampNumber($("ocrBatchSize")?.value, 1, 256, 1),
+      precisionId: $("ocrPrecision")?.value || "fp16",
+      featureSet: $("ocrFeatureSet")?.value || "text",
+      steps: clampNumber($("mediaSteps")?.value, 1, 150, 28),
+      frames: clampNumber($("mediaFrames")?.value, 1, 241, 81),
+      fps: clampNumber($("mediaFps")?.value, 1, 60, 16),
+      loraCount: clampNumber($("mediaLoraCount")?.value, 0, 8, 0),
+      offload: $("mediaOffload")?.value || "none",
+      optimization: $("mediaOptimization")?.value || "standard",
+    };
+  }
+  return {
+    type: "generative",
+    context: hardware.context,
+    concurrency: hardware.concurrency,
+    outputTokens: hardware.outputTokens,
+    kvPrecision: hardware.kvPrecision,
+  };
 }
 
 function renderGpuAdvisor() {
@@ -6752,10 +6801,8 @@ function renderGpuAdvisor() {
   const currentEstimate = currentHardware ? estimateAnyModelForHardware(model, currentHardware) : null;
   const currentSpeed = Number(currentEstimate?.speed || currentEstimate?.throughput || 0);
   const currentPrice = clampNumber($("advisorCurrentPriceUsd")?.value, 0, 100000, 0);
-  const candidates = GPU_PRESETS
+  const evaluatedCandidates = GPU_PRESETS
     .filter((gpu) => gpu.id !== "custom")
-    .filter((gpu) => vendor === "all" || gpu.vendor === vendor)
-    .filter((gpu) => formFactor === "all" || gpu.formFactor === formFactor)
     .map((preset) => {
       const hardware = buildHardwareForPreset(preset);
       const estimate = estimateAnyModelForHardware(model, hardware);
@@ -6765,18 +6812,37 @@ function renderGpuAdvisor() {
       const runnable = estimate && GRADE_META[estimate.grade]?.score >= GRADE_META.B.score;
       const speed = Number(estimate?.speed || estimate?.throughput || 0);
       const valueScore = runnable ? speed / Math.max(200, market.priceUsd || budget || 1000) : 0;
-      return { preset, estimate, market, monthlyEnergy, fitsBudget, runnable, speed, valueScore };
-    })
-    .filter((item) => item.runnable && item.fitsBudget)
+      const fitsVendor = vendor === "all" || preset.vendor === vendor;
+      const fitsFormFactor = formFactor === "all" || preset.formFactor === formFactor;
+      return { preset, estimate, market, monthlyEnergy, fitsBudget, fitsVendor, fitsFormFactor, runnable, speed, valueScore };
+    });
+  const strictCandidates = evaluatedCandidates
+    .filter((item) => item.runnable && item.fitsBudget && item.fitsVendor && item.fitsFormFactor)
     .sort((a, b) => b.valueScore - a.valueScore || b.speed - a.speed)
     .slice(0, 6);
+  const showingAlternatives = strictCandidates.length === 0;
+  const candidates = showingAlternatives
+    ? evaluatedCandidates
+      .filter((item) => item.runnable)
+      .sort((a, b) => {
+        const penalty = (item) => (item.fitsBudget ? 0 : 4) + (item.fitsVendor ? 0 : 2) + (item.fitsFormFactor ? 0 : 2);
+        return penalty(a) - penalty(b) || b.valueScore - a.valueScore || b.speed - a.speed;
+      })
+      .slice(0, 6)
+    : strictCandidates;
 
   $("gpuAdvisorResult").innerHTML = candidates.length ? `
+    ${showingAlternatives ? `<div class="advisor-alternative-notice"><span>${en ? "No exact match. Showing the closest runnable alternatives." : "조건에 정확히 맞는 GPU가 없어 실행 가능한 가까운 대안을 보여드립니다."}</span><button type="button" class="ghost-button" data-advisor-relax>${en ? "Clear vendor and form filters" : "제조사·형태 필터 해제"}</button></div>` : ""}
     <div class="gpu-advisor-list">
       ${candidates.map((item, index) => `
         <article class="gpu-advisor-card">
           <div><span class="advisor-rank">#${index + 1}</span><strong>${escapeHtml(shortGpuName(item.preset.name))}</strong></div>
           <p>${escapeHtml(formatGb(item.preset.gpuUsableMemoryGb || item.preset.vram))} · ${escapeHtml(item.preset.vendor)} · ${escapeHtml(item.preset.formFactor)}</p>
+          ${showingAlternatives ? `<p class="advisor-difference">${[
+            !item.fitsVendor ? (en ? `Vendor alternative: ${item.preset.vendor}` : `제조사 대안: ${item.preset.vendor}`) : "",
+            !item.fitsFormFactor ? (en ? `Form alternative: ${item.preset.formFactor}` : `형태 대안: ${item.preset.formFactor}`) : "",
+            !item.fitsBudget ? (en ? "Above the selected budget" : "선택 예산 초과") : "",
+          ].filter(Boolean).map((text) => `<span>${escapeHtml(text)}</span>`).join("")}</p>` : ""}
           <dl>
             <div><dt>${en ? "Estimated speed" : "예상 속도"}</dt><dd>${escapeHtml(formatThroughput(item.speed, item.estimate?.unitLabel || "tok/s"))}</dd></div>
             <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd>${item.market.priceUsd ? `$${item.market.priceUsd.toLocaleString("en-US")}` : (en ? "Enter market price" : "시세 입력 필요")}</dd></div>
@@ -6791,6 +6857,11 @@ function renderGpuAdvisor() {
     </div>
     <p class="advisor-disclaimer">${en ? "Prices are launch-price references, not live quotes. Energy cost uses the selected hours and rate." : "가격은 실시간 시세가 아닌 출시가 참고값이며, 전력비는 입력한 시간과 요금으로 계산합니다."}</p>
   ` : `<p class="empty-state">${en ? "No GPU with known specifications fits these conditions. Raise the budget or change a filter." : "현재 조건에 맞는 GPU가 없습니다. 예산을 높이거나 필터를 바꿔보세요."}</p>`;
+  panel.querySelector("[data-advisor-relax]")?.addEventListener("click", () => {
+    $("advisorVendor").value = "all";
+    $("advisorFormFactor").value = "all";
+    renderGpuAdvisor();
+  });
   panel.querySelectorAll("[data-advisor-select-gpu]").forEach((button) => {
     button.addEventListener("click", () => {
       selectPrimaryGpu(button.dataset.advisorSelectGpu, { persist: true });

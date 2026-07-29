@@ -961,6 +961,15 @@ describe("v1.4 advisor and media optimization", () => {
     assert.match(fresh.document.getElementById("gpuAdvisorResult").textContent, /No matching model/);
   });
 
+  test("shows runnable alternatives when vendor and form filters have no exact match", () => {
+    const fresh = loadApp("https://example.com/?mode=modelFinder&lang=ko");
+    fresh.eval(`$("advisorModelCategory").value = "image"; refreshAdvisorModelOptions(); $("advisorModel").value = modelKey(OCR_MODELS.find((model) => model.name === "stabilityai/stable-diffusion-xl-base-1.0")); $("advisorVendor").value = "AMD"; $("advisorFormFactor").value = "laptop"; $("advisorBudgetUsd").value = "2000"; renderGpuAdvisor()`);
+    assert.ok(fresh.document.querySelectorAll(".gpu-advisor-card").length > 0);
+    assert.match(fresh.document.getElementById("gpuAdvisorResult").textContent, /가까운 대안/);
+    assert.ok(fresh.document.querySelector("[data-advisor-relax]"));
+    assert.match(read("styles.css"), /\.advisor-model-select-field small\s*\{[^}]*position:\s*absolute;/s);
+  });
+
   test("attention and cache optimization changes media memory and speed", () => {
     const fresh = loadApp();
     const model = fresh.eval(`OCR_MODELS.find((item) => item.type === "video-generation")`);
