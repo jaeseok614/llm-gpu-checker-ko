@@ -810,3 +810,49 @@ describe("benchmark estimate-error aggregate stats", () => {
     assert.ok(stats.avgAbsErrorPct > 8 && stats.avgAbsErrorPct < 13, `expected avg abs error near 10%, got ${stats.avgAbsErrorPct}`);
   });
 });
+
+describe("GPU contribution and media-generation upgrades", () => {
+  test("finds a GPU by community-friendly aliases and uses its GPU-usable memory", () => {
+    const fresh = loadApp("https://example.com/");
+    assert.equal(fresh.eval(`findGpuPresetByName("Radeon 8060S", false)?.id`), "ryzen-ai-max-plus-395-128");
+    fresh.eval(`selectPrimaryGpu("ryzen-ai-max-plus-395-128")`);
+    const hardware = fresh.eval("getHardware()");
+    assert.equal(hardware.preset.memoryType, "unified");
+    assert.equal(hardware.vram, 96);
+  });
+
+  test("shows direct-entry and request actions for an unknown GPU", () => {
+    const fresh = loadApp("https://example.com/");
+    const input = fresh.document.getElementById("onboardingGpuSearch");
+    input.value = "Future GPU 9999";
+    input.dispatchEvent(new fresh.Event("input", { bubbles: true }));
+    const actions = fresh.document.getElementById("onboardingGpuNotFound");
+    assert.equal(actions.hidden, false);
+    assert.match(actions.querySelector("[data-request-gpu]").href, /gpu-request\.yml/);
+  });
+
+  test("video frames and offloading change media VRAM and speed estimates", () => {
+    const fresh = loadApp();
+    const model = fresh.eval(`OCR_MODELS.find((item) => item.type === "video-generation")`);
+    fresh.testVideoModel = model;
+    const base = fresh.eval(`estimateOcrModel(testVideoModel, getHardware(), {
+      type: "videoGeneration", width: 832, height: 480, batchSize: 1,
+      precisionId: "fp16", featureSet: "text", steps: 28, frames: 81, fps: 16,
+      loraCount: 0, offload: "none"
+    })`);
+    const longer = fresh.eval(`estimateOcrModel(testVideoModel, getHardware(), {
+      type: "videoGeneration", width: 832, height: 480, batchSize: 1,
+      precisionId: "fp16", featureSet: "text", steps: 28, frames: 161, fps: 16,
+      loraCount: 1, offload: "none"
+    })`);
+    const offloaded = fresh.eval(`estimateOcrModel(testVideoModel, getHardware(), {
+      type: "videoGeneration", width: 832, height: 480, batchSize: 1,
+      precisionId: "fp16", featureSet: "text", steps: 28, frames: 161, fps: 16,
+      loraCount: 1, offload: "sequential"
+    })`);
+    assert.ok(longer.requiredGb > base.requiredGb);
+    assert.ok(longer.speed < base.speed);
+    assert.ok(offloaded.requiredGb < longer.requiredGb);
+    assert.ok(offloaded.speed < longer.speed);
+  });
+});

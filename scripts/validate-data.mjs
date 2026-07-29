@@ -44,6 +44,11 @@ for (const gpu of data.gpus) {
   requireFields(gpu, ["id", "name", "vram", "ram", "bandwidth"], "gpu");
   if (gpuIds.has(gpu.id)) throw new Error(`duplicate gpu id: ${gpu.id}`);
   gpuIds.add(gpu.id);
+  if (gpu.aliases && !Array.isArray(gpu.aliases)) throw new Error(`GPU ${gpu.id} aliases must be an array`);
+  if (gpu.runtimes && !Array.isArray(gpu.runtimes)) throw new Error(`GPU ${gpu.id} runtimes must be an array`);
+  if (gpu.gpuUsableMemoryGb && gpu.gpuUsableMemoryGb > gpu.ram) {
+    throw new Error(`GPU ${gpu.id} usable GPU memory cannot exceed system/unified RAM`);
+  }
 }
 
 const quantIds = new Set();

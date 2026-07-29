@@ -10,6 +10,20 @@ body:
       placeholder: GeForce RTX 4090 24GB
     validations:
       required: true
+  - type: dropdown
+    id: vendor
+    attributes:
+      label: 제조사
+      options: [NVIDIA, AMD, Intel, Apple, 기타]
+    validations:
+      required: true
+  - type: dropdown
+    id: memory_type
+    attributes:
+      label: 메모리 유형
+      options: [전용 VRAM, 통합메모리, 여러 GPU 합산]
+    validations:
+      required: true
   - type: input
     id: vram
     attributes:
@@ -29,6 +43,33 @@ body:
     attributes:
       label: 권장 시스템 RAM
       placeholder: 64GB
+  - type: input
+    id: usable_memory
+    attributes:
+      label: GPU 실제 할당 가능 메모리
+      description: 통합메모리 제품은 BIOS/OS 설정에서 GPU에 할당 가능한 용량을 적어 주세요.
+      placeholder: 96GB
+  - type: input
+    id: aliases
+    attributes:
+      label: 별칭·검색어
+      placeholder: AI Max 395, Radeon 8060S, Strix Halo
+  - type: checkboxes
+    id: runtimes
+    attributes:
+      label: 확인된 실행 환경
+      options:
+        - label: CUDA
+        - label: ROCm
+        - label: Vulkan
+        - label: Metal / MLX
+        - label: DirectML
+        - label: OpenVINO / oneAPI
+  - type: input
+    id: system
+    attributes:
+      label: 확인 환경
+      placeholder: Windows 11 / Linux, 드라이버 버전, 노트북 TGP
   - type: textarea
     id: source
     attributes:

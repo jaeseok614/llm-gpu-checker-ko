@@ -73,6 +73,14 @@
               <input type="text" id="onboardingGpuSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="예: RTX 4070, A100, M3 Max" />
             </label>
             <span class="onboarding-search-hint" id="onboardingSearchHint"></span>
+            <div class="gpu-not-found-actions" id="onboardingGpuNotFound" hidden>
+              <strong>찾는 GPU가 아직 목록에 없나요?</strong>
+              <span>직접 사양을 입력해 바로 계산하거나, 이름을 채운 상태로 추가 요청을 보낼 수 있습니다.</span>
+              <div>
+                <button type="button" class="ghost-button" data-use-custom-gpu>직접 사양 입력</button>
+                <a class="primary-button" data-request-gpu target="_blank" rel="noreferrer">GPU 추가 요청</a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -95,12 +103,14 @@
             <p class="hardware-meta-line" id="hardwareMeta">GPU 프리셋을 선택하면 추천을 시작합니다.</p>
             <p id="hardwareSubline">선택 즉시 현재 환경에 맞는 모델을 계산합니다.</p>
             <div class="gpu-source-links" id="gpuSourceLinks" hidden></div>
+            <div class="gpu-runtime-facts" id="gpuRuntimeFacts" hidden></div>
           </div>
           <div class="hardware-top-actions">
             <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">상세 설정</button>
             <button type="button" class="primary-button placement-entry-button" id="openPlacementFromHardware">AI 스택 배치</button>
           </div>
         </div>
+        <section class="hardware-capability-summary" id="hardwareCapabilitySummary" hidden></section>
 
         <div class="settings-drawer" id="settingsDrawer" hidden>
           <div class="settings-panel hardware-editor" id="hardwareEditor">
@@ -638,6 +648,30 @@
               <option value="layout">레이아웃 포함</option>
               <option value="table">표/수식 포함</option>
               <option value="full">문서 파싱 전체</option>
+            </select>
+          </label>
+          <label class="field media-generation-field">
+            <span>생성 스텝</span>
+            <input id="mediaSteps" type="number" min="1" max="150" step="1" value="28" />
+          </label>
+          <label class="field media-generation-field">
+            <span>비디오 프레임</span>
+            <input id="mediaFrames" type="number" min="1" max="241" step="8" value="81" />
+          </label>
+          <label class="field media-generation-field">
+            <span>FPS</span>
+            <input id="mediaFps" type="number" min="1" max="60" step="1" value="16" />
+          </label>
+          <label class="field media-generation-field">
+            <span>LoRA 개수</span>
+            <input id="mediaLoraCount" type="number" min="0" max="8" step="1" value="0" />
+          </label>
+          <label class="field media-generation-field">
+            <span>메모리 절약</span>
+            <select id="mediaOffload">
+              <option value="none" selected>GPU 단독</option>
+              <option value="sequential">순차 CPU 오프로딩</option>
+              <option value="tiled">VAE 타일링</option>
             </select>
           </label>
         </div>

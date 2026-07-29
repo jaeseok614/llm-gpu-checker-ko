@@ -100,6 +100,12 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
     vram: 128,
     ram: 128,
     bandwidth: 256,
+    vendor: "AMD",
+    architecture: "RDNA 3.5 / Strix Halo",
+    memoryType: "unified",
+    gpuUsableMemoryGb: 96,
+    runtimes: ["Vulkan", "DirectML", "ROCm 확인"],
+    aliases: ["AI Max 395", "Ryzen 395", "395+", "Radeon 8060S", "Strix Halo"],
     sourceUrl: "https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html",
   },
 

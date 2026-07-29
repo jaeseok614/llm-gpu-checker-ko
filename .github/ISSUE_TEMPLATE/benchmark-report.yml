@@ -24,6 +24,12 @@ body:
     validations:
       required: false
   - type: input
+    id: gpu_id
+    attributes:
+      label: 사이트 GPU ID
+      description: 사이트 URL의 gpu= 값 또는 data/gpus.js의 id를 적으면 자동 집계가 정확해집니다.
+      placeholder: rtx4090-24
+  - type: input
     id: model
     attributes:
       label: 모델
@@ -37,6 +43,21 @@ body:
       placeholder: Ollama, llama.cpp, vLLM, Transformers
     validations:
       required: false
+  - type: input
+    id: os_driver
+    attributes:
+      label: 운영체제·드라이버
+      placeholder: Ubuntu 24.04, NVIDIA 570.xx / Windows 11, Adrenalin xx
+  - type: input
+    id: power
+    attributes:
+      label: 전력 제한·노트북 TGP
+      placeholder: 450W, 120W TGP, 기본값
+  - type: input
+    id: peak_vram
+    attributes:
+      label: 최대 VRAM 사용량
+      placeholder: 18.4GB
   - type: input
     id: settings
     attributes:

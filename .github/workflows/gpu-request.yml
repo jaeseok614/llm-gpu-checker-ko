@@ -1,0 +1,60 @@
+name: GPU request automation
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate:
+    if: contains(github.event.issue.labels.*.name, 'gpu')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: gpu
+        run: node scripts/gpu-request-tools.mjs
+      - uses: actions/github-script@v7
+        env:
+          GPU_REPORT: ${{ steps.gpu.outputs.report }}
+        with:
+          script: |
+            const marker = "<!-- gpu-request-validator -->";
+            const body = `${marker}\n${process.env.GPU_REPORT}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const previous = comments.find(comment => comment.body?.includes(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: previous.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+      - if: steps.gpu.outputs.valid == 'true' && github.event.action == 'labeled' && github.event.label.name == 'gpu-ready'
+        run: node scripts/gpu-request-tools.mjs --append
+      - if: steps.gpu.outputs.valid == 'true' && github.event.action == 'labeled' && github.event.label.name == 'gpu-ready'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: data/gpu-request-${{ github.event.issue.number }}
+          title: "data: GPU 요청 #${{ github.event.issue.number }} 추가"
+          commit-message: "data: GPU 요청 #${{ github.event.issue.number }} 추가"
+          body: "Closes #${{ github.event.issue.number }}. 자동 검증된 GPU 요청에서 생성한 PR입니다."
+          labels: data,gpu

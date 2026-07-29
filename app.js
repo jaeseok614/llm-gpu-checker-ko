@@ -1,5 +1,5 @@
 const DATA = window.LLM_GPU_CHECKER_DATA || {};
-const GPU_PRESETS = DATA.gpus || [];
+const GPU_PRESETS = (DATA.gpus || []).map(normalizeGpuPreset);
 const ONBOARDING_QUICK_GPU_IDS = [
   "rtx5090-32",
   "rtx4090-24",
@@ -41,6 +41,35 @@ const GENERAL_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "general-
 function withModelMetadata(model, type) {
   const metadata = MODEL_METADATA[`${type}:${model.name}`] || MODEL_METADATA[model.name] || {};
   return { ...model, ...metadata, type };
+}
+
+function normalizeGpuPreset(gpu) {
+  const text = `${gpu.id || ""} ${gpu.name || ""}`.toLowerCase();
+  const vendor = gpu.vendor || (
+    /nvidia|geforce|quadro|tesla|rtx|gtx|dgx|h100|a100/.test(text) ? "NVIDIA"
+      : /amd|radeon|ryzen|instinct|mi\d/.test(text) ? "AMD"
+        : /apple|m\d(?:max|ultra)/.test(text) ? "Apple"
+          : /intel|arc|flex/.test(text) ? "Intel"
+            : "기타"
+  );
+  const memoryType = gpu.memoryType || (/통합메모리|unified|ryzen-ai|max-plus/.test(text) ? "unified" : "dedicated");
+  const runtimeDefaults = vendor === "NVIDIA"
+    ? ["CUDA"]
+    : vendor === "AMD"
+      ? (memoryType === "unified" ? ["Vulkan", "DirectML", "ROCm 확인"] : ["ROCm", "Vulkan"])
+      : vendor === "Apple"
+        ? ["Metal", "MLX"]
+        : vendor === "Intel"
+          ? ["OpenVINO", "oneAPI"]
+          : [];
+  return {
+    aliases: [],
+    vendor,
+    memoryType,
+    runtimes: runtimeDefaults,
+    gpuUsableMemoryGb: gpu.vram,
+    ...gpu,
+  };
 }
 
 function getLicensePolicy(modelOrLicense) {
@@ -1359,11 +1388,36 @@ function findGpuPresetByName(name, allowCustom = true) {
   const trimmed = String(name || "").trim();
   if (!trimmed) return null;
   const presets = allowCustom ? GPU_PRESETS : GPU_PRESETS.filter((gpu) => gpu.id !== "custom");
+  const normalized = normalizeGpuSearchText(trimmed);
   return (
     presets.find((gpu) => gpu.name === trimmed) ||
     presets.find((gpu) => gpu.name.toLowerCase() === trimmed.toLowerCase()) ||
+    presets.find((gpu) => [gpu.id, gpu.name, ...(gpu.aliases || [])].some((value) => normalizeGpuSearchText(value) === normalized)) ||
+    presets.find((gpu) => [gpu.name, ...(gpu.aliases || [])].some((value) => normalizeGpuSearchText(value).includes(normalized))) ||
     null
   );
+}
+
+function normalizeGpuSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b(nvidia|amd|intel|apple|geforce|radeon|graphics|gpu)\b/g, "")
+    .replace(/[^a-z0-9가-힣]+/g, "");
+}
+
+function gpuRequestUrl(name = "") {
+  const title = `[GPU] ${String(name || "").trim()}`;
+  return `https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml&title=${encodeURIComponent(title)}`;
+}
+
+function refreshGpuNotFoundUi(rawValue) {
+  const target = $("onboardingGpuNotFound");
+  if (!target) return;
+  const raw = String(rawValue || "").trim();
+  const missing = raw.length >= 2 && !findGpuPresetByName(raw, false);
+  target.hidden = !missing;
+  const requestLink = target.querySelector("[data-request-gpu]");
+  if (requestLink) requestLink.href = gpuRequestUrl(raw);
 }
 
 function syncGpuPresetSearchDisplay() {
@@ -1719,6 +1773,11 @@ function bindEvents() {
     "ocrBatchSize",
     "ocrPrecision",
     "ocrFeatureSet",
+    "mediaSteps",
+    "mediaFrames",
+    "mediaFps",
+    "mediaLoraCount",
+    "mediaOffload",
     "taskFilter",
     "providerFilter",
     "licenseFilter",
@@ -1791,6 +1850,14 @@ function bindEvents() {
   $("onboardingGpuSearch")?.addEventListener("change", (event) => {
     const preset = findGpuPresetByName(event.target.value, false);
     if (preset) selectOnboardingGpu(preset.id);
+    refreshGpuNotFoundUi(event.target.value);
+  });
+  $("onboardingGpuSearch")?.addEventListener("input", (event) => refreshGpuNotFoundUi(event.target.value));
+  $("onboardingGpuNotFound")?.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-use-custom-gpu]")) return;
+    selectOnboardingGpu("custom");
+    settingsExpanded = true;
+    refreshWorkloadUi();
   });
 
   $("secondaryGpuPresetSearch").addEventListener("change", () => {
@@ -2289,6 +2356,7 @@ function bindEvents() {
   }
 }
 
+
 function clearFilter(kind) {
   if (kind === "all") {
     activeSummaryFilter = "all";
@@ -2338,6 +2406,11 @@ function refreshWorkloadUi() {
     const panelKey = panel.dataset.workloadSettings;
     panel.hidden = !settingsExpanded || (panelKey !== activeWorkload && !(panelKey === "vision" && isVisionWorkload(activeWorkload)));
   });
+  document.querySelectorAll(".media-generation-field").forEach((field) => {
+    field.hidden = !["imageGeneration", "videoGeneration"].includes(activeWorkload);
+  });
+  if ($("mediaFrames")) $("mediaFrames").closest(".field").hidden = activeWorkload !== "videoGeneration";
+  if ($("mediaFps")) $("mediaFps").closest(".field").hidden = activeWorkload !== "videoGeneration";
 
   syncPresetControls();
 }
@@ -2354,7 +2427,7 @@ function applyPreset(id) {
   if (!preset) return;
 
   $("gpuPreset").value = preset.id;
-  $("vramGb").value = preset.vram;
+  $("vramGb").value = preset.gpuUsableMemoryGb || preset.vram;
   $("ramGb").value = preset.ram;
   $("bandwidth").value = preset.bandwidth;
   $("gpuCount").value = 1;
@@ -4801,6 +4874,11 @@ function getWorkloadSettings() {
       batchSize: clampNumber($("ocrBatchSize").value, 1, 256, 1),
       precisionId: $("ocrPrecision").value,
       featureSet: $("ocrFeatureSet").value,
+      steps: clampNumber($("mediaSteps")?.value, 1, 150, 28),
+      frames: clampNumber($("mediaFrames")?.value, 1, 241, 81),
+      fps: clampNumber($("mediaFps")?.value, 1, 60, 16),
+      loraCount: clampNumber($("mediaLoraCount")?.value, 0, 8, 0),
+      offload: $("mediaOffload")?.value || "none",
     };
   }
 
@@ -5084,6 +5162,11 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
   const effectiveVram = getEffectiveVram(hardware);
   const megapixels = (workload.width * workload.height) / 1e6;
   const profile = model.profiles?.[precision.id] || model.profiles?.fp16 || {};
+  const isImageGenerator = model.type === "image-generation";
+  const isVideoGenerator = model.type === "video-generation";
+  const frameMemoryFactor = isVideoGenerator ? Math.max(1, Math.sqrt(workload.frames || 81) / 3) : 1;
+  const loraMemoryGb = (workload.loraCount || 0) * Math.max(0.2, model.params * 0.035);
+  const offloadMemoryFactor = workload.offload === "sequential" ? 0.62 : workload.offload === "tiled" ? 0.78 : 1;
   const featureMultiplier = getOcrFeatureMultiplier(workload.featureSet, model);
   const imageBufferGb = workload.batchSize * workload.width * workload.height * 3 * precision.activationBytes * 2 / 1e9;
   let weightsGb = 0;
@@ -5098,17 +5181,21 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
     weightsGb = (profile.residentWeightsGb || model.params * precision.bytesPerParam * 1.08) * featureMultiplier;
   }
 
-  const activationGb = workload.batchSize * megapixels * (profile.activationGbPerMegapixel || 0.2) * featureMultiplier;
+  const activationGb = workload.batchSize * megapixels * (profile.activationGbPerMegapixel || 0.2) * featureMultiplier * frameMemoryFactor * offloadMemoryFactor;
   const runtimeOverheadGb = (profile.baseRuntimeGb || 0.8) * featureMultiplier
     + Math.max(0, workload.batchSize - 1) * (profile.batchOverheadGb || 0.06);
-  const requiredGb = weightsGb + kvGb + activationGb + imageBufferGb + runtimeOverheadGb;
+  const requiredGb = weightsGb * offloadMemoryFactor + kvGb + activationGb + imageBufferGb + runtimeOverheadGb + loraMemoryGb;
   const pressure = getVramPressure(requiredGb, effectiveVram);
   const grade = gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.3);
-  const pagesPerSecond = estimateOcrThroughput(model, hardware, workload, precision, megapixels, grade, featureMultiplier);
+  let pagesPerSecond = estimateOcrThroughput(model, hardware, workload, precision, megapixels, grade, featureMultiplier);
+  if (isImageGenerator || isVideoGenerator) {
+    const stepPenalty = Math.max(0.08, 28 / Math.max(1, workload.steps || 28));
+    const framePenalty = isVideoGenerator ? Math.max(0.03, 81 / Math.max(1, workload.frames || 81)) : 1;
+    const offloadPenalty = workload.offload === "sequential" ? 0.32 : workload.offload === "tiled" ? 0.72 : 1;
+    pagesPerSecond *= stepPenalty * framePenalty * offloadPenalty;
+  }
   const secondsPerPage = pagesPerSecond > 0 ? 1 / pagesPerSecond : 0;
   const reason = buildOcrReason(model, workload, grade, requiredGb, effectiveVram, megapixels);
-  const isImageGenerator = model.type === "image-generation";
-  const isVideoGenerator = model.type === "video-generation";
   const outputUnit = isImageGenerator ? "image/s" : isVideoGenerator ? "clip/s" : "page/s";
   const durationUnit = isImageGenerator ? "image" : isVideoGenerator ? "clip" : "page";
   const settingSuffix = isImageGenerator || isVideoGenerator ? "Diffusers" : ocrFeatureLabel(workload.featureSet);
@@ -5137,6 +5224,10 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
     unitLabel: outputUnit,
     reason,
     megapixels,
+    frames: workload.frames,
+    fps: workload.fps,
+    steps: workload.steps,
+    loraMemoryGb,
   };
 }
 
@@ -5975,6 +6066,8 @@ function renderHardware(hardware, allEstimates) {
     $("hardwareSubline").textContent = "선택 즉시 현재 환경에 맞는 모델을 계산합니다.";
     $("gpuSourceLinks").hidden = true;
     $("gpuSourceLinks").innerHTML = "";
+    if ($("gpuRuntimeFacts")) $("gpuRuntimeFacts").hidden = true;
+    if ($("hardwareCapabilitySummary")) $("hardwareCapabilitySummary").hidden = true;
     return;
   }
 
@@ -6003,6 +6096,71 @@ function renderHardware(hardware, allEstimates) {
   sourceTarget.innerHTML = sourceGpus
     .map((gpu) => `<a href="${escapeAttr(gpu.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(shortGpuName(gpu.name))} 스펙 출처</a>`)
     .join("");
+  renderGpuRuntimeFacts(hardware);
+  renderHardwareCapabilities(hardware, allEstimates);
+}
+
+function getGpuBenchmarkRows(gpu) {
+  if (!gpu) return [];
+  const aliases = [gpu.id, gpu.name, ...(gpu.aliases || [])].map(normalizeGpuSearchText);
+  return BENCHMARKS.filter((row) => {
+    if (row.gpuId && row.gpuId === gpu.id) return true;
+    const rowGpu = normalizeGpuSearchText(row.gpu || "");
+    return rowGpu && aliases.some((alias) => alias && (alias.includes(rowGpu) || rowGpu.includes(alias)));
+  });
+}
+
+function renderGpuRuntimeFacts(hardware) {
+  const target = $("gpuRuntimeFacts");
+  if (!target) return;
+  const preset = hardware.preset;
+  const benchmarks = getGpuBenchmarkRows(preset);
+  const measured = benchmarks.map(getBenchmarkNumericValue).filter(Boolean);
+  let benchmarkFact = benchmarks.length ? `실측 ${benchmarks.length}건` : "실측 제보 대기";
+  if (measured.length && measured.every((item) => item.unit === measured[0].unit)) {
+    const values = measured.map((item) => item.value).sort((a, b) => a - b);
+    const middle = Math.floor(values.length / 2);
+    const median = values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
+    benchmarkFact = `실측 ${values.length}건 · 중앙값 ${formatMetricNumber(median, measured[0].unit, true)}`;
+  }
+  const facts = [
+    preset.vendor,
+    preset.memoryType === "unified" ? `통합메모리 · GPU 계산 기준 ${formatGb(preset.gpuUsableMemoryGb || preset.vram)}` : "전용 VRAM",
+    ...(preset.runtimes || []),
+    benchmarkFact,
+  ].filter(Boolean);
+  target.hidden = facts.length === 0;
+  target.innerHTML = facts.map((fact) => `<span>${escapeHtml(fact)}</span>`).join("");
+}
+
+function renderHardwareCapabilities(hardware, activeEstimates) {
+  const target = $("hardwareCapabilitySummary");
+  if (!target) return;
+  const runnable = activeEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
+  const largest = [...runnable].sort((a, b) => (b.model.params || 0) - (a.model.params || 0))[0];
+  const vram = hardware.availableVram;
+  const imageStatus = vram >= 24 ? "FLUX급 가능" : vram >= 10 ? "SDXL급 가능" : "경량·오프로딩 권장";
+  const videoStatus = vram >= 24 ? "5B급 비디오 가능" : vram >= 10 ? "1~2B급 저해상도" : "CPU 오프로딩 필요";
+  const finetuneStatus = vram >= 48 ? "14B LoRA 후보" : vram >= 24 ? "7B LoRA 후보" : vram >= 12 ? "3B LoRA 후보" : "초경량 LoRA";
+  const rows = [
+    ["현재 모델 종류", `${runnable.length}개 실행 가능`, largest ? `최대 ${largest.model.params}B급 후보` : "설정 완화 필요"],
+    ["이미지 생성", imageStatus, "1024px·배치 1 기준"],
+    ["비디오 생성", videoStatus, "480p·81프레임 기준"],
+    ["경량 튜닝", finetuneStatus, "QLoRA 기준 참고"],
+  ];
+  target.hidden = false;
+  target.innerHTML = `
+    <strong>이 GPU로 할 수 있는 작업</strong>
+    <div class="hardware-capability-grid">
+      ${rows.map(([label, value, note]) => `
+        <div class="hardware-capability-card">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <small>${escapeHtml(note)}</small>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function buildHardwareBasis(hardware) {
@@ -6025,6 +6183,12 @@ function buildHardwareBasis(hardware) {
   if (isVisionWorkload(activeWorkload)) {
     const workload = getWorkloadSettings();
     const precision = getPrecisionLabel(workload.precisionId, OCR_PRECISIONS);
+    if (activeWorkload === "imageGeneration") {
+      return `${workload.width}x${workload.height} · ${workload.steps}스텝 · LoRA ${workload.loraCount}개 · ${precision}`;
+    }
+    if (activeWorkload === "videoGeneration") {
+      return `${workload.width}x${workload.height} · ${workload.frames}프레임/${workload.fps}fps · ${workload.steps}스텝 · ${precision}`;
+    }
     return uiLanguage === "en"
       ? `${workload.width}x${workload.height} · batch ${workload.batchSize} pages · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`
       : `${workload.width}x${workload.height} · 배치 ${workload.batchSize}페이지 · ${ocrFeatureLabel(workload.featureSet)} · ${precision}`;

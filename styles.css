@@ -440,6 +440,74 @@ html[lang="en"] .simple-mode-head > div:first-child {
   text-decoration: underline;
 }
 
+.gpu-not-found-actions {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.gpu-not-found-actions strong,
+.gpu-not-found-actions span {
+  display: block;
+}
+
+.gpu-not-found-actions span {
+  margin: 5px 0 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.gpu-not-found-actions > div,
+.gpu-runtime-facts,
+.hardware-capability-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gpu-runtime-facts {
+  margin-top: 9px;
+}
+
+.gpu-runtime-facts span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.hardware-capability-summary {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.hardware-capability-summary > strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.hardware-capability-card {
+  flex: 1 1 175px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.hardware-capability-card span,
+.hardware-capability-card small {
+  display: block;
+  color: var(--muted);
+}
+
+.hardware-capability-card strong {
+  display: block;
+  margin: 4px 0;
+}
+
 .hardware-meta-line {
   display: flex;
   flex-wrap: wrap;
