@@ -1,0 +1,51 @@
+name: Benchmark request automation
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate:
+    if: contains(github.event.issue.labels.*.name, 'benchmark')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: benchmark
+        run: node scripts/benchmark-request-tools.mjs
+      - uses: actions/github-script@v7
+        env:
+          BENCHMARK_REPORT: ${{ steps.benchmark.outputs.report }}
+        with:
+          script: |
+            const marker = "<!-- benchmark-request-validator -->";
+            const body = `${marker}\n${process.env.BENCHMARK_REPORT}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const previous = comments.find(comment => comment.body?.includes(marker));
+            const payload = { owner: context.repo.owner, repo: context.repo.repo, body };
+            if (previous) {
+              await github.rest.issues.updateComment({ ...payload, comment_id: previous.id });
+            } else {
+              await github.rest.issues.createComment({ ...payload, issue_number: context.issue.number });
+            }
+      - if: steps.benchmark.outputs.valid == 'true' && github.event.action == 'labeled' && github.event.label.name == 'benchmark-ready'
+        run: node scripts/benchmark-request-tools.mjs --append
+      - if: steps.benchmark.outputs.valid == 'true' && github.event.action == 'labeled' && github.event.label.name == 'benchmark-ready'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: data/benchmark-request-${{ github.event.issue.number }}
+          title: "data: add benchmark request #${{ github.event.issue.number }}"
+          commit-message: "data: add benchmark request #${{ github.event.issue.number }}"
+          body: "Closes #${{ github.event.issue.number }}. This PR was generated from a validated benchmark submission."
+          labels: data,benchmark

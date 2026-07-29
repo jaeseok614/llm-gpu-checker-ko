@@ -66,6 +66,21 @@ body:
     validations:
       required: false
   - type: input
+    id: input_tokens
+    attributes:
+      label: 입력·컨텍스트 토큰
+      placeholder: 8192
+  - type: input
+    id: output_tokens
+    attributes:
+      label: 출력 토큰
+      placeholder: 512
+  - type: input
+    id: concurrency
+    attributes:
+      label: 동시 요청
+      placeholder: 1
+  - type: input
     id: result
     attributes:
       label: 실제 결과

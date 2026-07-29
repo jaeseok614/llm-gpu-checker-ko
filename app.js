@@ -211,6 +211,7 @@ let coreTaskMode = "finder";
 let hasPrimaryGpuSelection = false;
 let uiLanguage = "ko";
 let uiTheme = "light";
+let gpuCompareOpen = false;
 
 const MESSAGES = {
   ko: {
@@ -402,6 +403,45 @@ function translatePresetOptionLabels(language) {
 }
 
 const ENGLISH_UI_REPLACEMENTS = [
+  ["찾는 GPU가 아직 목록에 없나요?", "Can't find your GPU yet?"],
+  ["직접 사양을 입력해 바로 계산하거나, 이름을 채운 상태로 추가 요청을 보낼 수 있습니다.", "Enter specifications to calculate now, or submit a prefilled GPU request."],
+  ["직접 사양 입력", "Enter specifications"],
+  ["GPU 추가 요청", "Request a GPU"],
+  ["GPU 상세·비교", "GPU details and comparison"],
+  ["현재 GPU의 사양과 대안을 비교하세요", "Compare your GPU specifications and alternatives"],
+  ["Current GPU의 사양과 대안을 비교하세요", "Compare your GPU specifications and alternatives"],
+  ["GPU 비교 열기", "Open GPU comparison"],
+  ["GPU 비교 닫기", "Close GPU comparison"],
+  ["비교 GPU 선택", "Select a GPU to compare"],
+  ["비교 GPU 1", "Comparison GPU 1"],
+  ["비교 GPU 2", "Comparison GPU 2"],
+  ["아키텍처", "Architecture"],
+  ["메모리", "Memory"],
+  ["대역폭", "Bandwidth"],
+  ["런타임", "Runtime"],
+  ["전력 범위", "Power range"],
+  ["노트북 TGP", "Laptop TGP"],
+  ["GPU 계산 메모리", "GPU-usable memory"],
+  ["실행 가능 모델", "Runnable models"],
+  ["최대 후보", "Largest candidate"],
+  ["추정 속도 중앙값", "Median estimated speed"],
+  ["이 GPU로 할 수 있는 작업", "What this GPU can do"],
+  ["현재 모델 종류", "Current model type"],
+  ["이미지 생성", "Image generation"],
+  ["비디오 생성", "Video generation"],
+  ["경량 튜닝", "Lightweight fine-tuning"],
+  ["생성 스텝", "Generation steps"],
+  ["비디오 프레임", "Video frames"],
+  ["LoRA 개수", "LoRA count"],
+  ["메모리 절약", "Memory strategy"],
+  ["GPU 단독", "GPU only"],
+  ["순차 CPU 오프로딩", "Sequential CPU offload"],
+  ["VAE 타일링", "VAE tiling"],
+  ["실측 제보 대기", "Awaiting measurements"],
+  ["전용 VRAM", "Dedicated VRAM"],
+  ["GPU 계산 기준", "GPU-usable"],
+  ["통합 전체", "Unified total"],
+  ["선택", "selected"],
   ["내 GPU에서 돌아가는 AI 모델 찾기", "Find AI models for your GPU"],
   ["상태", "Status"],
   ["출시/세대", "Release/Gen"],
@@ -1332,6 +1372,12 @@ function populateSelects() {
     `<option value="__search__">GPU 모델명 검색</option>`,
   ].join("");
   $("secondaryGpuPreset").value = "none";
+  const compareOptions = GPU_PRESETS
+    .filter((gpu) => gpu.id !== "custom")
+    .map((gpu) => `<option value="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</option>`)
+    .join("");
+  if ($("compareGpuA")) $("compareGpuA").innerHTML = `<option value="">비교 GPU 선택</option>${compareOptions}`;
+  if ($("compareGpuB")) $("compareGpuB").innerHTML = `<option value="">비교 GPU 선택</option>${compareOptions}`;
   populateGpuPresetDatalist();
   renderOnboardingQuickPicks();
 
@@ -1744,11 +1790,16 @@ function bindEvents() {
     refreshWorkloadUi();
   });
 
-  ["vramGb", "gpuCount", "secondaryGpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb"].forEach((id) => {
+  ["vramGb", "gpuCount", "secondaryGpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb", "powerLimitW"].forEach((id) => {
     $(id).addEventListener("input", () => {
       render();
     });
   });
+  $("toggleGpuCompare")?.addEventListener("click", () => {
+    gpuCompareOpen = !gpuCompareOpen;
+    renderGpuInsights(getHardware());
+  });
+  ["compareGpuA", "compareGpuB"].forEach((id) => $(id)?.addEventListener("change", () => renderGpuInsights(getHardware())));
 
   [
     "contextSize",
@@ -2431,6 +2482,7 @@ function applyPreset(id) {
   $("ramGb").value = preset.ram;
   $("bandwidth").value = preset.bandwidth;
   $("gpuCount").value = 1;
+  if ($("powerLimitW")) $("powerLimitW").value = preset.tgpReferenceW || preset.tgpMaxW || 115;
 }
 
 function refreshSecondaryGpuUi() {
@@ -2944,7 +2996,7 @@ function getPlacementBaselineOptions(model, hardware) {
       .map((precision) => ({
         setting: precision,
         label: precision.label,
-        requiredGb: estimateOcrWithPrecision(model, hardware, workload, precision).requiredGb,
+        requiredGb: estimateVisionWithPrecision(model, hardware, workload, precision).requiredGb,
       }))
       .sort((a, b) => a.requiredGb - b.requiredGb);
   }
@@ -2973,7 +3025,7 @@ function getPlacementCapacity(model, setting, hardware, budgetGb) {
     return { kind: "throughput", unit: "pair/s", value: estimate.speed };
   }
   const workload = getPlacementWorkload(model);
-  const estimate = estimateOcrWithPrecision(model, budgetHardware, workload, setting);
+  const estimate = estimateVisionWithPrecision(model, budgetHardware, workload, setting);
   return { kind: "throughput", unit: "page/s", value: estimate.speed };
 }
 
@@ -4208,7 +4260,7 @@ function getPlacementItemMemoryParts(item, gpu) {
   } else if (item.model.type === "reranker") {
     estimate = estimateRerankerWithPrecision(item.model, hardware, getPlacementWorkload(item.model), item.setting);
   } else {
-    estimate = estimateOcrWithPrecision(item.model, hardware, getPlacementWorkload(item.model), item.setting);
+    estimate = estimateVisionWithPrecision(item.model, hardware, getPlacementWorkload(item.model), item.setting);
   }
   const weights = Math.max(0, estimate.weightsGb || estimate.residentGb || item.requiredGb * 0.72);
   const kv = Math.max(0, estimate.kvGb || estimate.decoderKvGb || 0);
@@ -4730,6 +4782,7 @@ function getHardware() {
   const primaryCount = clampNumber($("gpuCount").value, 1, 16, 1);
   const ram = clampNumber($("ramGb").value, 8, 2048, 64);
   const bandwidth = clampNumber($("bandwidth").value, 100, 12000, 1008);
+  const powerLimitW = clampNumber($("powerLimitW")?.value, 20, 600, 115);
   const reservedVram = clampNumber($("reservedVramGb").value, 0, 10240, 0);
   const safetyMarginGb = clampNumber($("safetyMarginGb").value, 0, 256, 2);
   const context = clampNumber($("contextSize").value, 512, 1048576, 8192);
@@ -4745,7 +4798,7 @@ function getHardware() {
   const heterogeneous = Boolean(secondaryPreset && secondaryPreset.id !== preset?.id);
   const crossVendor = Boolean(secondaryPreset && gpuRuntimeFamily(secondaryPreset) !== gpuRuntimeFamily(preset));
 
-  const compute = estimateHardwareCompute(preset, bandwidth);
+  const compute = estimateHardwareCompute(preset, bandwidth, powerLimitW);
   const secondaryCompute = secondaryPreset ? estimateHardwareCompute(secondaryPreset, secondaryPreset.bandwidth) : null;
   const computeTotal = Object.fromEntries(
     ["fp32Tflops", "fp16Tflops", "bf16Tflops", "int8Tops"].map((key) => [
@@ -4766,6 +4819,7 @@ function getHardware() {
     count,
     ram,
     bandwidth,
+    powerLimitW,
     reservedVram,
     safetyMarginGb,
     totalVram,
@@ -4794,14 +4848,15 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, parsed));
 }
 
-function estimateHardwareCompute(preset, bandwidth) {
+function estimateHardwareCompute(preset, bandwidth, powerLimitW = preset?.tgpReferenceW || preset?.tgpMaxW) {
   if (preset?.fp16Tflops || preset?.bf16Tflops || preset?.int8Tops) {
-    return {
+    const fixed = {
       fp32Tflops: preset.fp32Tflops || Math.max(4, preset.fp16Tflops * 0.5),
       fp16Tflops: preset.fp16Tflops || Math.max(8, bandwidth * 0.12),
       bf16Tflops: preset.bf16Tflops || preset.fp16Tflops || Math.max(8, bandwidth * 0.1),
       int8Tops: preset.int8Tops || Math.max(16, bandwidth * 0.24),
     };
+    return applyTgpComputeScale(fixed, preset, powerLimitW);
   }
 
   const name = `${preset?.id || ""} ${preset?.name || ""}`.toLowerCase();
@@ -4817,12 +4872,19 @@ function estimateHardwareCompute(preset, bandwidth) {
   else if (name.includes("apple")) tensorFactor = 0.07;
 
   const fp16Tflops = Math.max(6, bandwidth * tensorFactor);
-  return {
+  return applyTgpComputeScale({
     fp32Tflops: fp16Tflops * 0.5,
     fp16Tflops,
     bf16Tflops: fp16Tflops * 0.92,
     int8Tops: fp16Tflops * 2,
-  };
+  }, preset, powerLimitW);
+}
+
+function applyTgpComputeScale(compute, preset, powerLimitW) {
+  if (preset?.formFactor !== "laptop" || !preset.tgpReferenceW) return compute;
+  const bounded = clampNumber(powerLimitW, preset.tgpMinW || 20, preset.tgpMaxW || 600, preset.tgpReferenceW);
+  const scale = Math.max(0.45, Math.min(1.12, Math.pow(bounded / preset.tgpReferenceW, 0.72)));
+  return Object.fromEntries(Object.entries(compute).map(([key, value]) => [key, value * scale]));
 }
 
 function getActiveModels() {
@@ -4985,10 +5047,60 @@ function estimateWithQuant(model, quant, hardware) {
 }
 
 function estimateAnyModel(model, hardware) {
-  if (model.type === "embedding") return estimateEncoderModel(model, hardware, getWorkloadSettings());
-  if (model.type === "reranker") return estimateRerankerModel(model, hardware, getWorkloadSettings());
-  if (isVisionModel(model)) return estimateOcrModel(model, hardware, getWorkloadSettings());
-  return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
+  let estimate;
+  if (model.type === "embedding") estimate = estimateEncoderModel(model, hardware, getWorkloadSettings());
+  else if (model.type === "reranker") estimate = estimateRerankerModel(model, hardware, getWorkloadSettings());
+  else if (isVisionModel(model)) estimate = estimateOcrModel(model, hardware, getWorkloadSettings());
+  else estimate = normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
+  return applyMeasuredCalibration(estimate, hardware);
+}
+
+function applyMeasuredCalibration(estimate, hardware) {
+  const calibration = getMeasuredCalibration(estimate.model, estimate, hardware);
+  if (!calibration || !estimate.speed) return { ...estimate, calibration: null };
+  const speed = estimate.speed * calibration.factor;
+  const throughputRatio = estimate.speed > 0 ? speed / estimate.speed : 1;
+  const latencySeconds = estimate.latencySeconds ? estimate.latencySeconds / throughputRatio : estimate.latencySeconds;
+  const unitLabel = estimate.unitLabel || "tok/s";
+  return {
+    ...estimate,
+    speed,
+    throughput: estimate.throughput ? estimate.throughput * throughputRatio : speed,
+    latencySeconds,
+    speedLabel: formatThroughput(speed, unitLabel),
+    calibration,
+  };
+}
+
+function getMeasuredCalibration(model, estimate, hardware) {
+  const rows = getGpuBenchmarkRows(hardware.preset)
+    .filter((row) => benchmarkEvidenceType(row) !== "external")
+    .filter((row) => row.modelName === model.name || row.modelKey === modelKey(model));
+  const ratios = [];
+  for (const row of rows) {
+    const measured = getBenchmarkNumericValue(row);
+    if (!measured || measured.unit !== (estimate.unitLabel || "tok/s")) continue;
+    const preset = GPU_PRESETS.find((gpu) => gpu.id === row.gpuId) || hardware.preset;
+    const raw = estimateBenchmarkRow(model, row, preset);
+    if (!raw?.speed) continue;
+    ratios.push(measured.value / raw.speed);
+  }
+  if (!ratios.length) return null;
+  ratios.sort((a, b) => a - b);
+  const median = medianValue(ratios);
+  const deviations = ratios.map((value) => Math.abs(value - median)).sort((a, b) => a - b);
+  const mad = medianValue(deviations);
+  return {
+    factor: Math.max(0.35, Math.min(2.5, median)),
+    sampleCount: ratios.length,
+    relativeMad: median ? mad / median : 0,
+  };
+}
+
+function medianValue(values) {
+  if (!values.length) return 0;
+  const middle = Math.floor(values.length / 2);
+  return values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
 }
 
 function normalizeGenerativeEstimate(estimate) {
@@ -5149,6 +5261,9 @@ function estimateEncoderThroughput(model, hardware, runtime, precision, tokens, 
 }
 
 function estimateOcrModel(model, hardware, workload, precisionId = workload.precisionId) {
+  if (model.type === "image-generation" || model.type === "video-generation") {
+    return estimateMediaModel(model, hardware, workload, precisionId);
+  }
   const precision = resolvePrecision(
     model,
     precisionId,
@@ -5156,6 +5271,111 @@ function estimateOcrModel(model, hardware, workload, precisionId = workload.prec
     (candidate) => estimateOcrWithPrecision(model, hardware, workload, candidate),
   );
   return estimateOcrWithPrecision(model, hardware, workload, precision);
+}
+
+function estimateVisionWithPrecision(model, hardware, workload, precision) {
+  return model.type === "image-generation" || model.type === "video-generation"
+    ? estimateMediaWithPrecision(model, hardware, workload, precision)
+    : estimateOcrWithPrecision(model, hardware, workload, precision);
+}
+
+function estimateMediaModel(model, hardware, workload, precisionId = workload.precisionId) {
+  const precision = resolvePrecision(
+    model,
+    precisionId,
+    OCR_PRECISIONS,
+    (candidate) => estimateMediaWithPrecision(model, hardware, workload, candidate),
+  );
+  return estimateMediaWithPrecision(model, hardware, workload, precision);
+}
+
+function estimateMediaWithPrecision(model, hardware, workload, precision) {
+  const isVideo = model.type === "video-generation";
+  const megapixels = (workload.width * workload.height) / 1e6;
+  const frames = isVideo ? workload.frames || 81 : 1;
+  const steps = workload.steps || 28;
+  const batchSize = workload.batchSize || 1;
+  const profile = model.profiles?.[precision.id] || model.profiles?.fp16 || {};
+  const effectiveVram = getEffectiveVram(hardware);
+  const offloadFactor = workload.offload === "sequential" ? 0.58 : workload.offload === "tiled" ? 0.78 : 1;
+  const weightsGb = model.params * precision.bytesPerParam * 1.08 * offloadFactor;
+  const textEncoderGb = (model.textEncoderGb || Math.min(5.2, 0.5 + model.params * 0.22)) * offloadFactor;
+  const vaeGb = (model.vaeGb || (isVideo ? 1.8 : 0.8)) * (workload.offload === "tiled" ? 0.55 : 1);
+  const spatialActivationGb = batchSize * megapixels * (profile.activationGbPerMegapixel || 2.5);
+  const temporalActivationGb = isVideo
+    ? spatialActivationGb * Math.max(1, Math.sqrt(frames / 16)) * (model.temporalFactor || 1.25)
+    : 0;
+  const loraMemoryGb = (workload.loraCount || 0) * Math.max(0.18, model.params * 0.035);
+  const runtimeOverheadGb = (profile.baseRuntimeGb || 2.5) + Math.max(0, batchSize - 1) * (profile.batchOverheadGb || 0.8);
+  const activationGb = (spatialActivationGb + temporalActivationGb) * offloadFactor;
+  const requiredGb = weightsGb + textEncoderGb + vaeGb + activationGb + loraMemoryGb + runtimeOverheadGb;
+  const pressure = getVramPressure(requiredGb, effectiveVram);
+  const grade = gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * (workload.offload === "none" ? 0.25 : 0.55));
+
+  const reference = model.reference || {};
+  const referenceRate = reference.pagesPerSecond || (isVideo ? 0.005 : 0.1);
+  const referencePixels = Math.max(0.2, ((reference.width || 1024) * (reference.height || 1024)) / 1e6);
+  const computeScale = Math.sqrt(Math.max(0.05, hardware.computeTotal.fp16Tflops / 170));
+  const bandwidthScale = Math.sqrt(Math.max(0.05, hardware.aggregateBandwidth / (reference.bandwidth || 1008)));
+  const resolutionScale = Math.pow(referencePixels / Math.max(0.2, megapixels), 0.9);
+  const stepScale = 28 / Math.max(1, steps);
+  const frameScale = isVideo ? 81 / Math.max(1, frames) : 1;
+  const fitScale = grade === "F" ? 0 : grade === "D" ? 0.14 : grade === "C" ? 0.48 : 1;
+  const offloadSpeedScale = workload.offload === "sequential" ? 0.28 : workload.offload === "tiled" ? 0.7 : 1;
+  const speed = referenceRate * computeScale * bandwidthScale * resolutionScale * stepScale * frameScale * fitScale * offloadSpeedScale;
+  const latencySeconds = speed > 0 ? 1 / speed : 0;
+  const unitLabel = isVideo ? "clip/s" : "image/s";
+  const durationNote = isVideo
+    ? `${formatDuration(latencySeconds)} / ${(frames / Math.max(1, workload.fps || 16)).toFixed(1)}s clip`
+    : `${formatDuration(latencySeconds)} / image`;
+
+  return {
+    model,
+    precision,
+    weightsGb,
+    textEncoderGb,
+    vaeGb,
+    activationGb,
+    temporalActivationGb,
+    loraMemoryGb,
+    runtimeOverheadGb,
+    requiredGb,
+    effectiveVram,
+    pressure,
+    grade,
+    speed,
+    throughput: speed,
+    latencySeconds,
+    firstTokenSeconds: latencySeconds,
+    contextLimitTokens: 0,
+    contextSupported: true,
+    settingLabel: `${precision.label} · ${workload.offload === "none" ? "GPU" : workload.offload}`,
+    speedLabel: `${formatThroughput(speed, unitLabel)} · ${durationNote}`,
+    limitLabel: isVideo ? `${workload.width}×${workload.height} · ${frames}f` : `${workload.width}×${workload.height}`,
+    unitLabel,
+    reason: buildMediaReason(model, workload, grade, requiredGb, effectiveVram),
+    megapixels,
+    frames,
+    fps: workload.fps,
+    steps,
+  };
+}
+
+function buildMediaReason(model, workload, grade, requiredGb, effectiveVram) {
+  const en = uiLanguage === "en";
+  const kind = model.type === "video-generation" ? (en ? "video" : "비디오") : (en ? "image" : "이미지");
+  if (grade === "F") return en
+    ? `${kind} generation needs about ${formatGb(requiredGb)}, above the available ${formatGb(effectiveVram)} even with the selected memory strategy.`
+    : `${kind} 생성에 약 ${formatGb(requiredGb)}가 필요해 선택한 메모리 전략에서도 가용 ${formatGb(effectiveVram)}를 초과합니다.`;
+  if (grade === "D") return en
+    ? "CPU offload is required and generation time can increase substantially."
+    : "CPU 오프로딩이 필요하며 생성 시간이 크게 늘어날 수 있습니다.";
+  if (grade === "C") return en
+    ? "VRAM headroom is tight; reduce resolution, frames, steps, batch size, or LoRA count."
+    : "VRAM 여유가 작습니다. 해상도·프레임·스텝·배치·LoRA 수를 줄이는 편이 안정적입니다.";
+  return en
+    ? `Runnable at ${workload.width}×${workload.height}, ${workload.steps} steps${model.type === "video-generation" ? `, ${workload.frames} frames` : ""}.`
+    : `${workload.width}×${workload.height}, ${workload.steps}스텝${model.type === "video-generation" ? `, ${workload.frames}프레임` : ""} 기준 실행 가능한 범위입니다.`;
 }
 
 function estimateOcrWithPrecision(model, hardware, workload, precision) {
@@ -5755,6 +5975,32 @@ function getEstimateConfidence(model, estimate, hardware) {
   const benchmarkRows = findBenchmarksForModel(model);
   const exactMatch = findExactMatchingBenchmark(benchmarkRows, model, estimate, hardware);
   const en = uiLanguage === "en";
+  const calibration = estimate.calibration || getMeasuredCalibration(model, estimate, hardware);
+
+  if (calibration?.sampleCount >= 3) {
+    const spread = Math.max(0.08, Math.min(0.3, calibration.relativeMad * 1.8 || 0.12));
+    return {
+      label: en ? "High" : "높음",
+      className: "confidence-high",
+      spread,
+      reason: en
+        ? `Calibrated with ${calibration.sampleCount} source-linked measurements on this GPU; the range reflects median absolute deviation.`
+        : `이 GPU의 출처 연결 실측 ${calibration.sampleCount}건으로 보정했으며 범위는 중앙절대편차를 반영합니다.`,
+      sampleCount: calibration.sampleCount,
+    };
+  }
+
+  if (calibration?.sampleCount) {
+    return {
+      label: en ? "Medium" : "보통",
+      className: "confidence-medium",
+      spread: Math.max(0.16, Math.min(0.35, calibration.relativeMad * 2 || 0.22)),
+      reason: en
+        ? `Calibrated with ${calibration.sampleCount} source-linked measurement(s) on this GPU; more samples are needed.`
+        : `이 GPU의 출처 연결 실측 ${calibration.sampleCount}건으로 보정했지만 표본이 더 필요합니다.`,
+      sampleCount: calibration.sampleCount,
+    };
+  }
 
   if (exactMatch) {
     return {
@@ -6039,6 +6285,7 @@ function render(options = {}) {
 
   refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
+  renderGpuInsights(hardware);
   renderSummary(allEstimates);
   renderSimpleMode(hardware, allEstimates);
   renderCalculationBasisStrip(hardware);
@@ -6068,10 +6315,12 @@ function renderHardware(hardware, allEstimates) {
     $("gpuSourceLinks").innerHTML = "";
     if ($("gpuRuntimeFacts")) $("gpuRuntimeFacts").hidden = true;
     if ($("hardwareCapabilitySummary")) $("hardwareCapabilitySummary").hidden = true;
+    if ($("powerLimitField")) $("powerLimitField").hidden = true;
     return;
   }
 
   $("settingsToggle").hidden = false;
+  if ($("powerLimitField")) $("powerLimitField").hidden = hardware.preset?.formFactor !== "laptop";
 
   const basis = buildHardwareBasis(hardware);
   const metaParts = [
@@ -6098,6 +6347,112 @@ function renderHardware(hardware, allEstimates) {
     .join("");
   renderGpuRuntimeFacts(hardware);
   renderHardwareCapabilities(hardware, allEstimates);
+}
+
+function buildHardwareForPreset(preset) {
+  const base = getHardware();
+  const vram = preset.gpuUsableMemoryGb || preset.vram;
+  const safetyMarginGb = Math.min(base.safetyMarginGb, Math.max(0, vram * 0.1));
+  const availableVram = Math.max(0, vram - safetyMarginGb);
+  const powerLimitW = preset.tgpReferenceW || preset.tgpMaxW || base.powerLimitW;
+  const compute = estimateHardwareCompute(preset, preset.bandwidth, powerLimitW);
+  return {
+    ...base,
+    vram,
+    ram: preset.ram,
+    bandwidth: preset.bandwidth,
+    primaryCount: 1,
+    secondaryCount: 0,
+    count: 1,
+    totalVram: vram,
+    baseEffectiveVram: vram,
+    availableVram,
+    aggregateBandwidth: preset.bandwidth,
+    preset,
+    secondaryPreset: null,
+    heterogeneous: false,
+    crossVendor: false,
+    shardingEfficiency: 1,
+    compute,
+    computeTotal: compute,
+    powerLimitW,
+  };
+}
+
+function gpuComparisonSnapshot(preset) {
+  const hardware = buildHardwareForPreset(preset);
+  const models = getActiveModels();
+  const estimates = models.map((model) => estimateAnyModelForHardware(model, hardware));
+  const runnable = estimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
+  const largest = [...runnable].sort((a, b) => (b.model.params || 0) - (a.model.params || 0))[0];
+  const speedCandidates = runnable.filter((estimate) => estimate.speed > 0);
+  const medianSpeed = speedCandidates.length
+    ? [...speedCandidates].sort((a, b) => a.speed - b.speed)[Math.floor(speedCandidates.length / 2)].speed
+    : 0;
+  return { preset, hardware, runnable: runnable.length, largest, medianSpeed };
+}
+
+function estimateAnyModelForHardware(model, hardware) {
+  if (model.type === "embedding") return estimateEncoderModel(model, hardware, getWorkloadSettings());
+  if (model.type === "reranker") return estimateRerankerModel(model, hardware, getWorkloadSettings());
+  if (isVisionModel(model)) return estimateOcrModel(model, hardware, getWorkloadSettings());
+  return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
+}
+
+function renderGpuInsights(hardware) {
+  const panel = $("gpuInsightsPanel");
+  if (!panel) return;
+  const show = hasPrimaryGpuSelection && coreTaskMode !== "placement";
+  panel.hidden = !show;
+  if (!show) return;
+  const preset = hardware.preset;
+  const benchmarkRows = getGpuBenchmarkRows(preset);
+  const detail = $("gpuDetailSummary");
+  detail.innerHTML = [
+    [uiLanguage === "en" ? "Architecture" : "아키텍처", preset.architecture, preset.vendor],
+    [uiLanguage === "en" ? "Memory" : "메모리", `${formatGb(preset.gpuUsableMemoryGb || preset.vram)} / ${formatGb(preset.vram)}`, preset.memoryType === "unified" ? (uiLanguage === "en" ? "GPU-usable / unified total" : "GPU 계산 기준 / 통합 전체") : (uiLanguage === "en" ? "Dedicated VRAM" : "전용 VRAM")],
+    [uiLanguage === "en" ? "Bandwidth" : "대역폭", `${preset.bandwidth.toLocaleString("ko-KR")} GB/s`, preset.formFactor],
+    [uiLanguage === "en" ? "Runtime" : "런타임", (preset.runtimes || []).join(" · "), benchmarkRows.length ? `${benchmarkRows.length} measurements` : (uiLanguage === "en" ? "Awaiting measurements" : "실측 제보 대기")],
+    ...(preset.formFactor === "laptop" ? [[uiLanguage === "en" ? "Power range" : "전력 범위", `${preset.tgpMinW}–${preset.tgpMaxW}W`, `${hardware.powerLimitW}W ${uiLanguage === "en" ? "selected" : "선택"} `]] : []),
+  ].map(([label, value, note]) => `
+    <div class="gpu-detail-fact">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value || (uiLanguage === "en" ? "Not specified" : "미기재"))}</strong>
+      <small>${escapeHtml(note || "")}</small>
+    </div>
+  `).join("");
+
+  const toggle = $("toggleGpuCompare");
+  toggle.setAttribute("aria-expanded", String(gpuCompareOpen));
+  toggle.textContent = gpuCompareOpen
+    ? (uiLanguage === "en" ? "Close GPU comparison" : "GPU 비교 닫기")
+    : (uiLanguage === "en" ? "Open GPU comparison" : "GPU 비교 열기");
+  $("gpuCompareBuilder").hidden = !gpuCompareOpen;
+  if (!gpuCompareOpen) return;
+
+  const selected = [preset.id, $("compareGpuA").value, $("compareGpuB").value]
+    .filter(Boolean)
+    .filter((id, index, list) => list.indexOf(id) === index)
+    .map((id) => GPU_PRESETS.find((gpu) => gpu.id === id))
+    .filter(Boolean);
+  const snapshots = selected.map(gpuComparisonSnapshot);
+  $("gpuComparisonResult").innerHTML = `
+    <table class="gpu-comparison-table">
+      <thead><tr><th>${uiLanguage === "en" ? "Metric" : "항목"}</th>${snapshots.map((item) => `<th>${escapeHtml(shortGpuName(item.preset.name))}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${renderGpuCompareRow(uiLanguage === "en" ? "GPU-usable memory" : "GPU 계산 메모리", snapshots, (item) => formatGb(item.hardware.vram))}
+        ${renderGpuCompareRow(uiLanguage === "en" ? "Bandwidth" : "대역폭", snapshots, (item) => `${item.preset.bandwidth.toLocaleString("ko-KR")} GB/s`)}
+        ${renderGpuCompareRow(uiLanguage === "en" ? "Runnable models" : "실행 가능 모델", snapshots, (item) => `${item.runnable}`)}
+        ${renderGpuCompareRow(uiLanguage === "en" ? "Largest candidate" : "최대 후보", snapshots, (item) => item.largest ? `${item.largest.model.params}B · ${item.largest.model.name}` : "—")}
+        ${renderGpuCompareRow(uiLanguage === "en" ? "Median estimated speed" : "추정 속도 중앙값", snapshots, (item) => item.medianSpeed ? formatThroughput(item.medianSpeed, item.largest?.unitLabel || "tok/s") : "—")}
+        ${renderGpuCompareRow(uiLanguage === "en" ? "Runtime" : "런타임", snapshots, (item) => (item.preset.runtimes || []).join(", "))}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderGpuCompareRow(label, snapshots, valueFor) {
+  return `<tr><th>${escapeHtml(label)}</th>${snapshots.map((item) => `<td>${escapeHtml(valueFor(item))}</td>`).join("")}</tr>`;
 }
 
 function getGpuBenchmarkRows(gpu) {
@@ -8709,6 +9064,7 @@ function syncUrlState() {
     params.set("bandwidth", String(hardware.bandwidth));
     params.set("reserved", String(hardware.reservedVram));
     params.set("margin", String(hardware.safetyMarginGb));
+    params.set("power", String(hardware.powerLimitW));
   }
   params.set("ctx", String(hardware.context));
   params.set("con", String(hardware.concurrency));
@@ -8733,6 +9089,13 @@ function syncUrlState() {
   params.set("ocrBatch", $("ocrBatchSize").value);
   params.set("ocrPrecision", $("ocrPrecision").value);
   params.set("ocrFeature", $("ocrFeatureSet").value);
+  params.set("mediaSteps", $("mediaSteps").value);
+  params.set("mediaFrames", $("mediaFrames").value);
+  params.set("mediaFps", $("mediaFps").value);
+  params.set("mediaLora", $("mediaLoraCount").value);
+  params.set("mediaOffload", $("mediaOffload").value);
+  if ($("compareGpuA")?.value) params.set("compareA", $("compareGpuA").value);
+  if ($("compareGpuB")?.value) params.set("compareB", $("compareGpuB").value);
   params.set("task", $("taskFilter").value);
   params.set("provider", $("providerFilter").value);
   params.set("license", $("licenseFilter").value);
@@ -8796,6 +9159,7 @@ function applyUrlState() {
     setValueIfPresent("bandwidth", params.get("bandwidth"));
     setValueIfPresent("reservedVramGb", params.get("reserved"));
     setValueIfPresent("safetyMarginGb", params.get("margin"));
+    setValueIfPresent("powerLimitW", params.get("power"));
   }
   refreshSecondaryGpuUi();
   setValueIfPresent("contextSize", params.get("ctx"));
@@ -8821,6 +9185,13 @@ function applyUrlState() {
   setValueIfPresent("ocrBatchSize", params.get("ocrBatch"));
   setSelectIfValid("ocrPrecision", params.get("ocrPrecision"));
   setSelectIfValid("ocrFeatureSet", params.get("ocrFeature"));
+  setValueIfPresent("mediaSteps", params.get("mediaSteps"));
+  setValueIfPresent("mediaFrames", params.get("mediaFrames"));
+  setValueIfPresent("mediaFps", params.get("mediaFps"));
+  setValueIfPresent("mediaLoraCount", params.get("mediaLora"));
+  setSelectIfValid("mediaOffload", params.get("mediaOffload"));
+  setSelectIfValid("compareGpuA", params.get("compareA"));
+  setSelectIfValid("compareGpuB", params.get("compareB"));
   setSelectIfValid("taskFilter", params.get("task"));
   setSelectIfValid("providerFilter", params.get("provider"));
   setSelectIfValid("licenseFilter", params.get("license"));

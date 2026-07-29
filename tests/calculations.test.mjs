@@ -856,3 +856,71 @@ describe("GPU contribution and media-generation upgrades", () => {
     assert.ok(offloaded.speed < longer.speed);
   });
 });
+
+describe("v1.3 GPU platform upgrades", () => {
+  test("normalizes every GPU schema record", () => {
+    const fresh = loadApp();
+    const invalid = fresh.eval(`GPU_PRESETS.filter((gpu) => !gpu.vendor || !gpu.architecture || !gpu.memoryType || !gpu.formFactor || !Array.isArray(gpu.runtimes) || !Array.isArray(gpu.aliases))`);
+    assert.deepEqual([...invalid], []);
+  });
+
+  test("scales laptop compute by selected TGP and preserves it in shared URLs", () => {
+    const fresh = loadApp("https://example.com/?gpu=rtx4090laptop-16");
+    const low = fresh.eval(`estimateHardwareCompute(GPU_PRESETS.find((gpu) => gpu.id === "rtx4090laptop-16"), 576, 80).fp16Tflops`);
+    const high = fresh.eval(`estimateHardwareCompute(GPU_PRESETS.find((gpu) => gpu.id === "rtx4090laptop-16"), 576, 175).fp16Tflops`);
+    assert.ok(high > low);
+    fresh.document.getElementById("powerLimitW").value = "90";
+    fresh.eval("syncUrlState()");
+    assert.equal(new URLSearchParams(fresh.location.search).get("power"), "90");
+  });
+
+  test("calibrates estimates from source-linked user measurements and exposes uncertainty", () => {
+    const fresh = loadApp();
+    const model = fresh.eval(`GENERATIVE_MODELS.find((item) => item.name === "Llama 3.1 8B Instruct")`);
+    fresh.testCalibrationModel = model;
+    const raw = fresh.eval(`normalizeGenerativeEstimate(estimateModel(testCalibrationModel, "q4", getHardware()))`);
+    for (const factor of [0.72, 0.76, 0.8]) {
+      fresh.BENCHMARKS.push({
+        evidenceType: "user",
+        modelName: model.name,
+        gpu: "RTX 4090 24GB",
+        gpuId: "rtx4090-24",
+        workload: "generative",
+        runtime: "llamacpp",
+        quantization: "Q4_K_M",
+        context: 8192,
+        concurrency: 1,
+        inputTokens: 8192,
+        outputTokens: 512,
+        tokensPerSecond: raw.speed * factor,
+        sourceUrl: `https://example.com/${factor}`,
+      });
+    }
+    const calibrated = fresh.eval(`applyMeasuredCalibration(normalizeGenerativeEstimate(estimateModel(testCalibrationModel, "q4", getHardware())), getHardware())`);
+    assert.ok(calibrated.speed < raw.speed);
+    assert.equal(calibrated.calibration.sampleCount, 3);
+    fresh.testCalibrated = calibrated;
+    const confidence = fresh.eval(`getEstimateConfidence(testCalibrationModel, testCalibrated, getHardware())`);
+    assert.equal(confidence.className, "confidence-high");
+  });
+
+  test("uses a dedicated media engine and renders GPU comparison accessibly", () => {
+    const fresh = loadApp();
+    const model = fresh.eval(`OCR_MODELS.find((item) => item.type === "video-generation")`);
+    fresh.testDedicatedMedia = model;
+    const estimate = fresh.eval(`estimateMediaModel(testDedicatedMedia, getHardware(), {
+      type: "videoGeneration", width: 832, height: 480, batchSize: 1,
+      precisionId: "fp16", featureSet: "text", steps: 28, frames: 81, fps: 16,
+      loraCount: 1, offload: "none"
+    })`);
+    assert.ok(estimate.textEncoderGb > 0);
+    assert.ok(estimate.temporalActivationGb > 0);
+    fresh.eval(`selectPrimaryGpu("rtx4090-24"); renderGpuInsights(getHardware()); $("toggleGpuCompare").click(); $("compareGpuA").value = "rtx5090-32"; renderGpuInsights(getHardware())`);
+    const table = fresh.document.querySelector(".gpu-comparison-table");
+    assert.ok(table);
+    assert.ok(table.textContent.includes("RTX 5090"));
+    assert.equal(fresh.document.getElementById("gpuComparisonResult").getAttribute("aria-live"), "polite");
+    fresh.eval(`setUiLanguage("en"); renderGpuInsights(getHardware())`);
+    assert.doesNotMatch(fresh.document.getElementById("gpuInsightsPanel").textContent, /[가-힣]/);
+  });
+});

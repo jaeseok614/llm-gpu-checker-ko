@@ -41,14 +41,16 @@ jobs:
       - name: Validate data
         run: npm run check
 
+      - name: Build cache-stamped static site
+        run: npm run build:static
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # 정적 사이트 전체(리포지토리 루트)를 업로드합니다.
-          path: .
+          path: _site
 
   deploy:
     needs: build

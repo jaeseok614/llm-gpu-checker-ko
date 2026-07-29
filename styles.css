@@ -443,9 +443,9 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .gpu-not-found-actions {
   margin-top: 12px;
   padding: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--surface);
+  background: var(--panel);
 }
 
 .gpu-not-found-actions strong,
@@ -474,7 +474,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .gpu-runtime-facts span {
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--surface-muted);
+  background: var(--surface-soft);
   color: var(--muted);
   font-size: 0.78rem;
 }
@@ -482,7 +482,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .hardware-capability-summary {
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 
 .hardware-capability-summary > strong {
@@ -494,7 +494,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
   flex: 1 1 175px;
   padding: 12px;
   border-radius: 12px;
-  background: var(--surface-muted);
+  background: var(--surface-soft);
 }
 
 .hardware-capability-card span,
@@ -506,6 +506,142 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .hardware-capability-card strong {
   display: block;
   margin: 4px 0;
+}
+
+.gpu-insights-panel {
+  margin: 18px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+
+.gpu-insights-head,
+.gpu-compare-controls,
+.gpu-detail-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.gpu-insights-head h2 {
+  margin: 3px 0 0;
+  font-size: 1.15rem;
+}
+
+.gpu-detail-summary {
+  margin-top: 16px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.gpu-detail-fact {
+  flex: 1 1 150px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.gpu-detail-fact span,
+.gpu-detail-fact small {
+  display: block;
+  color: var(--muted);
+}
+
+.gpu-detail-fact strong {
+  display: block;
+  margin: 4px 0;
+}
+
+.gpu-compare-builder {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.gpu-compare-controls {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.gpu-compare-controls .field {
+  min-width: min(100%, 280px);
+}
+
+.gpu-comparison-table-wrap {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.gpu-comparison-table {
+  width: 100%;
+  min-width: 660px;
+  border-collapse: collapse;
+}
+
+.gpu-comparison-table th,
+.gpu-comparison-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+:where(button, a, input, select, summary, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--blue) 70%, white);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .workload-tabs {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    padding-bottom: 6px;
+  }
+
+  .workload-tab {
+    flex: 0 0 auto;
+    min-height: 44px;
+    scroll-snap-align: start;
+  }
+
+  .gpu-insights-panel {
+    padding: 15px;
+  }
+
+  .gpu-insights-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gpu-insights-head .ghost-button,
+  .gpu-not-found-actions .primary-button,
+  .gpu-not-found-actions .ghost-button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .gpu-not-found-actions > div {
+    flex-direction: column;
+  }
+
+  .gpu-detail-fact {
+    flex-basis: calc(50% - 8px);
+    min-width: 130px;
+  }
 }
 
 .hardware-meta-line {

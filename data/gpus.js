@@ -22,6 +22,45 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "rtx4060ti-16", name: "GeForce RTX 4060 Ti 16GB", vram: 16, ram: 32, bandwidth: 288 },
   { id: "rtx4060ti-8", name: "GeForce RTX 4060 Ti 8GB", vram: 8, ram: 32, bandwidth: 288 },
   { id: "rtx4060-8", name: "GeForce RTX 4060 8GB", vram: 8, ram: 32, bandwidth: 272 },
+  {
+    id: "rtx4090laptop-16",
+    name: "GeForce RTX 4090 Laptop GPU 16GB",
+    vram: 16,
+    ram: 64,
+    bandwidth: 576,
+    formFactor: "laptop",
+    tgpMinW: 80,
+    tgpMaxW: 175,
+    tgpReferenceW: 150,
+    aliases: ["RTX 4090 Laptop", "4090 Mobile"],
+    sourceUrl: "https://www.nvidia.com/en-us/geforce/laptops/40-series/",
+  },
+  {
+    id: "rtx4080laptop-12",
+    name: "GeForce RTX 4080 Laptop GPU 12GB",
+    vram: 12,
+    ram: 32,
+    bandwidth: 432,
+    formFactor: "laptop",
+    tgpMinW: 60,
+    tgpMaxW: 175,
+    tgpReferenceW: 150,
+    aliases: ["RTX 4080 Laptop", "4080 Mobile"],
+    sourceUrl: "https://www.nvidia.com/en-us/geforce/laptops/40-series/",
+  },
+  {
+    id: "rtx4070laptop-8",
+    name: "GeForce RTX 4070 Laptop GPU 8GB",
+    vram: 8,
+    ram: 32,
+    bandwidth: 256,
+    formFactor: "laptop",
+    tgpMinW: 35,
+    tgpMaxW: 140,
+    tgpReferenceW: 115,
+    aliases: ["RTX 4070 Laptop", "4070 Mobile"],
+    sourceUrl: "https://www.nvidia.com/en-us/geforce/laptops/40-series/",
+  },
 
   { id: "rtx3090ti-24", name: "GeForce RTX 3090 Ti 24GB", vram: 24, ram: 64, bandwidth: 1008 },
   { id: "rtx3090-24", name: "GeForce RTX 3090 24GB", vram: 24, ram: 64, bandwidth: 936 },
@@ -121,3 +160,47 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "m3max-128", name: "Apple M3 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 400 },
   { id: "m2max-96", name: "Apple M2 Max 96GB 통합메모리", vram: 96, ram: 96, bandwidth: 400 },
 ];
+
+window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) => {
+  const text = `${gpu.id} ${gpu.name}`.toLowerCase();
+  const vendor = gpu.vendor || (
+    /nvidia|geforce|quadro|titan|rtx|dgx|h100|a100|b200|tesla/.test(text) ? "NVIDIA"
+      : /amd|radeon|ryzen|instinct|mi\d/.test(text) ? "AMD"
+        : /apple|m\d(?:max|ultra)/.test(text) ? "Apple"
+          : /intel|arc|flex/.test(text) ? "Intel"
+            : "Other"
+  );
+  const architecture = gpu.architecture || (
+    /rtx 50|blackwell|b200|b100/.test(text) ? "Blackwell"
+      : /rtx 40|ada/.test(text) ? "Ada Lovelace"
+        : /rtx 30|a100|a30|a10/.test(text) ? "Ampere"
+          : /h100|h200/.test(text) ? "Hopper"
+            : /rx 90|r9700/.test(text) ? "RDNA 4"
+              : /rx 7|w7/.test(text) ? "RDNA 3"
+                : /mi3/.test(text) ? "CDNA 3"
+                  : /mi2/.test(text) ? "CDNA 2"
+                    : vendor === "Apple" ? "Apple Silicon"
+                      : "Unspecified"
+  );
+  const memoryType = gpu.memoryType || (/통합메모리|unified|dgx spark|ryzen ai/.test(text) ? "unified" : "dedicated");
+  const runtimeDefaults = vendor === "NVIDIA"
+    ? ["CUDA"]
+    : vendor === "AMD"
+      ? (memoryType === "unified" ? ["Vulkan", "DirectML", "ROCm-check"] : ["ROCm", "Vulkan"])
+      : vendor === "Apple"
+        ? ["Metal", "MLX"]
+        : vendor === "Intel"
+          ? ["OpenVINO", "oneAPI"]
+          : [];
+  return {
+    aliases: [],
+    vendor,
+    architecture,
+    memoryType,
+    gpuUsableMemoryGb: gpu.vram,
+    runtimes: runtimeDefaults,
+    formFactor: /laptop|mobile/.test(text) ? "laptop" : memoryType === "unified" ? "integrated" : "desktop",
+    specStatus: gpu.sourceUrl ? "sourced" : "estimated",
+    ...gpu,
+  };
+});

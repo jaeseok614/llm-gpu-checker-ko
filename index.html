@@ -16,7 +16,7 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=20260726-placement-guide1" />
+    <link rel="stylesheet" href="./styles.css?v=__CACHE_VERSION__" />
   </head>
   <body>
     <header class="app-header">
@@ -72,7 +72,7 @@
               <span>다른 GPU 검색</span>
               <input type="text" id="onboardingGpuSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="예: RTX 4070, A100, M3 Max" />
             </label>
-            <span class="onboarding-search-hint" id="onboardingSearchHint"></span>
+            <span class="onboarding-search-hint" id="onboardingSearchHint" aria-live="polite"></span>
             <div class="gpu-not-found-actions" id="onboardingGpuNotFound" hidden>
               <strong>찾는 GPU가 아직 목록에 없나요?</strong>
               <span>직접 사양을 입력해 바로 계산하거나, 이름을 채운 상태로 추가 요청을 보낼 수 있습니다.</span>
@@ -110,7 +110,7 @@
             <button type="button" class="primary-button placement-entry-button" id="openPlacementFromHardware">AI 스택 배치</button>
           </div>
         </div>
-        <section class="hardware-capability-summary" id="hardwareCapabilitySummary" hidden></section>
+        <section class="hardware-capability-summary" id="hardwareCapabilitySummary" aria-live="polite" hidden></section>
 
         <div class="settings-drawer" id="settingsDrawer" hidden>
           <div class="settings-panel hardware-editor" id="hardwareEditor">
@@ -128,6 +128,10 @@
                 <label class="field">
                   <span>GPU 수</span>
                   <input id="gpuCount" type="number" min="1" max="16" step="1" value="1" />
+                </label>
+                <label class="field" id="powerLimitField" hidden>
+                  <span>노트북 TGP</span>
+                  <input id="powerLimitW" type="number" min="20" max="600" step="5" value="115" />
                 </label>
               </div>
             </section>
@@ -677,6 +681,24 @@
         </div>
       </section>
 
+      <section class="gpu-insights-panel" id="gpuInsightsPanel" aria-labelledby="gpuInsightsTitle" hidden>
+        <div class="gpu-insights-head">
+          <div>
+            <span class="section-kicker">GPU 상세·비교</span>
+            <h2 id="gpuInsightsTitle">현재 GPU의 사양과 대안을 비교하세요</h2>
+          </div>
+          <button type="button" class="ghost-button" id="toggleGpuCompare" aria-expanded="false">GPU 비교 열기</button>
+        </div>
+        <div class="gpu-detail-summary" id="gpuDetailSummary"></div>
+        <div class="gpu-compare-builder" id="gpuCompareBuilder" hidden>
+          <div class="gpu-compare-controls">
+            <label class="field"><span>비교 GPU 1</span><select id="compareGpuA"></select></label>
+            <label class="field"><span>비교 GPU 2</span><select id="compareGpuB"></select></label>
+          </div>
+          <div class="gpu-comparison-table-wrap" id="gpuComparisonResult" role="region" aria-live="polite" tabindex="0"></div>
+        </div>
+      </section>
+
       <section class="results-panel" id="resultsPanel" aria-label="모델 검색 결과">
         <div class="calculation-basis-strip" id="calculationBasisStrip"></div>
 
@@ -831,16 +853,16 @@
       <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실제 측정과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>
     </footer>
 
-    <script src="./data/gpus.js?v=20260723-release1" defer></script>
-    <script src="./data/quantizations.js?v=20260723-release1" defer></script>
-    <script src="./data/precision-profiles.js?v=20260723-release1" defer></script>
-    <script src="./data/models.js?v=20260723-release1" defer></script>
-    <script src="./data/embedding-models.js?v=20260723-release1" defer></script>
-    <script src="./data/reranker-models.js?v=20260723-release1" defer></script>
-    <script src="./data/ocr-models.js?v=20260723-release1" defer></script>
-    <script src="./data/benchmarks.js?v=20260723-release1" defer></script>
-    <script src="./data/model-metadata.js?v=20260723-release1" defer></script>
-    <script src="./data/licenses.js?v=20260723-release1" defer></script>
-    <script src="./app.js?v=20260726-placement-guide1" defer></script>
+    <script src="./data/gpus.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/quantizations.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/precision-profiles.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/models.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/embedding-models.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/reranker-models.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/ocr-models.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/benchmarks.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/model-metadata.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/licenses.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./app.js?v=__CACHE_VERSION__" defer></script>
   </body>
 </html>
