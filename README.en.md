@@ -26,6 +26,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v2.2** — Added a user build calculator for model fit, recommended PSU, total system price, and upgrade order across CPU, RAM, PSU, case, and GPU.
 - **v2.0** — Added measurement confidence intervals, Benchmark 2.0, GPU/model deep links, purchase TCO, and Ollama/llama.cpp/vLLM/Docker launch recipes.
 - **v1.5** — Expanded to 115 GPUs and added 10 STT/TTS models, a model-first entry screen, model-request auto PRs, and benchmark coverage.
 - **v1.4** — Added the model-and-budget-first GPU Advisor, price and energy inputs, current-GPU comparisons, and image/video optimizations.
@@ -93,6 +94,7 @@ npm run check
 - [v1.4 GPU Advisor methodology and limitations](./docs/v1.4-advisor-methodology.md)
 - [v1.5 catalog, audio, and dashboard](./docs/v1.5-catalog-audio-dashboard.md)
 - [v2.0 decision platform](./docs/v2.0-decision-platform.md)
+- [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 

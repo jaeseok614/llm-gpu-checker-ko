@@ -65,6 +65,45 @@ const PLATFORM_V2_COPY = {
     speed: "속도",
     upgradeCandidate: "업그레이드 후보",
     performanceRatio: "성능 배수",
+    build: "빌드 계산기",
+    buildIntro: "CPU·RAM·파워·케이스와 부품 가격을 입력해 모델 실행 가능 여부와 업그레이드 순서를 계산합니다.",
+    buildModel: "실행할 모델",
+    buildGpu: "장착 GPU",
+    cpuProfile: "CPU 등급",
+    systemRam: "시스템 RAM",
+    psuCapacity: "파워 용량",
+    caseClearance: "케이스 GPU 장착 길이",
+    gpuLength: "GPU 길이",
+    componentPrices: "부품 가격 (USD)",
+    gpuPrice: "GPU",
+    cpuPrice: "CPU",
+    motherboardPrice: "메인보드",
+    ramPrice: "RAM",
+    psuPrice: "파워",
+    casePrice: "케이스",
+    storagePrice: "저장장치",
+    otherPrice: "기타",
+    buildResult: "빌드 판정",
+    runnable: "실행 가능",
+    conditional: "조건부 실행",
+    blocked: "구성 변경 필요",
+    recommendedRam: "권장 RAM",
+    recommendedPsu: "권장 파워",
+    totalPrice: "전체 시스템 가격",
+    upgradePriority: "업그레이드 우선순위",
+    priorityGpu: "GPU VRAM",
+    priorityRam: "시스템 RAM",
+    priorityPsu: "파워 용량",
+    priorityCase: "케이스 장착 공간",
+    priorityCpu: "CPU",
+    priorityNone: "현재 구성 유지",
+    buildReasonGpu: "모델 가중치와 실행 메모리를 담기에는 GPU 메모리가 부족합니다.",
+    buildReasonRam: "CPU 오프로딩과 운영체제 여유 공간을 위한 RAM이 부족합니다.",
+    buildReasonPsu: "GPU 순간 부하와 시스템 여유분을 고려한 권장 파워보다 작습니다.",
+    buildReasonCase: "GPU 길이가 케이스 장착 한도를 초과합니다.",
+    buildReasonCpu: "오프로딩 또는 전처리 작업에 비해 CPU 여유가 부족합니다.",
+    buildReasonNone: "선택 모델 기준으로 즉시 교체해야 할 핵심 부품이 없습니다.",
+    referencePriceNote: "가격은 참고값입니다. 실제 구매가는 직접 입력하세요.",
   },
   en: {
     hub: "Decision hub",
@@ -128,6 +167,45 @@ const PLATFORM_V2_COPY = {
     speed: "Speed",
     upgradeCandidate: "Upgrade candidate",
     performanceRatio: "Performance ratio",
+    build: "Build calculator",
+    buildIntro: "Enter CPU, RAM, PSU, case clearance, and component prices to check model fit and upgrade order.",
+    buildModel: "Model to run",
+    buildGpu: "Installed GPU",
+    cpuProfile: "CPU tier",
+    systemRam: "System RAM",
+    psuCapacity: "PSU capacity",
+    caseClearance: "Case GPU clearance",
+    gpuLength: "GPU length",
+    componentPrices: "Component prices (USD)",
+    gpuPrice: "GPU",
+    cpuPrice: "CPU",
+    motherboardPrice: "Motherboard",
+    ramPrice: "RAM",
+    psuPrice: "PSU",
+    casePrice: "Case",
+    storagePrice: "Storage",
+    otherPrice: "Other",
+    buildResult: "Build verdict",
+    runnable: "Runnable",
+    conditional: "Conditional",
+    blocked: "Changes required",
+    recommendedRam: "Recommended RAM",
+    recommendedPsu: "Recommended PSU",
+    totalPrice: "Total system price",
+    upgradePriority: "Upgrade priority",
+    priorityGpu: "GPU VRAM",
+    priorityRam: "System RAM",
+    priorityPsu: "PSU capacity",
+    priorityCase: "Case clearance",
+    priorityCpu: "CPU",
+    priorityNone: "Keep this build",
+    buildReasonGpu: "GPU memory is too small for the model weights and runtime memory.",
+    buildReasonRam: "System RAM is too small for CPU offload and operating-system headroom.",
+    buildReasonPsu: "PSU capacity is below the recommendation including GPU transients and system headroom.",
+    buildReasonCase: "GPU length exceeds the case clearance.",
+    buildReasonCpu: "CPU headroom is low for offload or preprocessing work.",
+    buildReasonNone: "No core component needs an immediate replacement for the selected model.",
+    referencePriceNote: "Prices are references. Enter the actual checkout prices.",
   },
 };
 const PLATFORM_V2_INITIAL_PARAMS = new URL(window.location.href).searchParams;
@@ -148,6 +226,31 @@ let platformPurchaseState = {
   electricity: 0.15,
 };
 let platformLaunchState = { runtime: "ollama", platform: "windows" };
+const SYSTEM_CPU_PROFILES = [
+  { id: "entry4", ko: "4코어 보급형", en: "Entry 4-core", cores: 4, score: 30, tdpW: 65, priceUsd: 100 },
+  { id: "main6", ko: "6코어 메인스트림", en: "Mainstream 6-core", cores: 6, score: 48, tdpW: 88, priceUsd: 180 },
+  { id: "performance8", ko: "8코어 고성능", en: "Performance 8-core", cores: 8, score: 65, tdpW: 125, priceUsd: 320 },
+  { id: "creator12", ko: "12코어 크리에이터", en: "Creator 12-core", cores: 12, score: 82, tdpW: 170, priceUsd: 480 },
+  { id: "workstation16", ko: "16코어 워크스테이션", en: "Workstation 16-core", cores: 16, score: 100, tdpW: 230, priceUsd: 700 },
+  { id: "server32", ko: "32코어 서버", en: "Server 32-core", cores: 32, score: 140, tdpW: 280, priceUsd: 1400 },
+];
+let platformBuildState = {
+  modelKey: "",
+  gpuId: "",
+  cpuProfileId: "performance8",
+  ramGb: 64,
+  psuW: 850,
+  caseClearanceMm: 360,
+  gpuLengthMm: 340,
+  gpuPrice: 0,
+  cpuPrice: 0,
+  motherboardPrice: 180,
+  ramPrice: 150,
+  psuPrice: 130,
+  casePrice: 110,
+  storagePrice: 100,
+  otherPrice: 80,
+};
 
 function platformText(key) {
   return PLATFORM_V2_COPY[uiLanguage === "en" ? "en" : "ko"][key] || key;
@@ -217,7 +320,7 @@ function currentPlatformGpu() {
 }
 
 function modelSlug(model) {
-  return encodeURIComponent(getModelKey(model));
+  return encodeURIComponent(modelKey(model));
 }
 
 function buildGpuDetailUrl(gpu) {
@@ -231,7 +334,7 @@ function buildGpuDetailUrl(gpu) {
 function buildDedicatedModelUrl(model) {
   const url = new URL(window.location.href);
   url.searchParams.set("detail", "model");
-  url.searchParams.set("model", getModelKey(model));
+  url.searchParams.set("model", modelKey(model));
   url.hash = "decisionHub";
   return url.toString();
 }
@@ -272,6 +375,61 @@ function calculateUpgradeTco({
       ? "maybe"
       : "skip";
   return { purchasePrice, acquisition, targetEnergy, currentEnergy, energyDelta, tco, speedRatio, costPerGain, verdict };
+}
+
+function roundUpTo(value, step) {
+  return Math.ceil(Math.max(0, value) / step) * step;
+}
+
+function calculateSystemBuild({
+  estimate,
+  gpuVramGb = 0,
+  gpuPowerW = 0,
+  cpuScore = 0,
+  cpuPowerW = 0,
+  ramGb = 0,
+  psuW = 0,
+  caseClearanceMm = 0,
+  gpuLengthMm = 0,
+  prices = {},
+} = {}) {
+  const requiredGb = Number(estimate?.requiredGb || 0);
+  const offloadGb = Math.max(0, requiredGb - gpuVramGb);
+  const minimumRamGb = roundUpTo(8 + offloadGb * 1.1, 8);
+  const recommendedRamGb = Math.max(32, roundUpTo(16 + offloadGb * 1.35, 8));
+  const recommendedPsuW = roundUpTo((gpuPowerW + cpuPowerW + 120) * 1.25, 50);
+  const recommendedCpuScore = offloadGb > 0 ? 65 : 45;
+  const gradeScore = Number(GRADE_META[estimate?.grade]?.score ?? 0);
+  const caseFits = !gpuLengthMm || !caseClearanceMm || gpuLengthMm <= caseClearanceMm;
+  const psuFits = !recommendedPsuW || psuW >= recommendedPsuW;
+  const ramFits = ramGb >= minimumRamGb;
+  const cpuFits = cpuScore >= recommendedCpuScore;
+  const priorities = [];
+  if (gradeScore === 0 || offloadGb > Math.max(8, ramGb * 0.45)) priorities.push({ id: "gpu", severity: 5, reasonKey: "buildReasonGpu" });
+  if (!ramFits) priorities.push({ id: "ram", severity: 4, reasonKey: "buildReasonRam" });
+  if (!psuFits) priorities.push({ id: "psu", severity: 4, reasonKey: "buildReasonPsu" });
+  if (!caseFits) priorities.push({ id: "case", severity: 4, reasonKey: "buildReasonCase" });
+  if (!cpuFits) priorities.push({ id: "cpu", severity: offloadGb > 0 ? 3 : 2, reasonKey: "buildReasonCpu" });
+  if (!priorities.length) priorities.push({ id: "none", severity: 0, reasonKey: "buildReasonNone" });
+  priorities.sort((a, b) => b.severity - a.severity);
+  const hardBlocked = !caseFits || !psuFits || !ramFits || gradeScore === 0;
+  const verdict = hardBlocked ? "blocked" : gradeScore <= 2 || offloadGb > 0 || !cpuFits ? "conditional" : "runnable";
+  const totalPriceUsd = Object.values(prices).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+  return {
+    verdict,
+    requiredGb,
+    offloadGb,
+    minimumRamGb,
+    recommendedRamGb,
+    recommendedPsuW,
+    recommendedCpuScore,
+    caseFits,
+    psuFits,
+    ramFits,
+    cpuFits,
+    priorities,
+    totalPriceUsd,
+  };
 }
 
 function safeModelRepo(model) {
@@ -476,6 +634,93 @@ function renderPurchaseHub() {
     <div class="upgrade-verdict is-${result.verdict}"><strong>${platformText(verdictKey)}</strong><span>${Number.isFinite(result.costPerGain) ? `${platformText("payback")}: ${formatPlatformMoney(result.costPerGain, values.currency, values.rate)}` : ""}</span></div>`;
 }
 
+function renderBuildHub() {
+  const models = getAllModels();
+  const model = getModelByKey(platformBuildState.modelKey) || currentPlatformModel() || models[0];
+  const gpu = GPU_PRESETS.find((item) => item.id === platformBuildState.gpuId) || currentPlatformGpu() || GPU_PRESETS.find((item) => item.id !== "custom");
+  if (!model || !gpu) return `<p class="hub-empty">${!model ? platformText("noModel") : platformText("noGpu")}</p>`;
+  const cpu = SYSTEM_CPU_PROFILES.find((item) => item.id === platformBuildState.cpuProfileId) || SYSTEM_CPU_PROFILES[2];
+  const buildValues = {
+    ramGb: clampNumber(platformBuildState.ramGb, 8, 2048, 64),
+    psuW: clampNumber(platformBuildState.psuW, 100, 3000, 850),
+    caseClearanceMm: clampNumber(platformBuildState.caseClearanceMm, 100, 1000, 360),
+    gpuLengthMm: clampNumber(platformBuildState.gpuLengthMm, 0, 1000, 340),
+  };
+  const hardware = { ...buildHardwareForPreset(gpu), ram: buildValues.ramGb };
+  const estimate = estimateAnyModelForHardware(model, hardware);
+  const market = gpuMarketReference(gpu);
+  const prices = {
+    gpu: clampNumber(platformBuildState.gpuPrice, 0, 1000000, 0) || market.priceUsd,
+    cpu: clampNumber(platformBuildState.cpuPrice, 0, 1000000, 0) || cpu.priceUsd,
+    motherboard: clampNumber(platformBuildState.motherboardPrice, 0, 1000000, 0),
+    ram: clampNumber(platformBuildState.ramPrice, 0, 1000000, 0),
+    psu: clampNumber(platformBuildState.psuPrice, 0, 1000000, 0),
+    case: clampNumber(platformBuildState.casePrice, 0, 1000000, 0),
+    storage: clampNumber(platformBuildState.storagePrice, 0, 1000000, 0),
+    other: clampNumber(platformBuildState.otherPrice, 0, 1000000, 0),
+  };
+  const result = calculateSystemBuild({
+    estimate,
+    gpuVramGb: gpu.gpuUsableMemoryGb || gpu.vram,
+    gpuPowerW: market.powerW,
+    cpuScore: cpu.score,
+    cpuPowerW: cpu.tdpW,
+    ramGb: buildValues.ramGb,
+    psuW: buildValues.psuW,
+    caseClearanceMm: buildValues.caseClearanceMm,
+    gpuLengthMm: buildValues.gpuLengthMm,
+    prices,
+  });
+  const priorityLabels = {
+    gpu: "priorityGpu",
+    ram: "priorityRam",
+    psu: "priorityPsu",
+    case: "priorityCase",
+    cpu: "priorityCpu",
+    none: "priorityNone",
+  };
+  const currency = platformPurchaseState.currency;
+  const rate = platformPurchaseState.rate;
+  return `
+    <p>${platformText("buildIntro")}</p>
+    <div class="build-selector-grid">
+      <label><span>${platformText("buildModel")}</span><select id="buildModel">${models.map((item) => `<option value="${platformEscape(modelKey(item))}" ${item === model ? "selected" : ""}>${platformEscape(item.name)}</option>`).join("")}</select></label>
+      <label><span>${platformText("buildGpu")}</span><select id="buildGpu">${GPU_PRESETS.filter((item) => item.id !== "custom").map((item) => `<option value="${platformEscape(item.id)}" ${item.id === gpu.id ? "selected" : ""}>${platformEscape(shortGpuName(item.name))}</option>`).join("")}</select></label>
+      <label><span>${platformText("cpuProfile")}</span><select id="buildCpuProfile">${SYSTEM_CPU_PROFILES.map((item) => `<option value="${item.id}" ${item.id === cpu.id ? "selected" : ""}>${platformEscape(item[uiLanguage === "en" ? "en" : "ko"])} · ${item.tdpW}W</option>`).join("")}</select></label>
+      <label><span>${platformText("systemRam")} (GB)</span><input id="buildRamGb" type="number" min="8" max="2048" step="8" value="${buildValues.ramGb}"></label>
+      <label><span>${platformText("psuCapacity")} (W)</span><input id="buildPsuW" type="number" min="100" max="3000" step="50" value="${buildValues.psuW}"></label>
+      <label><span>${platformText("caseClearance")} (mm)</span><input id="buildCaseClearance" type="number" min="100" max="1000" step="1" value="${buildValues.caseClearanceMm}"></label>
+      <label><span>${platformText("gpuLength")} (mm)</span><input id="buildGpuLength" type="number" min="0" max="1000" step="1" value="${buildValues.gpuLengthMm}"></label>
+    </div>
+    <fieldset class="build-price-fieldset">
+      <legend>${platformText("componentPrices")}</legend>
+      <div class="build-price-grid">
+        ${[
+          ["buildGpuPrice", "gpuPrice", prices.gpu],
+          ["buildCpuPrice", "cpuPrice", prices.cpu],
+          ["buildMotherboardPrice", "motherboardPrice", prices.motherboard],
+          ["buildRamPrice", "ramPrice", prices.ram],
+          ["buildPsuPrice", "psuPrice", prices.psu],
+          ["buildCasePrice", "casePrice", prices.case],
+          ["buildStoragePrice", "storagePrice", prices.storage],
+          ["buildOtherPrice", "otherPrice", prices.other],
+        ].map(([id, key, value]) => `<label><span>${platformText(key)}</span><input id="${id}" type="number" min="0" max="1000000" step="10" value="${value}"></label>`).join("")}
+      </div>
+      <small>${platformText("referencePriceNote")}</small>
+    </fieldset>
+    <div class="build-verdict is-${result.verdict}">
+      <div><span>${platformText("buildResult")}</span><strong>${platformText(result.verdict)}</strong><small>${platformEscape(model.name)} · ${platformEscape(shortGpuName(gpu.name))} · ${estimate.grade}</small></div>
+      <div><span>VRAM</span><strong>${formatGb(result.requiredGb)} / ${formatGb(gpu.gpuUsableMemoryGb || gpu.vram)}</strong><small>${result.offloadGb > 0 ? `CPU offload ${formatGb(result.offloadGb)}` : platformText("runnable")}</small></div>
+      <div><span>${platformText("recommendedRam")}</span><strong>${result.recommendedRamGb} GB</strong><small>${buildValues.ramGb} GB ${result.ramFits ? "✓" : "!"}</small></div>
+      <div><span>${platformText("recommendedPsu")}</span><strong>${result.recommendedPsuW} W</strong><small>${buildValues.psuW} W ${result.psuFits ? "✓" : "!"}</small></div>
+      <div><span>${platformText("totalPrice")}</span><strong>${formatPlatformMoney(result.totalPriceUsd, currency, rate)}</strong><small>$${result.totalPriceUsd.toLocaleString("en-US")}</small></div>
+    </div>
+    <div class="build-priority">
+      <h3>${platformText("upgradePriority")}</h3>
+      <ol>${result.priorities.map((item) => `<li class="priority-${item.severity}"><strong>${platformText(priorityLabels[item.id])}</strong><span>${platformText(item.reasonKey)}</span></li>`).join("")}</ol>
+    </div>`;
+}
+
 function renderLaunchHub() {
   const runtime = platformLaunchState.runtime;
   const platform = platformLaunchState.platform;
@@ -510,6 +755,7 @@ function renderDecisionHub() {
     ["benchmark", "benchmark"],
     ["detail", "detail"],
     ["purchase", "purchase"],
+    ["build", "build"],
     ["launch", "launch"],
   ];
   panel.querySelector(".decision-hub-tabs").innerHTML = tabs.map(([id, key]) =>
@@ -520,6 +766,7 @@ function renderDecisionHub() {
     benchmark: renderBenchmarkV2Hub,
     detail: renderDetailHub,
     purchase: renderPurchaseHub,
+    build: renderBuildHub,
     launch: renderLaunchHub,
   };
   $("decisionHubBody").innerHTML = renderers[platformActiveTab]();
@@ -533,6 +780,13 @@ function downloadPlatformText(filename, content) {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(anchor.href);
+}
+
+function syncPlatformBuildUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("hub", "build");
+  url.searchParams.set("build", JSON.stringify(platformBuildState));
+  window.history.replaceState({}, "", url);
 }
 
 function bindDecisionHubControls() {
@@ -583,6 +837,28 @@ function bindDecisionHubControls() {
     platformLaunchState.platform = event.target.value;
     renderDecisionHub();
   });
+  const buildFields = {
+    buildModel: ["modelKey", String],
+    buildGpu: ["gpuId", String],
+    buildCpuProfile: ["cpuProfileId", String],
+    buildRamGb: ["ramGb", Number],
+    buildPsuW: ["psuW", Number],
+    buildCaseClearance: ["caseClearanceMm", Number],
+    buildGpuLength: ["gpuLengthMm", Number],
+    buildGpuPrice: ["gpuPrice", Number],
+    buildCpuPrice: ["cpuPrice", Number],
+    buildMotherboardPrice: ["motherboardPrice", Number],
+    buildRamPrice: ["ramPrice", Number],
+    buildPsuPrice: ["psuPrice", Number],
+    buildCasePrice: ["casePrice", Number],
+    buildStoragePrice: ["storagePrice", Number],
+    buildOtherPrice: ["otherPrice", Number],
+  };
+  Object.entries(buildFields).forEach(([id, [key, convert]]) => $(id)?.addEventListener("change", (event) => {
+    platformBuildState[key] = convert(event.target.value);
+    syncPlatformBuildUrl();
+    renderDecisionHub();
+  }));
   $("[data-copy-recipe]")?.addEventListener("click", () => copyTextToClipboard($("launchRecipeContent")?.textContent || "", $("[data-copy-recipe]")));
   $("[data-download-recipe]")?.addEventListener("click", () => {
     const runtime = $("launchRuntime")?.value || "ollama";
@@ -596,13 +872,29 @@ function applyPlatformDeepLink() {
   const params = new URL(window.location.href).searchParams;
   const value = (key) => params.get(key) || PLATFORM_V2_INITIAL_PARAMS.get(key);
   const hub = value("hub");
-  if (["reliability", "benchmark", "detail", "purchase", "launch"].includes(hub)) platformActiveTab = hub;
+  if (["reliability", "benchmark", "detail", "purchase", "build", "launch"].includes(hub)) platformActiveTab = hub;
+  const buildState = value("build");
+  if (buildState) {
+    try {
+      const parsed = JSON.parse(buildState);
+      if (parsed && typeof parsed === "object") {
+        const safe = {};
+        ["modelKey", "gpuId", "cpuProfileId"].forEach((key) => {
+          if (typeof parsed[key] === "string" && parsed[key].length <= 200) safe[key] = parsed[key];
+        });
+        ["ramGb", "psuW", "caseClearanceMm", "gpuLengthMm", "gpuPrice", "cpuPrice", "motherboardPrice", "ramPrice", "psuPrice", "casePrice", "storagePrice", "otherPrice"].forEach((key) => {
+          if (Number.isFinite(Number(parsed[key]))) safe[key] = Number(parsed[key]);
+        });
+        platformBuildState = { ...platformBuildState, ...safe };
+      }
+    } catch {}
+  }
   const view = value("detail");
   if (view === "gpu" && value("gpu")) selectPrimaryGpu(value("gpu"), { persist: false });
   if (view === "model" && value("model")) {
     const model = getModelByKey(value("model"));
     if (model) {
-      selectedModelKey = getModelKey(model);
+      selectedModelKey = modelKey(model);
       if ($("advisorModel")) $("advisorModel").value = selectedModelKey;
     }
   }

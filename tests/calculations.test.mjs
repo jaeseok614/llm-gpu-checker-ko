@@ -1046,3 +1046,41 @@ describe("v2.0 decision platform", () => {
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 });
+
+describe("v2.2 user build calculator", () => {
+  test("calculates PSU, RAM, case fit, total price, and upgrade order", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx4090-24&hub=build&lang=en", {}, { platformV2: true });
+    platform.buildEstimate = { grade: "A", requiredGb: 20 };
+    const blocked = platform.eval(`calculateSystemBuild({
+      estimate: buildEstimate, gpuVramGb: 24, gpuPowerW: 450,
+      cpuScore: 65, cpuPowerW: 125, ramGb: 64, psuW: 550,
+      caseClearanceMm: 320, gpuLengthMm: 340,
+      prices: { gpu: 1200, cpu: 300, ram: 150, psu: 100, case: 100 }
+    })`);
+    assert.equal(blocked.verdict, "blocked");
+    assert.ok(blocked.recommendedPsuW >= 850);
+    assert.equal(blocked.priorities[0].id, "psu");
+    assert.equal(blocked.totalPriceUsd, 1850);
+
+    const ready = platform.eval(`calculateSystemBuild({
+      estimate: buildEstimate, gpuVramGb: 24, gpuPowerW: 300,
+      cpuScore: 82, cpuPowerW: 125, ramGb: 64, psuW: 1000,
+      caseClearanceMm: 400, gpuLengthMm: 320, prices: { gpu: 900 }
+    })`);
+    assert.equal(ready.verdict, "runnable");
+    assert.equal(ready.priorities[0].id, "none");
+  });
+
+  test("renders a bilingual, shareable build form and updates its verdict", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx4090-24&hub=build&lang=en", {}, { platformV2: true });
+    assert.match(platform.document.querySelector("#decisionHubBody").textContent, /CPU|System RAM|Total system price/);
+    assert.ok(platform.document.querySelector("#buildModel"));
+    assert.ok(platform.document.querySelector("#buildGpu"));
+    const psu = platform.document.querySelector("#buildPsuW");
+    psu.value = "500";
+    psu.dispatchEvent(new platform.Event("change", { bubbles: true }));
+    assert.match(platform.location.search, /hub=build/);
+    assert.match(platform.location.search, /build=/);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+});

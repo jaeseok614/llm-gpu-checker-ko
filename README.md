@@ -26,6 +26,7 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v2.2** — CPU·RAM·파워·케이스·부품 가격까지 입력해 모델 실행 가능 여부, 권장 파워, 전체 시스템 가격과 업그레이드 순서를 계산합니다.
 - **v2.0** — 실측 신뢰구간·벤치마크 2.0·GPU/모델 상세 주소·구매 TCO·Ollama/llama.cpp/vLLM/Docker 실행 도우미를 추가했습니다.
 - **v1.5** — GPU를 115종으로 확장하고 STT/TTS 10종·모델 중심 첫 화면·모델 제보 자동 PR·벤치마크 커버리지 화면을 추가했습니다.
 - **v1.4** — 모델과 예산부터 선택하는 GPU Advisor, 가격·전력비·현재 GPU 대비 성능, 이미지/비디오 최적화 옵션을 추가했습니다.
@@ -93,6 +94,7 @@ npm run check
 - [v1.4 GPU Advisor 계산과 한계](./docs/v1.4-advisor-methodology.md)
 - [v1.5 카탈로그·음성·대시보드](./docs/v1.5-catalog-audio-dashboard.md)
 - [v2.0 의사결정 플랫폼](./docs/v2.0-decision-platform.md)
+- [v2.2 사용자 빌드 계산기](./docs/v2.2-build-calculator.md)
 - [기여 방법](./CONTRIBUTING.md)
 - [변경 이력](./CHANGELOG.md)
 

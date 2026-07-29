@@ -940,6 +940,105 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .upgrade-verdict.is-worth { border-color: var(--success); }
 .upgrade-verdict.is-skip { border-color: var(--warning); }
 
+.build-selector-grid,
+.build-price-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.build-selector-grid label,
+.build-price-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.build-selector-grid label:first-child,
+.build-selector-grid label:nth-child(2) {
+  grid-column: span 2;
+}
+
+.build-price-fieldset {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.build-price-fieldset legend {
+  padding: 0 8px;
+  font-weight: 800;
+}
+
+.build-price-fieldset small {
+  color: var(--muted);
+}
+
+.build-verdict {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--warning);
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.build-verdict.is-runnable { border-left-color: var(--success); }
+.build-verdict.is-blocked { border-left-color: var(--danger, #b94a48); }
+
+.build-verdict > div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.build-verdict span,
+.build-verdict small {
+  color: var(--muted);
+}
+
+.build-verdict strong {
+  font-size: 1.08rem;
+}
+
+.build-priority {
+  margin-top: 18px;
+}
+
+.build-priority ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: build-priority;
+}
+
+.build-priority li {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.4fr) 1.6fr;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-strong);
+  counter-increment: build-priority;
+}
+
+.build-priority li strong::before {
+  content: counter(build-priority) ". ";
+  color: var(--accent);
+}
+
+.build-priority li span {
+  color: var(--muted);
+}
+
 .launch-controls {
   grid-template-columns: repeat(2, minmax(0, 260px));
   margin: 16px 0;
@@ -991,6 +1090,12 @@ html[lang="en"] .simple-mode-head > div:first-child {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .build-selector-grid,
+  .build-price-grid,
+  .build-verdict {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .benchmark-v2-list article {
     grid-template-columns: 1fr auto;
   }
@@ -1021,7 +1126,19 @@ html[lang="en"] .simple-mode-head > div:first-child {
   .deep-link-grid,
   .benchmark-v2-toolbar,
   .purchase-controls,
+  .build-selector-grid,
+  .build-price-grid,
+  .build-verdict,
   .launch-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .build-selector-grid label:first-child,
+  .build-selector-grid label:nth-child(2) {
+    grid-column: span 1;
+  }
+
+  .build-priority li {
     grid-template-columns: 1fr;
   }
 
