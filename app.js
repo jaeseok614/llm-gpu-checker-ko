@@ -1219,6 +1219,8 @@ function setAppMode(mode) {
   refreshCoreTaskUi();
   refreshAppModeUi();
   render();
+  const panel = mode === "simple" ? $("simpleModePanel") : $("expertModeSection");
+  window.requestAnimationFrame?.(() => panel?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
 }
 
 function refreshCoreTaskUi() {
@@ -1455,6 +1457,13 @@ function refreshAppModeUi() {
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-selected", String(active));
   });
+  const status = $("appModeStatus");
+  if (status) {
+    const modelCount = hasPrimaryGpuSelection ? getActiveModels().length.toLocaleString(uiLanguage === "en" ? "en-US" : "ko-KR") : "0";
+    status.textContent = isSimple
+      ? (uiLanguage === "en" ? "Quick view: three recommended models for the selected GPU." : "빠른 추천: 선택한 GPU에 맞는 모델 3개를 보여줍니다.")
+      : (uiLanguage === "en" ? `Full catalog: browse and filter ${modelCount} models.` : `전체 모델 탐색: ${modelCount}개 모델을 검색하고 필터링할 수 있습니다.`);
+  }
 }
 
 function init() {

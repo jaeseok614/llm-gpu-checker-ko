@@ -2116,6 +2116,23 @@ body.placement-task-active #hardwarePanel > :not(#gpuPlacementPanel) {
   color: var(--on-blue);
 }
 
+.app-mode-status {
+  margin: 0;
+  padding: 0 22px 12px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+
+#simpleModePanel[hidden],
+#expertModeSection[hidden] {
+  display: none !important;
+}
+
+#expertModeSection:not([hidden]) {
+  display: block;
+}
+
 .workload-tabs {
   display: flex;
   flex-wrap: wrap;

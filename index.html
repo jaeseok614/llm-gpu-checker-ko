@@ -393,9 +393,10 @@
         </section>
 
         <div class="app-mode-toggle" role="tablist" aria-label="사용 모드">
-          <button type="button" class="app-mode-tab is-active" data-app-mode="simple" aria-selected="true">빠른 추천</button>
-          <button type="button" class="app-mode-tab" data-app-mode="expert" aria-selected="false">전체 모델 탐색</button>
+          <button type="button" class="app-mode-tab is-active" data-app-mode="simple" aria-controls="simpleModePanel" aria-selected="true">빠른 추천</button>
+          <button type="button" class="app-mode-tab" data-app-mode="expert" aria-controls="expertModeSection" aria-selected="false">전체 모델 탐색</button>
         </div>
+        <p class="app-mode-status" id="appModeStatus" aria-live="polite"></p>
 
         <div class="workload-tabs" role="tablist" aria-label="모델 종류">
           <button type="button" class="workload-tab is-active" data-workload-tab="generative" aria-selected="true">생성형 LLM</button>

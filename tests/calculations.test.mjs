@@ -257,6 +257,9 @@ describe("mode, filtering, and sorting UI", () => {
     expertTab.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(fresh.document.getElementById("expertModeSection").hidden, false);
+    assert.equal(expertTab.getAttribute("aria-selected"), "true");
+    assert.match(fresh.document.getElementById("appModeStatus").textContent, /전체 모델 탐색/);
+    assert.ok(fresh.document.querySelectorAll("#modelResults .model-row, #modelResults .model-card").length > 0, "full catalog should render model rows");
 
     const search = fresh.document.getElementById("searchInput");
     search.value = "Qwen";
