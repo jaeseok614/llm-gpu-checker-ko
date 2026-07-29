@@ -531,6 +531,16 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin-top: 16px;
 }
 
+.advisor-model-search-field,
+.advisor-model-select-field {
+  grid-column: span 2;
+}
+
+.advisor-model-select-field small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .gpu-advisor-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -640,6 +650,11 @@ html[lang="en"] .simple-mode-head > div:first-child {
   .gpu-advisor-controls,
   .gpu-advisor-list {
     grid-template-columns: 1fr;
+  }
+
+  .advisor-model-search-field,
+  .advisor-model-select-field {
+    grid-column: span 1;
   }
 
   .benchmark-dashboard-grid {

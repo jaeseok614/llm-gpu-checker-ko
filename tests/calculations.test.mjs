@@ -941,6 +941,24 @@ describe("v1.4 advisor and media optimization", () => {
     assert.doesNotMatch(panel.textContent, /[가-힣]/);
   });
 
+  test("filters advisor models by workload and partial name search", () => {
+    const fresh = loadApp("https://example.com/?mode=modelFinder&lang=en");
+    fresh.eval(`$("advisorModelCategory").value = "image"; $("advisorModelCategory").dispatchEvent(new Event("change"))`);
+    const categoryOptions = [...fresh.document.getElementById("advisorModel").options];
+    assert.ok(categoryOptions.length > 0);
+    assert.equal(fresh.eval(`[...$("advisorModel").options].every((option) => getAdvisorModelCategory(getModelByKey(option.value)) === "image")`), true);
+
+    fresh.eval(`$("advisorModelSearch").value = "flux"; $("advisorModelSearch").dispatchEvent(new Event("input"))`);
+    const searchOptions = [...fresh.document.getElementById("advisorModel").options];
+    assert.ok(searchOptions.length > 0);
+    assert.equal(searchOptions.every((option) => option.textContent.toLowerCase().includes("flux")), true);
+    assert.match(fresh.document.getElementById("advisorModelCount").textContent, /models/);
+
+    fresh.eval(`$("advisorModelSearch").value = "no-such-model-xyz"; $("advisorModelSearch").dispatchEvent(new Event("input"))`);
+    assert.equal(fresh.document.getElementById("advisorModel").disabled, true);
+    assert.match(fresh.document.getElementById("gpuAdvisorResult").textContent, /No matching model/);
+  });
+
   test("attention and cache optimization changes media memory and speed", () => {
     const fresh = loadApp();
     const model = fresh.eval(`OCR_MODELS.find((item) => item.type === "video-generation")`);

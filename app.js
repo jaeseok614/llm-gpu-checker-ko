@@ -1483,7 +1483,9 @@ function ensureGpuAdvisorPanel() {
       </div>
     </div>
     <div class="gpu-advisor-controls">
-      <label class="field"><span id="advisorModelLabel"></span><select id="advisorModel"></select></label>
+      <label class="field"><span id="advisorModelCategoryLabel"></span><select id="advisorModelCategory"></select></label>
+      <label class="field advisor-model-search-field"><span id="advisorModelSearchLabel"></span><input id="advisorModelSearch" type="search" autocomplete="off"></label>
+      <label class="field advisor-model-select-field"><span id="advisorModelLabel"></span><select id="advisorModel"></select><small id="advisorModelCount" aria-live="polite"></small></label>
       <label class="field"><span id="advisorBudgetLabel"></span><input id="advisorBudgetUsd" type="number" min="0" max="100000" step="50" value="2000"></label>
       <label class="field"><span id="advisorCurrentPriceLabel"></span><input id="advisorCurrentPriceUsd" type="number" min="0" max="100000" step="10" value="0"></label>
       <label class="field"><span id="advisorElectricityLabel"></span><input id="advisorElectricityRate" type="number" min="0" max="5" step="0.01" value="0.15"></label>
@@ -1494,10 +1496,70 @@ function ensureGpuAdvisorPanel() {
     <div class="gpu-advisor-result" id="gpuAdvisorResult" role="region" aria-live="polite"></div>
   `;
   results.parentNode.insertBefore(panel, results);
-  $("advisorModel").innerHTML = getAllModels()
-    .filter((model) => model.type !== "ocr-pipeline")
+  $("advisorModelCategory").innerHTML = ADVISOR_MODEL_CATEGORIES
+    .map((category) => `<option value="${category.id}">${escapeHtml(category.en)}</option>`)
+    .join("");
+  refreshAdvisorModelOptions();
+}
+
+const ADVISOR_MODEL_CATEGORIES = [
+  { id: "all", ko: "전체", en: "All" },
+  { id: "llm", ko: "LLM", en: "LLM" },
+  { id: "vlm", ko: "VLM", en: "VLM" },
+  { id: "image", ko: "이미지 생성", en: "Image generation" },
+  { id: "video", ko: "비디오 생성", en: "Video generation" },
+  { id: "embedding", ko: "임베딩", en: "Embedding" },
+  { id: "reranker", ko: "리랭커", en: "Reranker" },
+  { id: "ocr", ko: "OCR", en: "OCR" },
+  { id: "stt", ko: "음성 인식", en: "Speech to text" },
+  { id: "tts", ko: "음성 합성", en: "Text to speech" },
+];
+
+function getAdvisorModelCategory(model) {
+  if (!model.type || model.type === "generative") return "llm";
+  if (model.type === "document-vlm" || model.type === "general-vlm") return "vlm";
+  if (model.type === "image-generation") return "image";
+  if (model.type === "video-generation") return "video";
+  if (model.type === "ocr-pipeline") return "ocr";
+  if (model.type === "audio-stt") return "stt";
+  if (model.type === "audio-tts") return "tts";
+  return model.type;
+}
+
+function getAdvisorModelSearchText(model) {
+  return [
+    model.name,
+    model.provider,
+    model.publisher,
+    model.family,
+    model.type,
+    ...(Array.isArray(model.tags) ? model.tags : []),
+  ].filter(Boolean).join(" ").normalize("NFKC").toLocaleLowerCase();
+}
+
+function refreshAdvisorModelOptions(preferredKey = $("advisorModel")?.value) {
+  const select = $("advisorModel");
+  if (!select) return [];
+  const category = $("advisorModelCategory")?.value || "all";
+  const tokens = ($("advisorModelSearch")?.value || "")
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const models = getAllModels().filter((model) => {
+    if (category !== "all" && getAdvisorModelCategory(model) !== category) return false;
+    const searchText = getAdvisorModelSearchText(model);
+    return tokens.every((token) => searchText.includes(token));
+  });
+  select.innerHTML = models
     .map((model) => `<option value="${escapeAttr(modelKey(model))}">${escapeHtml(model.name)}</option>`)
     .join("");
+  if (preferredKey && models.some((model) => modelKey(model) === preferredKey)) select.value = preferredKey;
+  select.disabled = models.length === 0;
+  const count = $("advisorModelCount");
+  if (count) count.textContent = uiLanguage === "en" ? `${models.length} models` : `${models.length}개 모델`;
+  return models;
 }
 
 function populateSelects() {
@@ -1945,6 +2007,14 @@ function bindEvents() {
     renderGpuInsights(getHardware());
   });
   ["compareGpuA", "compareGpuB", "compareGpuC"].forEach((id) => $(id)?.addEventListener("change", () => renderGpuInsights(getHardware())));
+  $("advisorModelCategory")?.addEventListener("change", () => {
+    refreshAdvisorModelOptions();
+    renderGpuAdvisor();
+  });
+  $("advisorModelSearch")?.addEventListener("input", () => {
+    refreshAdvisorModelOptions();
+    renderGpuAdvisor();
+  });
   ["advisorModel", "advisorBudgetUsd", "advisorCurrentPriceUsd", "advisorElectricityRate", "advisorHoursMonth", "advisorVendor", "advisorFormFactor"].forEach((id) => {
     $(id)?.addEventListener(id.startsWith("advisor") && $("advisorModel") === $(id) ? "change" : "input", renderGpuAdvisor);
     if (id === "advisorVendor" || id === "advisorFormFactor") $(id)?.addEventListener("change", renderGpuAdvisor);
@@ -6637,6 +6707,8 @@ function renderGpuAdvisor() {
     ? "Choose a model and cost constraints to rank compatible GPUs by value, speed, and energy."
     : "원하는 모델과 비용 조건을 넣으면 적합한 GPU를 가격·속도·전력 기준으로 정렬합니다.";
   const labels = {
+    advisorModelCategoryLabel: en ? "Model category" : "모델 종류",
+    advisorModelSearchLabel: en ? "Search models" : "모델 검색",
     advisorModelLabel: en ? "Model to run" : "실행할 모델",
     advisorBudgetLabel: en ? "GPU budget (USD)" : "GPU 예산 (USD)",
     advisorElectricityLabel: en ? "Electricity (USD/kWh)" : "전기요금 (USD/kWh)",
@@ -6645,6 +6717,15 @@ function renderGpuAdvisor() {
     advisorFormFactorLabel: en ? "Form factor" : "형태",
   };
   Object.entries(labels).forEach(([id, text]) => { if ($(id)) $(id).textContent = text; });
+  if ($("advisorModelSearch")) $("advisorModelSearch").placeholder = en ? "Name, provider, or tag" : "이름·제공사·태그 부분검색";
+  [...($("advisorModelCategory")?.options || [])].forEach((option) => {
+    const category = ADVISOR_MODEL_CATEGORIES.find((item) => item.id === option.value);
+    if (category) option.textContent = en ? category.en : category.ko;
+  });
+  if ($("advisorModelCount")) {
+    const count = $("advisorModel").options.length;
+    $("advisorModelCount").textContent = en ? `${count} models` : `${count}개 모델`;
+  }
   const vendorOptions = en ? ["All", "NVIDIA", "AMD", "Intel", "Apple"] : ["전체", "NVIDIA", "AMD", "Intel", "Apple"];
   [...$("advisorVendor").options].forEach((option, index) => { option.textContent = vendorOptions[index]; });
   const formOptions = en ? ["All", "Desktop", "Laptop", "Data center", "Unified memory"] : ["전체", "데스크톱", "노트북", "데이터센터", "통합 메모리"];
@@ -6657,8 +6738,11 @@ function renderGpuAdvisor() {
     [...$("mediaOptimization").options].forEach((option, index) => { option.textContent = optionLabels[index]; });
   }
 
-  const model = getModelByKey($("advisorModel").value) || getAllModels()[0];
-  if (!model) return;
+  const model = getModelByKey($("advisorModel").value);
+  if (!model) {
+    $("gpuAdvisorResult").innerHTML = `<p class="empty-state">${en ? "No matching model. Try another category or search term." : "일치하는 모델이 없습니다. 종류나 검색어를 바꿔보세요."}</p>`;
+    return;
+  }
   const budget = clampNumber($("advisorBudgetUsd").value, 0, 100000, 2000);
   const rate = clampNumber($("advisorElectricityRate").value, 0, 5, 0.15);
   const hours = clampNumber($("advisorHoursMonth").value, 1, 744, 120);
@@ -9487,6 +9571,8 @@ function syncUrlState() {
   params.set("mediaOffload", $("mediaOffload").value);
   if ($("mediaOptimization")) params.set("mediaOptimization", $("mediaOptimization").value);
   if ($("advisorModel")) params.set("advisorModel", $("advisorModel").value);
+  if ($("advisorModelCategory")) params.set("advisorCategory", $("advisorModelCategory").value);
+  if ($("advisorModelSearch")?.value) params.set("advisorSearch", $("advisorModelSearch").value);
   if ($("advisorBudgetUsd")) params.set("budget", $("advisorBudgetUsd").value);
   if ($("advisorCurrentPriceUsd")) params.set("currentPrice", $("advisorCurrentPriceUsd").value);
   if ($("advisorElectricityRate")) params.set("electricity", $("advisorElectricityRate").value);
@@ -9594,7 +9680,9 @@ function applyUrlState() {
   setValueIfPresent("mediaLoraCount", params.get("mediaLora"));
   setSelectIfValid("mediaOffload", params.get("mediaOffload"));
   setSelectIfValid("mediaOptimization", params.get("mediaOptimization"));
-  setSelectIfValid("advisorModel", params.get("advisorModel"));
+  setSelectIfValid("advisorModelCategory", params.get("advisorCategory"));
+  setValueIfPresent("advisorModelSearch", params.get("advisorSearch"));
+  refreshAdvisorModelOptions(params.get("advisorModel"));
   setValueIfPresent("advisorBudgetUsd", params.get("budget"));
   setValueIfPresent("advisorCurrentPriceUsd", params.get("currentPrice"));
   setValueIfPresent("advisorElectricityRate", params.get("electricity"));
