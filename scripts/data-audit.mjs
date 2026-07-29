@@ -16,6 +16,7 @@ const dataFiles = [
   "data/model-metadata.js",
   "data/benchmarks.js",
   "data/licenses.js",
+  "data/decision-data.js",
 ];
 const context = { window: {} };
 context.window.LLM_GPU_CHECKER_DATA = {};
@@ -64,6 +65,19 @@ models.forEach((model) => {
   if (!row.modelName || !row.gpu || !row.sourceUrl) errors.push(`Incomplete benchmark row: ${index}`);
   if (row.sourceUrl && !validHttps(row.sourceUrl)) errors.push(`Benchmark source is not HTTPS: ${index}`);
 });
+(data.koreanGpuMarket || []).forEach((row, index) => {
+  if (!row.gpuId || !Number.isFinite(row.newKrw) || !Number.isFinite(row.lowestKrw) || !row.updatedAt || !row.sourceUrl) {
+    errors.push(`Incomplete Korean market row: ${index}`);
+  }
+  if (row.sourceUrl && !validHttps(row.sourceUrl)) errors.push(`Market source is not HTTPS: ${row.gpuId || index}`);
+  if (!(data.gpus || []).some((gpu) => gpu.id === row.gpuId)) errors.push(`Market row references unknown GPU: ${row.gpuId}`);
+});
+Object.entries(data.systemPartCatalog || {}).forEach(([type, rows]) => {
+  if (!Array.isArray(rows) || !rows.length) errors.push(`Empty component catalog: ${type}`);
+  (rows || []).forEach((row, index) => {
+    if (!row.id || !row.name || !Number.isFinite(row.priceKrw)) errors.push(`Incomplete ${type} component: ${index}`);
+  });
+});
 const missingGpuSources = (data.gpus || []).filter((gpu) => gpu.id !== "custom" && !gpu.sourceUrl).length;
 const missingModelSources = models.filter((model) => !model.sourceUrl).length;
 if (missingGpuSources) warnings.push(`${missingGpuSources} GPU records rely on catalog-level sources`);
@@ -89,6 +103,7 @@ const report = {
     gpus: (data.gpus || []).length,
     models: models.length,
     benchmarks: (data.benchmarks || []).length,
+    marketPrices: (data.koreanGpuMarket || []).length,
   },
   errors,
   warnings,

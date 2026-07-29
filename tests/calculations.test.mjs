@@ -27,6 +27,7 @@ const DATA_FILES = [
   "data/model-metadata.js",
   "data/benchmarks.js",
   "data/licenses.js",
+  "data/decision-data.js",
 ];
 
 // Loads the app into a fresh jsdom window and returns that window. Each
@@ -40,7 +41,8 @@ const DATA_FILES = [
 const BRIDGED_NAMES = [
   "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS", "AUDIO_MODELS",
   "QUANTS", "KV_PRECISION_META", "GPU_PRESETS", "ENCODER_PRECISIONS", "OCR_PRECISIONS",
-  "BENCHMARKS", "PRIMARY_GPU_STORAGE_KEY",
+  "BENCHMARKS", "PRIMARY_GPU_STORAGE_KEY", "KOREAN_GPU_MARKET", "SYSTEM_PART_CATALOG",
+  "GPU_PHYSICAL_REFERENCE", "studioState",
 ];
 
 const openTestWindows = new Set();
@@ -54,10 +56,10 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { pe
   Object.entries(storage).forEach(([key, value]) => window.localStorage.setItem(key, value));
   let combined = DATA_FILES.map(read).join("\n;\n");
   combined += "\n;\n" + read("app.js");
-  if (platformV2) combined += "\n;\n" + read("platform-v2.js");
+  if (platformV2) combined += "\n;\n" + read("platform-v2.js") + "\n;\n" + read("platform-v3.js");
   combined += "\n;\ninit();\n";
-  if (platformV2) combined += "\n;\ninitPlatformV2();\n";
-  combined += BRIDGED_NAMES.map((name) => `window.${name} = ${name};`).join("\n");
+  if (platformV2) combined += "\n;\ninitPlatformV2();\ninitDecisionStudio();\n";
+  combined += BRIDGED_NAMES.map((name) => `window.${name} = typeof ${name} === "undefined" ? undefined : ${name};`).join("\n");
   window.eval(combined);
   return window;
 }
@@ -1099,6 +1101,38 @@ describe("v2.2 user build calculator", () => {
     psu.dispatchEvent(new platform.Event("change", { bubbles: true }));
     assert.match(platform.location.search, /hub=build/);
     assert.match(platform.location.search, /build=/);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+});
+
+describe("v3.0 purchase decision studio", () => {
+  test("renders six decision tools and source-linked Korean prices", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
+    assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 6);
+    platform.eval(`updateStudio("tab", "market")`);
+    assert.equal(platform.document.querySelectorAll(".studio-table tbody tr").length, 3);
+    assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /다나와|성능\/가격/);
+    assert.equal(platform.eval("KOREAN_GPU_MARKET.every((row) => row.sourceUrl && row.updatedAt && row.newKrw > 0)"), true);
+  });
+
+  test("calculates a custom model and checks component and runtime compatibility", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=en", {}, { platformV2: true });
+    const custom = platform.eval(`Object.assign(studioState, { customTotalB: 32, customActiveB: 4, customLayers: 64, customBits: 4, customContext: 32768, customVision: true }); calculateCustomModel()`);
+    assert.ok(custom.requiredGb > custom.weightsGb);
+    assert.ok(custom.kvGb > 0);
+    platform.eval(`updateStudio("tab", "parts")`);
+    assert.ok(platform.document.querySelector(".parts-check-list"));
+    platform.eval(`updateStudio("tab", "runtime")`);
+    assert.match(platform.document.querySelector(".runtime-compat-card").textContent, /CUDA|vLLM|TensorRT/);
+  });
+
+  test("shows three recommendation roles and validates measurement drafts", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=en", {}, { platformV2: true });
+    platform.eval(`Object.assign(studioState, { budgetKrw: 8000000, powerLimitW: 1000, targetSpeed: 0, formFactor: "desktop", modelKey: modelKey(GENERATIVE_MODELS.find((model) => model.name === "Llama 3.1 8B Instruct")) }); renderDecisionStudio()`);
+    assert.equal(platform.document.querySelectorAll(".studio-pick-card").length, 3);
+    assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /Lowest cost|Balanced|Highest performance/);
+    platform.eval(`updateStudio("tab", "community")`);
+    assert.ok(platform.document.querySelector("#communityBenchmarkForm"));
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 });

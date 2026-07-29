@@ -586,13 +586,14 @@ function renderPurchaseHub() {
     || GPU_PRESETS.find((item) => item.id === "rtx5090-32")
     || currentGpu;
   const market = gpuMarketReference(targetGpu);
+  const koreanMarket = typeof studioMarket === "function" ? studioMarket(targetGpu.id) : null;
   const currentHardware = getHardware();
   const currentEstimate = estimateAnyModelForHardware(model, currentHardware);
   const targetEstimate = estimateAnyModelForHardware(model, buildHardwareForPreset(targetGpu));
   const values = {
     currency: platformPurchaseState.currency,
     rate: clampNumber(platformPurchaseState.rate, 100, 10000, 1400),
-    newPrice: clampNumber(platformPurchaseState.newPrice, 0, 1000000, 0) || market.priceUsd,
+    newPrice: clampNumber(platformPurchaseState.newPrice, 0, 1000000, 0) || (koreanMarket?.newKrw ? koreanMarket.newKrw / clampNumber(platformPurchaseState.rate, 100, 10000, 1400) : market.priceUsd),
     usedPrice: clampNumber(platformPurchaseState.usedPrice, 0, 1000000, 0),
     resale: clampNumber(platformPurchaseState.resale, 0, 1000000, 0),
     years: clampNumber(platformPurchaseState.years, 1, 10, 3),
@@ -614,6 +615,7 @@ function renderPurchaseHub() {
   const verdictKey = result.verdict === "worth" ? "verdictWorth" : result.verdict === "maybe" ? "verdictMaybe" : "verdictSkip";
   return `
     <p>${platformText("purchaseIntro")}</p>
+    ${koreanMarket ? `<p class="market-source-note">${uiLanguage === "en" ? "Korean market snapshot" : "국내 시세 스냅샷"} · ${platformEscape(koreanMarket.updatedAt)} · <a href="${platformEscape(koreanMarket.sourceUrl)}" target="_blank" rel="noopener noreferrer">${platformEscape(koreanMarket.sourceName)}</a></p>` : ""}
     <div class="purchase-controls">
       <label><span>${platformText("upgradeCandidate")}</span><select id="purchaseTargetGpu">${GPU_PRESETS.filter((item) => item.id !== "custom").map((item) => `<option value="${platformEscape(item.id)}" ${item.id === targetGpu.id ? "selected" : ""}>${platformEscape(shortGpuName(item.name))}</option>`).join("")}</select></label>
       <label><span>${platformText("currency")}</span><select id="purchaseCurrency"><option value="KRW" ${values.currency === "KRW" ? "selected" : ""}>KRW ₩</option><option value="USD" ${values.currency === "USD" ? "selected" : ""}>USD $</option></select></label>
@@ -650,7 +652,7 @@ function renderBuildHub() {
   const estimate = estimateAnyModelForHardware(model, hardware);
   const market = gpuMarketReference(gpu);
   const prices = {
-    gpu: clampNumber(platformBuildState.gpuPrice, 0, 1000000, 0) || market.priceUsd,
+    gpu: clampNumber(platformBuildState.gpuPrice, 0, 1000000, 0) || ((typeof studioMarket === "function" && studioMarket(gpu.id)?.lowestKrw) ? studioMarket(gpu.id).lowestKrw / Math.max(1, platformPurchaseState.rate) : market.priceUsd),
     cpu: clampNumber(platformBuildState.cpuPrice, 0, 1000000, 0) || cpu.priceUsd,
     motherboard: clampNumber(platformBuildState.motherboardPrice, 0, 1000000, 0),
     ram: clampNumber(platformBuildState.ramPrice, 0, 1000000, 0),

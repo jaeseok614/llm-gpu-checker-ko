@@ -26,6 +26,13 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v3.0** — Unified Korean pricing, guided recommendations, custom models, parts fit, runtime guidance, and measurement contributions into lowest-cost, balanced, and fastest purchase decisions.
+- **v2.8** — Added browser-based measurement drafts with contributor/environment records and outlier checks.
+- **v2.7** — Added OS-specific runtime difficulty and launch guidance for NVIDIA, AMD, Intel, and Apple.
+- **v2.6** — Added CPU, motherboard, PSU, and case products with socket, length, slot, connector, and power compatibility.
+- **v2.5** — Added a custom-model calculator for Hugging Face URLs, parameters, layers, precision, context, and vision modules.
+- **v2.4** — Added guided GPU recommendations based on workload, speed, budget, condition, form factor, power, and noise.
+- **v2.3** — Added source-linked Korean GPU price snapshots and performance/price and VRAM/price rankings.
 - **v2.2** — Added a user build calculator for model fit, recommended PSU, total system price, and upgrade order across CPU, RAM, PSU, case, and GPU.
 - **v2.0** — Added measurement confidence intervals, Benchmark 2.0, GPU/model deep links, purchase TCO, and Ollama/llama.cpp/vLLM/Docker launch recipes.
 - **v1.5** — Expanded to 115 GPUs and added 10 STT/TTS models, a model-first entry screen, model-request auto PRs, and benchmark coverage.
@@ -95,6 +102,7 @@ npm run check
 - [v1.5 catalog, audio, and dashboard](./docs/v1.5-catalog-audio-dashboard.md)
 - [v2.0 decision platform](./docs/v2.0-decision-platform.md)
 - [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
+- [v3.0 purchase decision studio methodology](./docs/v3.0-decision-studio.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 
