@@ -586,8 +586,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .benchmark-dashboard {
-  width: min(1540px, calc(100% - 48px));
-  margin: 18px auto;
+  width: 100%;
+  margin: 18px 0;
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -834,6 +834,10 @@ html[lang="en"] .simple-mode-head > div:first-child {
   gap: 10px;
 }
 
+.benchmark-v2-toolbar {
+  grid-template-columns: minmax(220px, 2fr) auto minmax(180px, 1fr);
+}
+
 .benchmark-v2-toolbar label,
 .purchase-controls label,
 .launch-controls label {
@@ -847,10 +851,24 @@ html[lang="en"] .simple-mode-head > div:first-child {
   display: flex;
   align-items: center;
   align-self: end;
+  justify-self: start;
+  gap: 8px;
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
+  white-space: nowrap;
+}
+
+.benchmark-v2-toolbar .check-field input[type="checkbox"] {
+  flex: 0 0 16px;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--blue);
 }
 
 .benchmark-v2-list article {
@@ -4968,7 +4986,6 @@ button:focus-visible {
 
   .app-shell,
   .app-footer,
-  .benchmark-dashboard,
   .benchmark-panel {
     width: 100%;
     margin-top: 12px;

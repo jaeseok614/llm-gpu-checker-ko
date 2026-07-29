@@ -1458,7 +1458,7 @@ function ensureGpuAdvisorPanel() {
     dashboard.id = "benchmarkDashboard";
     dashboard.className = "benchmark-dashboard";
     dashboard.setAttribute("aria-labelledby", "benchmarkDashboardTitle");
-    $("benchmarkSheet").parentNode.insertBefore(dashboard, $("benchmarkSheet"));
+    document.querySelector(".app-shell")?.appendChild(dashboard);
   }
   if (!$("mediaOptimization") && $("mediaOffload")) {
     const field = document.createElement("label");
