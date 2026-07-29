@@ -613,6 +613,137 @@ html[lang="en"] .simple-mode-head > div:first-child {
   min-width: 0;
 }
 
+.si-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.si-intro h3 {
+  margin: 6px 0;
+  font-size: 1.25rem;
+}
+
+.si-intro p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.si-presets,
+.si-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.si-presets button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0 11px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.si-presets button.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.si-question-grid {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--surface-soft);
+}
+
+.si-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.si-plan-card,
+.si-output-grid > article {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface-soft);
+}
+
+.si-plan-card.is-featured {
+  border: 2px solid var(--blue);
+  background: var(--blue-soft);
+}
+
+.si-plan-card > span {
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.si-plan-card h3 {
+  margin: 8px 0 4px;
+}
+
+.si-plan-card p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.si-plan-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.si-plan-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+
+.si-plan-card dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.si-output-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.si-output-grid h3 {
+  margin-top: 0;
+}
+
+.si-output-grid ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.si-checklist {
+  list-style: none;
+  padding-left: 0 !important;
+}
+
+.si-actions {
+  margin-top: 14px;
+}
+
 .studio-pick-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -877,6 +1008,10 @@ html[lang="en"] .simple-mode-head > div:first-child {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .si-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
   .community-row-list article {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -894,6 +1029,14 @@ html[lang="en"] .simple-mode-head > div:first-child {
     padding: 16px;
   }
 
+  .si-intro {
+    display: block;
+  }
+
+  .si-presets {
+    margin-top: 14px;
+  }
+
   .decision-studio-tabs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -906,6 +1049,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
   .studio-question-grid,
   .studio-pick-grid,
+  .si-output-grid,
   .custom-model-result,
   .parts-result,
   .community-row-list article {

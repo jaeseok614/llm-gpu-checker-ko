@@ -26,6 +26,7 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v3.1** — SI 상담 요구를 경제형·권장형·확장형 인프라 3안으로 산정하고 CPU·RAM·NVMe·네트워크·전력·Excel·PoC 산출물을 추가했습니다.
 - **v3.0** — 최저 비용·균형·최고 성능 3개 결과와 국내 시세·질문형 추천·직접 모델·부품 호환·런타임·실측 제보를 하나의 구매 결정 흐름으로 통합했습니다.
 - **v2.8** — 브라우저 실측 제보, 환경·기여자 기록, 동일 조건 비교와 이상치 검사를 추가했습니다.
 - **v2.7** — NVIDIA·AMD·Intel·Apple의 운영체제별 런타임 난이도와 권장 실행 명령을 추가했습니다.
@@ -44,6 +45,7 @@
 
 ## 주요 기능
 
+- **v3.1 SI 사전 견적 상담**: 고객 요구·동시 요청·가용성·성장 여유를 입력해 경제형·권장형·확장형 3안과 Excel·PDF·PoC 체크리스트를 생성합니다.
 - **v2.0 의사결정 허브**: 실측 신뢰구간, 벤치마크 2.0, GPU·모델 상세 링크, 구매 TCO, 실행 설정을 한곳에서 제공합니다.
 - 동일 조건 실측의 표본 수·중앙값·범위·95% 신뢰구간과 추정 오차를 표시합니다.
 - 신품·중고 가격, 원화 환산, 현재 GPU 처분가, 전기요금과 사용 기간으로 업그레이드 가치를 계산합니다.
@@ -97,6 +99,8 @@ npm run check
 - [계산 방법](./docs/methodology.md)
 - [정확도와 한계](./docs/accuracy-and-limits.md)
 - [데이터 출처](./docs/data-sources.md)
+- [SI 상담 모드 가이드와 가상 사례](./docs/si-consulting-guide.md)
+- [SI 견적 Excel 예제](./docs/examples/si-sizing-example.xlsx)
 - [GPU 기여 파이프라인](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor 계산과 한계](./docs/v1.4-advisor-methodology.md)
 - [v1.5 카탈로그·음성·대시보드](./docs/v1.5-catalog-audio-dashboard.md)

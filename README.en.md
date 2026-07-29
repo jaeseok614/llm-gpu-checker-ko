@@ -26,6 +26,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v3.1** — Added SI pre-sales sizing with economy, recommended, and scalable infrastructure plans plus CPU, RAM, NVMe, network, power, Excel, and PoC outputs.
 - **v3.0** — Unified Korean pricing, guided recommendations, custom models, parts fit, runtime guidance, and measurement contributions into lowest-cost, balanced, and fastest purchase decisions.
 - **v2.8** — Added browser-based measurement drafts with contributor/environment records and outlier checks.
 - **v2.7** — Added OS-specific runtime difficulty and launch guidance for NVIDIA, AMD, Intel, and Apple.
@@ -44,6 +45,7 @@
 
 ## Highlights
 
+- **v3.1 SI sizing consultation** turns customer traffic, availability, and growth assumptions into three infrastructure plans with shareable links, Excel/PDF outputs, and a PoC checklist.
 - **v2.0 Decision Hub** combines measurement confidence, Benchmark 2.0, GPU/model deep links, purchase TCO, and launch recipes.
 - Measurement groups expose sample count, median, range, 95% confidence interval, and estimator error.
 - Purchase Advisor supports new/used prices, KRW conversion, current-GPU resale value, electricity, and ownership period.

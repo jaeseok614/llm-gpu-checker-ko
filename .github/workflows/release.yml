@@ -3,7 +3,7 @@ name: Publish GitHub Release
 on:
   push:
     tags:
-      - "v1.1.0"
+      - "v*"
 
 permissions:
   contents: write
@@ -24,7 +24,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          notes_file="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ ! -f "${notes_file}" ]; then
+            echo "# ${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/release-notes.md"
+            echo "" >> "${RUNNER_TEMP}/release-notes.md"
+            echo "See CHANGELOG.md for details." >> "${RUNNER_TEMP}/release-notes.md"
+            notes_file="${RUNNER_TEMP}/release-notes.md"
+          fi
           gh release create "${GITHUB_REF_NAME}" \
             --verify-tag \
-            --title "v1.1.0 — AI Workload Expansion" \
-            --notes-file docs/releases/v1.1.0.md
+            --title "${GITHUB_REF_NAME} — AI Infra Sizing" \
+            --notes-file "${notes_file}"

@@ -6,6 +6,7 @@ const DECISION_STUDIO_COPY = {
   ko: {
     title: "구매 결정 스튜디오",
     note: "가격·목표 작업·시스템 호환성과 실측 근거를 한 흐름에서 비교합니다.",
+    consulting: "SI 상담",
     recommend: "맞춤 추천",
     market: "국내 시세",
     custom: "직접 모델",
@@ -16,6 +17,7 @@ const DECISION_STUDIO_COPY = {
   en: {
     title: "Purchase decision studio",
     note: "Compare price, workload goals, system compatibility, and measured evidence in one flow.",
+    consulting: "SI sizing",
     recommend: "Guided picks",
     market: "Korean market",
     custom: "Custom model",
@@ -45,7 +47,7 @@ const RUNTIME_COMPATIBILITY = {
 };
 
 let studioState = {
-  tab: "recommend",
+  tab: "consulting",
   category: "llm",
   modelKey: "",
   targetSpeed: 30,
@@ -71,6 +73,22 @@ let studioState = {
   caseId: "airflow-atx",
   ramGb: 64,
   runtimeOs: "windows",
+  siScenario: "internal-rag",
+  siProjectName: "사내 문서 RAG 구축",
+  siPurpose: "사내 문서 검색·질의응답",
+  siDeployment: "onprem",
+  siSecurity: "restricted",
+  siTotalUsers: 100,
+  siConcurrency: 10,
+  siInputTokens: 4096,
+  siOutputTokens: 500,
+  siTargetSeconds: 8,
+  siAvailability: "ha",
+  siGrowthPct: 30,
+  siVectorDataGb: 500,
+  siLogGbDay: 10,
+  siRetentionDays: 90,
+  siDevProd: true,
 };
 
 function studioCopy(key) {
@@ -401,6 +419,149 @@ function renderStudioCommunity() {
     </article>`).join("") : `<p class="hub-empty">${en ? "No local drafts yet." : "아직 이 브라우저에 저장된 제보 초안이 없습니다."}</p>`}</div>`;
 }
 
+const SI_SCENARIOS = {
+  "internal-rag": {
+    ko: "사내 문서 RAG", en: "Internal document RAG", purpose: "사내 문서 검색·질의응답", purposeEn: "Internal document search and Q&A",
+    users: 100, concurrency: 10, input: 4096, output: 500, seconds: 8,
+    availability: "ha", growth: 30, vector: 500, logs: 10, retention: 90, security: "restricted",
+  },
+  "document-vlm": {
+    ko: "문서 OCR·VLM", en: "Document OCR + VLM", purpose: "계약서·도면 OCR 및 시각 질의응답", purposeEn: "OCR and visual Q&A for contracts and drawings",
+    users: 60, concurrency: 6, input: 8192, output: 350, seconds: 15,
+    availability: "ha", growth: 25, vector: 1200, logs: 18, retention: 180, security: "restricted",
+  },
+  "private-assistant": {
+    ko: "폐쇄망 AI 비서", en: "Air-gapped AI assistant", purpose: "폐쇄망 업무 지원·코드·요약", purposeEn: "Air-gapped work assistant for code and summarization",
+    users: 250, concurrency: 20, input: 8192, output: 700, seconds: 10,
+    availability: "nplus1", growth: 40, vector: 2000, logs: 30, retention: 365, security: "airgap",
+  },
+};
+
+function siEnterpriseGpus() {
+  const ids = ["rtx6000ada-48", "l40s-48", "h100-pcie-80", "rtxpro6000blackwell-96", "h200-141"];
+  return ids.map((id) => GPU_PRESETS.find((gpu) => gpu.id === id)).filter(Boolean);
+}
+
+function siSelectedModel() {
+  return getModelByKey(studioState.modelKey)
+    || getAllModels().find((item) => item.name === "Qwen2.5 32B Instruct")
+    || studioSelectedModel();
+}
+
+function siSizingPlan(gpu, model, profile) {
+  const estimate = estimateAnyModelForHardware(model, buildHardwareForPreset(gpu));
+  const requiredGb = Math.max(1, Number(estimate?.requiredGb || 1));
+  const fallbackSpeed = Math.max(20, Number(gpu.bandwidth || 500) / requiredGb * 2);
+  const speed = Math.max(fallbackSpeed, Number(estimate?.speed || estimate?.throughput || 0));
+  const vram = Number(gpu.gpuUsableMemoryGb || gpu.vram || 1);
+  const targetTokS = Math.max(1, studioState.siConcurrency * studioState.siOutputTokens / Math.max(1, studioState.siTargetSeconds));
+  const growth = 1 + studioState.siGrowthPct / 100;
+  const memoryCount = Math.ceil(requiredGb * profile.memoryMargin / (vram * 0.92));
+  const throughputCount = Math.ceil(targetTokS * growth * profile.capacityMargin / speed);
+  let gpuCount = Math.max(1, memoryCount, throughputCount);
+  if (studioState.siAvailability === "ha") gpuCount = Math.max(2, gpuCount * 2);
+  if (studioState.siAvailability === "nplus1") gpuCount += 1;
+  if (studioState.siDevProd) gpuCount += Math.max(1, Math.ceil(gpuCount * 0.25));
+  const gpuPerNode = vram >= 80 ? 8 : 4;
+  const nodes = Math.ceil(gpuCount / gpuPerNode);
+  const cpuCores = Math.max(24, gpuCount * (profile.id === "economy" ? 8 : 12));
+  const ramGb = Math.ceil(Math.max(256, requiredGb * gpuCount * 1.5, gpuCount * 128) / 64) * 64;
+  const storageTb = Math.max(2, Math.ceil((requiredGb * 3 + studioState.siVectorDataGb + studioState.siLogGbDay * studioState.siRetentionDays) / 1024));
+  const network = nodes > 1 ? (gpuCount > 8 ? "400GbE / InfiniBand" : "200GbE / InfiniBand") : (gpuCount > 2 ? "100GbE" : "25GbE");
+  const powerW = Math.ceil((gpuMarketReference(gpu).powerW * gpuCount + cpuCores * 18 + 700 * nodes) / 500) * 500;
+  const sampleCount = BENCHMARKS.filter((row) => row.gpuId === gpu.id || row.gpu === gpu.name).length;
+  const confidence = sampleCount >= 3 ? "높음" : sampleCount ? "중간" : "낮음";
+  return {
+    ...profile, gpu, estimate, requiredGb, speed, targetTokS, gpuCount, nodes, cpuCores, ramGb,
+    storageTb, network, powerW, sampleCount, confidence,
+    capacity: Math.max(1, Math.floor(speed * gpuCount / Math.max(1, studioState.siOutputTokens / studioState.siTargetSeconds))),
+  };
+}
+
+function calculateSiSizing() {
+  const model = siSelectedModel();
+  const gpus = siEnterpriseGpus();
+  const profiles = [
+    { id: "economy", ko: "경제형", en: "Economy", memoryMargin: 1.1, capacityMargin: 1.0, gpuIndex: 0 },
+    { id: "recommended", ko: "권장형", en: "Recommended", memoryMargin: 1.25, capacityMargin: 1.2, gpuIndex: 2 },
+    { id: "scalable", ko: "확장형", en: "Scalable", memoryMargin: 1.4, capacityMargin: 1.45, gpuIndex: 4 },
+  ];
+  const plans = profiles.map((profile) => siSizingPlan(gpus[Math.min(profile.gpuIndex, gpus.length - 1)], model, profile));
+  return { model, plans };
+}
+
+function renderStudioConsulting() {
+  const en = uiLanguage === "en";
+  const { model, plans } = calculateSiSizing();
+  const activeScenario = SI_SCENARIOS[studioState.siScenario] || SI_SCENARIOS["internal-rag"];
+  const projectValue = en && studioState.siProjectName.startsWith(activeScenario.ko) ? activeScenario.en : studioState.siProjectName;
+  const purposeValue = en && studioState.siPurpose === activeScenario.purpose ? activeScenario.purposeEn : studioState.siPurpose;
+  const modelOptions = getAllModels().filter((item) => ["generative", "llm", "vlm", "ocr"].includes(item.type || "generative"));
+  return `
+    <div class="si-intro">
+      <div><span class="section-kicker">v3.1 PRE-SALES</span><h3>${en ? "AI infrastructure sizing consultation" : "AI 인프라 사전 견적 상담"}</h3>
+      <p>${en ? "Turn customer workload assumptions into three reviewable infrastructure options." : "고객 요구와 트래픽 가정을 검토 가능한 인프라 3안으로 변환합니다."}</p></div>
+      <div class="si-presets">${Object.entries(SI_SCENARIOS).map(([id, row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div>
+    </div>
+    <div class="studio-question-grid si-question-grid">
+      <label class="studio-wide"><span>${en ? "Project name" : "프로젝트명"}</span><input id="siProjectName" value="${platformEscape(projectValue)}"></label>
+      <label class="studio-wide"><span>${en ? "Business purpose" : "구축 목적"}</span><input id="siPurpose" value="${platformEscape(purposeValue)}"></label>
+      <label class="studio-wide"><span>${en ? "Primary model" : "주 모델"}</span><select id="siModel">${modelOptions.map((item) => `<option value="${platformEscape(modelKey(item))}" ${modelKey(item) === modelKey(model) ? "selected" : ""}>${platformEscape(item.name)}</option>`).join("")}</select></label>
+      <label><span>${en ? "Deployment" : "구축 방식"}</span><select id="siDeployment"><option value="onprem" ${studioState.siDeployment === "onprem" ? "selected" : ""}>${en ? "On-premises" : "온프레미스"}</option><option value="cloud" ${studioState.siDeployment === "cloud" ? "selected" : ""}>${en ? "Cloud" : "클라우드"}</option><option value="compare" ${studioState.siDeployment === "compare" ? "selected" : ""}>${en ? "Compare both" : "온프레미스·클라우드 비교"}</option></select></label>
+      <label><span>${en ? "Security" : "보안 수준"}</span><select id="siSecurity"><option value="standard" ${studioState.siSecurity === "standard" ? "selected" : ""}>${en ? "Standard" : "일반"}</option><option value="restricted" ${studioState.siSecurity === "restricted" ? "selected" : ""}>${en ? "Restricted network" : "내부망"}</option><option value="airgap" ${studioState.siSecurity === "airgap" ? "selected" : ""}>${en ? "Air-gapped" : "폐쇄망"}</option></select></label>
+      <label><span>${en ? "Total users" : "전체 사용자"}</span><input id="siTotalUsers" type="number" min="1" value="${studioState.siTotalUsers}"></label>
+      <label><span>${en ? "Concurrent requests" : "동시 요청"}</span><input id="siConcurrency" type="number" min="1" value="${studioState.siConcurrency}"></label>
+      <label><span>${en ? "Average input tokens" : "평균 입력 토큰"}</span><input id="siInputTokens" type="number" min="128" step="128" value="${studioState.siInputTokens}"></label>
+      <label><span>${en ? "Average output tokens" : "평균 출력 토큰"}</span><input id="siOutputTokens" type="number" min="32" step="32" value="${studioState.siOutputTokens}"></label>
+      <label><span>${en ? "Target response (sec)" : "목표 응답시간 (초)"}</span><input id="siTargetSeconds" type="number" min="1" value="${studioState.siTargetSeconds}"></label>
+      <label><span>${en ? "Availability" : "가용성"}</span><select id="siAvailability"><option value="single" ${studioState.siAvailability === "single" ? "selected" : ""}>${en ? "Single system" : "단일 구성"}</option><option value="ha" ${studioState.siAvailability === "ha" ? "selected" : ""}>HA</option><option value="nplus1" ${studioState.siAvailability === "nplus1" ? "selected" : ""}>N+1</option></select></label>
+      <label><span>${en ? "Growth reserve (%)" : "증가 여유 (%)"}</span><input id="siGrowthPct" type="number" min="0" max="200" value="${studioState.siGrowthPct}"></label>
+      <label><span>${en ? "Vector data (GB)" : "벡터 데이터 (GB)"}</span><input id="siVectorDataGb" type="number" min="0" value="${studioState.siVectorDataGb}"></label>
+      <label><span>${en ? "Logs per day (GB)" : "일 로그 (GB)"}</span><input id="siLogGbDay" type="number" min="0" value="${studioState.siLogGbDay}"></label>
+      <label><span>${en ? "Retention days" : "보관 일수"}</span><input id="siRetentionDays" type="number" min="1" value="${studioState.siRetentionDays}"></label>
+      <label class="studio-check"><input id="siDevProd" type="checkbox" ${studioState.siDevProd ? "checked" : ""}> ${en ? "Separate dev and production" : "개발계·운영계 분리"}</label>
+    </div>
+    <div class="si-plan-grid">${plans.map((plan) => `<article class="si-plan-card ${plan.id === "recommended" ? "is-featured" : ""}">
+      <span>${en ? plan.en : plan.ko}</span><h3>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3>
+      <p>${plan.nodes}${en ? " node(s)" : "노드"} · ${plan.capacity}${en ? " estimated concurrent responses" : "명 예상 동시 응답"}</p>
+      <dl><div><dt>CPU</dt><dd>${plan.cpuCores}${en ? " cores" : "코어 이상"}</dd></div><div><dt>RAM</dt><dd>${plan.ramGb}GB</dd></div>
+      <div><dt>${en ? "Storage" : "스토리지"}</dt><dd>NVMe ${plan.storageTb}TB+</dd></div><div><dt>${en ? "Network" : "네트워크"}</dt><dd>${plan.network}</dd></div>
+      <div><dt>${en ? "Facility power" : "설비 전력"}</dt><dd>${plan.powerW.toLocaleString()}W+</dd></div><div><dt>${en ? "Confidence" : "신뢰도"}</dt><dd>${en ? ({ 높음: "High", 중간: "Medium", 낮음: "Low" }[plan.confidence]) : plan.confidence} · n=${plan.sampleCount}</dd></div></dl>
+    </article>`).join("")}</div>
+    <div class="si-output-grid">
+      <article><h3>${en ? "Proposal rationale" : "제안 근거"}</h3><ul>
+        <li>${en ? "Resident model memory, runtime overhead, and KV cache are included." : "모델 상주 메모리·런타임 오버헤드·KV cache를 반영했습니다."}</li>
+        <li>${en ? `${studioState.siGrowthPct}% growth reserve and ${studioState.siAvailability.toUpperCase()} availability are applied.` : `트래픽 ${studioState.siGrowthPct}% 증가 여유와 ${studioState.siAvailability.toUpperCase()} 가용성 조건을 적용했습니다.`}</li>
+        <li>${en ? "CPU, RAM, NVMe, network, and facility power are preliminary sizing values." : "CPU·RAM·NVMe·네트워크·설비 전력은 사전 산정값입니다."}</li>
+      </ul></article>
+      <article><h3>${en ? "PoC acceptance checklist" : "PoC 검증 체크리스트"}</h3><ul class="si-checklist">
+        <li>□ ${en ? "Confirm model version, quantization, and runtime" : "모델 버전·양자화·런타임 확정"}</li><li>□ ${en ? "Measure TTFT and tokens/s with representative prompts" : "대표 프롬프트로 TTFT·tokens/s 측정"}</li>
+        <li>□ ${en ? "Load-test target concurrency and queueing" : "목표 동시 요청·대기열 부하 테스트"}</li><li>□ ${en ? "Validate failover, monitoring, and 30% growth" : "장애 전환·모니터링·30% 성장 검증"}</li>
+      </ul></article>
+    </div>
+    <div class="si-actions"><button type="button" class="primary-button" data-si-export>${en ? "Excel workbook" : "Excel 기초표"}</button>
+      <button type="button" class="ghost-button" data-si-print>${en ? "Print / save PDF" : "제안서 인쇄·PDF"}</button>
+      <button type="button" class="ghost-button" data-share-studio>${en ? "Copy case link" : "사례 링크 복사"}</button></div>
+    <p class="studio-form-note">${en ? "Pre-sales estimate only. Final quantities require vendor validation and a workload PoC." : "사전 상담용 추정치입니다. 최종 수량은 벤더 검토와 실제 워크로드 PoC 후 확정해야 합니다."}</p>`;
+}
+
+function siXmlEscape(value) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function downloadSiWorkbook() {
+  const { model, plans } = calculateSiSizing();
+  const rows = plans.map((plan) => [plan.ko, plan.gpu.name, plan.gpuCount, plan.nodes, plan.cpuCores, plan.ramGb, plan.storageTb, plan.network, plan.powerW, plan.confidence, plan.sampleCount]);
+  const worksheet = (name, values) => `<Worksheet ss:Name="${siXmlEscape(name)}"><Table>${values.map((row) => `<Row>${row.map((cell) => `<Cell><Data ss:Type="${typeof cell === "number" ? "Number" : "String"}">${siXmlEscape(cell)}</Data></Cell>`).join("")}</Row>`).join("")}</Table></Worksheet>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheet("고객 요구사항", [["항목", "값"], ["프로젝트", studioState.siProjectName], ["목적", studioState.siPurpose], ["모델", model.name], ["전체 사용자", studioState.siTotalUsers], ["동시 요청", studioState.siConcurrency], ["입력 토큰", studioState.siInputTokens], ["출력 토큰", studioState.siOutputTokens], ["가용성", studioState.siAvailability], ["성장 여유", `${studioState.siGrowthPct}%`]])}${worksheet("구성안 비교", [["구성안", "GPU", "GPU 수", "노드", "CPU 코어", "RAM GB", "NVMe TB", "네트워크", "전력 W", "신뢰도", "표본 수"], ...rows])}${worksheet("가정 및 PoC", [["구분", "내용"], ["가정", "모델 메모리·KV cache·런타임 오버헤드와 성장 여유를 포함한 사전 산정"], ["주의", "최종 수량은 벤더 검토와 실제 워크로드 PoC 후 확정"], ["PoC 1", "모델 버전·양자화·런타임 확정"], ["PoC 2", "대표 프롬프트 TTFT·tokens/s 측정"], ["PoC 3", "동시 요청·대기열 부하 테스트"], ["PoC 4", "장애 전환·모니터링 검증"]])}</Workbook>`;
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${(studioState.siProjectName || "ai-infra-sizing").replace(/[\\/:*?"<>|]/g, "-")}.xls`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
 function ensureDecisionStudio() {
   if ($("decisionStudio")) return $("decisionStudio");
   const panel = document.createElement("section");
@@ -409,7 +570,7 @@ function ensureDecisionStudio() {
   panel.setAttribute("aria-labelledby", "decisionStudioTitle");
   panel.innerHTML = `
     <div class="decision-studio-head">
-      <div><span class="section-kicker">v3.0</span><h2 id="decisionStudioTitle"></h2><p id="decisionStudioNote"></p></div>
+      <div><span class="section-kicker">v3.1</span><h2 id="decisionStudioTitle"></h2><p id="decisionStudioNote"></p></div>
       <div class="decision-studio-tabs" role="tablist"></div>
     </div>
     <div id="decisionStudioBody" class="decision-studio-body" aria-live="polite"></div>`;
@@ -429,11 +590,12 @@ function renderDecisionStudio() {
   const panel = ensureDecisionStudio();
   $("decisionStudioTitle").textContent = studioCopy("title");
   $("decisionStudioNote").textContent = studioCopy("note");
-  const tabs = ["recommend", "market", "custom", "parts", "runtime", "community"];
+  const tabs = ["consulting", "recommend", "market", "custom", "parts", "runtime", "community"];
   panel.querySelector(".decision-studio-tabs").innerHTML = tabs.map((id) =>
     `<button type="button" role="tab" data-studio-tab="${id}" aria-selected="${studioState.tab === id}" class="${studioState.tab === id ? "is-active" : ""}">${studioCopy(id)}</button>`
   ).join("");
   const renderers = {
+    consulting: renderStudioConsulting,
     recommend: renderStudioRecommend,
     market: renderStudioMarket,
     custom: renderStudioCustom,
@@ -463,9 +625,30 @@ function bindDecisionStudio() {
     customBits: ["customBits", Number], customContext: ["customContext", Number], partsCpu: ["cpuId", String],
     partsBoard: ["motherboardId", String], partsPsu: ["psuId", String], partsCase: ["caseId", String],
     partsGpu: ["gpuId", String], partsRam: ["ramGb", Number], runtimeGpu: ["gpuId", String], runtimeOs: ["runtimeOs", String],
+    siProjectName: ["siProjectName", String], siPurpose: ["siPurpose", String], siModel: ["modelKey", String],
+    siDeployment: ["siDeployment", String], siSecurity: ["siSecurity", String], siTotalUsers: ["siTotalUsers", Number],
+    siConcurrency: ["siConcurrency", Number], siInputTokens: ["siInputTokens", Number], siOutputTokens: ["siOutputTokens", Number],
+    siTargetSeconds: ["siTargetSeconds", Number], siAvailability: ["siAvailability", String], siGrowthPct: ["siGrowthPct", Number],
+    siVectorDataGb: ["siVectorDataGb", Number], siLogGbDay: ["siLogGbDay", Number], siRetentionDays: ["siRetentionDays", Number],
   };
   Object.entries(fields).forEach(([id, [key, cast]]) => $(id)?.addEventListener("change", (event) => updateStudio(key, cast(event.target.value))));
   $("customVision")?.addEventListener("change", (event) => updateStudio("customVision", event.target.checked));
+  $("siDevProd")?.addEventListener("change", (event) => updateStudio("siDevProd", event.target.checked));
+  document.querySelectorAll("[data-si-preset]").forEach((button) => button.addEventListener("click", () => {
+    const preset = SI_SCENARIOS[button.dataset.siPreset];
+    studioState = {
+      ...studioState, siScenario: button.dataset.siPreset, siProjectName: uiLanguage === "en" ? preset.en : preset.ko,
+      siPurpose: uiLanguage === "en" ? preset.purposeEn : preset.purpose,
+      siTotalUsers: preset.users, siConcurrency: preset.concurrency, siInputTokens: preset.input,
+      siOutputTokens: preset.output, siTargetSeconds: preset.seconds, siAvailability: preset.availability,
+      siGrowthPct: preset.growth, siVectorDataGb: preset.vector, siLogGbDay: preset.logs,
+      siRetentionDays: preset.retention, siSecurity: preset.security,
+    };
+    syncStudioUrl();
+    renderDecisionStudio();
+  }));
+  $("[data-si-export]")?.addEventListener("click", downloadSiWorkbook);
+  $("[data-si-print]")?.addEventListener("click", () => window.print());
   document.querySelectorAll("[data-studio-gpu]").forEach((button) => button.addEventListener("click", () => {
     selectPrimaryGpu(button.dataset.studioGpu, { persist: true });
     studioState.gpuId = button.dataset.studioGpu;
@@ -516,7 +699,7 @@ function restoreStudioState() {
     } catch {}
   }
   if (params.get("studio")) studioState.tab = params.get("studio");
-  if (!["recommend", "market", "custom", "parts", "runtime", "community"].includes(studioState.tab)) studioState.tab = "recommend";
+  if (!["consulting", "recommend", "market", "custom", "parts", "runtime", "community"].includes(studioState.tab)) studioState.tab = "consulting";
 }
 
 function initDecisionStudio() {

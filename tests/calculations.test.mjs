@@ -1114,10 +1114,10 @@ describe("v2.2 user build calculator", () => {
   });
 });
 
-describe("v3.0 purchase decision studio", () => {
-  test("renders six decision tools and source-linked Korean prices", () => {
+describe("v3.1 purchase decision studio", () => {
+  test("renders seven decision tools and source-linked Korean prices", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
-    assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 6);
+    assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);
     platform.eval(`updateStudio("tab", "market")`);
     assert.equal(platform.document.querySelectorAll(".studio-table tbody tr").length, 3);
     assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /다나와|성능\/가격/);
@@ -1137,11 +1137,21 @@ describe("v3.0 purchase decision studio", () => {
 
   test("shows three recommendation roles and validates measurement drafts", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=en", {}, { platformV2: true });
-    platform.eval(`Object.assign(studioState, { budgetKrw: 8000000, powerLimitW: 1000, targetSpeed: 0, formFactor: "desktop", modelKey: modelKey(GENERATIVE_MODELS.find((model) => model.name === "Llama 3.1 8B Instruct")) }); renderDecisionStudio()`);
+    platform.eval(`Object.assign(studioState, { tab: "recommend", budgetKrw: 8000000, powerLimitW: 1000, targetSpeed: 0, formFactor: "desktop", modelKey: modelKey(GENERATIVE_MODELS.find((model) => model.name === "Llama 3.1 8B Instruct")) }); renderDecisionStudio()`);
     assert.equal(platform.document.querySelectorAll(".studio-pick-card").length, 3);
     assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /Lowest cost|Balanced|Highest performance/);
     platform.eval(`updateStudio("tab", "community")`);
     assert.ok(platform.document.querySelector("#communityBenchmarkForm"));
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+
+  test("creates three SI sizing options with infrastructure and PoC outputs", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko&studio=consulting", {}, { platformV2: true });
+    assert.equal(platform.document.querySelectorAll(".si-plan-card").length, 3);
+    assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /경제형|권장형|확장형/);
+    assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /CPU|RAM|NVMe|네트워크|PoC/);
+    assert.ok(platform.document.querySelector("[data-si-export]"));
+    platform.eval(`document.querySelector('[data-si-preset="private-assistant"]').click()`);
+    assert.equal(platform.document.querySelector("#siConcurrency").value, "20");
   });
 });
