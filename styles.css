@@ -516,6 +516,92 @@ html[lang="en"] .simple-mode-head > div:first-child {
   background: var(--panel);
 }
 
+.gpu-advisor-panel {
+  margin: 18px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+
+.gpu-advisor-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.gpu-advisor-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.gpu-advisor-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.gpu-advisor-card > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advisor-rank {
+  color: var(--blue);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.gpu-advisor-card p,
+.advisor-disclaimer {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.gpu-advisor-card dl {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.gpu-advisor-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gpu-advisor-card dt {
+  color: var(--muted);
+}
+
+.gpu-advisor-card dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+@media (max-width: 1100px) {
+  .gpu-advisor-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gpu-advisor-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .gpu-advisor-controls,
+  .gpu-advisor-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 .gpu-insights-head,
 .gpu-compare-controls,
 .gpu-detail-summary {

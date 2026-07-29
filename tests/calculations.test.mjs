@@ -926,3 +926,33 @@ describe("v1.3 GPU platform upgrades", () => {
     assert.doesNotMatch(fresh.document.getElementById("hardwareCapabilitySummary").textContent, /[가-힣]/);
   });
 });
+
+describe("v1.4 advisor and media optimization", () => {
+  test("ranks model-first GPU recommendations with budget and energy cost", () => {
+    const fresh = loadApp("https://example.com/?gpu=rtx4090-24&lang=en");
+    const panel = fresh.document.getElementById("gpuAdvisorPanel");
+    fresh.eval(`$("advisorModel").value = modelKey(GENERATIVE_MODELS.find((model) => model.name === "Llama 3.1 8B Instruct")); renderGpuAdvisor()`);
+    assert.equal(panel.hidden, false);
+    assert.ok(panel.querySelectorAll(".gpu-advisor-card").length > 0);
+    assert.match(panel.textContent, /Monthly energy/);
+    assert.doesNotMatch(panel.textContent, /[가-힣]/);
+  });
+
+  test("attention and cache optimization changes media memory and speed", () => {
+    const fresh = loadApp();
+    const model = fresh.eval(`OCR_MODELS.find((item) => item.type === "video-generation")`);
+    fresh.testOptimizedMedia = model;
+    const standard = fresh.eval(`estimateMediaModel(testOptimizedMedia, getHardware(), {
+      type: "videoGeneration", width: 832, height: 480, batchSize: 1,
+      precisionId: "fp16", featureSet: "text", steps: 28, frames: 81, fps: 16,
+      loraCount: 0, offload: "none", optimization: "standard"
+    })`);
+    const optimized = fresh.eval(`estimateMediaModel(testOptimizedMedia, getHardware(), {
+      type: "videoGeneration", width: 832, height: 480, batchSize: 1,
+      precisionId: "fp16", featureSet: "text", steps: 28, frames: 81, fps: 16,
+      loraCount: 0, offload: "none", optimization: "combined"
+    })`);
+    assert.ok(optimized.requiredGb < standard.requiredGb);
+    assert.ok(optimized.speed > standard.speed);
+  });
+});

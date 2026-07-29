@@ -68,7 +68,27 @@ function normalizeGpuPreset(gpu) {
     memoryType,
     runtimes: runtimeDefaults,
     gpuUsableMemoryGb: gpu.vram,
+    verifiedAt: gpu.verifiedAt || "2026-07-30",
     ...gpu,
+  };
+}
+
+const GPU_MARKET_REFERENCE = {
+  "rtx5090-32": [1999, 575], "rtx5080-16": [999, 360], "rtx5070ti-16": [749, 300],
+  "rtx5070-12": [549, 250], "rtx5060ti-16": [429, 180], "rtx5060ti-8": [379, 180],
+  "rtx5060-8": [299, 145], "rtx4090-24": [1599, 450], "rtx4080super-16": [999, 320],
+  "rtx4070tisuper-16": [799, 285], "rtx4070super-12": [599, 220], "rtx4060ti-16": [499, 165],
+  "rtx4060-8": [299, 115], "rtx3090-24": [1499, 350], "rtx3060-12": [329, 170],
+  "rx9070xt-16": [599, 304], "rx9070-16": [549, 220], "rx7900xtx-24": [999, 355],
+  "rx7900xt-20": [899, 315], "rx7800xt-16": [499, 263], "arcb580-12": [249, 190],
+  "arcb570-10": [219, 150], "arca770-16": [349, 225],
+};
+
+function gpuMarketReference(gpu) {
+  const [price, power] = GPU_MARKET_REFERENCE[gpu.id] || [];
+  return {
+    priceUsd: gpu.msrpUsd || price || 0,
+    powerW: gpu.tbpW || gpu.tgpReferenceW || power || Math.round(Math.max(75, gpu.bandwidth * 0.38)),
   };
 }
 
@@ -1253,6 +1273,7 @@ function setUiLanguage(language) {
     const languageEstimates = getActiveModels().map((model) => estimateAnyModel(model, languageHardware));
     renderHardwareCapabilities(languageHardware, languageEstimates);
   }
+  if (hasPrimaryGpuSelection) renderGpuAdvisor();
 }
 
 function restoreUiLanguage() {
@@ -1338,6 +1359,7 @@ function refreshAppModeUi() {
 function init() {
   restoreUiTheme();
   restoreImportedHfModels();
+  ensureGpuAdvisorPanel();
   populateSelects();
   applyUrlState();
   restoreUiLanguage();
@@ -1359,6 +1381,46 @@ function init() {
     renderPlacementWorkspaceUi();
     runGpuPlacement();
   }
+}
+
+function ensureGpuAdvisorPanel() {
+  if (!$("mediaOptimization") && $("mediaOffload")) {
+    const field = document.createElement("label");
+    field.className = "field media-generation-field";
+    field.innerHTML = `<span id="mediaOptimizationLabel">생성 최적화</span><select id="mediaOptimization"><option value="standard">기본</option><option value="attention">Sage/Flash Attention</option><option value="cache">TeaCache</option><option value="combined">Attention + TeaCache</option></select>`;
+    $("mediaOffload").closest(".field")?.insertAdjacentElement("afterend", field);
+  }
+  if ($("gpuAdvisorPanel")) return;
+  const results = $("resultsPanel");
+  if (!results) return;
+  const panel = document.createElement("section");
+  panel.className = "gpu-advisor-panel";
+  panel.id = "gpuAdvisorPanel";
+  panel.hidden = true;
+  panel.setAttribute("aria-labelledby", "gpuAdvisorTitle");
+  panel.innerHTML = `
+    <div class="gpu-insights-head">
+      <div>
+        <span class="section-kicker">GPU ADVISOR</span>
+        <h2 id="gpuAdvisorTitle"></h2>
+        <p id="gpuAdvisorDescription"></p>
+      </div>
+    </div>
+    <div class="gpu-advisor-controls">
+      <label class="field"><span id="advisorModelLabel"></span><select id="advisorModel"></select></label>
+      <label class="field"><span id="advisorBudgetLabel"></span><input id="advisorBudgetUsd" type="number" min="0" max="100000" step="50" value="2000"></label>
+      <label class="field"><span id="advisorElectricityLabel"></span><input id="advisorElectricityRate" type="number" min="0" max="5" step="0.01" value="0.15"></label>
+      <label class="field"><span id="advisorHoursLabel"></span><input id="advisorHoursMonth" type="number" min="1" max="744" step="1" value="120"></label>
+      <label class="field"><span id="advisorVendorLabel"></span><select id="advisorVendor"><option value="all">All</option><option>NVIDIA</option><option>AMD</option><option>Intel</option><option>Apple</option></select></label>
+      <label class="field"><span id="advisorFormFactorLabel"></span><select id="advisorFormFactor"><option value="all">All</option><option value="desktop">Desktop</option><option value="laptop">Laptop</option><option value="datacenter">Data center</option><option value="integrated">Unified memory</option></select></label>
+    </div>
+    <div class="gpu-advisor-result" id="gpuAdvisorResult" role="region" aria-live="polite"></div>
+  `;
+  results.parentNode.insertBefore(panel, results);
+  $("advisorModel").innerHTML = getAllModels()
+    .filter((model) => model.type !== "ocr-pipeline")
+    .map((model) => `<option value="${escapeAttr(modelKey(model))}">${escapeHtml(model.name)}</option>`)
+    .join("");
 }
 
 function populateSelects() {
@@ -1805,6 +1867,10 @@ function bindEvents() {
     renderGpuInsights(getHardware());
   });
   ["compareGpuA", "compareGpuB"].forEach((id) => $(id)?.addEventListener("change", () => renderGpuInsights(getHardware())));
+  ["advisorModel", "advisorBudgetUsd", "advisorElectricityRate", "advisorHoursMonth", "advisorVendor", "advisorFormFactor"].forEach((id) => {
+    $(id)?.addEventListener(id.startsWith("advisor") && $("advisorModel") === $(id) ? "change" : "input", renderGpuAdvisor);
+    if (id === "advisorVendor" || id === "advisorFormFactor") $(id)?.addEventListener("change", renderGpuAdvisor);
+  });
 
   [
     "contextSize",
@@ -1834,6 +1900,7 @@ function bindEvents() {
     "mediaFps",
     "mediaLoraCount",
     "mediaOffload",
+    "mediaOptimization",
     "taskFilter",
     "providerFilter",
     "licenseFilter",
@@ -4946,6 +5013,7 @@ function getWorkloadSettings() {
       fps: clampNumber($("mediaFps")?.value, 1, 60, 16),
       loraCount: clampNumber($("mediaLoraCount")?.value, 0, 8, 0),
       offload: $("mediaOffload")?.value || "none",
+      optimization: $("mediaOptimization")?.value || "standard",
     };
   }
 
@@ -5313,7 +5381,9 @@ function estimateMediaWithPrecision(model, hardware, workload, precision) {
   const loraMemoryGb = (workload.loraCount || 0) * Math.max(0.18, model.params * 0.035);
   const runtimeOverheadGb = (profile.baseRuntimeGb || 2.5) + Math.max(0, batchSize - 1) * (profile.batchOverheadGb || 0.8);
   const activationGb = (spatialActivationGb + temporalActivationGb) * offloadFactor;
-  const requiredGb = weightsGb + textEncoderGb + vaeGb + activationGb + loraMemoryGb + runtimeOverheadGb;
+  const optimizationMemoryScale = workload.optimization === "attention" || workload.optimization === "combined" ? 0.82 : 1;
+  const optimizedActivationGb = activationGb * optimizationMemoryScale;
+  const requiredGb = weightsGb + textEncoderGb + vaeGb + optimizedActivationGb + loraMemoryGb + runtimeOverheadGb;
   const pressure = getVramPressure(requiredGb, effectiveVram);
   const grade = gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * (workload.offload === "none" ? 0.25 : 0.55));
 
@@ -5327,7 +5397,8 @@ function estimateMediaWithPrecision(model, hardware, workload, precision) {
   const frameScale = isVideo ? 81 / Math.max(1, frames) : 1;
   const fitScale = grade === "F" ? 0 : grade === "D" ? 0.14 : grade === "C" ? 0.48 : 1;
   const offloadSpeedScale = workload.offload === "sequential" ? 0.28 : workload.offload === "tiled" ? 0.7 : 1;
-  const speed = referenceRate * computeScale * bandwidthScale * resolutionScale * stepScale * frameScale * fitScale * offloadSpeedScale;
+  const optimizationSpeedScale = workload.optimization === "combined" ? 1.72 : workload.optimization === "cache" ? 1.45 : workload.optimization === "attention" ? 1.18 : 1;
+  const speed = referenceRate * computeScale * bandwidthScale * resolutionScale * stepScale * frameScale * fitScale * offloadSpeedScale * optimizationSpeedScale;
   const latencySeconds = speed > 0 ? 1 / speed : 0;
   const unitLabel = isVideo ? "clip/s" : "image/s";
   const durationNote = isVideo
@@ -5340,7 +5411,7 @@ function estimateMediaWithPrecision(model, hardware, workload, precision) {
     weightsGb,
     textEncoderGb,
     vaeGb,
-    activationGb,
+    activationGb: optimizedActivationGb,
     temporalActivationGb,
     loraMemoryGb,
     runtimeOverheadGb,
@@ -6291,6 +6362,7 @@ function render(options = {}) {
   refreshWorkloadUi();
   renderHardware(hardware, allEstimates);
   renderGpuInsights(hardware);
+  renderGpuAdvisor();
   renderSummary(allEstimates);
   renderSimpleMode(hardware, allEstimates);
   renderCalculationBasisStrip(hardware);
@@ -6404,6 +6476,90 @@ function estimateAnyModelForHardware(model, hardware) {
   return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
 }
 
+function renderGpuAdvisor() {
+  const panel = $("gpuAdvisorPanel");
+  if (!panel) return;
+  panel.hidden = !hasPrimaryGpuSelection || coreTaskMode === "placement";
+  if (panel.hidden) return;
+  const en = uiLanguage === "en";
+  $("gpuAdvisorTitle").textContent = en ? "GPU recommendations by model, budget, and power" : "예산·전력·모델 기준 GPU 추천";
+  $("gpuAdvisorDescription").textContent = en
+    ? "Choose a model and cost constraints to rank compatible GPUs by value, speed, and energy."
+    : "원하는 모델과 비용 조건을 넣으면 적합한 GPU를 가격·속도·전력 기준으로 정렬합니다.";
+  const labels = {
+    advisorModelLabel: en ? "Model to run" : "실행할 모델",
+    advisorBudgetLabel: en ? "GPU budget (USD)" : "GPU 예산 (USD)",
+    advisorElectricityLabel: en ? "Electricity (USD/kWh)" : "전기요금 (USD/kWh)",
+    advisorHoursLabel: en ? "Hours per month" : "월 사용 시간",
+    advisorVendorLabel: en ? "Vendor" : "제조사",
+    advisorFormFactorLabel: en ? "Form factor" : "형태",
+  };
+  Object.entries(labels).forEach(([id, text]) => { if ($(id)) $(id).textContent = text; });
+  const vendorOptions = en ? ["All", "NVIDIA", "AMD", "Intel", "Apple"] : ["전체", "NVIDIA", "AMD", "Intel", "Apple"];
+  [...$("advisorVendor").options].forEach((option, index) => { option.textContent = vendorOptions[index]; });
+  const formOptions = en ? ["All", "Desktop", "Laptop", "Data center", "Unified memory"] : ["전체", "데스크톱", "노트북", "데이터센터", "통합 메모리"];
+  [...$("advisorFormFactor").options].forEach((option, index) => { option.textContent = formOptions[index]; });
+  if ($("mediaOptimizationLabel")) $("mediaOptimizationLabel").textContent = en ? "Generation optimization" : "생성 최적화";
+  if ($("mediaOptimization")) {
+    const optionLabels = en
+      ? ["Standard", "Sage/Flash Attention", "TeaCache", "Attention + TeaCache"]
+      : ["기본", "Sage/Flash Attention", "TeaCache", "Attention + TeaCache"];
+    [...$("mediaOptimization").options].forEach((option, index) => { option.textContent = optionLabels[index]; });
+  }
+
+  const model = getModelByKey($("advisorModel").value) || getAllModels()[0];
+  if (!model) return;
+  const budget = clampNumber($("advisorBudgetUsd").value, 0, 100000, 2000);
+  const rate = clampNumber($("advisorElectricityRate").value, 0, 5, 0.15);
+  const hours = clampNumber($("advisorHoursMonth").value, 1, 744, 120);
+  const vendor = $("advisorVendor").value;
+  const formFactor = $("advisorFormFactor").value;
+  const candidates = GPU_PRESETS
+    .filter((gpu) => gpu.id !== "custom")
+    .filter((gpu) => vendor === "all" || gpu.vendor === vendor)
+    .filter((gpu) => formFactor === "all" || gpu.formFactor === formFactor)
+    .map((preset) => {
+      const hardware = buildHardwareForPreset(preset);
+      const estimate = estimateAnyModelForHardware(model, hardware);
+      const market = gpuMarketReference(preset);
+      const monthlyEnergy = market.powerW / 1000 * hours * rate;
+      const fitsBudget = !market.priceUsd || market.priceUsd <= budget;
+      const runnable = estimate && GRADE_META[estimate.grade]?.score >= GRADE_META.B.score;
+      const speed = Number(estimate?.speed || estimate?.throughput || 0);
+      const valueScore = runnable ? speed / Math.max(200, market.priceUsd || budget || 1000) : 0;
+      return { preset, estimate, market, monthlyEnergy, fitsBudget, runnable, speed, valueScore };
+    })
+    .filter((item) => item.runnable && item.fitsBudget)
+    .sort((a, b) => b.valueScore - a.valueScore || b.speed - a.speed)
+    .slice(0, 6);
+
+  $("gpuAdvisorResult").innerHTML = candidates.length ? `
+    <div class="gpu-advisor-list">
+      ${candidates.map((item, index) => `
+        <article class="gpu-advisor-card">
+          <div><span class="advisor-rank">#${index + 1}</span><strong>${escapeHtml(shortGpuName(item.preset.name))}</strong></div>
+          <p>${escapeHtml(formatGb(item.preset.gpuUsableMemoryGb || item.preset.vram))} · ${escapeHtml(item.preset.vendor)} · ${escapeHtml(item.preset.formFactor)}</p>
+          <dl>
+            <div><dt>${en ? "Estimated speed" : "예상 속도"}</dt><dd>${escapeHtml(formatThroughput(item.speed, item.estimate?.unitLabel || "tok/s"))}</dd></div>
+            <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd>${item.market.priceUsd ? `$${item.market.priceUsd.toLocaleString("en-US")}` : (en ? "Enter market price" : "시세 입력 필요")}</dd></div>
+            <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>$${item.monthlyEnergy.toFixed(2)}</dd></div>
+            <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${item.preset.specStatus === "sourced" ? (en ? "Official source" : "공식 출처") : (en ? "Estimated spec" : "추정 사양")}</dd></div>
+          </dl>
+          <button type="button" class="ghost-button" data-advisor-select-gpu="${escapeAttr(item.preset.id)}">${en ? "Use this GPU" : "이 GPU 선택"}</button>
+        </article>
+      `).join("")}
+    </div>
+    <p class="advisor-disclaimer">${en ? "Prices are launch-price references, not live quotes. Energy cost uses the selected hours and rate." : "가격은 실시간 시세가 아닌 출시가 참고값이며, 전력비는 입력한 시간과 요금으로 계산합니다."}</p>
+  ` : `<p class="empty-state">${en ? "No GPU with known specifications fits these conditions. Raise the budget or change a filter." : "현재 조건에 맞는 GPU가 없습니다. 예산을 높이거나 필터를 바꿔보세요."}</p>`;
+  panel.querySelectorAll("[data-advisor-select-gpu]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectPrimaryGpu(button.dataset.advisorSelectGpu, { persist: true });
+      render();
+      $("hardwarePanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
 function renderGpuInsights(hardware) {
   const panel = $("gpuInsightsPanel");
   if (!panel) return;
@@ -6426,6 +6582,14 @@ function renderGpuInsights(hardware) {
       <small>${escapeHtml(note || "")}</small>
     </div>
   `).join("");
+
+  detail.insertAdjacentHTML("beforeend", `
+    <div class="gpu-detail-fact">
+      <span>${uiLanguage === "en" ? "Specification evidence" : "사양 근거"}</span>
+      <strong>${preset.specStatus === "sourced" ? (uiLanguage === "en" ? "Official source linked" : "공식 출처 연결") : (uiLanguage === "en" ? "Estimated / needs review" : "추정값·검토 필요")}</strong>
+      <small>${uiLanguage === "en" ? "Verified" : "검증일"}: ${escapeHtml(preset.verifiedAt || DATA_UPDATED_AT)}</small>
+    </div>
+  `);
 
   const toggle = $("toggleGpuCompare");
   toggle.setAttribute("aria-expanded", String(gpuCompareOpen));
@@ -9151,6 +9315,13 @@ function syncUrlState() {
   params.set("mediaFps", $("mediaFps").value);
   params.set("mediaLora", $("mediaLoraCount").value);
   params.set("mediaOffload", $("mediaOffload").value);
+  if ($("mediaOptimization")) params.set("mediaOptimization", $("mediaOptimization").value);
+  if ($("advisorModel")) params.set("advisorModel", $("advisorModel").value);
+  if ($("advisorBudgetUsd")) params.set("budget", $("advisorBudgetUsd").value);
+  if ($("advisorElectricityRate")) params.set("electricity", $("advisorElectricityRate").value);
+  if ($("advisorHoursMonth")) params.set("hours", $("advisorHoursMonth").value);
+  if ($("advisorVendor")) params.set("advisorVendor", $("advisorVendor").value);
+  if ($("advisorFormFactor")) params.set("advisorForm", $("advisorFormFactor").value);
   if ($("compareGpuA")?.value) params.set("compareA", $("compareGpuA").value);
   if ($("compareGpuB")?.value) params.set("compareB", $("compareGpuB").value);
   params.set("task", $("taskFilter").value);
@@ -9247,6 +9418,13 @@ function applyUrlState() {
   setValueIfPresent("mediaFps", params.get("mediaFps"));
   setValueIfPresent("mediaLoraCount", params.get("mediaLora"));
   setSelectIfValid("mediaOffload", params.get("mediaOffload"));
+  setSelectIfValid("mediaOptimization", params.get("mediaOptimization"));
+  setSelectIfValid("advisorModel", params.get("advisorModel"));
+  setValueIfPresent("advisorBudgetUsd", params.get("budget"));
+  setValueIfPresent("advisorElectricityRate", params.get("electricity"));
+  setValueIfPresent("advisorHoursMonth", params.get("hours"));
+  setSelectIfValid("advisorVendor", params.get("advisorVendor"));
+  setSelectIfValid("advisorFormFactor", params.get("advisorForm"));
   setSelectIfValid("compareGpuA", params.get("compareA"));
   setSelectIfValid("compareGpuB", params.get("compareB"));
   setSelectIfValid("taskFilter", params.get("task"));

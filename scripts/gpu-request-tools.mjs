@@ -7,12 +7,22 @@ const sections = parseIssueSections(body);
 const record = buildGpuRecord(sections);
 const errors = validateGpuRecord(record);
 const duplicate = findDuplicate(record);
+if (duplicate) errors.push(`이미 등록된 GPU와 중복됩니다: ${duplicate}`);
 
-if (duplicate) errors.push(`이미 등록된 GPU와 겹칠 수 있습니다: ${duplicate.id} (${duplicate.name})`);
+const preview = [
+  ["ID", record.id],
+  ["GPU", record.name],
+  ["Vendor / architecture", `${record.vendor} / ${record.architecture}`],
+  ["Memory", `${record.gpuUsableMemoryGb}/${record.vram} GB (${record.memoryType})`],
+  ["Bandwidth", `${record.bandwidth} GB/s`],
+  ["Form factor", record.formFactor],
+  ["Runtime", record.runtimes.join(", ")],
+  ["Source", record.sourceUrl],
+].map(([key, value]) => `| ${key} | ${value || "—"} |`).join("\n");
 
 const report = errors.length
-  ? `### GPU 요청 자동 검사\n\n${errors.map((error) => `- ❌ ${error}`).join("\n")}`
-  : `### GPU 요청 자동 검사\n\n- ✅ 필수 사양과 출처 형식 확인 완료\n- ✅ 기존 GPU ID/별칭과 중복 없음\n\n추가 후보 레코드:\n\n\`\`\`js\n${serializeRecord(record)}\n\`\`\`\n\n관리자가 \`gpu-ready\` 라벨을 붙이면 자동 PR을 생성합니다.`;
+  ? `### GPU request validation\n\n${errors.map((error) => `- ❌ ${error}`).join("\n")}`
+  : `### GPU request validation\n\n- ✅ Required specifications and source format are valid\n- ✅ No duplicate ID or model name was found\n\n| Field | Proposed value |\n| --- | --- |\n${preview}\n\n\`\`\`js\n${serializeRecord(record)}\n\`\`\`\n\nAdding the \`gpu-ready\` label will create a data PR automatically.`;
 
 console.log(report);
 writeOutput("valid", String(errors.length === 0));
@@ -23,20 +33,22 @@ if (process.argv.includes("--append") && errors.length === 0) {
   const file = "data/gpus.js";
   const source = fs.readFileSync(file, "utf8");
   if (!source.includes(`id: "${record.id}"`)) {
-    fs.writeFileSync(file, source.replace(/\n\];\s*$/, `\n  ${serializeRecord(record)},\n];\n`));
+    fs.writeFileSync(file, source.replace(/\n\];\s*window\.LLM_GPU_CHECKER_DATA\.gpus =/, `\n  ${serializeRecord(record)},\n];\n\nwindow.LLM_GPU_CHECKER_DATA.gpus =`));
   }
 }
 
 function parseIssueSections(markdown) {
   const result = {};
-  const matches = [...String(markdown).matchAll(/### ([^\n]+)\n\n([\s\S]*?)(?=\n### |\s*$)/g)];
-  for (const [, label, value] of matches) result[label.trim()] = value.trim();
+  for (const [, label, value] of String(markdown).matchAll(/### ([^\n]+)\n\n([\s\S]*?)(?=\n### |\s*$)/g)) {
+    result[label.trim()] = value.trim();
+  }
   return result;
 }
 
-function valueFor(sectionsMap, ...labels) {
+function valueFor(...labels) {
   for (const label of labels) {
-    if (sectionsMap[label] && sectionsMap[label] !== "_No response_") return sectionsMap[label];
+    const value = sections[label];
+    if (value && value !== "_No response_") return value;
   }
   return "";
 }
@@ -50,23 +62,31 @@ function slugify(value) {
   return String(value || "").toLowerCase().replace(/\+/g, "-plus-").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function buildGpuRecord(sectionsMap) {
-  const name = valueFor(sectionsMap, "GPU 이름");
-  const vram = numberFrom(valueFor(sectionsMap, "VRAM"));
-  const ram = numberFrom(valueFor(sectionsMap, "권장 시스템 RAM")) || Math.max(16, vram * 2);
-  const runtimesRaw = valueFor(sectionsMap, "확인된 실행 환경");
+function buildGpuRecord() {
+  const name = valueFor("GPU 이름", "GPU name");
+  const vram = numberFrom(valueFor("VRAM"));
+  const formFactorText = valueFor("폼팩터", "Form factor").toLowerCase();
+  const memoryText = valueFor("메모리 유형", "Memory type").toLowerCase();
+  const runtimesRaw = valueFor("확인된 실행 환경", "Supported runtimes");
   return {
     id: `${slugify(name)}-${vram || "unknown"}`,
     name,
-    vendor: valueFor(sectionsMap, "제조사"),
-    memoryType: valueFor(sectionsMap, "메모리 유형").includes("통합") ? "unified" : "dedicated",
+    vendor: valueFor("제조사", "Vendor"),
+    architecture: valueFor("아키텍처", "Architecture") || "Unspecified",
+    memoryType: /통합|unified/.test(memoryText) ? "unified" : "dedicated",
     vram,
-    gpuUsableMemoryGb: numberFrom(valueFor(sectionsMap, "GPU 실제 할당 가능 메모리")) || vram,
-    ram,
-    bandwidth: numberFrom(valueFor(sectionsMap, "메모리 대역폭")),
+    gpuUsableMemoryGb: numberFrom(valueFor("GPU 실제 할당 가능 메모리", "GPU-usable memory")) || vram,
+    ram: numberFrom(valueFor("권장 시스템 RAM", "Recommended system RAM")) || Math.max(16, vram * 2),
+    bandwidth: numberFrom(valueFor("메모리 대역폭", "Memory bandwidth")),
+    formFactor: /노트북|laptop/.test(formFactorText) ? "laptop" : /data|서버/.test(formFactorText) ? "datacenter" : /통합|integrated/.test(formFactorText) ? "integrated" : "desktop",
+    tgpMinW: numberFrom(valueFor("최소 TGP", "Minimum TGP")) || undefined,
+    tgpMaxW: numberFrom(valueFor("최대 TGP", "Maximum TGP")) || undefined,
+    tbpW: numberFrom(valueFor("소비전력", "Board power")) || undefined,
+    msrpUsd: numberFrom(valueFor("출시 가격", "Launch MSRP")) || undefined,
     runtimes: [...runtimesRaw.matchAll(/- \[x\] ([^\n]+)/gi)].map((match) => match[1].trim()),
-    aliases: valueFor(sectionsMap, "별칭·검색어").split(",").map((item) => item.trim()).filter(Boolean),
-    sourceUrl: valueFor(sectionsMap, "출처").match(/https?:\/\/\S+/)?.[0] || "",
+    aliases: valueFor("별칭·검색어", "Aliases").split(",").map((item) => item.trim()).filter(Boolean),
+    sourceUrl: valueFor("출처", "Source").match(/https?:\/\/\S+/)?.[0] || "",
+    verifiedAt: new Date().toISOString().slice(0, 10),
   };
 }
 
@@ -74,35 +94,25 @@ function validateGpuRecord(gpu) {
   const issues = [];
   if (!gpu.name) issues.push("GPU 이름이 필요합니다.");
   if (!gpu.vendor) issues.push("제조사를 선택해 주세요.");
-  if (!gpu.vram) issues.push("VRAM을 숫자와 함께 입력해 주세요.");
+  if (!gpu.vram) issues.push("VRAM을 숫자로 입력해 주세요.");
   if (!gpu.bandwidth) issues.push("메모리 대역폭을 GB/s 단위로 입력해 주세요.");
-  if (!/^https:\/\//.test(gpu.sourceUrl)) issues.push("HTTPS 공식 사양 출처가 필요합니다.");
+  if (!/^https:\/\/(www\.)?(nvidia|amd|intel|apple)\.com\//i.test(gpu.sourceUrl)) issues.push("제조사 공식 HTTPS 사양 출처가 필요합니다.");
   if (gpu.memoryType === "unified" && gpu.gpuUsableMemoryGb > gpu.ram) issues.push("GPU 할당 가능 메모리가 전체 RAM보다 클 수 없습니다.");
+  if (gpu.formFactor === "laptop" && (!gpu.tgpMinW || !gpu.tgpMaxW || gpu.tgpMinW > gpu.tgpMaxW)) issues.push("노트북 GPU는 올바른 최소·최대 TGP가 필요합니다.");
   return issues;
 }
 
 function findDuplicate(gpu) {
-  const source = fs.readFileSync("data/gpus.js", "utf8");
-  const context = { window: {} };
-  return source.includes(`id: "${gpu.id}"`) || source.toLowerCase().includes(`name: "${gpu.name.toLowerCase()}"`)
-    ? { id: gpu.id, name: gpu.name }
-    : null;
+  const source = fs.readFileSync("data/gpus.js", "utf8").toLowerCase();
+  if (source.includes(`id: "${gpu.id.toLowerCase()}"`)) return gpu.id;
+  if (gpu.name && source.includes(`name: "${gpu.name.toLowerCase()}"`)) return gpu.name;
+  return "";
 }
 
 function serializeRecord(gpu) {
-  const fields = [
-    `id: ${JSON.stringify(gpu.id)}`,
-    `name: ${JSON.stringify(gpu.name)}`,
-    `vendor: ${JSON.stringify(gpu.vendor)}`,
-    `memoryType: ${JSON.stringify(gpu.memoryType)}`,
-    `vram: ${gpu.vram}`,
-    `gpuUsableMemoryGb: ${gpu.gpuUsableMemoryGb}`,
-    `ram: ${gpu.ram}`,
-    `bandwidth: ${gpu.bandwidth}`,
-    `runtimes: ${JSON.stringify(gpu.runtimes)}`,
-    `aliases: ${JSON.stringify(gpu.aliases)}`,
-    `sourceUrl: ${JSON.stringify(gpu.sourceUrl)}`,
-  ];
+  const fields = Object.entries(gpu)
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`);
   return `{ ${fields.join(", ")} }`;
 }
 

@@ -1,5 +1,5 @@
 name: GPU request
-description: 새 GPU 프리셋 추가를 요청합니다.
+description: GPU 프리셋 추가를 요청합니다.
 title: "[GPU] "
 labels: ["data", "gpu"]
 body:
@@ -14,14 +14,26 @@ body:
     id: vendor
     attributes:
       label: 제조사
-      options: [NVIDIA, AMD, Intel, Apple, 기타]
+      options: [NVIDIA, AMD, Intel, Apple, Other]
     validations:
       required: true
+  - type: input
+    id: architecture
+    attributes:
+      label: 아키텍처
+      placeholder: Ada Lovelace
   - type: dropdown
     id: memory_type
     attributes:
       label: 메모리 유형
-      options: [전용 VRAM, 통합메모리, 여러 GPU 합산]
+      options: [전용 VRAM, 통합 메모리]
+    validations:
+      required: true
+  - type: dropdown
+    id: form_factor
+    attributes:
+      label: 폼팩터
+      options: [데스크톱, 노트북, 데이터센터, 통합 메모리]
     validations:
       required: true
   - type: input
@@ -47,13 +59,33 @@ body:
     id: usable_memory
     attributes:
       label: GPU 실제 할당 가능 메모리
-      description: 통합메모리 제품은 BIOS/OS 설정에서 GPU에 할당 가능한 용량을 적어 주세요.
+      description: 통합 메모리 제품은 GPU에 실제로 할당할 수 있는 용량을 적어 주세요.
       placeholder: 96GB
+  - type: input
+    id: tgp_min
+    attributes:
+      label: 최소 TGP
+      placeholder: 노트북 GPU만 입력, 예: 80W
+  - type: input
+    id: tgp_max
+    attributes:
+      label: 최대 TGP
+      placeholder: 노트북 GPU만 입력, 예: 175W
+  - type: input
+    id: board_power
+    attributes:
+      label: 소비전력
+      placeholder: 450W
+  - type: input
+    id: msrp
+    attributes:
+      label: 출시 가격
+      placeholder: 1599 USD
   - type: input
     id: aliases
     attributes:
       label: 별칭·검색어
-      placeholder: AI Max 395, Radeon 8060S, Strix Halo
+      placeholder: RTX4090, 4090
   - type: checkboxes
     id: runtimes
     attributes:
@@ -65,15 +97,10 @@ body:
         - label: Metal / MLX
         - label: DirectML
         - label: OpenVINO / oneAPI
-  - type: input
-    id: system
-    attributes:
-      label: 확인 환경
-      placeholder: Windows 11 / Linux, 드라이버 버전, 노트북 TGP
   - type: textarea
     id: source
     attributes:
       label: 출처
-      description: 제조사 제품 페이지나 신뢰 가능한 스펙 링크를 적어 주세요.
+      description: NVIDIA, AMD, Intel, Apple의 공식 제품 사양 HTTPS 링크를 적어 주세요.
     validations:
       required: true

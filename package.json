@@ -1,6 +1,6 @@
 {
   "name": "ai-hardware-fit",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": false,
   "description": "Bilingual static web app for estimating LLM, embedding, reranker, OCR, VLM, image, and video generation workloads on GPUs.",
   "type": "module",

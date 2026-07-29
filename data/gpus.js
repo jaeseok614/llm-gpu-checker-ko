@@ -238,7 +238,11 @@ window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) =>
     memoryType,
     gpuUsableMemoryGb: gpu.vram,
     runtimes: runtimeDefaults,
-    formFactor: /laptop|mobile/.test(text) ? "laptop" : memoryType === "unified" ? "integrated" : "desktop",
+    formFactor: /laptop|mobile/.test(text)
+      ? "laptop"
+      : /instinct|data center|h100|h200|b100|b200|a100|a30|t4|v100|p100|l40|l4|flex/.test(text)
+        ? "datacenter"
+        : memoryType === "unified" ? "integrated" : "desktop",
     specStatus: gpu.sourceUrl ? "sourced" : "estimated",
     ...gpu,
   };
