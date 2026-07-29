@@ -22,6 +22,18 @@
 
 ![AI Hardware Fit model finder](./docs/model-finder-en.png)
 
+## One-line version history
+
+> Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
+
+- **v2.0** — Added measurement confidence intervals, Benchmark 2.0, GPU/model deep links, purchase TCO, and Ollama/llama.cpp/vLLM/Docker launch recipes.
+- **v1.5** — Expanded to 115 GPUs and added 10 STT/TTS models, a model-first entry screen, model-request auto PRs, and benchmark coverage.
+- **v1.4** — Added the model-and-budget-first GPU Advisor, price and energy inputs, current-GPU comparisons, and image/video optimizations.
+- **v1.3** — Introduced normalized GPU schemas, laptop TGP scaling, measurement calibration, a dedicated media engine, and GPU detail comparison.
+- **v1.2** — Added AI Stack Placement for assigning multiple models across multiple GPUs with shareable constraints and plan comparison.
+- **v1.1** — Expanded the catalog with embedding, reranker, OCR/VLM workloads plus benchmark and license information.
+- **v1.0** — First public release for checking local LLM compatibility, recommended quantization, and estimated speed from GPU VRAM and runtime settings.
+
 ## Highlights
 
 - **v2.0 Decision Hub** combines measurement confidence, Benchmark 2.0, GPU/model deep links, purchase TCO, and launch recipes.
