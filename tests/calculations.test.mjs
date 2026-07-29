@@ -981,7 +981,18 @@ describe("v1.5 catalog, audio, and model-first experience", () => {
     const fresh = loadApp("https://example.com/?mode=modelFinder&lang=en");
     assert.equal(fresh.document.getElementById("gpuAdvisorPanel").hidden, false);
     assert.equal(fresh.document.getElementById("onboardingScreen").hidden, true);
+    assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
+    assert.equal(fresh.document.getElementById("resultsPanel").hidden, true);
     assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for a model/);
+
+    const selected = loadApp("https://example.com/?gpu=rtx6000ada-48&lang=ko");
+    assert.equal(selected.document.getElementById("simpleModePanel").hidden, false);
+    selected.document.querySelector('[data-core-task="modelFinder"]').click();
+    assert.equal(selected.document.getElementById("gpuAdvisorPanel").hidden, false);
+    assert.equal(selected.document.getElementById("hardwarePanel").hidden, true);
+    assert.equal(selected.document.getElementById("gpuInsightsPanel").hidden, true);
+    assert.equal(selected.document.getElementById("simpleModePanel").hidden, true);
+    assert.equal(selected.document.getElementById("benchmarkDashboard").hidden, true);
   });
 
   test("renders benchmark coverage and mobile comparison cards", () => {

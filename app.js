@@ -1195,7 +1195,7 @@ function refreshCoreTaskUi() {
   const placementActive = coreTaskMode === "placement";
   const modelFinderActive = coreTaskMode === "modelFinder";
   document.body.classList.toggle("placement-task-active", placementActive);
-  document.body.classList.toggle("finder-task-active", !placementActive);
+  document.body.classList.toggle("finder-task-active", coreTaskMode === "finder");
   document.body.classList.toggle("model-finder-task-active", modelFinderActive);
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
@@ -1405,7 +1405,7 @@ function restoreUiTheme() {
 
 function refreshAppModeUi() {
   const isSimple = appMode === "simple";
-  const finderActive = coreTaskMode !== "placement";
+  const finderActive = coreTaskMode === "finder";
   $("simpleModePanel").hidden = !finderActive || !isSimple;
   $("expertModeSection").hidden = !finderActive || isSimple;
   $("calculationBasisStrip").hidden = !finderActive || isSimple;
@@ -6464,9 +6464,10 @@ function render(options = {}) {
   const hardwarePanel = $("hardwarePanel");
   const resultsPanel = $("resultsPanel");
   const placementActive = coreTaskMode === "placement";
-  if (onboardingScreen) onboardingScreen.hidden = placementActive || coreTaskMode === "modelFinder" || hasPrimaryGpuSelection;
-  if (hardwarePanel) hardwarePanel.hidden = !placementActive && !hasPrimaryGpuSelection;
-  if (resultsPanel) resultsPanel.hidden = placementActive || !hasPrimaryGpuSelection;
+  const modelFinderActive = coreTaskMode === "modelFinder";
+  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || hasPrimaryGpuSelection;
+  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || (!placementActive && !hasPrimaryGpuSelection);
+  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || !hasPrimaryGpuSelection;
   refreshCoreTaskUi();
   renderPlacementWorkspaceUi();
 
@@ -6494,7 +6495,8 @@ function render(options = {}) {
   renderBenchmarkSheet();
   renderBenchmarkDashboard();
   const benchmarkSheet = $("benchmarkSheet");
-  if (benchmarkSheet) benchmarkSheet.hidden = placementActive || !hasPrimaryGpuSelection;
+  if (benchmarkSheet) benchmarkSheet.hidden = placementActive || modelFinderActive || !hasPrimaryGpuSelection;
+  if ($("benchmarkDashboard")) $("benchmarkDashboard").hidden = placementActive || modelFinderActive;
 
   if (syncUrl) syncUrlState();
   if (uiLanguage === "en") setUiLanguage("en");
@@ -6717,7 +6719,7 @@ function renderGpuAdvisor() {
 function renderGpuInsights(hardware) {
   const panel = $("gpuInsightsPanel");
   if (!panel) return;
-  const show = hasPrimaryGpuSelection && coreTaskMode !== "placement";
+  const show = hasPrimaryGpuSelection && coreTaskMode === "finder";
   panel.hidden = !show;
   if (!show) return;
   const preset = hardware.preset;
