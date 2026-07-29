@@ -744,6 +744,138 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin-top: 14px;
 }
 
+.si-advanced {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.si-advanced summary {
+  padding: 14px 16px;
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.si-advanced .studio-question-grid {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.si-plan-foot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.si-plan-foot span {
+  border-radius: 8px;
+  padding: 9px;
+  background: var(--panel-raised);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.si-plan-foot strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+}
+
+.si-deliverable-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.si-deliverable-grid > article,
+.si-poc-mode {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface-soft);
+}
+
+.si-deliverable-grid h3,
+.si-poc-mode h3 {
+  margin: 6px 0 12px;
+}
+
+.si-deliverable-grid p,
+.si-poc-mode p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.si-topology-row {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr 1.5fr 0.7fr;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+  font-size: 0.78rem;
+}
+
+.si-bom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.si-bom-grid span {
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--panel-raised);
+  font-size: 0.8rem;
+}
+
+.si-confidence-list {
+  display: grid;
+  gap: 8px;
+}
+
+.si-confidence-list span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  color: var(--muted);
+}
+
+.si-confidence-list strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.si-poc-mode {
+  margin-top: 12px;
+}
+
+.si-poc-mode > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.si-poc-mode > div:first-child p {
+  margin-left: auto;
+}
+
+.si-poc-verdict {
+  margin-bottom: 0;
+  border-left: 3px solid var(--blue);
+  padding: 10px 12px;
+  background: var(--blue-soft);
+  color: var(--ink) !important;
+  font-weight: 800;
+}
+
 .studio-pick-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1012,6 +1144,10 @@ html[lang="en"] .simple-mode-head > div:first-child {
     grid-template-columns: 1fr;
   }
 
+  .si-deliverable-grid {
+    grid-template-columns: 1fr;
+  }
+
   .community-row-list article {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1050,10 +1186,21 @@ html[lang="en"] .simple-mode-head > div:first-child {
   .studio-question-grid,
   .studio-pick-grid,
   .si-output-grid,
+  .si-deliverable-grid,
   .custom-model-result,
   .parts-result,
   .community-row-list article {
     grid-template-columns: 1fr;
+  }
+
+  .si-topology-row,
+  .si-bom-grid,
+  .si-plan-foot {
+    grid-template-columns: 1fr;
+  }
+
+  .si-poc-mode > div:first-child {
+    display: block;
   }
 
   .studio-question-grid .studio-wide,

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Compare the LLM, embedding, reranker, OCR, image, and video generation models your GPU can run<br />by VRAM, speed, quality, and licensing.</strong>
+  <strong>Turn model, traffic, and latency goals into comparable GPU, CPU, RAM, storage, and network plans.<br />An open-source AI infrastructure pre-sales sizing assistant.</strong>
 </p>
 
 <p align="center">
@@ -15,17 +15,33 @@
 
 <p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the app</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en&amp;studio=consulting"><strong>SI sizing mode</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=en">AI Stack Placement</a>
   · <a href="./README.md">한국어</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">Request a GPU</a>
 </p>
 
-![AI Hardware Fit model finder](./docs/model-finder-en.png)
+![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
+
+## In 10 seconds
+
+- **Developers and individuals** can find LLM, VLM, image, and video models that fit their GPU.
+- **SIs, MSPs, and server vendors** can turn model, QPS, concurrency, p95, and availability requirements into economy, recommended, and scalable plans.
+- **Outputs** include per-server GPU, CPU, RAM, NVMe, NIC, power, TCO, placement, confidence, PoC checks, Excel/PDF, and a deployment draft.
+
+> This tool supports preliminary sizing, comparison, and pre-PoC hypotheses. It does not guarantee performance or produce a final vendor-approved bill of materials.
+
+⭐ If it helps your work, star the repository and share missing real-world pre-sales conditions through an Issue.
 
 ## One-line version history
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v3.5** — Completed detailed SLA inputs, per-server placement and failover capacity, PCIe/NIC/UPS/cooling BOM, TCO outputs, and measured PoC validation.
+- **v3.4** — Added an editable Excel estimate, purchase/energy/three-year TCO, PDF proposal summary, and Docker Compose draft.
+- **v3.3** — Added PCIe, NVLink/NVSwitch review, NIC, storage, UPS, cooling, backup, and monitoring BOM items.
+- **v3.2** — Added per-server GPU configuration, model placement, and remaining capacity after failure for three plans.
+- **v3.1.1** — Added industry, owner, data-egress policy, QPS, maximum tokens, TTFT/p95, and operating-hours inputs.
 - **v3.1** — Added SI pre-sales sizing with economy, recommended, and scalable infrastructure plans plus CPU, RAM, NVMe, network, power, Excel, and PoC outputs.
 - **v3.0** — Unified Korean pricing, guided recommendations, custom models, parts fit, runtime guidance, and measurement contributions into lowest-cost, balanced, and fastest purchase decisions.
 - **v2.8** — Added browser-based measurement drafts with contributor/environment records and outlier checks.

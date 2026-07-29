@@ -1114,7 +1114,7 @@ describe("v2.2 user build calculator", () => {
   });
 });
 
-describe("v3.1 purchase decision studio", () => {
+describe("v3.5 purchase decision studio", () => {
   test("renders seven decision tools and source-linked Korean prices", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);
@@ -1153,5 +1153,18 @@ describe("v3.1 purchase decision studio", () => {
     assert.ok(platform.document.querySelector("[data-si-export]"));
     platform.eval(`document.querySelector('[data-si-preset="private-assistant"]').click()`);
     assert.equal(platform.document.querySelector("#siConcurrency").value, "20");
+  });
+
+  test("captures detailed SLA, BOM, TCO, confidence, and measured PoC fields", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=en&studio=consulting", {}, { platformV2: true });
+    ["siIndustry", "siContact", "siQps", "siMaxInputTokens", "siTtftP95", "siLatencyP95", "siOperatingHours"].forEach((id) => assert.ok(platform.document.querySelector(`#${id}`)));
+    assert.equal(platform.document.querySelectorAll(".si-topology-row").length, 3);
+    assert.ok(platform.document.querySelector(".si-bom-grid"));
+    assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /3-year TCO|Evidence confidence|PoC required/);
+    const ttft = platform.document.querySelector("#siMeasuredTtft");
+    ttft.value = "1.5";
+    ttft.dispatchEvent(new platform.Event("change", { bubbles: true }));
+    assert.match(platform.document.querySelector(".si-poc-verdict").textContent, /adjustment|required|passed/i);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 });

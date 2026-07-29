@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>내 GPU에서 실행할 수 있는 LLM·임베딩·리랭커·OCR·이미지·비디오 생성 모델을<br />VRAM, 속도, 품질, 라이선스 기준으로 비교합니다.</strong>
+  <strong>모델·트래픽·응답 목표를 GPU·CPU·RAM·스토리지·네트워크 구성안으로 변환하는<br />오픈소스 AI 인프라 사전 산정·견적 상담 도구</strong>
 </p>
 
 <p align="center">
@@ -15,17 +15,33 @@
 
 <p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 바로 사용</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko&amp;studio=consulting"><strong>SI 상담 모드</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=ko">AI 스택 배치</a>
   · <a href="./README.en.md">English</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">GPU 추가 요청</a>
 </p>
 
-![AI Hardware Fit 모델 탐색기](./docs/model-finder-ko.png)
+![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
+
+## 10초 요약
+
+- **개발자·개인 사용자**: 내 GPU에서 실행할 수 있는 LLM·VLM·이미지·영상 모델을 찾습니다.
+- **SI·MSP·서버 업체**: 고객의 모델·QPS·동시 요청·p95·가용성을 경제형·권장형·확장형 인프라 3안으로 변환합니다.
+- **산출물**: 서버별 GPU·CPU·RAM·NVMe·NIC·전력·TCO, 모델 배치, 신뢰도, PoC 체크리스트, Excel·PDF·배포 초안.
+
+> 이 프로젝트는 정확한 자동 견적이나 성능 보장을 제공하지 않습니다. 사전 산정·비교 검토·PoC 전 가설 수립을 지원하며 실제 구축 전 검증이 필요합니다.
+
+⭐ 업무에 유용했다면 저장소에 Star를 눌러주시고, 실제 Pre-sales 사례에서 빠진 조건은 Issue로 알려주세요.
 
 ## 버전별 한 줄 업데이트
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v3.5** — 상세 SLA 입력, 서버별 배치·장애 여유, PCIe·NIC·UPS·냉각 BOM, TCO·제안 산출물과 실측 PoC 판정을 완성했습니다.
+- **v3.4** — 편집형 Excel 견적서, 도입비·전력비·3년 TCO, PDF 제안 요약과 Docker Compose 초안을 추가했습니다.
+- **v3.3** — PCIe·NVLink/NVSwitch·NIC·스토리지·UPS·냉각·백업·모니터링 BOM을 추가했습니다.
+- **v3.2** — 경제형·권장형·확장형의 서버별 GPU 구성, 모델 배치와 장애 시 잔여 처리량을 추가했습니다.
+- **v3.1.1** — 고객 업종·담당자·반출 정책·QPS·최대 토큰·TTFT/p95·운영시간 입력을 추가했습니다.
 - **v3.1** — SI 상담 요구를 경제형·권장형·확장형 인프라 3안으로 산정하고 CPU·RAM·NVMe·네트워크·전력·Excel·PoC 산출물을 추가했습니다.
 - **v3.0** — 최저 비용·균형·최고 성능 3개 결과와 국내 시세·질문형 추천·직접 모델·부품 호환·런타임·실측 제보를 하나의 구매 결정 흐름으로 통합했습니다.
 - **v2.8** — 브라우저 실측 제보, 환경·기여자 기록, 동일 조건 비교와 이상치 검사를 추가했습니다.
