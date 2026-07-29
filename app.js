@@ -1248,6 +1248,11 @@ function setUiLanguage(language) {
   renderPlacementPrimarySelect();
   renderPlacementSelectedChips();
   renderPlacementWorkspaceUi();
+  if (hasPrimaryGpuSelection && $("hardwareCapabilitySummary")) {
+    const languageHardware = getHardware();
+    const languageEstimates = getActiveModels().map((model) => estimateAnyModel(model, languageHardware));
+    renderHardwareCapabilities(languageHardware, languageEstimates);
+  }
 }
 
 function restoreUiLanguage() {
@@ -6488,7 +6493,7 @@ function renderGpuRuntimeFacts(hardware) {
   target.innerHTML = facts.map((fact) => `<span>${escapeHtml(fact)}</span>`).join("");
 }
 
-function renderHardwareCapabilities(hardware, activeEstimates) {
+function renderHardwareCapabilitiesLegacy(hardware, activeEstimates) {
   const target = $("hardwareCapabilitySummary");
   if (!target) return;
   const runnable = activeEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
@@ -6506,6 +6511,58 @@ function renderHardwareCapabilities(hardware, activeEstimates) {
   target.hidden = false;
   target.innerHTML = `
     <strong>이 GPU로 할 수 있는 작업</strong>
+    <div class="hardware-capability-grid">
+      ${rows.map(([label, value, note]) => `
+        <div class="hardware-capability-card">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <small>${escapeHtml(note)}</small>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+// Keep capability copy language-native instead of relying on the generic DOM
+// replacement pass, because values combine live counts with translated suffixes.
+function renderHardwareCapabilities(hardware, activeEstimates) {
+  const target = $("hardwareCapabilitySummary");
+  if (!target) return;
+  const runnable = activeEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
+  const largest = [...runnable].sort((a, b) => (b.model.params || 0) - (a.model.params || 0))[0];
+  const vram = hardware.availableVram;
+  const en = uiLanguage === "en";
+  const imageStatus = vram >= 24
+    ? (en ? "FLUX-class capable" : "FLUX급 가능")
+    : vram >= 10
+      ? (en ? "SDXL-class capable" : "SDXL급 가능")
+      : (en ? "Lightweight models or offloading" : "경량 모델·오프로딩 권장");
+  const videoStatus = vram >= 24
+    ? (en ? "5B-class video capable" : "5B급 비디오 가능")
+    : vram >= 10
+      ? (en ? "1–2B low-resolution video" : "1~2B급 저해상도")
+      : (en ? "CPU offloading required" : "CPU 오프로딩 필요");
+  const finetuneStatus = vram >= 48
+    ? (en ? "14B LoRA candidate" : "14B LoRA 후보")
+    : vram >= 24
+      ? (en ? "7B LoRA candidate" : "7B LoRA 후보")
+      : vram >= 12
+        ? (en ? "3B LoRA candidate" : "3B LoRA 후보")
+        : (en ? "Ultra-light LoRA" : "초경량 LoRA");
+  const rows = en ? [
+    ["Current model type", `${runnable.length} runnable`, largest ? `Up to ${largest.model.params}B candidate` : "Relax settings"],
+    ["Image generation", imageStatus, "At 1024px · batch 1"],
+    ["Video generation", videoStatus, "At 480p · 81 frames"],
+    ["Lightweight fine-tuning", finetuneStatus, "QLoRA reference"],
+  ] : [
+    ["현재 모델 종류", `${runnable.length}개 실행 가능`, largest ? `최대 ${largest.model.params}B급 후보` : "설정 완화 필요"],
+    ["이미지 생성", imageStatus, "1024px·배치 1 기준"],
+    ["비디오 생성", videoStatus, "480p·81프레임 기준"],
+    ["경량 튜닝", finetuneStatus, "QLoRA 기준 참고"],
+  ];
+  target.hidden = false;
+  target.innerHTML = `
+    <strong>${en ? "What this GPU can do" : "이 GPU로 할 수 있는 작업"}</strong>
     <div class="hardware-capability-grid">
       ${rows.map(([label, value, note]) => `
         <div class="hardware-capability-card">

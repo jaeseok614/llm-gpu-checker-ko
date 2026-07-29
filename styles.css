@@ -481,7 +481,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .hardware-capability-summary {
   margin-top: 14px;
-  padding-top: 14px;
+  padding: 18px 22px 0;
   border-top: 1px solid var(--line);
 }
 

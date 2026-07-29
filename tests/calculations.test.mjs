@@ -862,6 +862,7 @@ describe("v1.3 GPU platform upgrades", () => {
     const fresh = loadApp();
     const invalid = fresh.eval(`GPU_PRESETS.filter((gpu) => !gpu.vendor || !gpu.architecture || !gpu.memoryType || !gpu.formFactor || !Array.isArray(gpu.runtimes) || !Array.isArray(gpu.aliases))`);
     assert.deepEqual([...invalid], []);
+    assert.equal(fresh.eval(`["rtx5090laptop-24", "rx9070-16", "arcb580-12"].every((id) => GPU_PRESETS.some((gpu) => gpu.id === id))`), true);
   });
 
   test("scales laptop compute by selected TGP and preserves it in shared URLs", () => {
@@ -922,5 +923,6 @@ describe("v1.3 GPU platform upgrades", () => {
     assert.equal(fresh.document.getElementById("gpuComparisonResult").getAttribute("aria-live"), "polite");
     fresh.eval(`setUiLanguage("en"); renderGpuInsights(getHardware())`);
     assert.doesNotMatch(fresh.document.getElementById("gpuInsightsPanel").textContent, /[가-힣]/);
+    assert.doesNotMatch(fresh.document.getElementById("hardwareCapabilitySummary").textContent, /[가-힣]/);
   });
 });

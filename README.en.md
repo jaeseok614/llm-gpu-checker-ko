@@ -24,7 +24,7 @@
 
 ## Highlights
 
-- 94 desktop, data-center, Apple Silicon, and laptop GPU presets
+- 102 desktop, data-center, Apple Silicon, and laptop GPU presets
 - Generative LLM, embedding, reranker, OCR, document/general VLM, image generation, and video generation workloads
 - GPU details and three-way comparison across VRAM, bandwidth, runnable models, and estimated speed
 - Laptop GPU TGP input with power-limit performance scaling
