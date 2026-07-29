@@ -1,6 +1,6 @@
 {
   "name": "ai-hardware-fit",
-  "version": "3.7.0",
+  "version": "4.2.0",
   "private": false,
   "description": "Bilingual static web app for estimating LLM, retrieval, vision, image, video, STT, and TTS workloads on GPUs.",
   "type": "module",

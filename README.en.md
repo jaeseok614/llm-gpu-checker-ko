@@ -37,6 +37,11 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v4.2** — Compares 1/3/5-year TCO and utilization-based break-even for on-premises, cloud, and hybrid options.
+- **v4.1** — Adds vLLM, llama.cpp, Ollama, and NIM benchmark commands, result JSON import, calibration factors, and PoC verdicts.
+- **v4.0** — Adds customer and technical proposal modes, generated architecture and placement diagrams, editable Excel, and print-ready PDF outputs.
+- **v3.9** — Adds customer/project estimate versions, change comparison, local save/clone, and JSON export/import.
+- **v3.8** — Adds real-time SLA sizing for RPS, concurrency, TTFT, ITL, queueing, batching, replicas, and the STT→LLM→TTS→lip-sync pipeline.
 - **v3.7** — Added MuseTalk, LivePortrait, SadTalker, and Wav2Lip as a dedicated avatar/lip-sync catalog connected to model search, GPU Advisor, and AI stack placement.
 - **v3.6** — Added STT/TTS to AI stack placement and an avatar-chat preset spanning speech input, LLM response, speech synthesis, and avatar video.
 - **v3.5** — Completed detailed SLA inputs, per-server placement and failover capacity, PCIe/NIC/UPS/cooling BOM, TCO outputs, and measured PoC validation.
@@ -127,3 +132,5 @@ npm run check
 - [Changelog](./CHANGELOG.md)
 
 Repository code is distributed under the [MIT License](./LICENSE); each listed AI model retains its own license.
+- [Editable AI infrastructure estimate example](./docs/examples/si-sizing-example.xlsx)
+- [AI infrastructure proposal PDF example](./docs/examples/ai-infra-proposal-example.pdf)

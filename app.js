@@ -126,10 +126,23 @@ const GPU_MARKET_REFERENCE = {
 
 function gpuMarketReference(gpu) {
   const [price, power] = GPU_MARKET_REFERENCE[gpu.id] || [];
+  const memory = Number(gpu.gpuUsableMemoryGb || gpu.vram || 8);
+  const inferredPrice = Math.round(Math.max(
+    gpu.formFactor === "datacenter" ? 2500 : 149,
+    memory * (gpu.formFactor === "datacenter" ? 185 : 52) + Number(gpu.bandwidth || 0) * 0.28,
+  ) / 10) * 10;
   return {
-    priceUsd: gpu.msrpUsd || price || 0,
+    priceUsd: gpu.msrpUsd || price || inferredPrice,
+    priceKind: gpu.msrpUsd || price ? "launch-reference" : "calculated-reference",
     powerW: gpu.tbpW || gpu.tgpReferenceW || power || Math.round(Math.max(75, gpu.bandwidth * 0.38)),
   };
+}
+
+function gpuEvidenceLabel(gpu, en = uiLanguage === "en") {
+  if (gpu.sourceUrl && gpu.specStatus === "sourced") return en ? "Official/source-linked spec" : "공식·출처 연결 사양";
+  if (gpu.sourceUrl) return en ? "Catalog source · review date recorded" : "카탈로그 출처·검증일 기록";
+  if (gpu.verifiedAt) return en ? `Catalog estimate · checked ${gpu.verifiedAt}` : `카탈로그 추정·${gpu.verifiedAt} 확인`;
+  return en ? "Calculated estimate · source needed" : "계산 추정·출처 보강 필요";
 }
 
 function getLicensePolicy(modelOrLicense) {
@@ -6892,9 +6905,9 @@ function renderGpuAdvisor() {
           ].filter(Boolean).map((text) => `<span>${escapeHtml(text)}</span>`).join("")}</p>` : ""}
           <dl>
             <div><dt>${en ? "Estimated speed" : "예상 속도"}</dt><dd>${escapeHtml(formatThroughput(item.speed, item.estimate?.unitLabel || "tok/s"))}</dd></div>
-            <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd>${item.market.priceUsd ? `$${item.market.priceUsd.toLocaleString("en-US")}` : (en ? "Enter market price" : "시세 입력 필요")}</dd></div>
+            <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd>$${item.market.priceUsd.toLocaleString("en-US")} · ${item.market.priceKind === "calculated-reference" ? (en ? "calculated" : "계산 참고") : (en ? "launch/MSRP" : "출시가·MSRP")}</dd></div>
             <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>$${item.monthlyEnergy.toFixed(2)}</dd></div>
-            <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${item.preset.specStatus === "sourced" ? (en ? "Official source" : "공식 출처") : (en ? "Estimated spec" : "추정 사양")}</dd></div>
+            <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${escapeHtml(gpuEvidenceLabel(item.preset, en))}</dd></div>
             <div><dt>${en ? "vs current GPU" : "현재 GPU 대비"}</dt><dd>${currentSpeed ? `${(item.speed / currentSpeed).toFixed(2)}×` : "—"}</dd></div>
             <div><dt>${en ? "Speed / $1K" : "가격 대비 속도"}</dt><dd>${(item.speed / Math.max(0.2, (item.market.priceUsd || currentPrice || budget) / 1000)).toFixed(1)}</dd></div>
           </dl>

@@ -110,6 +110,28 @@ let studioState = {
   siMeasuredSpeed: 0,
   siMeasuredErrorRate: 0,
   siMeasuredHours: 0,
+  siCompanyName: "AI Infra Partner",
+  siCustomerName: "",
+  siEstimateVersion: 1,
+  siStreaming: true,
+  siMaxBatch: 8,
+  siMinReplicas: 1,
+  siMaxReplicas: 8,
+  siAutoscale: true,
+  siItlP95: 0.08,
+  siFacilityKrwMonth: 350000,
+  siSupportPct: 8,
+  siUtilizationPct: 50,
+  siCloudHourlyUsd: 3.5,
+  siReportMode: "customer",
+  siBenchmarkRuntime: "vllm",
+  siBenchmarkPrompts: "512,4096,8192",
+  siBenchmarkOutputs: "128,512",
+  siBenchmarkConcurrency: "1,4,8,16",
+  siMeasuredItl: 0,
+  siMeasuredLatencyP95: 0,
+  siBenchmarkSamples: 0,
+  siBenchmarkOutliers: 0,
 };
 
 function studioCopy(key) {
@@ -117,11 +139,29 @@ function studioCopy(key) {
 }
 
 function studioMarket(gpuId) {
-  return KOREAN_GPU_MARKET.find((item) => item.gpuId === gpuId) || null;
+  const recorded = KOREAN_GPU_MARKET.find((item) => item.gpuId === gpuId);
+  if (recorded) return { ...recorded, priceKind: "market", estimated: false };
+  const gpu = GPU_PRESETS.find((item) => item.id === gpuId);
+  if (!gpu) return null;
+  const reference = gpuMarketReference(gpu);
+  const newKrw = Math.round(reference.priceUsd * 1400 / 10000) * 10000;
+  return {
+    gpuId,
+    newKrw,
+    usedKrw: Math.round(newKrw * 0.68 / 10000) * 10000,
+    lowestKrw: newKrw,
+    updatedAt: gpu.verifiedAt || DATA_UPDATED_AT,
+    sourceName: reference.priceKind === "launch-reference" ? "출시가·MSRP 환산 참고" : "VRAM·등급 기반 계산 참고",
+    sourceUrl: gpu.sourceUrl || "",
+    usedPriceMethod: "계산 신품 참고가의 68% 적용",
+    priceKind: reference.priceKind,
+    estimated: true,
+  };
 }
 
 function studioMoney(value) {
-  return `${Math.round(Number(value) || 0).toLocaleString("ko-KR")}원`;
+  const amount = Math.round(Number(value) || 0).toLocaleString(uiLanguage === "en" ? "en-US" : "ko-KR");
+  return uiLanguage === "en" ? `KRW ${amount}` : `${amount}원`;
 }
 
 function studioWorkloadModels() {
@@ -167,7 +207,7 @@ function studioGpuScore(gpu, model) {
 function studioRecommendationSet() {
   const model = studioSelectedModel();
   let rows = GPU_PRESETS
-    .filter((gpu) => gpu.id !== "custom" && studioMarket(gpu.id))
+    .filter((gpu) => gpu.id !== "custom")
     .map((gpu) => studioGpuScore(gpu, model))
     .filter((row) => row.fit && row.price <= studioState.budgetKrw)
     .filter((row) => !studioState.targetSpeed || row.speed >= studioState.targetSpeed)
@@ -241,14 +281,14 @@ function renderStudioRecommend() {
 function renderStudioMarket() {
   const en = uiLanguage === "en";
   const today = new Date("2026-07-30T00:00:00Z");
-  const rows = KOREAN_GPU_MARKET.map((market) => {
-    const gpu = GPU_PRESETS.find((item) => item.id === market.gpuId);
+  const rows = GPU_PRESETS.filter((gpu) => gpu.id !== "custom").map((gpu) => {
+    const market = studioMarket(gpu.id);
     const ageDays = Math.floor((today - new Date(`${market.updatedAt}T00:00:00Z`)) / 86400000);
     const stale = ageDays > 30;
     const model = studioSelectedModel();
-    const score = gpu ? studioGpuScore(gpu, model) : null;
+    const score = studioGpuScore(gpu, model);
     return { market, gpu, stale, score };
-  }).filter((row) => row.gpu);
+  });
   const valueOrder = [...rows].sort((a, b) => (b.score.speed / b.market.lowestKrw) - (a.score.speed / a.market.lowestKrw));
   const vramOrder = [...rows].sort((a, b) => ((b.gpu.vram || 0) / b.market.lowestKrw) - ((a.gpu.vram || 0) / a.market.lowestKrw));
   return `
@@ -266,7 +306,7 @@ function renderStudioMarket() {
       <td>${market.updatedAt}${stale ? `<span class="studio-stale">${en ? "Stale" : "오래됨"}</span>` : `<span class="studio-fresh">${en ? "Current" : "최신"}</span>`}</td>
       <td>#${valueOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${score.speed ? `${(score.speed / market.lowestKrw * 1000000).toFixed(1)} / ₩1M` : "—"}</small></td>
       <td>#${vramOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${((gpu.vram || 0) / market.lowestKrw * 1000000).toFixed(1)} GB / ₩1M</small></td>
-      <td><a href="${platformEscape(market.sourceUrl)}" target="_blank" rel="noopener noreferrer">${platformEscape(market.sourceName)}</a></td>
+      <td>${market.sourceUrl ? `<a href="${platformEscape(market.sourceUrl)}" target="_blank" rel="noopener noreferrer">${platformEscape(market.sourceName)}</a>` : platformEscape(market.sourceName)}${market.estimated ? `<small>${en ? "Calculated reference · vendor quote required" : "계산 참고가 · 공급사 견적 필요"}</small>` : ""}</td>
     </tr>`).join("")}</tbody></table></div>`;
 }
 
@@ -521,6 +561,123 @@ function calculateSiSizing() {
   return { model, plans };
 }
 
+const SIZING_PROJECTS_KEY = "ai-infra-sizing-projects-v1";
+
+function calculateRealtimeSla(plan) {
+  const replicas = Math.max(1, plan.nodes, Number(studioState.siMinReplicas) || 1);
+  const outputTokens = Math.max(1, Number(studioState.siOutputTokens) || 1);
+  const perReplicaRps = Math.max(0.01, plan.speed / outputTokens);
+  const capacityRps = perReplicaRps * replicas * Math.max(1, Number(studioState.siMaxBatch) || 1);
+  const utilization = Math.max(0, Number(studioState.siQps) || 0) / capacityRps;
+  const serviceSeconds = outputTokens / Math.max(1, plan.speed);
+  const queueP95 = utilization >= 1
+    ? serviceSeconds * (1 + (utilization - 1) * Math.max(1, studioState.siMaxBatch))
+    : serviceSeconds * utilization / Math.max(0.05, 1 - utilization) * 0.35;
+  const itlP95 = Math.max(0.005, 1 / Math.max(1, plan.speed) * 1.25);
+  const ttftP95 = Math.max(0.15, Number(studioState.siTtftP95) || 0) + queueP95;
+  const latencyP95 = ttftP95 + itlP95 * outputTokens;
+  const requiredReplicas = Math.ceil((Number(studioState.siQps) || 0) * (1 + studioState.siGrowthPct / 100) / Math.max(0.01, perReplicaRps * Math.max(1, studioState.siMaxBatch) * 0.72));
+  const stt = 0.42;
+  const llm = ttftP95;
+  const tts = 0.28;
+  const lipsync = 0.18;
+  const avatarFirstResponse = stt + llm + tts + lipsync;
+  const avatarFps = Math.max(8, Math.min(60, 30 / Math.max(0.5, utilization)));
+  return { replicas, capacityRps, utilization, queueP95, itlP95, ttftP95, latencyP95, requiredReplicas, stt, llm, tts, lipsync, avatarFirstResponse, avatarFps, realtime: avatarFps >= 24 && avatarFirstResponse <= studioState.siLatencyP95 };
+}
+
+function calculateTcoComparison(plan) {
+  const utilization = Math.max(0.01, Math.min(1, studioState.siUtilizationPct / 100));
+  const monthlyOnprem = plan.annualEnergyKrw / 12 + studioState.siFacilityKrwMonth + plan.purchaseKrw * (studioState.siMaintenancePct + studioState.siSupportPct) / 1200;
+  const monthlyCloud = studioState.siCloudHourlyUsd * 1400 * plan.gpuCount * Math.min(730, studioState.siOperatingHours * 30) * utilization;
+  const totals = (years, mode) => {
+    if (mode === "onprem") return Math.round(plan.purchaseKrw + monthlyOnprem * 12 * years);
+    if (mode === "cloud") return Math.round(monthlyCloud * 12 * years);
+    return Math.round(plan.purchaseKrw * 0.6 + (monthlyOnprem * 0.6 + monthlyCloud * 0.4) * 12 * years);
+  };
+  const margin = monthlyCloud - monthlyOnprem;
+  return { monthlyOnprem, monthlyCloud, breakEvenMonths: margin > 0 ? plan.purchaseKrw / margin : 0, onprem: [1, 3, 5].map((y) => totals(y, "onprem")), cloud: [1, 3, 5].map((y) => totals(y, "cloud")), hybrid: [1, 3, 5].map((y) => totals(y, "hybrid")) };
+}
+
+function sizingProjects() {
+  try { return JSON.parse(localStorage.getItem(SIZING_PROJECTS_KEY) || "[]"); } catch { return []; }
+}
+
+function sizingSnapshot() {
+  const { model, plans } = calculateSiSizing();
+  return { schemaVersion: 1, savedAt: new Date().toISOString(), state: { ...studioState }, model: model.name, plans: plans.map((p) => ({ id: p.id, gpu: p.gpu.name, gpuCount: p.gpuCount, nodes: p.nodes, tco: p.threeYearTcoKrw })) };
+}
+
+function saveSizingProject(clone = false) {
+  const projects = sizingProjects();
+  const same = projects.filter((p) => p.projectName === studioState.siProjectName);
+  const version = clone ? 1 : Math.max(0, ...same.map((p) => Number(p.version) || 0)) + 1;
+  const snapshot = sizingSnapshot();
+  const row = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, projectName: clone ? `${studioState.siProjectName} 복사본` : studioState.siProjectName, customerName: studioState.siCustomerName, version, ...snapshot };
+  localStorage.setItem(SIZING_PROJECTS_KEY, JSON.stringify([row, ...projects].slice(0, 30)));
+  studioState.siEstimateVersion = version;
+  renderDecisionStudio();
+}
+
+function downloadJson(filename, value) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function benchmarkCommands(model, plan) {
+  const repo = safeModelRepo(model);
+  const prompt = studioState.siBenchmarkPrompts.split(",")[0].trim() || "512";
+  const output = studioState.siBenchmarkOutputs.split(",")[0].trim() || "128";
+  const concurrency = studioState.siBenchmarkConcurrency.split(",")[0].trim() || "1";
+  return {
+    vllm: `vllm bench serve --model ${repo} --input-len ${prompt} --output-len ${output} --max-concurrency ${concurrency}`,
+    llamacpp: `llama-bench -m model.gguf -p ${prompt} -n ${output} -ngl 999`,
+    ollama: `OLLAMA_NUM_PARALLEL=${concurrency} ollama run ${repo}`,
+    nim: `genai-perf profile -m ${repo} --synthetic-input-tokens-mean ${prompt} --output-tokens-mean ${output} --concurrency ${concurrency}`,
+  };
+}
+
+function renderV38V42Modules(model, plans) {
+  const en = uiLanguage === "en";
+  const recommended = plans.find((p) => p.id === "recommended") || plans[0];
+  const sla = calculateRealtimeSla(recommended);
+  const tco = calculateTcoComparison(recommended);
+  const projects = sizingProjects();
+  const commands = benchmarkCommands(model, recommended);
+  const recent = projects.filter((p) => p.projectName === studioState.siProjectName).slice(0, 3);
+  const changed = recent.length > 1 ? Object.keys(recent[0].state || {}).filter((key) => JSON.stringify(recent[0].state[key]) !== JSON.stringify(recent[1].state?.[key])).slice(0, 8) : [];
+  const evidence = gpuEvidenceLabel(recommended.gpu, en);
+  return `
+    <section class="si-version-section"><div class="si-version-head"><div><span class="section-kicker">v3.8</span><h3>${en ? "Real-time service SLA" : "실시간 서비스 SLA"}</h3></div><strong class="${sla.utilization > .8 ? "is-risk" : "is-good"}">${(sla.utilization * 100).toFixed(1)}% ${en ? "load" : "부하"}</strong></div>
+      <div class="studio-question-grid si-compact-grid"><label><span>${en ? "Max batch" : "최대 배치"}</span><input id="siMaxBatch" type="number" min="1" value="${studioState.siMaxBatch}"></label><label><span>${en ? "Min replicas" : "최소 복제본"}</span><input id="siMinReplicas" type="number" min="1" value="${studioState.siMinReplicas}"></label><label><span>${en ? "Max replicas" : "최대 복제본"}</span><input id="siMaxReplicas" type="number" min="1" value="${studioState.siMaxReplicas}"></label><label class="studio-check"><input id="siStreaming" type="checkbox" ${studioState.siStreaming ? "checked" : ""}><span>${en ? "Streaming response" : "스트리밍 응답"}</span></label><label class="studio-check"><input id="siAutoscale" type="checkbox" ${studioState.siAutoscale ? "checked" : ""}><span>${en ? "Autoscaling" : "자동 확장"}</span></label></div>
+      <div class="si-metric-grid"><span>TTFT p95<strong>${sla.ttftP95.toFixed(2)}s</strong></span><span>ITL p95<strong>${(sla.itlP95 * 1000).toFixed(0)}ms</strong></span><span>${en ? "Queue p95" : "큐 대기 p95"}<strong>${sla.queueP95.toFixed(2)}s</strong></span><span>${en ? "Total p95" : "전체 p95"}<strong>${sla.latencyP95.toFixed(2)}s</strong></span><span>RPS<strong>${studioState.siQps} / ${sla.capacityRps.toFixed(2)}</strong></span><span>${en ? "Required replicas" : "필요 복제본"}<strong>${sla.requiredReplicas}</strong></span></div>
+      <div class="si-avatar-latency"><span>STT ${sla.stt.toFixed(2)}s</span><b>→</b><span>LLM ${sla.llm.toFixed(2)}s</span><b>→</b><span>TTS ${sla.tts.toFixed(2)}s</span><b>→</b><span>${en ? "Lip-sync" : "립싱크"} ${sla.lipsync.toFixed(2)}s</span><strong>${en ? "First response" : "첫 응답"} ${sla.avatarFirstResponse.toFixed(2)}s · ${sla.avatarFps.toFixed(0)} FPS · ${sla.realtime ? (en ? "Real-time feasible" : "실시간 가능") : (en ? "Adjustment required" : "조정 필요")}</strong></div>
+    </section>
+    <section class="si-version-section"><div class="si-version-head"><div><span class="section-kicker">v3.9</span><h3>${en ? "Project and estimate history" : "프로젝트·견적 이력"}</h3></div><span>${en ? "Current version" : "현재 버전"} v${studioState.siEstimateVersion}</span></div>
+      <div class="si-project-actions"><button type="button" class="primary-button" data-si-save>${en ? "Save new version" : "새 버전 저장"}</button><button type="button" class="ghost-button" data-si-clone>${en ? "Clone estimate" : "견적 복제"}</button><button type="button" class="ghost-button" data-si-json-export>JSON ${en ? "export" : "내보내기"}</button><button type="button" class="ghost-button" data-si-json-import>JSON ${en ? "import" : "가져오기"}</button><input id="siJsonFile" type="file" aria-label="${en ? "Import project JSON" : "프로젝트 JSON 가져오기"}" accept=".json,application/json" hidden></div>
+      ${changed.length ? `<p class="si-change-summary">${en ? "Changes since prior version" : "직전 버전 대비 변경"}: ${changed.map(platformEscape).join(", ")}</p>` : ""}
+      <div class="si-project-list">${projects.slice(0, 6).map((p) => `<button type="button" data-si-load="${p.id}"><strong>${platformEscape(p.projectName)}</strong><span>v${p.version} · ${new Date(p.savedAt).toLocaleDateString(en ? "en-US" : "ko-KR")}</span></button>`).join("") || `<p>${en ? "No saved local projects." : "브라우저에 저장된 프로젝트가 없습니다."}</p>`}</div>
+    </section>
+    <section class="si-version-section"><div class="si-version-head"><div><span class="section-kicker">v4.0</span><h3>${en ? "Proposal package" : "제안서 품질 완성"}</h3></div><div class="si-mode-switch"><button type="button" data-si-report="customer" class="${studioState.siReportMode === "customer" ? "is-active" : ""}">${en ? "Customer summary" : "고객 요약본"}</button><button type="button" data-si-report="technical" class="${studioState.siReportMode === "technical" ? "is-active" : ""}">${en ? "Technical review" : "기술 검토본"}</button></div></div>
+      <div class="si-architecture" role="img" aria-label="${en ? "Generated infrastructure architecture" : "자동 생성 인프라 구성도"}"><span>${platformEscape(studioState.siCustomerName || (en ? "Users" : "사용자"))}</span><b>→</b><span>Load Balancer</span><b>→</b><span>${recommended.nodes}× Server<br>${recommended.gpuPerServer} GPU/node</span><b>→</b><span>Vector DB · NVMe</span><b>→</b><span>Monitoring · Backup</span></div>
+      <p>${en ? "Selected" : "선정 근거"}: ${platformEscape(recommended.gpu.name)} · ${recommended.requiredGb.toFixed(1)}GB VRAM · ${recommended.capacity} ${en ? "concurrent responses" : "동시 응답"}. ${en ? "Alternatives are excluded when SLA headroom, failover, or five-year cost is weaker." : "SLA 여유·장애 대응·5년 비용이 더 불리한 대안은 제외합니다."}</p>
+    </section>
+    <section class="si-version-section"><div class="si-version-head"><div><span class="section-kicker">v4.1</span><h3>${en ? "Benchmark runner" : "실제 벤치마크 실행 도우미"}</h3></div><span>n=${studioState.siBenchmarkSamples} · ${en ? "outliers" : "이상치"} ${studioState.siBenchmarkOutliers}</span></div>
+      <div class="studio-question-grid si-compact-grid"><label><span>${en ? "Runtime" : "런타임"}</span><select id="siBenchmarkRuntime">${Object.keys(commands).map((r) => `<option value="${r}" ${studioState.siBenchmarkRuntime === r ? "selected" : ""}>${r}</option>`).join("")}</select></label><label><span>${en ? "Prompt lengths" : "입력 길이"}</span><input id="siBenchmarkPrompts" value="${platformEscape(studioState.siBenchmarkPrompts)}"></label><label><span>${en ? "Output lengths" : "출력 길이"}</span><input id="siBenchmarkOutputs" value="${platformEscape(studioState.siBenchmarkOutputs)}"></label><label><span>${en ? "Concurrency sweep" : "동시성 단계"}</span><input id="siBenchmarkConcurrency" value="${platformEscape(studioState.siBenchmarkConcurrency)}"></label></div>
+      <pre class="si-command"><code>${platformEscape(commands[studioState.siBenchmarkRuntime] || commands.vllm)}</code></pre><div class="si-project-actions"><button type="button" class="ghost-button" data-si-copy-command>${en ? "Copy command" : "명령 복사"}</button><button type="button" class="ghost-button" data-si-benchmark-plan>${en ? "Export test plan" : "테스트 계획 내보내기"}</button><button type="button" class="ghost-button" data-si-benchmark-import>${en ? "Import result JSON" : "결과 JSON 업로드"}</button><input id="siBenchmarkFile" type="file" aria-label="${en ? "Import benchmark result JSON" : "벤치마크 결과 JSON 가져오기"}" accept=".json,application/json" hidden></div>
+      <p class="si-poc-verdict">${studioState.siBenchmarkSamples ? `${en ? "Calibration factor" : "보정계수"} ${(studioState.siMeasuredSpeed / Math.max(1, recommended.speed)).toFixed(2)} · ${studioState.siMeasuredTtft <= studioState.siTtftP95 && studioState.siMeasuredErrorRate <= 1 ? (en ? "PoC passed" : "PoC 합격") : (en ? "Adjustment required" : "조정 필요")}` : (en ? "Run performance and load tests separately, then upload the result JSON." : "성능 테스트와 부하 테스트를 분리 실행한 뒤 결과 JSON을 업로드하세요.")}</p>
+    </section>
+    <section class="si-version-section"><div class="si-version-head"><div><span class="section-kicker">v4.2</span><h3>${en ? "On-premises vs cloud" : "온프레미스·클라우드 비교"}</h3></div><span>${en ? "Break-even" : "손익분기"} ${tco.breakEvenMonths ? `${tco.breakEvenMonths.toFixed(1)} ${en ? "months" : "개월"}` : (en ? "not reached" : "미도달")}</span></div>
+      <div class="studio-question-grid si-compact-grid"><label><span>${en ? "Utilization (%)" : "사용률 (%)"}</span><input id="siUtilizationPct" type="number" min="1" max="100" value="${studioState.siUtilizationPct}"></label><label><span>${en ? "Cloud GPU (USD/hour)" : "클라우드 GPU (USD/시간)"}</span><input id="siCloudHourlyUsd" type="number" min="0" step="0.1" value="${studioState.siCloudHourlyUsd}"></label><label><span>${en ? "Facility (KRW/month)" : "상면비 (원/월)"}</span><input id="siFacilityKrwMonth" type="number" min="0" value="${studioState.siFacilityKrwMonth}"></label><label><span>${en ? "Support (%)" : "지원 비용 (%)"}</span><input id="siSupportPct" type="number" min="0" value="${studioState.siSupportPct}"></label></div>
+      <div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>${en ? "Option" : "구성"}</th><th>1${en ? "y" : "년"}</th><th>3${en ? "y" : "년"}</th><th>5${en ? "y" : "년"}</th></tr></thead><tbody>${[["온프레미스", tco.onprem], ["클라우드", tco.cloud], ["혼합", tco.hybrid]].map(([name, values]) => `<tr><td>${en ? ({ 온프레미스: "On-premises", 클라우드: "Cloud", 혼합: "Hybrid" }[name]) : name}</td>${values.map((v) => `<td>${studioMoney(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    </section>
+    <section class="si-version-section si-evidence-panel"><div class="si-version-head"><div><span class="section-kicker">DATA CONFIDENCE</span><h3>${en ? "Evidence traceability" : "데이터 근거 추적"}</h3></div></div><div class="si-confidence-list"><span>${en ? "GPU specification" : "GPU 사양"}<strong>${platformEscape(evidence)}</strong><small>${recommended.gpu.sourceUrl ? (en ? "Source linked" : "출처 연결") : (en ? "Source contribution needed" : "출처 보강 필요")}</small></span><span>${en ? "Benchmark" : "벤치마크"}<strong>${recommended.sampleCount ? (en ? "External/community measured" : "외부·커뮤니티 실측") : (en ? "Calculated estimate" : "계산 추정")}</strong><small>n=${recommended.sampleCount}</small></span><span>${en ? "Estimated error" : "예상 오차"}<strong>±${recommended.sampleCount >= 3 ? 15 : recommended.sampleCount ? 25 : 40}%</strong><small>${en ? "Validate with PoC" : "PoC로 검증 필요"}</small></span><span>${en ? "Last verified" : "마지막 검증일"}<strong>${recommended.gpu.verifiedAt || DATA_UPDATED_AT}</strong><small>${en ? "Model and runtime changes require recheck" : "모델·런타임 변경 시 재검증"}</small></span></div></section>`;
+}
+
 function renderStudioConsulting() {
   const en = uiLanguage === "en";
   const { model, plans } = calculateSiSizing();
@@ -535,6 +692,8 @@ function renderStudioConsulting() {
       <div class="si-presets">${Object.entries(SI_SCENARIOS).map(([id, row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div>
     </div>
     <div class="studio-question-grid si-question-grid">
+      <label><span>${en ? "Proposal company" : "제안 회사"}</span><input id="siCompanyName" value="${platformEscape(studioState.siCompanyName)}"></label>
+      <label><span>${en ? "Customer" : "고객사"}</span><input id="siCustomerName" value="${platformEscape(studioState.siCustomerName)}"></label>
       <label class="studio-wide"><span>${en ? "Project name" : "프로젝트명"}</span><input id="siProjectName" value="${platformEscape(projectValue)}"></label>
       <label class="studio-wide"><span>${en ? "Business purpose" : "구축 목적"}</span><input id="siPurpose" value="${platformEscape(purposeValue)}"></label>
       <label><span>${en ? "Customer industry" : "고객 업종"}</span><input id="siIndustry" value="${platformEscape(studioState.siIndustry)}"></label>
@@ -609,6 +768,7 @@ function renderStudioConsulting() {
       <div class="studio-question-grid"><label><span>TTFT p95 (sec)</span><input id="siMeasuredTtft" type="number" min="0" step="0.1" value="${studioState.siMeasuredTtft}"></label><label><span>${en ? "Measured tok/s" : "실측 tok/s"}</span><input id="siMeasuredSpeed" type="number" min="0" step="0.1" value="${studioState.siMeasuredSpeed}"></label><label><span>${en ? "Error rate (%)" : "오류율 (%)"}</span><input id="siMeasuredErrorRate" type="number" min="0" step="0.01" value="${studioState.siMeasuredErrorRate}"></label><label><span>${en ? "Stability test (hours)" : "안정성 시험 (시간)"}</span><input id="siMeasuredHours" type="number" min="0" value="${studioState.siMeasuredHours}"></label></div>
       <p class="si-poc-verdict">${studioState.siMeasuredTtft > 0 ? (studioState.siMeasuredTtft <= studioState.siTtftP95 && studioState.siMeasuredErrorRate <= 1 && studioState.siMeasuredHours >= 24 ? (en ? "PoC hypothesis passed — review remaining operational checks." : "PoC 가설 통과 — 나머지 운영 검증을 확인하세요.") : (en ? "PoC adjustment required — revise model, replicas, or SLA assumptions." : "PoC 조정 필요 — 모델·복제 수·SLA 가정을 수정하세요.")) : (en ? "Enter measured values after the representative workload test." : "대표 워크로드 시험 후 실측값을 입력하세요.")}</p>
     </div>
+    ${renderV38V42Modules(model, plans)}
     <div class="si-actions"><button type="button" class="primary-button" data-si-export>${en ? "Excel workbook" : "Excel 기초표"}</button>
       <a class="ghost-button" href="./docs/examples/si-sizing-example.xlsx" download>${en ? "Editable .xlsx template" : "편집용 .xlsx 템플릿"}</a>
       <button type="button" class="ghost-button" data-si-print>${en ? "Print / save PDF" : "제안서 인쇄·PDF"}</button>
@@ -729,7 +889,8 @@ function bindDecisionStudio() {
     customBits: ["customBits", Number], customContext: ["customContext", Number], partsCpu: ["cpuId", String],
     partsBoard: ["motherboardId", String], partsPsu: ["psuId", String], partsCase: ["caseId", String],
     partsGpu: ["gpuId", String], partsRam: ["ramGb", Number], runtimeGpu: ["gpuId", String], runtimeOs: ["runtimeOs", String],
-    siProjectName: ["siProjectName", String], siPurpose: ["siPurpose", String], siIndustry: ["siIndustry", String], siContact: ["siContact", String],
+    siCompanyName: ["siCompanyName", String], siCustomerName: ["siCustomerName", String], siProjectName: ["siProjectName", String], siPurpose: ["siPurpose", String], siIndustry: ["siIndustry", String], siContact: ["siContact", String],
+    siModel: ["modelKey", String],
     siDeployment: ["siDeployment", String], siSecurity: ["siSecurity", String], siServiceType: ["siServiceType", String], siTotalUsers: ["siTotalUsers", Number],
     siConcurrency: ["siConcurrency", Number], siQps: ["siQps", Number], siInputTokens: ["siInputTokens", Number], siMaxInputTokens: ["siMaxInputTokens", Number], siOutputTokens: ["siOutputTokens", Number],
     siTtftP95: ["siTtftP95", Number], siTargetSeconds: ["siTargetSeconds", Number], siLatencyP95: ["siLatencyP95", Number], siOperatingHours: ["siOperatingHours", Number], siAvailability: ["siAvailability", String], siGrowthPct: ["siGrowthPct", Number],
@@ -739,10 +900,17 @@ function bindDecisionStudio() {
     siElectricityKrw: ["siElectricityKrw", Number], siMaintenancePct: ["siMaintenancePct", Number],
     siMeasuredTtft: ["siMeasuredTtft", Number], siMeasuredSpeed: ["siMeasuredSpeed", Number],
     siMeasuredErrorRate: ["siMeasuredErrorRate", Number], siMeasuredHours: ["siMeasuredHours", Number],
+    siMaxBatch: ["siMaxBatch", Number], siMinReplicas: ["siMinReplicas", Number], siMaxReplicas: ["siMaxReplicas", Number],
+    siBenchmarkRuntime: ["siBenchmarkRuntime", String], siBenchmarkPrompts: ["siBenchmarkPrompts", String],
+    siBenchmarkOutputs: ["siBenchmarkOutputs", String], siBenchmarkConcurrency: ["siBenchmarkConcurrency", String],
+    siUtilizationPct: ["siUtilizationPct", Number], siCloudHourlyUsd: ["siCloudHourlyUsd", Number],
+    siFacilityKrwMonth: ["siFacilityKrwMonth", Number], siSupportPct: ["siSupportPct", Number],
   };
   Object.entries(fields).forEach(([id, [key, cast]]) => $(id)?.addEventListener("change", (event) => updateStudio(key, cast(event.target.value))));
   $("customVision")?.addEventListener("change", (event) => updateStudio("customVision", event.target.checked));
   $("siDevProd")?.addEventListener("change", (event) => updateStudio("siDevProd", event.target.checked));
+  $("siStreaming")?.addEventListener("change", (event) => updateStudio("siStreaming", event.target.checked));
+  $("siAutoscale")?.addEventListener("change", (event) => updateStudio("siAutoscale", event.target.checked));
   $("siExportAllowed")?.addEventListener("change", (event) => updateStudio("siExportAllowed", event.target.value === "true"));
   document.querySelectorAll("[data-si-preset]").forEach((button) => button.addEventListener("click", () => {
     const preset = SI_SCENARIOS[button.dataset.siPreset];
@@ -760,6 +928,45 @@ function bindDecisionStudio() {
   $("[data-si-export]")?.addEventListener("click", downloadSiWorkbook);
   $("[data-si-print]")?.addEventListener("click", () => window.print());
   $("[data-si-deploy]")?.addEventListener("click", downloadSiDeployment);
+  $("[data-si-save]")?.addEventListener("click", () => saveSizingProject(false));
+  $("[data-si-clone]")?.addEventListener("click", () => saveSizingProject(true));
+  $("[data-si-json-export]")?.addEventListener("click", () => downloadJson("ai-infra-sizing-project.json", sizingSnapshot()));
+  $("[data-si-json-import]")?.addEventListener("click", () => $("siJsonFile")?.click());
+  $("siJsonFile")?.addEventListener("change", async (event) => {
+    try {
+      const parsed = JSON.parse(await event.target.files?.[0]?.text());
+      if (parsed?.state) studioState = { ...studioState, ...parsed.state };
+      syncStudioUrl();
+      renderDecisionStudio();
+    } catch { alert(uiLanguage === "en" ? "Invalid project JSON." : "올바른 프로젝트 JSON이 아닙니다."); }
+  });
+  document.querySelectorAll("[data-si-load]").forEach((button) => button.addEventListener("click", () => {
+    const row = sizingProjects().find((item) => item.id === button.dataset.siLoad);
+    if (row?.state) studioState = { ...studioState, ...row.state, siEstimateVersion: row.version };
+    syncStudioUrl();
+    renderDecisionStudio();
+  }));
+  document.querySelectorAll("[data-si-report]").forEach((button) => button.addEventListener("click", () => updateStudio("siReportMode", button.dataset.siReport)));
+  $("[data-si-copy-command]")?.addEventListener("click", () => copyTextToClipboard($(".si-command code")?.textContent || "", $("[data-si-copy-command]")));
+  $("[data-si-benchmark-plan]")?.addEventListener("click", () => {
+    const { model, plans } = calculateSiSizing();
+    downloadJson("benchmark-plan.json", { model: model.name, runtime: studioState.siBenchmarkRuntime, prompts: studioState.siBenchmarkPrompts, outputs: studioState.siBenchmarkOutputs, concurrency: studioState.siBenchmarkConcurrency, command: benchmarkCommands(model, plans[1])[studioState.siBenchmarkRuntime] });
+  });
+  $("[data-si-benchmark-import]")?.addEventListener("click", () => $("siBenchmarkFile")?.click());
+  $("siBenchmarkFile")?.addEventListener("change", async (event) => {
+    try {
+      const result = JSON.parse(await event.target.files?.[0]?.text());
+      studioState.siMeasuredTtft = Number(result.ttft_p95 ?? result.ttftP95 ?? 0);
+      studioState.siMeasuredItl = Number(result.itl_p95 ?? result.itlP95 ?? 0);
+      studioState.siMeasuredLatencyP95 = Number(result.request_latency_p95 ?? result.latencyP95 ?? 0);
+      studioState.siMeasuredSpeed = Number(result.tokens_per_second ?? result.throughput ?? 0);
+      studioState.siMeasuredErrorRate = Number(result.error_rate ?? result.errorRate ?? 0);
+      studioState.siBenchmarkSamples = Number(result.sample_count ?? result.sampleCount ?? 1);
+      studioState.siBenchmarkOutliers = Number(result.outliers ?? 0);
+      syncStudioUrl();
+      renderDecisionStudio();
+    } catch { alert(uiLanguage === "en" ? "Invalid benchmark JSON." : "올바른 벤치마크 JSON이 아닙니다."); }
+  });
   document.querySelectorAll("[data-studio-gpu]").forEach((button) => button.addEventListener("click", () => {
     selectPrimaryGpu(button.dataset.studioGpu, { persist: true });
     studioState.gpuId = button.dataset.studioGpu;

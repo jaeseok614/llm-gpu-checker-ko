@@ -6368,3 +6368,35 @@ button:focus-visible {
   font-size: 13px;
   line-height: 1.6;
 }
+.si-version-section {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.si-version-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.si-version-head h3 { margin: 3px 0 0; }
+.si-version-head .is-good { color: #45b97c; }
+.si-version-head .is-risk { color: #ef8f70; }
+.si-compact-grid { grid-template-columns: repeat(5, minmax(130px, 1fr)); margin-bottom: 14px; }
+.si-metric-grid { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); gap: 8px; }
+.si-metric-grid span { display: grid; gap: 5px; padding: 12px; color: var(--muted); border-radius: 10px; background: var(--surface); }
+.si-metric-grid strong { color: var(--text); font-size: 1rem; }
+.si-avatar-latency, .si-architecture { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 12px; overflow-x: auto; border: 1px dashed var(--border-strong); border-radius: 10px; }
+.si-avatar-latency span, .si-architecture span { flex: 0 0 auto; padding: 9px 11px; border-radius: 8px; background: var(--surface); }
+.si-avatar-latency strong { margin-left: auto; white-space: nowrap; }
+.si-project-actions, .si-mode-switch { display: flex; flex-wrap: wrap; gap: 8px; }
+.si-project-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.si-project-list button { display: grid; gap: 4px; min-width: 0; padding: 11px; text-align: left; color: var(--text); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
+.si-project-list span, .si-change-summary, .si-confidence-list small { color: var(--muted); }
+.si-mode-switch button { padding: 8px 10px; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; background: transparent; }
+.si-mode-switch button.is-active { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.si-command { max-width: 100%; padding: 13px; overflow: auto; color: #d6f0ff; border-radius: 10px; background: #111820; }
+.si-evidence-panel .si-confidence-list span { grid-template-columns: minmax(140px, .8fr) minmax(170px, 1fr); }
+@media (max-width: 720px) {
+  .si-version-head, .si-avatar-latency, .si-architecture { align-items: stretch; flex-direction: column; }
+  .si-compact-grid, .si-metric-grid, .si-project-list { grid-template-columns: 1fr; }
+  .si-avatar-latency b, .si-architecture b { align-self: center; transform: rotate(90deg); }
+  .si-avatar-latency strong { margin-left: 0; white-space: normal; }
+}

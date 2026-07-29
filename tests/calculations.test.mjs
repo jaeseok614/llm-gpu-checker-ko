@@ -1119,7 +1119,7 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);
     platform.eval(`updateStudio("tab", "market")`);
-    assert.equal(platform.document.querySelectorAll(".studio-table tbody tr").length, 3);
+    assert.equal(platform.document.querySelectorAll(".studio-table tbody tr").length, platform.eval("GPU_PRESETS.filter((gpu) => gpu.id !== 'custom').length"));
     assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /다나와|성능\/가격/);
     assert.equal(platform.eval("KOREAN_GPU_MARKET.every((row) => row.sourceUrl && row.updatedAt && row.newKrw > 0)"), true);
   });
@@ -1166,6 +1166,22 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     ttft.dispatchEvent(new platform.Event("change", { bubbles: true }));
     assert.match(platform.document.querySelector(".si-poc-verdict").textContent, /adjustment|required|passed/i);
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+
+  test("supports v3.8-v4.2 SLA, project history, proposal, benchmark, and TCO flows", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=en&studio=consulting", {}, { platformV2: true });
+    assert.equal(platform.document.querySelectorAll(".si-version-section").length, 6);
+    ["siMaxBatch", "siMinReplicas", "siMaxReplicas", "siBenchmarkRuntime", "siUtilizationPct", "siCloudHourlyUsd"].forEach((id) => assert.ok(platform.document.querySelector(`#${id}`)));
+    const result = platform.eval("calculateRealtimeSla(calculateSiSizing().plans[1])");
+    assert.ok(result.capacityRps > 0);
+    assert.ok(result.latencyP95 >= result.ttftP95);
+    assert.ok(result.requiredReplicas >= 1);
+    const tco = platform.eval("calculateTcoComparison(calculateSiSizing().plans[1])");
+    assert.equal(tco.onprem.length, 3);
+    assert.ok(tco.onprem[2] > tco.onprem[0]);
+    assert.match(platform.document.querySelector(".si-avatar-latency").textContent, /STT.*LLM.*TTS.*Lip-sync/s);
+    assert.match(platform.document.querySelector(".si-command").textContent, /vllm bench serve/);
+    assert.doesNotMatch(platform.document.querySelector("#decisionStudioBody").textContent, /시세 입력 필요|추정 사양/);
   });
 
   test("builds an avatar chat stack with STT, LLM, TTS, and video models", () => {

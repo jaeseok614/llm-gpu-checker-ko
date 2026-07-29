@@ -37,6 +37,11 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v4.2** — 온프레미스·클라우드·혼합 구성의 1·3·5년 TCO와 사용률별 손익분기점을 비교합니다.
+- **v4.1** — vLLM·llama.cpp·Ollama·NIM 벤치마크 명령, 결과 JSON 업로드, 보정계수와 PoC 판정을 추가했습니다.
+- **v4.0** — 고객 요약본·기술 검토본, 자동 구성도, 모델 배치도, 편집 가능한 Excel과 인쇄용 PDF 제안서를 제공합니다.
+- **v3.9** — 고객·프로젝트별 견적 버전, 변경 비교, 로컬 저장·복제, JSON 내보내기·가져오기를 추가했습니다.
+- **v3.8** — RPS·동시성·TTFT·ITL·큐·배치·복제본과 STT→LLM→TTS→립싱크 지연을 묶은 실시간 SLA 계산을 추가했습니다.
 - **v3.7** — MuseTalk·LivePortrait·SadTalker·Wav2Lip을 아바타·립싱크 전용 카탈로그로 추가하고 전체 탐색·GPU 추천·AI 스택에 연결했습니다.
 - **v3.6** — AI 스택 배치에 STT·TTS를 연결하고, 음성 입력부터 LLM 응답·음성 합성·아바타 영상까지 묶은 AI 아바타 채팅 프리셋을 추가했습니다.
 - **v3.5** — 상세 SLA 입력, 서버별 배치·장애 여유, PCIe·NIC·UPS·냉각 BOM, TCO·제안 산출물과 실측 PoC 판정을 완성했습니다.
@@ -119,6 +124,7 @@ npm run check
 - [데이터 출처](./docs/data-sources.md)
 - [AI 인프라 견적 가이드와 가상 사례](./docs/si-consulting-guide.md)
 - [AI 인프라 견적 Excel 예제](./docs/examples/si-sizing-example.xlsx)
+- [AI 인프라 제안서 PDF 예제](./docs/examples/ai-infra-proposal-example.pdf)
 - [GPU 기여 파이프라인](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor 계산과 한계](./docs/v1.4-advisor-methodology.md)
 - [v1.5 카탈로그·음성·대시보드](./docs/v1.5-catalog-audio-dashboard.md)

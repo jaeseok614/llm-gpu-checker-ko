@@ -5,4 +5,5 @@ _site/
 dist/
 coverage/
 outputs/
+output/
 *.log
