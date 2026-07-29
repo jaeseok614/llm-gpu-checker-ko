@@ -276,7 +276,7 @@ let viewMode = "list";
 let settingsExpanded = false;
 let compareKeys = [];
 let compareModalOpen = false;
-const MAX_COMPARE_MODELS = 3;
+const MAX_COMPARE_MODELS = 4;
 let benchmarkSearchQuery = "";
 let benchmarkCompareKeys = [];
 const MAX_BENCHMARK_COMPARE = 6;
@@ -489,6 +489,7 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["비교 GPU 선택", "Select a GPU to compare"],
   ["비교 GPU 1", "Comparison GPU 1"],
   ["비교 GPU 2", "Comparison GPU 2"],
+  ["비교 GPU 3", "Comparison GPU 3"],
   ["아키텍처", "Architecture"],
   ["메모리", "Memory"],
   ["대역폭", "Bandwidth"],
@@ -1521,6 +1522,7 @@ function populateSelects() {
     .join("");
   if ($("compareGpuA")) $("compareGpuA").innerHTML = `<option value="">비교 GPU 선택</option>${compareOptions}`;
   if ($("compareGpuB")) $("compareGpuB").innerHTML = `<option value="">비교 GPU 선택</option>${compareOptions}`;
+  if ($("compareGpuC")) $("compareGpuC").innerHTML = `<option value="">비교 GPU 선택</option>${compareOptions}`;
   populateGpuPresetDatalist();
   renderOnboardingQuickPicks();
 
@@ -1942,7 +1944,7 @@ function bindEvents() {
     gpuCompareOpen = !gpuCompareOpen;
     renderGpuInsights(getHardware());
   });
-  ["compareGpuA", "compareGpuB"].forEach((id) => $(id)?.addEventListener("change", () => renderGpuInsights(getHardware())));
+  ["compareGpuA", "compareGpuB", "compareGpuC"].forEach((id) => $(id)?.addEventListener("change", () => renderGpuInsights(getHardware())));
   ["advisorModel", "advisorBudgetUsd", "advisorCurrentPriceUsd", "advisorElectricityRate", "advisorHoursMonth", "advisorVendor", "advisorFormFactor"].forEach((id) => {
     $(id)?.addEventListener(id.startsWith("advisor") && $("advisorModel") === $(id) ? "change" : "input", renderGpuAdvisor);
     if (id === "advisorVendor" || id === "advisorFormFactor") $(id)?.addEventListener("change", renderGpuAdvisor);
@@ -6751,7 +6753,7 @@ function renderGpuInsights(hardware) {
   $("gpuCompareBuilder").hidden = !gpuCompareOpen;
   if (!gpuCompareOpen) return;
 
-  const selected = [preset.id, $("compareGpuA").value, $("compareGpuB").value]
+  const selected = [preset.id, $("compareGpuA").value, $("compareGpuB").value, $("compareGpuC")?.value]
     .filter(Boolean)
     .filter((id, index, list) => list.indexOf(id) === index)
     .map((id) => GPU_PRESETS.find((gpu) => gpu.id === id))
@@ -9434,6 +9436,7 @@ function toSlug(value) {
 function syncUrlState() {
   if (!window.history || !window.location) return;
 
+  const existingParams = new URLSearchParams(window.location.search);
   const params = new URLSearchParams();
   params.set("ui", appMode);
   params.set("lang", uiLanguage);
@@ -9490,6 +9493,7 @@ function syncUrlState() {
   if ($("advisorFormFactor")) params.set("advisorForm", $("advisorFormFactor").value);
   if ($("compareGpuA")?.value) params.set("compareA", $("compareGpuA").value);
   if ($("compareGpuB")?.value) params.set("compareB", $("compareGpuB").value);
+  if ($("compareGpuC")?.value) params.set("compareC", $("compareGpuC").value);
   params.set("task", $("taskFilter").value);
   params.set("provider", $("providerFilter").value);
   params.set("license", $("licenseFilter").value);
@@ -9515,6 +9519,9 @@ function syncUrlState() {
     params.set("pgModels", JSON.stringify([...placementSelectedKeys]));
     params.set("pgConfig", JSON.stringify([...placementSelectedKeys].map((key) => [key, getPlacementModelConfig(key)])));
   }
+  ["hub", "detail"].forEach((key) => {
+    if (existingParams.get(key)) params.set(key, existingParams.get(key));
+  });
 
   const nextUrl = `${window.location.pathname}?${params.toString()}`;
   window.history.replaceState({}, "", nextUrl);
@@ -9594,6 +9601,7 @@ function applyUrlState() {
   setSelectIfValid("advisorFormFactor", params.get("advisorForm"));
   setSelectIfValid("compareGpuA", params.get("compareA"));
   setSelectIfValid("compareGpuB", params.get("compareB"));
+  setSelectIfValid("compareGpuC", params.get("compareC"));
   setSelectIfValid("taskFilter", params.get("task"));
   setSelectIfValid("providerFilter", params.get("provider"));
   setSelectIfValid("licenseFilter", params.get("license"));

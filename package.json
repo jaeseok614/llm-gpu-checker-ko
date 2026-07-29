@@ -1,6 +1,6 @@
 {
   "name": "ai-hardware-fit",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "private": false,
   "description": "Bilingual static web app for estimating LLM, retrieval, vision, image, video, STT, and TTS workloads on GPUs.",
   "type": "module",
@@ -8,13 +8,14 @@
     "ai-hardware-fit": "./scripts/benchmark-cli.mjs"
   },
   "scripts": {
-    "check": "node --check app.js && node --check scripts/benchmark-cli.mjs && node --check scripts/gpu-request-tools.mjs && node --check scripts/model-request-tools.mjs && node --check scripts/benchmark-request-tools.mjs && node scripts/validate-data.mjs && node scripts/build-static.mjs && node --test tests/*.test.mjs",
+    "check": "node --check app.js && node --check platform-v2.js && node --check scripts/benchmark-cli.mjs && node --check scripts/gpu-request-tools.mjs && node --check scripts/model-request-tools.mjs && node --check scripts/benchmark-request-tools.mjs && node scripts/validate-data.mjs && node scripts/data-audit.mjs && node scripts/build-static.mjs && node --test tests/*.test.mjs",
     "test": "node --test tests/*.test.mjs",
     "benchmark": "node scripts/benchmark-cli.mjs",
     "social-preview": "node scripts/generate-social-preview.mjs",
     "gpu-request:validate": "node scripts/gpu-request-tools.mjs",
     "model-request:validate": "node scripts/model-request-tools.mjs",
     "benchmark-request:validate": "node scripts/benchmark-request-tools.mjs",
+    "data:audit": "node scripts/data-audit.mjs",
     "build:static": "node scripts/build-static.mjs"
   },
   "devDependencies": {

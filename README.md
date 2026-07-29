@@ -24,6 +24,11 @@
 
 ## 주요 기능
 
+- **v2.0 의사결정 허브**: 실측 신뢰구간, 벤치마크 2.0, GPU·모델 상세 링크, 구매 TCO, 실행 설정을 한곳에서 제공합니다.
+- 동일 조건 실측의 표본 수·중앙값·범위·95% 신뢰구간과 추정 오차를 표시합니다.
+- 신품·중고 가격, 원화 환산, 현재 GPU 처분가, 전기요금과 사용 기간으로 업그레이드 가치를 계산합니다.
+- Ollama, llama.cpp, vLLM, Docker Compose 설정을 선택한 모델·GPU에 맞춰 생성합니다.
+- GPU와 모델을 각각 최대 4개까지 비교하며 모바일에서는 카드형 비교 화면을 사용합니다.
 - 데스크톱·데이터센터·Apple Silicon·노트북을 포함한 GPU 115종
 - 생성형 LLM, 임베딩, 리랭커, OCR, 문서/범용 VLM, 이미지·비디오 생성, STT·TTS 워크로드
 - GPU를 먼저 고르는 화면과 모델·예산을 먼저 고르는 전용 진입 화면
@@ -75,6 +80,7 @@ npm run check
 - [GPU 기여 파이프라인](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor 계산과 한계](./docs/v1.4-advisor-methodology.md)
 - [v1.5 카탈로그·음성·대시보드](./docs/v1.5-catalog-audio-dashboard.md)
+- [v2.0 의사결정 플랫폼](./docs/v2.0-decision-platform.md)
 - [기여 방법](./CONTRIBUTING.md)
 - [변경 이력](./CHANGELOG.md)
 

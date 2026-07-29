@@ -285,7 +285,7 @@
                   <button type="button" class="workload-tab" data-placement-type="reranker" aria-selected="false">리랭커</button>
                   <button type="button" class="workload-tab" data-placement-type="vision" aria-selected="false">OCR·VLM</button>
                 </div>
-                <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" autocomplete="off" />
+                <input type="search" id="placementModelSearch" placeholder="모델명, 제조사로 검색" aria-label="배치할 모델 검색" autocomplete="off" />
                 <div class="placement-model-list" id="placementModelList" role="listbox" aria-multiselectable="true"></div>
                 <span class="gpu-placement-label">선택된 모델</span>
                 <div class="placement-model-selected" id="placementModelSelected"></div>
@@ -700,6 +700,7 @@
           <div class="gpu-compare-controls">
             <label class="field"><span>비교 GPU 1</span><select id="compareGpuA"></select></label>
             <label class="field"><span>비교 GPU 2</span><select id="compareGpuB"></select></label>
+            <label class="field"><span>비교 GPU 3</span><select id="compareGpuC"></select></label>
           </div>
           <div class="gpu-comparison-table-wrap" id="gpuComparisonResult" role="region" aria-live="polite" tabindex="0"></div>
         </div>
@@ -765,7 +766,7 @@
           <div class="result-toolbar">
             <div class="result-meta" id="resultMeta">모델 0개</div>
             <div class="search-wrap">
-              <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" />
+              <input id="searchInput" type="search" placeholder="모델명, 제조사, 태그 검색" aria-label="모델 검색" />
             </div>
             <select id="gradeFilter" aria-label="실행 등급">
               <option value="all">전체 등급</option>
@@ -833,7 +834,7 @@
       </div>
 
       <div class="benchmark-toolbar">
-        <input type="search" id="benchmarkSearch" placeholder="모델명, GPU, 지표로 검색" autocomplete="off" />
+        <input type="search" id="benchmarkSearch" placeholder="모델명, GPU, 지표로 검색" aria-label="벤치마크 검색" autocomplete="off" />
         <select id="benchmarkMetricFilter" aria-label="지표로 비교 모델 선택">
           <option value="">지표로 비교할 모델 선택</option>
         </select>
@@ -871,5 +872,6 @@
     <script src="./data/model-metadata.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/licenses.js?v=__CACHE_VERSION__" defer></script>
     <script src="./app.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./platform-v2.js?v=__CACHE_VERSION__" defer></script>
   </body>
 </html>

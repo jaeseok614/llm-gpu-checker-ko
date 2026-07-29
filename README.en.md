@@ -24,6 +24,11 @@
 
 ## Highlights
 
+- **v2.0 Decision Hub** combines measurement confidence, Benchmark 2.0, GPU/model deep links, purchase TCO, and launch recipes.
+- Measurement groups expose sample count, median, range, 95% confidence interval, and estimator error.
+- Purchase Advisor supports new/used prices, KRW conversion, current-GPU resale value, electricity, and ownership period.
+- Launch Assistant generates Ollama, llama.cpp, vLLM, and Docker Compose configurations for the selected model and GPU.
+- GPU and model comparison now supports up to four items, with dedicated mobile cards.
 - 115 desktop, data-center, Apple Silicon, and laptop GPU presets
 - Generative LLM, embedding, reranker, OCR, document/general VLM, image/video generation, STT, and TTS workloads
 - Separate GPU-first and model/budget-first starting paths
@@ -75,6 +80,7 @@ npm run check
 - [GPU contribution pipeline](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor methodology and limitations](./docs/v1.4-advisor-methodology.md)
 - [v1.5 catalog, audio, and dashboard](./docs/v1.5-catalog-audio-dashboard.md)
+- [v2.0 decision platform](./docs/v2.0-decision-platform.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 

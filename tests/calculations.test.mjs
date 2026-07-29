@@ -46,7 +46,7 @@ const BRIDGED_NAMES = [
 const openTestWindows = new Set();
 const persistentTestWindows = new Set();
 
-function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { persistent = false } = {}) {
+function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { persistent = false, platformV2 = false } = {}) {
   const dom = new JSDOM(read("index.html"), { url, runScripts: "outside-only" });
   const { window } = dom;
   openTestWindows.add(window);
@@ -54,7 +54,9 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { pe
   Object.entries(storage).forEach(([key, value]) => window.localStorage.setItem(key, value));
   let combined = DATA_FILES.map(read).join("\n;\n");
   combined += "\n;\n" + read("app.js");
+  if (platformV2) combined += "\n;\n" + read("platform-v2.js");
   combined += "\n;\ninit();\n";
+  if (platformV2) combined += "\n;\ninitPlatformV2();\n";
   combined += BRIDGED_NAMES.map((name) => `window.${name} = ${name};`).join("\n");
   window.eval(combined);
   return window;
@@ -987,5 +989,46 @@ describe("v1.5 catalog, audio, and model-first experience", () => {
     assert.match(fresh.document.getElementById("benchmarkDashboard").textContent, /Benchmark coverage dashboard/);
     fresh.eval(`renderGpuInsights(getHardware()); $("toggleGpuCompare").click(); renderGpuInsights(getHardware())`);
     assert.ok(fresh.document.querySelector(".gpu-mobile-comparison-cards article"));
+  });
+});
+
+describe("v2.0 decision platform", () => {
+  test("calculates measurement confidence and upgrade TCO", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx3060-12&hub=reliability", {}, { platformV2: true });
+    platform.testRows = [
+      { tokensPerSecond: 40 },
+      { tokensPerSecond: 44 },
+      { tokensPerSecond: 46 },
+    ];
+    const stats = platform.eval("calculateReliabilityStats(testRows)");
+    assert.equal(stats.count, 3);
+    assert.equal(stats.median, 44);
+    assert.ok(stats.ciLow < stats.ciHigh);
+    const tco = platform.eval(`calculateUpgradeTco({
+      newPriceUsd: 1200, currentResaleUsd: 200, targetPowerW: 350, currentPowerW: 170,
+      years: 3, hoursPerMonth: 120, electricityUsdKwh: 0.15, targetSpeed: 90, currentSpeed: 40
+    })`);
+    assert.equal(tco.verdict, "worth");
+    assert.ok(tco.tco > 1000);
+  });
+
+  test("renders deep links, benchmark filters, and launch recipes", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx4090-24&detail=model&model=generative%3AQwen3%208B&hub=launch", {}, { platformV2: true });
+    assert.ok(platform.document.querySelector("#decisionHub"));
+    assert.match(platform.document.querySelector("#decisionHubBody").textContent, /Ollama|실행 도우미|Launch/);
+    const recipe = platform.eval(`generateLaunchRecipe({ runtime: "vllm", platform: "linux" })`);
+    assert.match(recipe.command, /vllm serve/);
+    assert.match(recipe.command, /max-model-len/);
+    const gpuUrl = platform.eval("buildGpuDetailUrl(currentPlatformGpu())");
+    assert.match(gpuUrl, /detail=gpu/);
+  });
+
+  test("supports four-way model and GPU comparisons with accessible mobile output", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx4090-24&compareA=rtx5090-32&compareB=rx7900xtx-24&compareC=arcb580-12", {}, { platformV2: true });
+    assert.match(read("app.js"), /const MAX_COMPARE_MODELS = 4/);
+    assert.equal(platform.document.querySelector("#compareGpuC").value, "arcb580-12");
+    platform.document.querySelector("#toggleGpuCompare").click();
+    assert.equal(platform.document.querySelectorAll(".gpu-mobile-comparison-cards article").length, 4);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 });

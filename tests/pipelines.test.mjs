@@ -97,3 +97,15 @@ test("GPU and benchmark request workflows have guarded approval labels", () => {
   assert.match(model, /model-ready/);
   assert.match(model, /steps\.model\.outputs\.valid == 'true'/);
 });
+
+test("v2 data health workflow audits translations, schemas, and source links", () => {
+  const workflow = fs.readFileSync(".github/workflows/data-health.yml", "utf8");
+  const audit = fs.readFileSync("scripts/data-audit.mjs", "utf8");
+  assert.match(workflow, /schedule:/);
+  assert.match(workflow, /data-audit\.mjs/);
+  assert.match(workflow, /lychee-action/);
+  assert.match(workflow, /issues:\s*write/);
+  assert.match(audit, /Duplicate GPU id/);
+  assert.match(audit, /Missing English translation/);
+  assert.match(audit, /Benchmark source is not HTTPS/);
+});

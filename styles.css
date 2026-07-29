@@ -683,6 +683,354 @@ html[lang="en"] .simple-mode-head > div:first-child {
   }
 }
 
+/* v2 decision hub: reliability, deep links, TCO, and launch recipes */
+.decision-hub {
+  width: min(1540px, calc(100% - 48px));
+  margin: 20px auto;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.decision-hub-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.decision-hub-head h2 {
+  margin: 4px 0 6px;
+}
+
+.decision-hub-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.decision-hub-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.decision-hub-tabs button {
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.decision-hub-tabs button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.decision-hub-body {
+  padding: 24px;
+}
+
+.hub-metric-grid,
+.tco-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hub-metric-grid article,
+.tco-summary article {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.hub-metric-grid span,
+.tco-summary span,
+.deep-link-grid > article > span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.hub-metric-grid strong,
+.tco-summary strong {
+  font-size: 1.35rem;
+}
+
+.hub-metric-grid small {
+  color: var(--muted);
+}
+
+.reliability-list,
+.benchmark-v2-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.reliability-card,
+.benchmark-v2-list article {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.reliability-card {
+  padding: 16px;
+  border-left: 4px solid var(--muted);
+}
+
+.reliability-card.confidence-high { border-left-color: var(--success); }
+.reliability-card.confidence-medium { border-left-color: var(--accent); }
+
+.reliability-card > div:first-child,
+.benchmark-v2-list article > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.reliability-card dl,
+.deep-link-grid dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.reliability-card dl div,
+.deep-link-grid dl div {
+  display: grid;
+  gap: 3px;
+}
+
+.reliability-card dt,
+.deep-link-grid dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.reliability-card dd,
+.deep-link-grid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.benchmark-v2-toolbar,
+.purchase-controls,
+.launch-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.benchmark-v2-toolbar label,
+.purchase-controls label,
+.launch-controls label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.benchmark-v2-toolbar .check-field {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.benchmark-v2-list article {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) auto minmax(160px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 15px;
+}
+
+.benchmark-v2-list article > div {
+  display: grid !important;
+}
+
+.benchmark-v2-list article > div span {
+  color: var(--muted);
+}
+
+.evidence-pill {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.evidence-pill.is-external {
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.deep-link-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.deep-link-grid article {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-strong);
+}
+
+.deep-link-grid h3 {
+  margin: 6px 0 16px;
+}
+
+.deep-link-grid .ghost-button {
+  margin-top: 18px;
+}
+
+.purchase-controls {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.upgrade-verdict {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.upgrade-verdict.is-worth { border-color: var(--success); }
+.upgrade-verdict.is-skip { border-color: var(--warning); }
+
+.launch-controls {
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  margin: 16px 0;
+}
+
+.launch-output {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.launch-output > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--panel-strong);
+}
+
+.launch-output pre {
+  max-height: 360px;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  background: #10151b;
+  color: #e7edf3;
+  white-space: pre-wrap;
+}
+
+.hub-empty {
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .decision-hub-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hub-metric-grid,
+  .tco-summary,
+  .purchase-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .benchmark-v2-list article {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .decision-hub {
+    width: calc(100% - 20px);
+    border-radius: 14px;
+  }
+
+  .decision-hub-head,
+  .decision-hub-body {
+    padding: 16px;
+  }
+
+  .decision-hub-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .decision-hub-tabs button {
+    width: 100%;
+  }
+
+  .hub-metric-grid,
+  .tco-summary,
+  .deep-link-grid,
+  .benchmark-v2-toolbar,
+  .purchase-controls,
+  .launch-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .reliability-card dl,
+  .deep-link-grid dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .benchmark-v2-list article {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .upgrade-verdict {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 .gpu-insights-head,
 .gpu-compare-controls,
 .gpu-detail-summary {
