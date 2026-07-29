@@ -14,6 +14,7 @@ for (const file of [
   "data/embedding-models.js",
   "data/reranker-models.js",
   "data/ocr-models.js",
+  "data/audio-models.js",
   "data/benchmarks.js",
   "data/model-metadata.js",
   "data/licenses.js",
@@ -31,6 +32,11 @@ assertArray(data.precisions.ocr, "ocr precisions");
 assertArray(data.embeddingModels, "embeddingModels");
 assertArray(data.rerankerModels, "rerankerModels");
 assertArray(data.ocrModels, "ocrModels");
+assertArray(data.audioModels, "audioModels");
+for (const model of data.audioModels) {
+  requireFields(model, ["type", "name", "provider", "params", "license", "realtimeBase", "sourceUrl"], "audio model");
+  if (!["audio-stt", "audio-tts"].includes(model.type)) throw new Error(`invalid audio model type: ${model.type}`);
+}
 if (!Array.isArray(data.benchmarks)) throw new Error("benchmarks must be an array");
 if (!data.modelMetadata || typeof data.modelMetadata !== "object" || Array.isArray(data.modelMetadata)) {
   throw new Error("modelMetadata must be an object");
@@ -190,7 +196,7 @@ const qualityBenchmarkCount = metadataRows.filter((metadata) => metadata.quality
 
 console.log(
   `validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, `
-  + `${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, `
+  + `${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, ${data.audioModels.length} audio models, `
   + `${data.benchmarks.length} measured benchmarks, ${metadataRows.length} metadata rows `
   + `(${releaseDateCount} release dates, ${qualityBenchmarkCount} quality benchmarks), `
   + `${allModelsByName.size} license policies`,

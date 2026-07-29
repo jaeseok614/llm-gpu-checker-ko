@@ -21,6 +21,9 @@ const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => withModelMeta
 const OCR_MODELS = (DATA.ocrModels || []).map((model) => withModelMetadata(model, model.type || "ocr-pipeline"));
 const IMAGE_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "image-generation");
 const VIDEO_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "video-generation");
+const AUDIO_MODELS = (DATA.audioModels || []).map((model) => withModelMetadata(model, model.type));
+const AUDIO_STT_MODELS = AUDIO_MODELS.filter((model) => model.type === "audio-stt");
+const AUDIO_TTS_MODELS = AUDIO_MODELS.filter((model) => model.type === "audio-tts");
 const ENCODER_PRECISIONS = DATA.precisions?.encoder || [];
 const OCR_PRECISIONS = DATA.precisions?.ocr || [];
 const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
@@ -28,6 +31,41 @@ const OCR_RESOLUTION_PRESETS = DATA.ocrResolutionPresets || {};
 const BENCHMARKS = DATA.benchmarks || [];
 const BENCHMARK_META = DATA.benchmarkMeta || {};
 const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
+const UI_COPY_V15 = {
+  "core.modelFinder.title": { ko: "모델로 GPU 찾기", en: "Find a GPU for a model" },
+  "core.modelFinder.note": { ko: "모델·예산·전력 기준 GPU 추천", en: "Recommendations by model, budget, and power" },
+  "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
+  "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
+  "benchmark.dashboard": { ko: "벤치마크 데이터 현황", en: "Benchmark coverage dashboard" },
+  "benchmark.submit": { ko: "측정값 제보", en: "Submit a measurement" },
+  "advisor.currentPrice": { ko: "현재 GPU 시세 (USD)", en: "Current GPU market price (USD)" },
+};
+function uiText(key) {
+  return UI_COPY_V15[key]?.[uiLanguage === "en" ? "en" : "ko"] || key;
+}
+function applyV15Translations() {
+  const en = uiLanguage === "en";
+  if ($("advisorCurrentPriceLabel")) $("advisorCurrentPriceLabel").textContent = uiText("advisor.currentPrice");
+  Object.assign(WORKLOAD_META.audioStt, {
+    label: uiText("workload.audioStt"),
+    statusLabel: "STT",
+    modelCountLabel: en ? "Speech recognition models" : "음성 인식 모델",
+    searchPlaceholder: en ? "Search STT model, provider, or language" : "STT 모델, 제공자, 언어 검색",
+    listHeaders: en
+      ? ["Status", "Model", "Release / language", "Summary", "Provider · license", "Precision", "Estimated VRAM", "Realtime factor", "Audio", ""]
+      : ["상태", "모델", "출시/언어", "요약", "제공자·라이선스", "정밀도", "계산 VRAM", "실시간 배속", "오디오", ""],
+  });
+  Object.assign(WORKLOAD_META.audioTts, {
+    label: uiText("workload.audioTts"),
+    statusLabel: "TTS",
+    modelCountLabel: en ? "Speech synthesis models" : "음성 합성 모델",
+    searchPlaceholder: en ? "Search TTS model, provider, or language" : "TTS 모델, 제공자, 언어 검색",
+    listHeaders: en
+      ? ["Status", "Model", "Release / language", "Summary", "Provider · license", "Precision", "Estimated VRAM", "Realtime factor", "Audio", ""]
+      : ["상태", "모델", "출시/언어", "요약", "제공자·라이선스", "정밀도", "계산 VRAM", "실시간 배속", "오디오", ""],
+  });
+  refreshCoreTaskUi();
+}
 const HF_MODEL_STORAGE_KEY = "llm-gpu-checker-hf-models-v1";
 const PRIMARY_GPU_STORAGE_KEY = "ai-hardware-fit-primary-gpu-v1";
 const MAX_IMPORTED_HF_MODELS = 20;
@@ -113,6 +151,8 @@ const MODEL_GROUPS = {
   generalVlm: GENERAL_VLM_MODELS,
   imageGeneration: IMAGE_GENERATION_MODELS,
   videoGeneration: VIDEO_GENERATION_MODELS,
+  audioStt: AUDIO_STT_MODELS,
+  audioTts: AUDIO_TTS_MODELS,
 };
 
 const WORKLOAD_META = {
@@ -171,6 +211,20 @@ const WORKLOAD_META = {
     modelCountLabel: "비디오 생성 모델",
     searchPlaceholder: "비디오 생성 모델, 제조사, 태그 검색",
     listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/설정", "계산 VRAM", "추정 생성 속도", "해상도", ""],
+  },
+  audioStt: {
+    label: "음성 인식",
+    statusLabel: "STT",
+    modelCountLabel: "음성 인식 모델",
+    searchPlaceholder: "STT 모델, 제공자, 언어 검색",
+    listHeaders: ["상태", "모델", "출시/언어", "요약", "제공자·라이선스", "정밀도", "계산 VRAM", "실시간 배속", "오디오", ""],
+  },
+  audioTts: {
+    label: "음성 합성",
+    statusLabel: "TTS",
+    modelCountLabel: "음성 합성 모델",
+    searchPlaceholder: "TTS 모델, 제공자, 언어 검색",
+    listHeaders: ["상태", "모델", "출시/언어", "요약", "제공자·라이선스", "정밀도", "계산 VRAM", "실시간 배속", "오디오", ""],
   },
 };
 
@@ -1138,13 +1192,24 @@ function setAppMode(mode) {
 
 function refreshCoreTaskUi() {
   const placementActive = coreTaskMode === "placement";
+  const modelFinderActive = coreTaskMode === "modelFinder";
   document.body.classList.toggle("placement-task-active", placementActive);
   document.body.classList.toggle("finder-task-active", !placementActive);
+  document.body.classList.toggle("model-finder-task-active", modelFinderActive);
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
     button.classList.toggle("is-active", active);
     if (button.closest("[role='tablist']")) button.setAttribute("aria-selected", String(active));
   });
+  const modelFinderButton = document.querySelector('[data-core-task="modelFinder"]');
+  if (modelFinderButton) {
+    modelFinderButton.querySelector("span").textContent = uiText("core.modelFinder.title");
+    modelFinderButton.querySelector("small").textContent = uiText("core.modelFinder.note");
+  }
+  const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
+  const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
+  if (sttTab) sttTab.textContent = uiText("workload.audioStt");
+  if (ttsTab) ttsTab.textContent = uiText("workload.audioTts");
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
 }
 
@@ -1199,9 +1264,10 @@ function setCoreTaskMode(mode) {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
     return;
   }
-  coreTaskMode = "finder";
+  coreTaskMode = mode === "modelFinder" ? "modelFinder" : "finder";
   refreshCoreTaskUi();
   render();
+  if (coreTaskMode === "modelFinder") $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
 function setUiLanguage(language) {
@@ -1211,6 +1277,7 @@ function setUiLanguage(language) {
   url.searchParams.set("lang", uiLanguage);
   window.history.replaceState({}, "", url);
   document.documentElement.lang = uiLanguage;
+  applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
   const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
@@ -1237,6 +1304,7 @@ function setUiLanguage(language) {
   // since render() itself calls setUiLanguage("en") at its end.
   renderOnboardingQuickPicks();
   renderBenchmarkSheet();
+  renderBenchmarkDashboard();
   // Same reasoning for the multi-GPU placement result, its 3-plan comparison,
   // and the run-command/docker-compose export — all free-form sentences (and
   // the export panel's <pre> code blocks) that only re-running the real
@@ -1336,7 +1404,7 @@ function restoreUiTheme() {
 
 function refreshAppModeUi() {
   const isSimple = appMode === "simple";
-  const finderActive = coreTaskMode === "finder";
+  const finderActive = coreTaskMode !== "placement";
   $("simpleModePanel").hidden = !finderActive || !isSimple;
   $("expertModeSection").hidden = !finderActive || isSimple;
   $("calculationBasisStrip").hidden = !finderActive || isSimple;
@@ -1384,6 +1452,13 @@ function init() {
 }
 
 function ensureGpuAdvisorPanel() {
+  if (!$("benchmarkDashboard") && $("benchmarkSheet")) {
+    const dashboard = document.createElement("section");
+    dashboard.id = "benchmarkDashboard";
+    dashboard.className = "benchmark-dashboard";
+    dashboard.setAttribute("aria-labelledby", "benchmarkDashboardTitle");
+    $("benchmarkSheet").parentNode.insertBefore(dashboard, $("benchmarkSheet"));
+  }
   if (!$("mediaOptimization") && $("mediaOffload")) {
     const field = document.createElement("label");
     field.className = "field media-generation-field";
@@ -1409,6 +1484,7 @@ function ensureGpuAdvisorPanel() {
     <div class="gpu-advisor-controls">
       <label class="field"><span id="advisorModelLabel"></span><select id="advisorModel"></select></label>
       <label class="field"><span id="advisorBudgetLabel"></span><input id="advisorBudgetUsd" type="number" min="0" max="100000" step="50" value="2000"></label>
+      <label class="field"><span id="advisorCurrentPriceLabel"></span><input id="advisorCurrentPriceUsd" type="number" min="0" max="100000" step="10" value="0"></label>
       <label class="field"><span id="advisorElectricityLabel"></span><input id="advisorElectricityRate" type="number" min="0" max="5" step="0.01" value="0.15"></label>
       <label class="field"><span id="advisorHoursLabel"></span><input id="advisorHoursMonth" type="number" min="1" max="744" step="1" value="120"></label>
       <label class="field"><span id="advisorVendorLabel"></span><select id="advisorVendor"><option value="all">All</option><option>NVIDIA</option><option>AMD</option><option>Intel</option><option>Apple</option></select></label>
@@ -1867,7 +1943,7 @@ function bindEvents() {
     renderGpuInsights(getHardware());
   });
   ["compareGpuA", "compareGpuB"].forEach((id) => $(id)?.addEventListener("change", () => renderGpuInsights(getHardware())));
-  ["advisorModel", "advisorBudgetUsd", "advisorElectricityRate", "advisorHoursMonth", "advisorVendor", "advisorFormFactor"].forEach((id) => {
+  ["advisorModel", "advisorBudgetUsd", "advisorCurrentPriceUsd", "advisorElectricityRate", "advisorHoursMonth", "advisorVendor", "advisorFormFactor"].forEach((id) => {
     $(id)?.addEventListener(id.startsWith("advisor") && $("advisorModel") === $(id) ? "change" : "input", renderGpuAdvisor);
     if (id === "advisorVendor" || id === "advisorFormFactor") $(id)?.addEventListener("change", renderGpuAdvisor);
   });
@@ -5123,9 +5199,48 @@ function estimateAnyModel(model, hardware) {
   let estimate;
   if (model.type === "embedding") estimate = estimateEncoderModel(model, hardware, getWorkloadSettings());
   else if (model.type === "reranker") estimate = estimateRerankerModel(model, hardware, getWorkloadSettings());
+  else if (model.type === "audio-stt" || model.type === "audio-tts") estimate = estimateAudioModel(model, hardware);
   else if (isVisionModel(model)) estimate = estimateOcrModel(model, hardware, getWorkloadSettings());
   else estimate = normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
   return applyMeasuredCalibration(estimate, hardware);
+}
+
+function estimateAudioModel(model, hardware) {
+  const weightsGb = model.params * 2 * 1.08;
+  const runtimeOverheadGb = 1.1 + model.params * 0.35;
+  const activationGb = Math.max(0.35, model.params * 0.7);
+  const requiredGb = weightsGb + runtimeOverheadGb + activationGb;
+  const effectiveVram = getEffectiveVram(hardware);
+  const pressure = getVramPressure(requiredGb, effectiveVram);
+  const grade = gradeFromPressure(pressure, requiredGb, effectiveVram + hardware.ram * 0.35);
+  const computeScale = Math.sqrt(Math.max(0.05, hardware.computeTotal.fp16Tflops / 82));
+  const bandwidthScale = Math.sqrt(Math.max(0.05, hardware.aggregateBandwidth / 504));
+  const fitScale = grade === "F" ? 0 : grade === "D" ? 0.25 : grade === "C" ? 0.65 : 1;
+  const speed = model.realtimeBase * computeScale * bandwidthScale * fitScale;
+  return {
+    model,
+    precision: { id: "fp16", label: "FP16" },
+    weightsGb,
+    runtimeOverheadGb,
+    activationGb,
+    requiredGb,
+    effectiveVram,
+    pressure,
+    grade,
+    speed,
+    throughput: speed,
+    latencySeconds: speed ? 1 / speed : 0,
+    firstTokenSeconds: speed ? 0.2 / speed : 0,
+    contextLimitTokens: 0,
+    contextSupported: true,
+    settingLabel: "FP16 · GPU",
+    speedLabel: `${speed.toFixed(speed >= 10 ? 0 : 1)}× realtime`,
+    limitLabel: model.type === "audio-stt" ? "60 min audio" : "streaming",
+    unitLabel: "x realtime",
+    reason: grade === "F"
+      ? (uiLanguage === "en" ? "The model exceeds available GPU and system memory." : "모델이 사용 가능한 GPU·시스템 메모리를 초과합니다.")
+      : (uiLanguage === "en" ? "Estimated real-time factor for one audio stream." : "오디오 1개 스트림 기준 예상 실시간 배속입니다."),
+  };
 }
 
 function applyMeasuredCalibration(estimate, hardware) {
@@ -6347,7 +6462,7 @@ function render(options = {}) {
   const hardwarePanel = $("hardwarePanel");
   const resultsPanel = $("resultsPanel");
   const placementActive = coreTaskMode === "placement";
-  if (onboardingScreen) onboardingScreen.hidden = placementActive || hasPrimaryGpuSelection;
+  if (onboardingScreen) onboardingScreen.hidden = placementActive || coreTaskMode === "modelFinder" || hasPrimaryGpuSelection;
   if (hardwarePanel) hardwarePanel.hidden = !placementActive && !hasPrimaryGpuSelection;
   if (resultsPanel) resultsPanel.hidden = placementActive || !hasPrimaryGpuSelection;
   refreshCoreTaskUi();
@@ -6375,11 +6490,41 @@ function render(options = {}) {
   renderSimpleRecommendationPanel(hardware);
   renderViewToggle();
   renderBenchmarkSheet();
+  renderBenchmarkDashboard();
   const benchmarkSheet = $("benchmarkSheet");
   if (benchmarkSheet) benchmarkSheet.hidden = placementActive || !hasPrimaryGpuSelection;
 
   if (syncUrl) syncUrlState();
   if (uiLanguage === "en") setUiLanguage("en");
+}
+
+function renderBenchmarkDashboard() {
+  const target = $("benchmarkDashboard");
+  if (!target) return;
+  const en = uiLanguage === "en";
+  const measured = BENCHMARKS.filter((row) => benchmarkEvidenceType(row) !== "external");
+  const external = BENCHMARKS.filter((row) => benchmarkEvidenceType(row) === "external");
+  const gpuIds = new Set(measured.map((row) => row.gpuId).filter(Boolean));
+  const modelNames = new Set(measured.map((row) => row.modelName || row.modelKey).filter(Boolean));
+  const errors = computeBenchmarkErrorStats();
+  const targets = ["rtx3060-12", "rtx4090-24", "rtx5090-32", "rx7900xtx-24", "ryzen-ai-max-plus-395-128", "arcb580-12", "m4max-128"]
+    .filter((id) => !gpuIds.has(id))
+    .map((id) => GPU_PRESETS.find((gpu) => gpu.id === id)?.name)
+    .filter(Boolean);
+  target.innerHTML = `
+    <div class="gpu-insights-head">
+      <div><span class="section-kicker">MEASURED DATA</span><h2 id="benchmarkDashboardTitle">${uiText("benchmark.dashboard")}</h2></div>
+      <a class="ghost-button" href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml" target="_blank" rel="noreferrer">${uiText("benchmark.submit")}</a>
+    </div>
+    <div class="benchmark-dashboard-grid">
+      <div><span>${en ? "Measured rows" : "실측 데이터"}</span><strong>${measured.length}</strong></div>
+      <div><span>${en ? "GPU coverage" : "측정 GPU"}</span><strong>${gpuIds.size}</strong></div>
+      <div><span>${en ? "Model coverage" : "측정 모델"}</span><strong>${modelNames.size}</strong></div>
+      <div><span>${en ? "External references" : "외부 참고값"}</span><strong>${external.length}</strong></div>
+      <div><span>${en ? "Average estimate error" : "평균 추정 오차"}</span><strong>${errors ? `${errors.avgAbsErrorPct.toFixed(1)}%` : "—"}</strong></div>
+    </div>
+    <p>${targets.length ? `${en ? "Priority measurements needed" : "우선 측정 필요"}: ${escapeHtml(targets.slice(0, 5).join(", "))}` : (en ? "Priority GPU coverage is complete." : "우선 GPU 측정 범위가 충족되었습니다.")}</p>
+  `;
 }
 
 function renderHardware(hardware, allEstimates) {
@@ -6472,6 +6617,7 @@ function gpuComparisonSnapshot(preset) {
 function estimateAnyModelForHardware(model, hardware) {
   if (model.type === "embedding") return estimateEncoderModel(model, hardware, getWorkloadSettings());
   if (model.type === "reranker") return estimateRerankerModel(model, hardware, getWorkloadSettings());
+  if (model.type === "audio-stt" || model.type === "audio-tts") return estimateAudioModel(model, hardware);
   if (isVisionModel(model)) return estimateOcrModel(model, hardware, getWorkloadSettings());
   return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
 }
@@ -6479,7 +6625,7 @@ function estimateAnyModelForHardware(model, hardware) {
 function renderGpuAdvisor() {
   const panel = $("gpuAdvisorPanel");
   if (!panel) return;
-  panel.hidden = !hasPrimaryGpuSelection || coreTaskMode === "placement";
+  panel.hidden = coreTaskMode === "placement" || (!hasPrimaryGpuSelection && coreTaskMode !== "modelFinder");
   if (panel.hidden) return;
   const en = uiLanguage === "en";
   $("gpuAdvisorTitle").textContent = en ? "GPU recommendations by model, budget, and power" : "예산·전력·모델 기준 GPU 추천";
@@ -6514,6 +6660,10 @@ function renderGpuAdvisor() {
   const hours = clampNumber($("advisorHoursMonth").value, 1, 744, 120);
   const vendor = $("advisorVendor").value;
   const formFactor = $("advisorFormFactor").value;
+  const currentHardware = hasPrimaryGpuSelection ? getHardware() : null;
+  const currentEstimate = currentHardware ? estimateAnyModelForHardware(model, currentHardware) : null;
+  const currentSpeed = Number(currentEstimate?.speed || currentEstimate?.throughput || 0);
+  const currentPrice = clampNumber($("advisorCurrentPriceUsd")?.value, 0, 100000, 0);
   const candidates = GPU_PRESETS
     .filter((gpu) => gpu.id !== "custom")
     .filter((gpu) => vendor === "all" || gpu.vendor === vendor)
@@ -6544,6 +6694,8 @@ function renderGpuAdvisor() {
             <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd>${item.market.priceUsd ? `$${item.market.priceUsd.toLocaleString("en-US")}` : (en ? "Enter market price" : "시세 입력 필요")}</dd></div>
             <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>$${item.monthlyEnergy.toFixed(2)}</dd></div>
             <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${item.preset.specStatus === "sourced" ? (en ? "Official source" : "공식 출처") : (en ? "Estimated spec" : "추정 사양")}</dd></div>
+            <div><dt>${en ? "vs current GPU" : "현재 GPU 대비"}</dt><dd>${currentSpeed ? `${(item.speed / currentSpeed).toFixed(2)}×` : "—"}</dd></div>
+            <div><dt>${en ? "Speed / $1K" : "가격 대비 속도"}</dt><dd>${(item.speed / Math.max(0.2, (item.market.priceUsd || currentPrice || budget) / 1000)).toFixed(1)}</dd></div>
           </dl>
           <button type="button" class="ghost-button" data-advisor-select-gpu="${escapeAttr(item.preset.id)}">${en ? "Use this GPU" : "이 GPU 선택"}</button>
         </article>
@@ -6617,6 +6769,19 @@ function renderGpuInsights(hardware) {
         ${renderGpuCompareRow(uiLanguage === "en" ? "Runtime" : "런타임", snapshots, (item) => (item.preset.runtimes || []).join(", "))}
       </tbody>
     </table>
+    <div class="gpu-mobile-comparison-cards">
+      ${snapshots.map((item) => `
+        <article>
+          <strong>${escapeHtml(shortGpuName(item.preset.name))}</strong>
+          <dl>
+            <div><dt>${uiLanguage === "en" ? "Memory" : "메모리"}</dt><dd>${escapeHtml(formatGb(item.hardware.vram))}</dd></div>
+            <div><dt>${uiLanguage === "en" ? "Bandwidth" : "대역폭"}</dt><dd>${item.preset.bandwidth.toLocaleString("ko-KR")} GB/s</dd></div>
+            <div><dt>${uiLanguage === "en" ? "Runnable" : "실행 가능"}</dt><dd>${item.runnable}</dd></div>
+            <div><dt>${uiLanguage === "en" ? "Median speed" : "중앙 속도"}</dt><dd>${item.medianSpeed ? escapeHtml(formatThroughput(item.medianSpeed, item.largest?.unitLabel || "tok/s")) : "—"}</dd></div>
+          </dl>
+        </article>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -9272,7 +9437,7 @@ function syncUrlState() {
   const params = new URLSearchParams();
   params.set("ui", appMode);
   params.set("lang", uiLanguage);
-  params.set("mode", coreTaskMode === "placement" ? "placement" : activeWorkload);
+  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : activeWorkload);
   if (coreTaskMode === "placement") params.set("workload", activeWorkload);
   const hardware = getHardware();
   if (hasPrimaryGpuSelection) {
@@ -9318,6 +9483,7 @@ function syncUrlState() {
   if ($("mediaOptimization")) params.set("mediaOptimization", $("mediaOptimization").value);
   if ($("advisorModel")) params.set("advisorModel", $("advisorModel").value);
   if ($("advisorBudgetUsd")) params.set("budget", $("advisorBudgetUsd").value);
+  if ($("advisorCurrentPriceUsd")) params.set("currentPrice", $("advisorCurrentPriceUsd").value);
   if ($("advisorElectricityRate")) params.set("electricity", $("advisorElectricityRate").value);
   if ($("advisorHoursMonth")) params.set("hours", $("advisorHoursMonth").value);
   if ($("advisorVendor")) params.set("advisorVendor", $("advisorVendor").value);
@@ -9357,7 +9523,7 @@ function syncUrlState() {
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
   const modeParam = params.get("mode");
-  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : "finder";
+  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : "finder";
   const uiParam = params.get("ui");
   appMode = uiParam === "expert" || uiParam === "simple"
     ? uiParam
@@ -9421,6 +9587,7 @@ function applyUrlState() {
   setSelectIfValid("mediaOptimization", params.get("mediaOptimization"));
   setSelectIfValid("advisorModel", params.get("advisorModel"));
   setValueIfPresent("advisorBudgetUsd", params.get("budget"));
+  setValueIfPresent("advisorCurrentPriceUsd", params.get("currentPrice"));
   setValueIfPresent("advisorElectricityRate", params.get("electricity"));
   setValueIfPresent("advisorHoursMonth", params.get("hours"));
   setSelectIfValid("advisorVendor", params.get("advisorVendor"));

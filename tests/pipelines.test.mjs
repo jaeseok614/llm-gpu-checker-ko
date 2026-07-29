@@ -54,11 +54,46 @@ https://www.nvidia.com/en-us/geforce/`;
   assert.match(result.stdout, /tgpMinW: 60/);
 });
 
+test("model request parser validates model and license sources", () => {
+  const body = `### 모델 이름
+
+Community Test STT
+### 워크로드
+
+음성 인식 STT
+### 제공자
+
+Test Provider
+### 파라미터 수
+
+0.5B
+### 라이선스
+
+MIT
+### 공식 모델 카드
+
+https://huggingface.co/test-provider/community-test-stt
+### 라이선스 출처
+
+https://huggingface.co/test-provider/community-test-stt/blob/main/LICENSE`;
+  const result = spawnSync(process.execPath, ["scripts/model-request-tools.mjs"], {
+    cwd: process.cwd(),
+    env: { ...process.env, MODEL_REQUEST_BODY: body },
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Required metadata and sources are valid/);
+  assert.match(result.stdout, /data\/audio-models\.js/);
+});
+
 test("GPU and benchmark request workflows have guarded approval labels", () => {
   const gpu = fs.readFileSync(".github/workflows/gpu-request.yml", "utf8");
   const benchmark = fs.readFileSync(".github/workflows/benchmark-request.yml", "utf8");
+  const model = fs.readFileSync(".github/workflows/model-request.yml", "utf8");
   assert.match(gpu, /gpu-ready/);
   assert.match(gpu, /steps\.gpu\.outputs\.valid == 'true'/);
   assert.match(benchmark, /benchmark-ready/);
   assert.match(benchmark, /steps\.benchmark\.outputs\.valid == 'true'/);
+  assert.match(model, /model-ready/);
+  assert.match(model, /steps\.model\.outputs\.valid == 'true'/);
 });

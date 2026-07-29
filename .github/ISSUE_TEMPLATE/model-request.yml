@@ -1,61 +1,64 @@
 name: Model request
-description: 새 LLM 모델 추가를 요청합니다.
-title: "[Model] "
+description: AI 모델 카탈로그 추가를 요청합니다.
+title: "[MODEL] "
 labels: ["data", "model"]
 body:
   - type: input
-    id: model_name
+    id: name
     attributes:
-      label: 모델명
-      placeholder: Qwen2.5 14B Instruct
+      label: 모델 이름
+      placeholder: Whisper large-v3
+    validations:
+      required: true
+  - type: dropdown
+    id: workload
+    attributes:
+      label: 워크로드
+      options: [생성형 LLM, 임베딩, 리랭커, OCR/VLM, 이미지 생성, 비디오 생성, 음성 인식 STT, 음성 합성 TTS]
     validations:
       required: true
   - type: input
-    id: maker
+    id: provider
     attributes:
-      label: 공급사
-      placeholder: Alibaba
+      label: 제공자
+      placeholder: OpenAI
     validations:
       required: true
   - type: input
     id: params
     attributes:
-      label: 전체 파라미터 수
-      placeholder: 14.7B
+      label: 파라미터 수
+      placeholder: 1.55B
     validations:
       required: true
   - type: input
-    id: active_params
+    id: license
     attributes:
-      label: 활성 파라미터 수
-      description: Dense 모델이면 전체 파라미터와 동일하게 적어 주세요.
-      placeholder: 14.7B
+      label: 라이선스
+      placeholder: MIT
     validations:
       required: true
   - type: input
-    id: context
+    id: language
     attributes:
-      label: 최대 컨텍스트
-      placeholder: 128K
-    validations:
-      required: true
-  - type: dropdown
-    id: tags
-    attributes:
-      label: 태그
-      multiple: true
-      options:
-        - general
-        - korean
-        - coding
-        - reasoning
-        - long
-        - edge
-        - vision
+      label: 언어
+      placeholder: multilingual, Korean
   - type: textarea
+    id: summary
+    attributes:
+      label: 요약
+      placeholder: 모델 용도와 특징을 간단히 적어 주세요.
+  - type: input
     id: source
     attributes:
-      label: 출처
-      description: 모델 카드, 공식 문서, 벤치마크 링크를 적어 주세요.
+      label: 공식 모델 카드
+      placeholder: https://huggingface.co/openai/whisper-large-v3
+    validations:
+      required: true
+  - type: input
+    id: license_source
+    attributes:
+      label: 라이선스 출처
+      placeholder: https://huggingface.co/.../blob/main/LICENSE
     validations:
       required: true

@@ -24,14 +24,16 @@
 
 ## 주요 기능
 
-- 데스크톱·데이터센터·Apple Silicon·노트북을 포함한 GPU 102종
-- 생성형 LLM, 임베딩, 리랭커, OCR, 문서/범용 VLM, 이미지 생성, 비디오 생성 워크로드
+- 데스크톱·데이터센터·Apple Silicon·노트북을 포함한 GPU 115종
+- 생성형 LLM, 임베딩, 리랭커, OCR, 문서/범용 VLM, 이미지·비디오 생성, STT·TTS 워크로드
+- GPU를 먼저 고르는 화면과 모델·예산을 먼저 고르는 전용 진입 화면
 - GPU 상세 정보와 최대 3개 GPU 비교: VRAM, 대역폭, 실행 가능한 모델 수, 예상 속도
 - 모델을 먼저 고른 뒤 예산·제조사·폼팩터·월 전력비로 GPU를 추천하는 GPU Advisor
 - 노트북 GPU TGP 입력과 전력 제한에 따른 성능 보정
 - 이미지/비디오 전용 계산 엔진: 해상도, 스텝, 프레임, FPS, LoRA, 오프로딩, Sage/Flash Attention, TeaCache 반영
 - 동일 GPU·모델 조건의 사용자 측정값을 이용한 속도 보정과 신뢰도 표시
 - 공식/추정 사양, 검증일, 측정 표본 수를 구분하는 데이터 품질 표시
+- 실측 데이터·GPU·모델 범위와 우선 측정 대상을 보여주는 벤치마크 대시보드
 - 여러 GPU에 여러 모델을 배치하는 AI 스택 배치 플래너
 - 한국어/영어 UI, 반응형 모바일 화면, 키보드 포커스와 모션 감소 지원
 
@@ -41,6 +43,7 @@ GPU와 벤치마크 요청은 GitHub Issue로 받을 수 있습니다.
 
 - [GPU 추가 요청](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml): 공식 제조사 출처, 스키마, 중복, 노트북 TGP를 자동 검증하고 변경 미리보기와 데이터 PR을 만듭니다.
 - [벤치마크 제보](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml): 측정 조건과 단위를 검증하고 `benchmark-ready` 라벨이 붙으면 데이터 PR을 만듭니다.
+- [모델 추가 요청](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=model-request.yml): 모델 카드·라이선스·중복을 검증하고 `model-ready` 라벨로 워크로드별 데이터 PR을 만듭니다.
 - 모든 GPU 데이터는 제조사, 아키텍처, 메모리 종류, 사용 가능 메모리, 런타임, 폼팩터 필드를 공통 스키마로 검증합니다.
 - GitHub Pages 빌드 시 커밋 해시를 정적 자산 버전에 넣어 오래된 브라우저 캐시를 방지합니다.
 
@@ -71,6 +74,7 @@ npm run check
 - [데이터 출처](./docs/data-sources.md)
 - [GPU 기여 파이프라인](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor 계산과 한계](./docs/v1.4-advisor-methodology.md)
+- [v1.5 카탈로그·음성·대시보드](./docs/v1.5-catalog-audio-dashboard.md)
 - [기여 방법](./CONTRIBUTING.md)
 - [변경 이력](./CHANGELOG.md)
 

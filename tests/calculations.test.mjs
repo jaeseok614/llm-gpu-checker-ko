@@ -23,6 +23,7 @@ const DATA_FILES = [
   "data/embedding-models.js",
   "data/reranker-models.js",
   "data/ocr-models.js",
+  "data/audio-models.js",
   "data/model-metadata.js",
   "data/benchmarks.js",
   "data/licenses.js",
@@ -37,7 +38,7 @@ const DATA_FILES = [
 // attach to the global object and survive across eval calls). So after the
 // initial load we copy everything tests need onto `window` explicitly.
 const BRIDGED_NAMES = [
-  "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS",
+  "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS", "AUDIO_MODELS",
   "QUANTS", "KV_PRECISION_META", "GPU_PRESETS", "ENCODER_PRECISIONS", "OCR_PRECISIONS",
   "BENCHMARKS", "PRIMARY_GPU_STORAGE_KEY",
 ];
@@ -954,5 +955,37 @@ describe("v1.4 advisor and media optimization", () => {
     })`);
     assert.ok(optimized.requiredGb < standard.requiredGb);
     assert.ok(optimized.speed > standard.speed);
+  });
+});
+
+describe("v1.5 catalog, audio, and model-first experience", () => {
+  test("includes the requested GPU families and audio catalogs", () => {
+    const fresh = loadApp();
+    assert.equal(fresh.eval(`["rx9070gre-12", "rx9060xt-16", "arcprob70-32", "arcprob60-24", "rtxpro5000blackwell-48", "rtxpro2000blackwell-16"].every((id) => GPU_PRESETS.some((gpu) => gpu.id === id))`), true);
+    assert.ok(fresh.AUDIO_MODELS.length >= 10);
+    assert.ok(fresh.eval(`AUDIO_MODELS.some((model) => model.type === "audio-stt") && AUDIO_MODELS.some((model) => model.type === "audio-tts")`));
+  });
+
+  test("estimates STT and TTS in realtime factors", () => {
+    const fresh = loadApp();
+    const stt = fresh.eval(`estimateAudioModel(AUDIO_MODELS.find((model) => model.type === "audio-stt"), getHardware())`);
+    const tts = fresh.eval(`estimateAudioModel(AUDIO_MODELS.find((model) => model.type === "audio-tts"), getHardware())`);
+    assert.ok(stt.requiredGb > 0 && stt.speed > 0);
+    assert.ok(tts.requiredGb > 0 && tts.speed > 0);
+    assert.equal(stt.unitLabel, "x realtime");
+  });
+
+  test("opens a model-first screen without requiring a selected GPU", () => {
+    const fresh = loadApp("https://example.com/?mode=modelFinder&lang=en");
+    assert.equal(fresh.document.getElementById("gpuAdvisorPanel").hidden, false);
+    assert.equal(fresh.document.getElementById("onboardingScreen").hidden, true);
+    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for a model/);
+  });
+
+  test("renders benchmark coverage and mobile comparison cards", () => {
+    const fresh = loadApp("https://example.com/?gpu=rtx4090-24&lang=en");
+    assert.match(fresh.document.getElementById("benchmarkDashboard").textContent, /Benchmark coverage dashboard/);
+    fresh.eval(`renderGpuInsights(getHardware()); $("toggleGpuCompare").click(); renderGpuInsights(getHardware())`);
+    assert.ok(fresh.document.querySelector(".gpu-mobile-comparison-cards article"));
   });
 });

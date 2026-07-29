@@ -53,6 +53,10 @@
             <span>내 GPU에 맞는 모델 찾기</span>
             <small>빠른 추천과 전체 모델 탐색</small>
           </button>
+          <button type="button" class="core-task-button" data-core-task="modelFinder" aria-selected="false">
+            <span>모델로 GPU 찾기</span>
+            <small>모델·예산·전력 기준 GPU 추천</small>
+          </button>
           <button type="button" class="core-task-button" data-core-task="placement" aria-selected="false">
             <span>여러 모델 함께 돌리기</span>
             <small>AI 스택 배치 플래너</small>
@@ -395,6 +399,8 @@
           <button type="button" class="workload-tab" data-workload-tab="generalVlm" aria-selected="false">범용 VLM</button>
           <button type="button" class="workload-tab" data-workload-tab="imageGeneration" aria-selected="false">이미지 생성</button>
           <button type="button" class="workload-tab" data-workload-tab="videoGeneration" aria-selected="false">비디오 생성</button>
+          <button type="button" class="workload-tab" data-workload-tab="audioStt" aria-selected="false">음성 인식</button>
+          <button type="button" class="workload-tab" data-workload-tab="audioTts" aria-selected="false">음성 합성</button>
         </div>
 
         <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative" hidden>
@@ -860,6 +866,7 @@
     <script src="./data/embedding-models.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/reranker-models.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/ocr-models.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/audio-models.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/benchmarks.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/model-metadata.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/licenses.js?v=__CACHE_VERSION__" defer></script>

@@ -585,6 +585,46 @@ html[lang="en"] .simple-mode-head > div:first-child {
   text-align: right;
 }
 
+.benchmark-dashboard {
+  margin: 18px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+
+.benchmark-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.benchmark-dashboard-grid > div {
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.benchmark-dashboard-grid span,
+.benchmark-dashboard-grid strong {
+  display: block;
+}
+
+.benchmark-dashboard-grid span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.benchmark-dashboard-grid strong {
+  margin-top: 4px;
+  font-size: 1.35rem;
+}
+
+.gpu-mobile-comparison-cards {
+  display: none;
+}
+
 @media (max-width: 1100px) {
   .gpu-advisor-controls {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -599,6 +639,47 @@ html[lang="en"] .simple-mode-head > div:first-child {
   .gpu-advisor-controls,
   .gpu-advisor-list {
     grid-template-columns: 1fr;
+  }
+
+  .benchmark-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gpu-comparison-table {
+    display: none;
+  }
+
+  .gpu-mobile-comparison-cards {
+    display: grid;
+    gap: 10px;
+  }
+
+  .gpu-mobile-comparison-cards article {
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-soft);
+  }
+
+  .gpu-mobile-comparison-cards dl {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 0;
+  }
+
+  .gpu-mobile-comparison-cards dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .gpu-mobile-comparison-cards dt {
+    color: var(--muted);
+  }
+
+  .gpu-mobile-comparison-cards dd {
+    margin: 0;
+    font-weight: 800;
   }
 }
 

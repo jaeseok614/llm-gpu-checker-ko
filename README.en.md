@@ -24,14 +24,16 @@
 
 ## Highlights
 
-- 102 desktop, data-center, Apple Silicon, and laptop GPU presets
-- Generative LLM, embedding, reranker, OCR, document/general VLM, image generation, and video generation workloads
+- 115 desktop, data-center, Apple Silicon, and laptop GPU presets
+- Generative LLM, embedding, reranker, OCR, document/general VLM, image/video generation, STT, and TTS workloads
+- Separate GPU-first and model/budget-first starting paths
 - GPU details and three-way comparison across VRAM, bandwidth, runnable models, and estimated speed
 - A model-first GPU Advisor ranked by budget, vendor, form factor, value, and monthly energy cost
 - Laptop GPU TGP input with power-limit performance scaling
 - A dedicated image/video engine that accounts for resolution, steps, frames, FPS, LoRA, offloading, Sage/Flash Attention, and TeaCache
 - Measured-data speed calibration and confidence levels for matching GPU/model conditions
 - Data-quality labels for official/estimated specifications, verification date, and measurement count
+- A benchmark coverage dashboard for measured rows, GPUs, models, estimate error, and priority targets
 - AI Stack Placement for assigning several models across several GPUs
 - Korean and English interfaces, responsive mobile layouts, keyboard focus, and reduced-motion support
 
@@ -41,6 +43,7 @@ GPU and benchmark submissions start from GitHub Issues.
 
 - [Request a GPU](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml): validates official manufacturer sources, schema, duplicates, and laptop TGP, then shows a change preview and creates a data PR after approval.
 - [Report a benchmark](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml): validates measurement conditions and units, then creates a data PR when labeled `benchmark-ready`.
+- [Request a model](https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=model-request.yml): validates the model card, license source, and duplicates, then creates a workload-specific data PR when labeled `model-ready`.
 - Every GPU follows a normalized schema for vendor, architecture, memory type, usable memory, runtimes, and form factor.
 - The Pages build stamps asset URLs with the commit hash to prevent stale browser caches.
 
@@ -71,6 +74,7 @@ npm run check
 - [Data sources](./docs/data-sources.md)
 - [GPU contribution pipeline](./docs/gpu-contribution-pipeline.md)
 - [v1.4 GPU Advisor methodology and limitations](./docs/v1.4-advisor-methodology.md)
+- [v1.5 catalog, audio, and dashboard](./docs/v1.5-catalog-audio-dashboard.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 
