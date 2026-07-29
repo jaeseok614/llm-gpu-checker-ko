@@ -987,6 +987,7 @@ describe("v1.5 catalog, audio, and model-first experience", () => {
   test("renders benchmark coverage and mobile comparison cards", () => {
     const fresh = loadApp("https://example.com/?gpu=rtx4090-24&lang=en");
     assert.match(fresh.document.getElementById("benchmarkDashboard").textContent, /Benchmark coverage dashboard/);
+    assert.match(read("styles.css"), /\.benchmark-dashboard\s*\{[^}]*width:\s*min\(1540px,\s*calc\(100% - 48px\)\);[^}]*margin:\s*18px auto;/s);
     fresh.eval(`renderGpuInsights(getHardware()); $("toggleGpuCompare").click(); renderGpuInsights(getHardware())`);
     assert.ok(fresh.document.querySelector(".gpu-mobile-comparison-cards article"));
   });

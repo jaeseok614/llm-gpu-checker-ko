@@ -586,7 +586,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .benchmark-dashboard {
-  margin: 18px 0;
+  width: min(1540px, calc(100% - 48px));
+  margin: 18px auto;
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -4967,6 +4968,7 @@ button:focus-visible {
 
   .app-shell,
   .app-footer,
+  .benchmark-dashboard,
   .benchmark-panel {
     width: 100%;
     margin-top: 12px;
