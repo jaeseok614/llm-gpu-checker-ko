@@ -248,6 +248,26 @@ window.LLM_GPU_CHECKER_DATA.licensePolicies = {
     },
     "https://www.licenses.ai/ai-licenses",
   ),
+  "CreativeML Open RAIL++-M": licensePolicy(
+    "conditional",
+    "조건부 상업 이용",
+    "공개 가중치",
+    {
+      ko: "상업 이용을 일괄 금지하지 않지만 책임 있는 AI 사용 제한과 파생 모델 재배포 조건을 확인해야 합니다.",
+      en: "Commercial use is not blanket-prohibited, but responsible-AI restrictions and derivative redistribution terms must be reviewed.",
+    },
+    "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/LICENSE.md",
+  ),
+  "Stability AI Community": licensePolicy(
+    "conditional",
+    "조건부 상업 이용",
+    "공개 가중치·매출 조건",
+    {
+      ko: "연 매출 100만 달러 미만 개인·조직은 커뮤니티 라이선스 범위에서 이용할 수 있으며, 그 이상은 Stability AI의 별도 기업 라이선스가 필요합니다.",
+      en: "Individuals and organizations under USD 1 million in annual revenue may use the model under the Community License; larger organizations need a separate enterprise license.",
+    },
+    "https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md",
+  ),
   Falcon: licensePolicy(
     "conditional",
     "조건부 상업 이용",

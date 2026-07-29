@@ -94,6 +94,14 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "rx7900gre-16", name: "Radeon RX 7900 GRE 16GB", vram: 16, ram: 64, bandwidth: 576 },
   { id: "rx7800xt-16", name: "Radeon RX 7800 XT 16GB", vram: 16, ram: 64, bandwidth: 624 },
   { id: "rx6950xt-16", name: "Radeon RX 6950 XT 16GB", vram: 16, ram: 64, bandwidth: 576 },
+  {
+    id: "ryzen-ai-max-plus-395-128",
+    name: "AMD Ryzen AI Max+ 395 / Radeon 8060S 128GB 통합메모리",
+    vram: 128,
+    ram: 128,
+    bandwidth: 256,
+    sourceUrl: "https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html",
+  },
 
   { id: "intelmax1550-128", name: "Intel Data Center GPU Max 1550 128GB", vram: 128, ram: 384, bandwidth: 3276.8 },
   { id: "intelmax1100-48", name: "Intel Data Center GPU Max 1100 48GB", vram: 48, ram: 128, bandwidth: 1228.8 },

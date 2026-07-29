@@ -70,6 +70,8 @@ window.LLM_GPU_CHECKER_DATA.encoderRuntimeProfiles = {
 };
 
 window.LLM_GPU_CHECKER_DATA.ocrResolutionPresets = {
+  "image-1024": { label: "이미지 생성 1024×1024", width: 1024, height: 1024 },
+  "video-480": { label: "비디오 생성 832×480", width: 832, height: 480 },
   "a4-200": { label: "A4 200 DPI", width: 1654, height: 2339 },
   "a4-300": { label: "A4 300 DPI", width: 2480, height: 3508 },
   "screen-1080": { label: "웹/스크린샷 1080p", width: 1920, height: 1080 },

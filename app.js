@@ -19,6 +19,8 @@ const GENERATIVE_MODELS = (DATA.models || []).map((model) => withModelMetadata(m
 const EMBEDDING_MODELS = (DATA.embeddingModels || []).map((model) => withModelMetadata(model, "embedding"));
 const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => withModelMetadata(model, "reranker"));
 const OCR_MODELS = (DATA.ocrModels || []).map((model) => withModelMetadata(model, model.type || "ocr-pipeline"));
+const IMAGE_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "image-generation");
+const VIDEO_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "video-generation");
 const ENCODER_PRECISIONS = DATA.precisions?.encoder || [];
 const OCR_PRECISIONS = DATA.precisions?.ocr || [];
 const ENCODER_RUNTIME_PROFILES = DATA.encoderRuntimeProfiles || {};
@@ -29,8 +31,8 @@ const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
 const HF_MODEL_STORAGE_KEY = "llm-gpu-checker-hf-models-v1";
 const PRIMARY_GPU_STORAGE_KEY = "ai-hardware-fit-primary-gpu-v1";
 const MAX_IMPORTED_HF_MODELS = 20;
-const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm"]);
-const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm"]);
+const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm", "image-generation", "video-generation"]);
+const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm", "imageGeneration", "videoGeneration"]);
 const WORKLOAD_ALIASES = { ocr: "ocrPipeline" };
 const OCR_PIPELINE_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-pipeline");
 const DOCUMENT_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-vlm" || model.type === "document-vlm");
@@ -60,6 +62,8 @@ const MODEL_GROUPS = {
   ocrPipeline: OCR_PIPELINE_MODELS,
   documentVlm: DOCUMENT_VLM_MODELS,
   generalVlm: GENERAL_VLM_MODELS,
+  imageGeneration: IMAGE_GENERATION_MODELS,
+  videoGeneration: VIDEO_GENERATION_MODELS,
 };
 
 const WORKLOAD_META = {
@@ -104,6 +108,20 @@ const WORKLOAD_META = {
     modelCountLabel: "범용 VLM 모델",
     searchPlaceholder: "범용 VLM, 제조사, 태그 검색",
     listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/기능", "계산 VRAM", "추정 처리량", "이미지", ""],
+  },
+  imageGeneration: {
+    label: "이미지 생성",
+    statusLabel: "이미지",
+    modelCountLabel: "이미지 생성 모델",
+    searchPlaceholder: "이미지 생성 모델, 제조사, 태그 검색",
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/설정", "계산 VRAM", "추정 생성 속도", "해상도", ""],
+  },
+  videoGeneration: {
+    label: "비디오 생성",
+    statusLabel: "비디오",
+    modelCountLabel: "비디오 생성 모델",
+    searchPlaceholder: "비디오 생성 모델, 제조사, 태그 검색",
+    listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/설정", "계산 VRAM", "추정 생성 속도", "해상도", ""],
   },
 };
 
@@ -181,6 +199,8 @@ const MESSAGES = {
     ocrVlm: "OCR·VLM",
     documentVlm: "문서 VLM",
     generalVlm: "범용 VLM",
+    imageGeneration: "이미지 생성",
+    videoGeneration: "비디오 생성",
     currentGpu: "현재 GPU",
     quickTitle: "3단계 빠른 추천",
     quickSubtitle: "GPU에 맞는 모델 3개를 바로 추천합니다",
@@ -218,6 +238,8 @@ const MESSAGES = {
     ocrVlm: "OCR · VLM",
     documentVlm: "Document VLM",
     generalVlm: "General VLM",
+    imageGeneration: "Image generation",
+    videoGeneration: "Video generation",
     currentGpu: "Current GPU",
     quickTitle: "3-step quick recommendations",
     quickSubtitle: "Get 3 models recommended for your GPU",
@@ -2086,6 +2108,13 @@ function bindEvents() {
       selectedModelKey = "";
       compareKeys = [];
       compareModalOpen = false;
+      if (nextWorkload === "imageGeneration") {
+        $("ocrResolutionPreset").value = "image-1024";
+        applyOcrResolutionPreset("image-1024");
+      } else if (nextWorkload === "videoGeneration") {
+        $("ocrResolutionPreset").value = "video-480";
+        applyOcrResolutionPreset("video-480");
+      }
       refreshWorkloadUi();
       refreshFilterOptions();
       render();
@@ -5078,6 +5107,11 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
   const pagesPerSecond = estimateOcrThroughput(model, hardware, workload, precision, megapixels, grade, featureMultiplier);
   const secondsPerPage = pagesPerSecond > 0 ? 1 / pagesPerSecond : 0;
   const reason = buildOcrReason(model, workload, grade, requiredGb, effectiveVram, megapixels);
+  const isImageGenerator = model.type === "image-generation";
+  const isVideoGenerator = model.type === "video-generation";
+  const outputUnit = isImageGenerator ? "image/s" : isVideoGenerator ? "clip/s" : "page/s";
+  const durationUnit = isImageGenerator ? "image" : isVideoGenerator ? "clip" : "page";
+  const settingSuffix = isImageGenerator || isVideoGenerator ? "Diffusers" : ocrFeatureLabel(workload.featureSet);
 
   return {
     model,
@@ -5097,10 +5131,10 @@ function estimateOcrWithPrecision(model, hardware, workload, precision) {
     firstTokenSeconds: secondsPerPage,
     contextLimitTokens: model.maxImageTokens || 0,
     contextSupported: true,
-    settingLabel: `${precision.label} · ${ocrFeatureLabel(workload.featureSet)}`,
-    speedLabel: `${formatThroughput(pagesPerSecond, "page/s")} · ${formatDuration(secondsPerPage)}/page`,
+    settingLabel: `${precision.label} · ${settingSuffix}`,
+    speedLabel: `${formatThroughput(pagesPerSecond, outputUnit)} · ${formatDuration(secondsPerPage)}/${durationUnit}`,
     limitLabel: `${formatMegapixels(megapixels)}`,
-    unitLabel: "page/s",
+    unitLabel: outputUnit,
     reason,
     megapixels,
   };

@@ -379,6 +379,8 @@
           <button type="button" class="workload-tab" data-workload-tab="ocrPipeline" aria-selected="false">OCR</button>
           <button type="button" class="workload-tab" data-workload-tab="documentVlm" aria-selected="false">문서 VLM</button>
           <button type="button" class="workload-tab" data-workload-tab="generalVlm" aria-selected="false">범용 VLM</button>
+          <button type="button" class="workload-tab" data-workload-tab="imageGeneration" aria-selected="false">이미지 생성</button>
+          <button type="button" class="workload-tab" data-workload-tab="videoGeneration" aria-selected="false">비디오 생성</button>
         </div>
 
         <div class="settings-panel advanced-panel workload-settings" data-workload-settings="generative" hidden>
@@ -593,6 +595,8 @@
           <label class="field">
             <span>문서 크기</span>
             <select id="ocrResolutionPreset">
+              <option value="image-1024">이미지 생성 1024×1024</option>
+              <option value="video-480">비디오 생성 832×480</option>
               <option value="a4-200" selected>A4 200 DPI</option>
               <option value="a4-300">A4 300 DPI</option>
               <option value="screen-1080">웹/스크린샷 1080p</option>
