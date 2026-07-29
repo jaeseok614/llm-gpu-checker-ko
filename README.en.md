@@ -37,6 +37,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v3.7** — Added MuseTalk, LivePortrait, SadTalker, and Wav2Lip as a dedicated avatar/lip-sync catalog connected to model search, GPU Advisor, and AI stack placement.
 - **v3.6** — Added STT/TTS to AI stack placement and an avatar-chat preset spanning speech input, LLM response, speech synthesis, and avatar video.
 - **v3.5** — Completed detailed SLA inputs, per-server placement and failover capacity, PCIe/NIC/UPS/cooling BOM, TCO outputs, and measured PoC validation.
 - **v3.4** — Added an editable Excel estimate, purchase/energy/three-year TCO, PDF proposal summary, and Docker Compose draft.
@@ -69,7 +70,7 @@
 - Launch Assistant generates Ollama, llama.cpp, vLLM, and Docker Compose configurations for the selected model and GPU.
 - GPU and model comparison now supports up to four items, with dedicated mobile cards.
 - 115 desktop, data-center, Apple Silicon, and laptop GPU presets
-- Generative LLM, embedding, reranker, OCR, document/general VLM, image/video generation, STT, and TTS workloads
+- Generative LLM, embedding, reranker, OCR, document/general VLM, image/video generation, avatar/lip-sync, STT, and TTS workloads
 - Separate GPU-first and model/budget-first starting paths
 - GPU details and three-way comparison across VRAM, bandwidth, runnable models, and estimated speed
 - A model-first GPU Advisor ranked by budget, vendor, form factor, value, and monthly energy cost

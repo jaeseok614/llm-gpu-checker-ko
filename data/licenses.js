@@ -76,6 +76,16 @@ window.LLM_GPU_CHECKER_DATA.licensePolicies = {
   ),
   "Apache 2.0": apache20,
   MIT: mit,
+  "Research-only": licensePolicy(
+    "noncommercial",
+    "연구·비상업 전용",
+    "연구용 공개 모델",
+    {
+      ko: "공개 체크포인트는 연구·개인·비상업 용도로 제한됩니다. 상업 서비스에는 권리자의 별도 허가나 상업 라이선스가 필요합니다.",
+      en: "The public checkpoint is restricted to research, personal, and non-commercial use. Commercial services require separate permission or a commercial license.",
+    },
+    "https://github.com/Rudrabha/Wav2Lip",
+  ),
   "GPL-3.0": licensePolicy(
     "allowed",
     "상업 이용 가능",
@@ -282,6 +292,16 @@ window.LLM_GPU_CHECKER_DATA.licensePolicies = {
 
 window.LLM_GPU_CHECKER_DATA.modelLicensePolicies = {
   "Kimi K2 Thinking": window.LLM_GPU_CHECKER_DATA.licensePolicies.Kimi,
+  "KlingAIResearch/LivePortrait": licensePolicy(
+    "review",
+    "의존 모델 조건 확인",
+    "MIT 코드·제한 가능 가중치",
+    {
+      ko: "LivePortrait 코드는 MIT이지만 기본 얼굴 검출에 쓰이는 InsightFace 모델은 비상업 연구 조건입니다. 상업 배포 시 해당 검출 모델을 교체해야 합니다.",
+      en: "LivePortrait code is MIT, but its default InsightFace detector weights are for non-commercial research. Replace that detector for commercial deployment.",
+    },
+    "https://github.com/KlingAIResearch/LivePortrait/blob/main/LICENSE",
+  ),
 };
 
 window.LLM_GPU_CHECKER_DATA.licenseMeta = {

@@ -140,12 +140,12 @@ function studioGpuScore(gpu, model) {
   const rawEstimate = estimateAnyModelForHardware(model, buildHardwareForPreset(gpu));
   const mediaScale = studioState.category === "image"
     ? Math.pow(Math.max(512, studioState.imageSize) / 1024, 2)
-    : studioState.category === "video"
+    : ["video", "avatar-generation"].includes(studioState.category)
       ? Math.max(1, studioState.videoFrames) / 81
       : 1;
   const estimate = rawEstimate ? {
     ...rawEstimate,
-    requiredGb: Number(rawEstimate.requiredGb || 0) * (studioState.category === "video" ? 0.75 + mediaScale * 0.25 : mediaScale),
+    requiredGb: Number(rawEstimate.requiredGb || 0) * (["video", "avatar-generation"].includes(studioState.category) ? 0.75 + mediaScale * 0.25 : mediaScale),
   } : null;
   const market = studioMarket(gpu.id);
   const speed = Number(estimate?.speed || estimate?.throughput || 0) / Math.max(0.25, mediaScale);
@@ -208,7 +208,7 @@ function renderStudioRecommend() {
           ["all", en ? "All" : "전체"], ["llm", "LLM"], ["vlm", "VLM"],
           ["image", en ? "Image generation" : "이미지 생성"], ["video", en ? "Video generation" : "비디오 생성"],
           ["embedding", en ? "Embedding" : "임베딩"], ["reranker", en ? "Reranker" : "리랭커"],
-          ["ocr", "OCR"], ["stt", "STT"], ["tts", "TTS"],
+          ["ocr", "OCR"], ["avatar-generation", en ? "Avatar / lip sync" : "아바타·립싱크"], ["stt", "STT"], ["tts", "TTS"],
         ].map(([id, label]) => `<option value="${id}" ${studioState.category === id ? "selected" : ""}>${label}</option>`).join("")}
       </select></label>
       <label class="studio-wide"><span>${en ? "Model to run" : "실행할 모델"}</span><select id="studioModel">${models.map((item) => `<option value="${platformEscape(modelKey(item))}" ${modelKey(item) === modelKey(model) ? "selected" : ""}>${platformEscape(item.name)}</option>`).join("")}</select></label>
@@ -219,7 +219,7 @@ function renderStudioRecommend() {
       <label><span>${en ? "Power limit (W)" : "전력 제한 (W)"}</span><input id="studioPower" type="number" min="0" value="${studioState.powerLimitW}"></label>
       <label><span>${en ? "Noise preference" : "소음 선호"}</span><select id="studioNoise"><option value="normal" ${studioState.noise === "normal" ? "selected" : ""}>${en ? "Normal" : "일반"}</option><option value="quiet" ${studioState.noise === "quiet" ? "selected" : ""}>${en ? "Quiet / lower power" : "저소음·저전력"}</option></select></label>
       ${studioState.category === "image" ? `<label><span>${en ? "Image size" : "이미지 해상도"}</span><select id="studioImageSize">${[768, 1024, 1536].map((size) => `<option value="${size}" ${studioState.imageSize === size ? "selected" : ""}>${size}px</option>`).join("")}</select></label>` : ""}
-      ${studioState.category === "video" ? `<label><span>${en ? "Video frames" : "비디오 프레임"}</span><input id="studioVideoFrames" type="number" min="1" max="241" value="${studioState.videoFrames}"></label>` : ""}
+      ${["video", "avatar-generation"].includes(studioState.category) ? `<label><span>${en ? "Video frames" : "비디오 프레임"}</span><input id="studioVideoFrames" type="number" min="1" max="241" value="${studioState.videoFrames}"></label>` : ""}
     </div>
     <div class="studio-pick-grid">
       ${picks.map((row, index) => `<article class="studio-pick-card ${index === 1 ? "is-featured" : ""}">

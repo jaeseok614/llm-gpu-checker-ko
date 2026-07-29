@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### v3.7 — 아바타·립싱크 모델
+
+- MuseTalk 1.5, LivePortrait, SadTalker, Wav2Lip을 공식 출처·라이선스 경고와 함께 전용 모델 카탈로그에 추가
+- 전체 모델 탐색, GPU Advisor, AI 스택 배치에 `아바타·립싱크` 워크로드와 GPU VRAM·처리 속도 계산 연결
+- AI 아바타 채팅 프리셋의 영상 단계를 일반 비디오 생성 모델에서 실시간 MuseTalk 립싱크 모델로 교체
+- 모델별 실행 초안과 LivePortrait 의존 가중치·Wav2Lip 비상업 제한 안내 추가
+
 ### v3.6 — 멀티모달 AI 스택
 
 - AI 스택 모델 선택에 STT와 TTS 카테고리를 추가하고 오디오 모델의 VRAM·실시간 배속을 GPU 배치 계산에 연결

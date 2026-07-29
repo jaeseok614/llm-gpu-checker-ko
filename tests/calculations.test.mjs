@@ -39,7 +39,7 @@ const DATA_FILES = [
 // attach to the global object and survive across eval calls). So after the
 // initial load we copy everything tests need onto `window` explicitly.
 const BRIDGED_NAMES = [
-  "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS", "AUDIO_MODELS",
+  "$", "GENERATIVE_MODELS", "EMBEDDING_MODELS", "RERANKER_MODELS", "OCR_MODELS", "AUDIO_MODELS", "AVATAR_GENERATION_MODELS",
   "QUANTS", "KV_PRECISION_META", "GPU_PRESETS", "ENCODER_PRECISIONS", "OCR_PRECISIONS",
   "BENCHMARKS", "PRIMARY_GPU_STORAGE_KEY", "KOREAN_GPU_MARKET", "SYSTEM_PART_CATALOG",
   "GPU_PHYSICAL_REFERENCE", "studioState",
@@ -1114,7 +1114,7 @@ describe("v2.2 user build calculator", () => {
   });
 });
 
-describe("v3.6 infrastructure sizing and multimodal stack", () => {
+describe("v3.7 infrastructure sizing and multimodal stack", () => {
   test("renders seven decision tools and source-linked Korean prices", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);
@@ -1173,9 +1173,22 @@ describe("v3.6 infrastructure sizing and multimodal stack", () => {
     platform.document.querySelector("[data-placement-starter='voice-avatar']").click();
     assert.equal(platform.document.querySelector("[data-placement-usage='pipeline']").getAttribute("aria-selected"), "true");
     assert.equal(platform.document.querySelectorAll(".placement-model-config").length, 4);
-    assert.match(platform.document.querySelector("#placementModelSelected").textContent, /Whisper small|Kokoro-82M|LTX-Video/);
-    assert.equal(platform.document.querySelectorAll("[data-placement-type='audio-stt'], [data-placement-type='audio-tts']").length, 2);
+    assert.match(platform.document.querySelector("#placementModelSelected").textContent, /Whisper small|Kokoro-82M|MuseTalk/);
+    assert.equal(platform.document.querySelectorAll("[data-placement-type='avatar-generation'], [data-placement-type='audio-stt'], [data-placement-type='audio-tts']").length, 3);
     assert.equal(platform.eval("getPlacementBaselineOptions(AUDIO_MODELS.find((model) => model.type === 'audio-stt'), { ...getHardware(), concurrency: 1 })[0].setting.id"), "fp16");
     assert.equal(platform.eval("getPlacementCapacity(AUDIO_MODELS.find((model) => model.type === 'audio-tts'), { id: 'fp16' }, getHardware(), getHardware().availableVram).unit"), "× realtime");
+  });
+
+  test("exposes avatar models in catalog, advisor, and placement flows", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx4090-24&lang=en", {}, { platformV2: true });
+    assert.equal(platform.eval("AVATAR_GENERATION_MODELS.length"), 4);
+    assert.equal(platform.document.querySelectorAll("[data-workload-tab='avatarGeneration']").length, 1);
+    assert.equal(platform.document.querySelector("#advisorModelCategory option[value='avatar-generation']").textContent, "Avatar / lip sync");
+    const museTalk = platform.eval("AVATAR_GENERATION_MODELS.find((model) => model.name.includes('MuseTalk'))");
+    const estimate = platform.eval("estimateOcrModel(AVATAR_GENERATION_MODELS.find((model) => model.name.includes('MuseTalk')), getHardware(), { width: 512, height: 512, frames: 81, fps: 25, steps: 1, batchSize: 1, precisionId: 'fp16', offload: 'none', optimization: 'none', loraCount: 0 })");
+    assert.equal(museTalk.type, "avatar-generation");
+    assert.equal(estimate.unitLabel, "clip/s");
+    assert.ok(estimate.requiredGb > 0);
+    assert.match(platform.eval("getLicensePolicy(AVATAR_GENERATION_MODELS.find((model) => model.name.includes('LivePortrait'))).summary.en"), /InsightFace|detector/);
   });
 });

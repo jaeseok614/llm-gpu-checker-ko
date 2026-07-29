@@ -21,6 +21,7 @@ const RERANKER_MODELS = (DATA.rerankerModels || []).map((model) => withModelMeta
 const OCR_MODELS = (DATA.ocrModels || []).map((model) => withModelMetadata(model, model.type || "ocr-pipeline"));
 const IMAGE_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "image-generation");
 const VIDEO_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "video-generation");
+const AVATAR_GENERATION_MODELS = OCR_MODELS.filter((model) => model.type === "avatar-generation");
 const AUDIO_MODELS = (DATA.audioModels || []).map((model) => withModelMetadata(model, model.type));
 const AUDIO_STT_MODELS = AUDIO_MODELS.filter((model) => model.type === "audio-stt");
 const AUDIO_TTS_MODELS = AUDIO_MODELS.filter((model) => model.type === "audio-tts");
@@ -36,6 +37,7 @@ const UI_COPY_V15 = {
   "core.modelFinder.note": { ko: "모델·예산·전력 기준 GPU 추천", en: "Recommendations by model, budget, and power" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
   "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
+  "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
   "benchmark.dashboard": { ko: "벤치마크 데이터 현황", en: "Benchmark coverage dashboard" },
   "benchmark.submit": { ko: "측정값 제보", en: "Submit a measurement" },
   "advisor.currentPrice": { ko: "현재 GPU 시세 (USD)", en: "Current GPU market price (USD)" },
@@ -69,8 +71,8 @@ function applyV15Translations() {
 const HF_MODEL_STORAGE_KEY = "llm-gpu-checker-hf-models-v1";
 const PRIMARY_GPU_STORAGE_KEY = "ai-hardware-fit-primary-gpu-v1";
 const MAX_IMPORTED_HF_MODELS = 20;
-const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm", "image-generation", "video-generation"]);
-const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm", "imageGeneration", "videoGeneration"]);
+const VISION_MODEL_TYPES = new Set(["ocr-pipeline", "ocr-vlm", "document-vlm", "general-vlm", "image-generation", "video-generation", "avatar-generation"]);
+const VISION_WORKLOADS = new Set(["ocrPipeline", "documentVlm", "generalVlm", "imageGeneration", "videoGeneration", "avatarGeneration"]);
 const WORKLOAD_ALIASES = { ocr: "ocrPipeline" };
 const OCR_PIPELINE_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-pipeline");
 const DOCUMENT_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "ocr-vlm" || model.type === "document-vlm");
@@ -151,6 +153,7 @@ const MODEL_GROUPS = {
   generalVlm: GENERAL_VLM_MODELS,
   imageGeneration: IMAGE_GENERATION_MODELS,
   videoGeneration: VIDEO_GENERATION_MODELS,
+  avatarGeneration: AVATAR_GENERATION_MODELS,
   audioStt: AUDIO_STT_MODELS,
   audioTts: AUDIO_TTS_MODELS,
 };
@@ -211,6 +214,13 @@ const WORKLOAD_META = {
     modelCountLabel: "비디오 생성 모델",
     searchPlaceholder: "비디오 생성 모델, 제조사, 태그 검색",
     listHeaders: ["상태", "모델", "출시/세대", "대표 공개 평가", "공급사/라이선스", "정밀도/설정", "계산 VRAM", "추정 생성 속도", "해상도", ""],
+  },
+  avatarGeneration: {
+    label: "아바타·립싱크",
+    statusLabel: "아바타",
+    modelCountLabel: "아바타·립싱크 모델",
+    searchPlaceholder: "아바타, 립싱크, talking-head 모델 검색",
+    listHeaders: ["상태", "모델", "출시/세대", "요약", "공급사/라이선스", "정밀도/설정", "계산 VRAM", "추정 처리 속도", "해상도", ""],
   },
   audioStt: {
     label: "음성 인식",
@@ -305,6 +315,7 @@ const MESSAGES = {
     generalVlm: "범용 VLM",
     imageGeneration: "이미지 생성",
     videoGeneration: "비디오 생성",
+    avatarGeneration: "아바타·립싱크",
     currentGpu: "현재 GPU",
     quickTitle: "3단계 빠른 추천",
     quickSubtitle: "GPU에 맞는 모델 3개를 바로 추천합니다",
@@ -344,6 +355,7 @@ const MESSAGES = {
     generalVlm: "General VLM",
     imageGeneration: "Image generation",
     videoGeneration: "Video generation",
+    avatarGeneration: "Avatar · lip sync",
     currentGpu: "Current GPU",
     quickTitle: "3-step quick recommendations",
     quickSubtitle: "Get 3 models recommended for your GPU",
@@ -715,6 +727,9 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["여러 모델을 독립 API로 운영", "Run multiple models as independent APIs"],
   ["AI 아바타 채팅", "AI avatar chat"],
   ["STT + LLM + TTS + 아바타 영상", "STT + LLM + TTS + avatar video"],
+  ["아바타·립싱크 모델", "Avatar · lip-sync models"],
+  ["아바타·립싱크", "Avatar · lip sync"],
+  ["아바타, 립싱크, talking-head 모델 검색", "Search avatar, lip-sync, or talking-head models"],
   ["직접 선택", "Build manually"],
   ["원하는 GPU와 모델을 직접 구성", "Choose your own GPUs and models"],
   ["하드웨어", "Hardware"],
@@ -1211,8 +1226,10 @@ function refreshCoreTaskUi() {
   }
   const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
   const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
+  const avatarTab = document.querySelector('[data-workload-tab="avatarGeneration"]');
   if (sttTab) sttTab.textContent = uiText("workload.audioStt");
   if (ttsTab) ttsTab.textContent = uiText("workload.audioTts");
+  if (avatarTab) avatarTab.textContent = uiText("workload.avatarGeneration");
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
 }
 
@@ -1510,6 +1527,7 @@ const ADVISOR_MODEL_CATEGORIES = [
   { id: "vlm", ko: "VLM", en: "VLM" },
   { id: "image", ko: "이미지 생성", en: "Image generation" },
   { id: "video", ko: "비디오 생성", en: "Video generation" },
+  { id: "avatar-generation", ko: "아바타·립싱크", en: "Avatar / lip sync" },
   { id: "embedding", ko: "임베딩", en: "Embedding" },
   { id: "reranker", ko: "리랭커", en: "Reranker" },
   { id: "ocr", ko: "OCR", en: "OCR" },
@@ -1522,6 +1540,7 @@ function getAdvisorModelCategory(model) {
   if (model.type === "document-vlm" || model.type === "general-vlm") return "vlm";
   if (model.type === "image-generation") return "image";
   if (model.type === "video-generation") return "video";
+  if (model.type === "avatar-generation") return "avatar-generation";
   if (model.type === "ocr-pipeline") return "ocr";
   if (model.type === "audio-stt") return "stt";
   if (model.type === "audio-tts") return "tts";
@@ -2451,7 +2470,7 @@ function bindEvents() {
       if (nextWorkload === "imageGeneration") {
         $("ocrResolutionPreset").value = "image-1024";
         applyOcrResolutionPreset("image-1024");
-      } else if (nextWorkload === "videoGeneration") {
+      } else if (nextWorkload === "videoGeneration" || nextWorkload === "avatarGeneration") {
         $("ocrResolutionPreset").value = "video-480";
         applyOcrResolutionPreset("video-480");
       }
@@ -2680,10 +2699,10 @@ function refreshWorkloadUi() {
     panel.hidden = !settingsExpanded || (panelKey !== activeWorkload && !(panelKey === "vision" && isVisionWorkload(activeWorkload)));
   });
   document.querySelectorAll(".media-generation-field").forEach((field) => {
-    field.hidden = !["imageGeneration", "videoGeneration"].includes(activeWorkload);
+    field.hidden = !["imageGeneration", "videoGeneration", "avatarGeneration"].includes(activeWorkload);
   });
-  if ($("mediaFrames")) $("mediaFrames").closest(".field").hidden = activeWorkload !== "videoGeneration";
-  if ($("mediaFps")) $("mediaFps").closest(".field").hidden = activeWorkload !== "videoGeneration";
+  if ($("mediaFrames")) $("mediaFrames").closest(".field").hidden = !["videoGeneration", "avatarGeneration"].includes(activeWorkload);
+  if ($("mediaFps")) $("mediaFps").closest(".field").hidden = !["videoGeneration", "avatarGeneration"].includes(activeWorkload);
 
   syncPresetControls();
 }
@@ -2791,7 +2810,7 @@ const PLACEMENT_STARTER_PRESETS = {
     usage: "pipeline",
     strategy: "throughput",
     target: 2,
-    modelNames: ["Whisper small", "Qwen3 4B", "Kokoro-82M", "Lightricks/LTX-Video"],
+    modelNames: ["Whisper small", "Qwen3 4B", "Kokoro-82M", "TMElyralab/MuseTalk 1.5"],
   },
 };
 
@@ -2941,6 +2960,7 @@ function getModelsForPlacementType(type) {
   if (type === "embedding") return EMBEDDING_MODELS;
   if (type === "reranker") return RERANKER_MODELS;
   if (type === "vision") return OCR_MODELS;
+  if (type === "avatar-generation") return AVATAR_GENERATION_MODELS;
   if (type === "audio-stt") return AUDIO_STT_MODELS;
   if (type === "audio-tts") return AUDIO_TTS_MODELS;
   return GENERATIVE_MODELS;
@@ -5546,7 +5566,7 @@ function estimateEncoderThroughput(model, hardware, runtime, precision, tokens, 
 }
 
 function estimateOcrModel(model, hardware, workload, precisionId = workload.precisionId) {
-  if (model.type === "image-generation" || model.type === "video-generation") {
+  if (model.type === "image-generation" || model.type === "video-generation" || model.type === "avatar-generation") {
     return estimateMediaModel(model, hardware, workload, precisionId);
   }
   const precision = resolvePrecision(
@@ -5559,7 +5579,7 @@ function estimateOcrModel(model, hardware, workload, precisionId = workload.prec
 }
 
 function estimateVisionWithPrecision(model, hardware, workload, precision) {
-  return model.type === "image-generation" || model.type === "video-generation"
+  return model.type === "image-generation" || model.type === "video-generation" || model.type === "avatar-generation"
     ? estimateMediaWithPrecision(model, hardware, workload, precision)
     : estimateOcrWithPrecision(model, hardware, workload, precision);
 }
@@ -5575,7 +5595,7 @@ function estimateMediaModel(model, hardware, workload, precisionId = workload.pr
 }
 
 function estimateMediaWithPrecision(model, hardware, workload, precision) {
-  const isVideo = model.type === "video-generation";
+  const isVideo = model.type === "video-generation" || model.type === "avatar-generation";
   const megapixels = (workload.width * workload.height) / 1e6;
   const frames = isVideo ? workload.frames || 81 : 1;
   const steps = workload.steps || 28;
@@ -5605,7 +5625,7 @@ function estimateMediaWithPrecision(model, hardware, workload, precision) {
   const computeScale = Math.sqrt(Math.max(0.05, hardware.computeTotal.fp16Tflops / 170));
   const bandwidthScale = Math.sqrt(Math.max(0.05, hardware.aggregateBandwidth / (reference.bandwidth || 1008)));
   const resolutionScale = Math.pow(referencePixels / Math.max(0.2, megapixels), 0.9);
-  const stepScale = 28 / Math.max(1, steps);
+  const stepScale = model.type === "avatar-generation" ? 1 : 28 / Math.max(1, steps);
   const frameScale = isVideo ? 81 / Math.max(1, frames) : 1;
   const fitScale = grade === "F" ? 0 : grade === "D" ? 0.14 : grade === "C" ? 0.48 : 1;
   const offloadSpeedScale = workload.offload === "sequential" ? 0.28 : workload.offload === "tiled" ? 0.7 : 1;
@@ -5651,7 +5671,9 @@ function estimateMediaWithPrecision(model, hardware, workload, precision) {
 
 function buildMediaReason(model, workload, grade, requiredGb, effectiveVram) {
   const en = uiLanguage === "en";
-  const kind = model.type === "video-generation" ? (en ? "video" : "비디오") : (en ? "image" : "이미지");
+  const kind = model.type === "avatar-generation"
+    ? (en ? "avatar" : "아바타")
+    : model.type === "video-generation" ? (en ? "video" : "비디오") : (en ? "image" : "이미지");
   if (grade === "F") return en
     ? `${kind} generation needs about ${formatGb(requiredGb)}, above the available ${formatGb(effectiveVram)} even with the selected memory strategy.`
     : `${kind} 생성에 약 ${formatGb(requiredGb)}가 필요해 선택한 메모리 전략에서도 가용 ${formatGb(effectiveVram)}를 초과합니다.`;
@@ -5662,8 +5684,8 @@ function buildMediaReason(model, workload, grade, requiredGb, effectiveVram) {
     ? "VRAM headroom is tight; reduce resolution, frames, steps, batch size, or LoRA count."
     : "VRAM 여유가 작습니다. 해상도·프레임·스텝·배치·LoRA 수를 줄이는 편이 안정적입니다.";
   return en
-    ? `Runnable at ${workload.width}×${workload.height}, ${workload.steps} steps${model.type === "video-generation" ? `, ${workload.frames} frames` : ""}.`
-    : `${workload.width}×${workload.height}, ${workload.steps}스텝${model.type === "video-generation" ? `, ${workload.frames}프레임` : ""} 기준 실행 가능한 범위입니다.`;
+    ? `Runnable at ${workload.width}×${workload.height}${["video-generation", "avatar-generation"].includes(model.type) ? `, ${workload.frames} frames` : `, ${workload.steps} steps`}.`
+    : `${workload.width}×${workload.height}${["video-generation", "avatar-generation"].includes(model.type) ? `, ${workload.frames}프레임` : `, ${workload.steps}스텝`} 기준 실행 가능한 범위입니다.`;
 }
 
 function estimateOcrWithPrecision(model, hardware, workload, precision) {
@@ -7111,7 +7133,7 @@ function buildHardwareBasis(hardware) {
     if (activeWorkload === "imageGeneration") {
       return `${workload.width}x${workload.height} · ${workload.steps}스텝 · LoRA ${workload.loraCount}개 · ${precision}`;
     }
-    if (activeWorkload === "videoGeneration") {
+    if (activeWorkload === "videoGeneration" || activeWorkload === "avatarGeneration") {
       return `${workload.width}x${workload.height} · ${workload.frames}프레임/${workload.fps}fps · ${workload.steps}스텝 · ${precision}`;
     }
     return uiLanguage === "en"
@@ -8364,6 +8386,28 @@ function buildFormulaText(type) {
 
 function buildNonGenerativeCommand(model, estimate, batchSizeOverride) {
   const lowerName = model.name.toLowerCase();
+  if (model.type === "avatar-generation") {
+    if (lowerName.includes("musetalk")) {
+      return `git clone https://github.com/TMElyralab/MuseTalk.git
+cd MuseTalk
+sh inference.sh v1.5 realtime
+
+${uiLanguage === "en" ? "# Prepare the avatar once, then stream TTS audio clips into the realtime worker." : "# 아바타를 한 번 전처리한 뒤 TTS 음성 클립을 실시간 워커에 전달하세요."}`;
+    }
+    if (lowerName.includes("liveportrait")) {
+      return `git clone https://github.com/KlingAIResearch/LivePortrait.git
+cd LivePortrait
+python inference.py --source ./portrait.jpg --driving ./motion.mp4
+
+${uiLanguage === "en" ? "# Review and replace bundled face-detector weights when their terms do not allow your deployment." : "# 포함된 얼굴 검출 가중치 조건이 배포 목적과 맞지 않으면 검토 후 교체하세요."}`;
+    }
+    if (lowerName.includes("sadtalker")) {
+      return `python inference.py --driven_audio ./speech.wav --source_image ./portrait.jpg --result_dir ./results`;
+    }
+    return `python inference.py --checkpoint_path ./checkpoints/wav2lip.pth --face ./avatar.mp4 --audio ./speech.wav
+
+${uiLanguage === "en" ? "# The public Wav2Lip model is restricted to non-commercial use." : "# 공개 Wav2Lip 모델은 비상업적 용도로 제한됩니다."}`;
+  }
   if (model.type === "audio-stt") {
     return `from transformers import pipeline
 
@@ -9584,6 +9628,7 @@ function ocrTypeLabel(value) {
   const en = uiLanguage === "en";
   if (value === "document-vlm" || value === "ocr-vlm") return en ? "Document-specialized VLM" : "문서 특화 VLM";
   if (value === "general-vlm") return en ? "General VLM" : "범용 VLM";
+  if (value === "avatar-generation") return en ? "Avatar · lip sync" : "아바타·립싱크";
   return en ? "OCR pipeline" : "OCR 파이프라인";
 }
 

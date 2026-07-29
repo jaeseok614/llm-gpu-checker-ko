@@ -14,7 +14,7 @@ body:
     id: workload
     attributes:
       label: 워크로드
-      options: [생성형 LLM, 임베딩, 리랭커, OCR/VLM, 이미지 생성, 비디오 생성, 음성 인식 STT, 음성 합성 TTS]
+      options: [생성형 LLM, 임베딩, 리랭커, OCR/VLM, 이미지 생성, 비디오 생성, 아바타·립싱크, 음성 인식 STT, 음성 합성 TTS]
     validations:
       required: true
   - type: input
