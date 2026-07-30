@@ -782,6 +782,151 @@ function applySimpleSizingPreset() {
   }
 }
 
+function siReadinessChecks(model, plans) {
+  const en = uiLanguage === "en";
+  const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
+  const market = selected ? studioMarket(selected.gpu.id) : null;
+  const checks = [
+    {
+      id: "service",
+      controlId: "siServiceType",
+      ok: Boolean(studioState.siServiceType && model),
+      label: en ? "Service and model" : "서비스·모델",
+      message: en ? "Choose the AI service and primary model." : "만들 서비스와 주 모델을 선택하세요.",
+    },
+    {
+      id: "users",
+      controlId: "siTotalUsers",
+      ok: Number(studioState.siTotalUsers) >= 1,
+      label: en ? "User scale" : "사용자 규모",
+      message: en ? "Enter at least one user." : "전체 사용자를 1명 이상 입력하세요.",
+    },
+    {
+      id: "concurrency",
+      controlId: "siConcurrency",
+      ok: Number(studioState.siConcurrency) >= 1 && Number(studioState.siConcurrency) <= Number(studioState.siTotalUsers),
+      label: en ? "Concurrent requests" : "동시 요청",
+      message: en ? "Concurrency must be between 1 and total users." : "동시 요청은 1 이상이며 전체 사용자보다 작아야 합니다.",
+    },
+    {
+      id: "traffic",
+      controlId: "siQps",
+      ok: Number(studioState.siQps) > 0,
+      label: "QPS",
+      message: en ? "Enter a positive request rate." : "초당 요청 수를 0보다 크게 입력하세요.",
+    },
+    {
+      id: "context",
+      controlId: "siMaxInputTokens",
+      ok: Number(studioState.siInputTokens) >= 128 && Number(studioState.siMaxInputTokens) >= Number(studioState.siInputTokens),
+      label: en ? "Token lengths" : "토큰 길이",
+      message: en ? "Maximum input must be at least the average input." : "최대 입력 토큰은 평균 입력 토큰 이상이어야 합니다.",
+    },
+    {
+      id: "sla",
+      controlId: "siLatencyP95",
+      ok: Number(studioState.siTtftP95) > 0
+        && Number(studioState.siTargetSeconds) >= Number(studioState.siTtftP95)
+        && Number(studioState.siLatencyP95) >= Number(studioState.siTargetSeconds),
+      label: "SLA",
+      message: en ? "Use TTFT ≤ target response ≤ total p95 latency." : "TTFT ≤ 목표 응답시간 ≤ 전체 지연 p95 순서로 입력하세요.",
+    },
+    {
+      id: "price",
+      controlId: "siSupplierQuoteNo",
+      ok: Boolean(market && !market.estimated) || Boolean(String(studioState.siSupplierQuoteNo || "").trim()),
+      label: en ? "Price evidence" : "가격 근거",
+      message: en ? "Public Korean pricing is unavailable; add a supplier quote before final approval." : "공개 국내 시세가 없으므로 최종 승인 전 공급사 견적번호를 입력하세요.",
+      advisory: true,
+    },
+    {
+      id: "evidence",
+      ok: Boolean(model?.sourceUrl && selected?.gpu?.sourceUrl),
+      label: en ? "Specification sources" : "사양 출처",
+      message: en ? "Link both model and GPU specification sources." : "모델과 GPU 사양 출처를 모두 연결하세요.",
+      advisory: true,
+    },
+  ];
+  return checks;
+}
+
+function siPlanFit(plan) {
+  const en = uiLanguage === "en";
+  const physicalVram = Number(plan.gpu.gpuUsableMemoryGb || plan.gpu.vram || 0) * plan.gpuCount;
+  const budget = Math.max(0, Number(studioState.siBudgetKrw) || 0);
+  const checks = [
+    {
+      ok: physicalVram >= plan.requiredGb,
+      label: en ? "Model memory" : "모델 메모리",
+    },
+    {
+      ok: plan.capacity >= Number(studioState.siConcurrency),
+      label: en ? "Normal capacity" : "정상 처리량",
+    },
+    {
+      ok: studioState.siAvailability === "single"
+        || plan.failoverCapacity >= Math.max(1, Math.ceil(Number(studioState.siConcurrency) * 0.7)),
+      label: en ? "Failover capacity" : "장애 처리량",
+    },
+    {
+      ok: budget <= 0 || plan.purchaseKrw <= budget,
+      label: en ? "Hardware budget" : "하드웨어 예산",
+    },
+  ];
+  return {
+    checks,
+    passed: checks.filter((check) => check.ok).length,
+    total: checks.length,
+    valid: checks.every((check) => check.ok),
+  };
+}
+
+function renderV49Readiness(model, plans) {
+  const en = uiLanguage === "en";
+  const checks = siReadinessChecks(model, plans);
+  const passed = checks.filter((check) => check.ok).length;
+  const required = checks.filter((check) => !check.advisory);
+  const requiredPassed = required.filter((check) => check.ok).length;
+  const score = Math.round(passed / Math.max(1, checks.length) * 100);
+  const status = requiredPassed === required.length
+    ? (en ? "Ready to compare" : "구성안 비교 가능")
+    : (en ? "Input review needed" : "입력값 확인 필요");
+  return `<section class="si-readiness-panel ${requiredPassed === required.length ? "is-ready" : "is-warning"}" aria-labelledby="siReadinessTitle">
+    <div class="si-readiness-head">
+      <div><span class="section-kicker">v4.9 RELEASE READINESS</span><h3 id="siReadinessTitle">${en ? "Estimate readiness" : "견적 준비도"} ${score}%</h3><p>${status} · ${passed}/${checks.length} ${en ? "checks complete" : "개 항목 확인"}</p></div>
+      <div class="si-readiness-progress" role="progressbar" aria-label="${en ? "Estimate readiness" : "견적 준비도"}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${score}"><span style="width:${score}%"></span></div>
+    </div>
+    <nav class="si-workflow-nav" aria-label="${en ? "Estimate workflow" : "견적 작업 순서"}">
+      <button type="button" data-si-jump="siRequirements"><b>1</b>${en ? "Requirements" : "요구사항 입력"}</button>
+      <button type="button" data-si-jump="siPlans"><b>2</b>${en ? "Compare options" : "3안 비교"}</button>
+      <button type="button" data-si-jump="siDeliverables"><b>3</b>${en ? "Review outputs" : "산출물 확인"}</button>
+    </nav>
+    <details class="si-readiness-details" ${requiredPassed < required.length ? "open" : ""}><summary>${en ? "Show readiness checks" : "준비도 항목 보기"}</summary>
+      <div class="si-readiness-checks">${checks.map((check) => `<button type="button" class="${check.ok ? "is-ok" : check.advisory ? "is-advisory" : "is-warning"}" ${check.controlId ? `data-si-focus="${check.controlId}"` : "disabled"}><span>${check.ok ? "✓" : check.advisory ? "i" : "!"}</span><strong>${platformEscape(check.label)}</strong><small>${check.ok ? (en ? "Checked" : "확인됨") : platformEscape(check.message)}</small></button>`).join("")}</div>
+    </details>
+    <div class="si-readiness-actions"><button type="button" class="ghost-button" data-si-save-draft>${en ? "Save browser draft" : "브라우저 초안 저장"}</button><button type="button" class="ghost-button" data-si-share>${en ? "Copy estimate link" : "견적 링크 복사"}</button></div>
+  </section>`;
+}
+
+function applySiInputValidation(model, plans) {
+  siReadinessChecks(model, plans).forEach((check) => {
+    if (!check.controlId) return;
+    const control = document.getElementById(check.controlId);
+    const label = control?.closest("label");
+    if (!control || !label) return;
+    label.classList.toggle("has-input-warning", !check.ok && !check.advisory);
+    if (!check.ok && !check.advisory) {
+      control.setAttribute("aria-invalid", "true");
+      const warning = document.createElement("small");
+      warning.className = "si-field-warning";
+      warning.textContent = check.message;
+      label.append(warning);
+    } else {
+      control.removeAttribute("aria-invalid");
+    }
+  });
+}
+
 function renderSelectedPlanDetail(model, plans) {
   const en = uiLanguage === "en";
   const plan = plans.find((item) => item.id === studioState.siSelectedPlan)
@@ -794,6 +939,12 @@ function renderSelectedPlanDetail(model, plans) {
   const baseInfra = Math.max(0, plan.purchaseKrw - gpuSubtotal);
   const parts = autoComponentRecommendation(plan);
   const label = en ? plan.en : plan.ko;
+  const economy = plans.find((item) => item.id === "economy") || plans[0];
+  const fit = siPlanFit(plan);
+  const costDelta = economy?.purchaseKrw
+    ? Math.round((plan.purchaseKrw - economy.purchaseKrw) / economy.purchaseKrw * 100)
+    : 0;
+  const capacityHeadroom = Math.max(0, plan.capacity - Number(studioState.siConcurrency));
   const priceState = window.AIHardwareUI?.priceState({
     marketPrice: market?.estimated ? 0 : market?.lowestKrw,
     launchPrice: market?.priceKind === "launch-reference" ? market?.lowestKrw : 0,
@@ -816,6 +967,12 @@ function renderSelectedPlanDetail(model, plans) {
   ].filter(Boolean);
   return `<section class="si-plan-detail" aria-live="polite">
     <div class="si-plan-detail-head"><div><span class="section-kicker">${en ? "SELECTED OPTION" : "선택한 구성안"}</span><h3>${label} · ${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3><p>${en ? "Click another option above to compare its sizing assumptions and cost evidence." : "위의 다른 구성안을 누르면 산정 조건과 비용 근거가 바로 바뀝니다."}</p></div><strong>${studioMoney(plan.threeYearTcoKrw)}<small>${en ? "3-year TCO estimate" : "3년 TCO 추정"}</small></strong></div>
+    <div class="si-plan-tradeoffs">
+      <span><small>${en ? "Current-condition fit" : "현재 조건 충족"}</small><strong class="${fit.valid ? "is-good" : "is-risk"}">${fit.passed}/${fit.total}</strong></span>
+      <span><small>${en ? "Capacity headroom" : "동시 처리 여유"}</small><strong>+${capacityHeadroom}${en ? " requests" : "명"}</strong></span>
+      <span><small>${en ? "Cost vs economy" : "경제형 대비 도입비"}</small><strong>${costDelta >= 0 ? "+" : ""}${costDelta}%</strong></span>
+      <span><small>${en ? "Evidence samples" : "동일 조건 표본"}</small><strong>n=${plan.sampleCount}</strong></span>
+    </div>
     <div class="si-plan-detail-grid">
       <article><h4>${en ? "Why this option" : "이 구성안의 특징"}</h4><ul>
         <li>${plan.id === "economy" ? (en ? "Minimizes initial cost with a smaller safety margin." : "안전 여유를 줄여 초기 도입비를 우선합니다.") : plan.id === "scalable" ? (en ? "Keeps more capacity for traffic growth and expansion." : "트래픽 증가와 향후 증설을 위한 여유를 크게 확보합니다.") : (en ? "Balances availability, performance, and growth reserve." : "가용성·성능·성장 여유를 균형 있게 반영합니다.")}</li>
@@ -1075,6 +1232,7 @@ function renderSimpleSizingWizard(model, plans) {
 }
 
 const SIZING_PROJECTS_KEY = "ai-infra-sizing-projects-v1";
+const SIZING_DRAFT_KEY = "ai-infra-sizing-draft-v3";
 
 function calculateRealtimeSla(plan) {
   const replicas = Math.max(1, plan.nodes, Number(studioState.siMinReplicas) || 1);
@@ -1120,7 +1278,29 @@ function sizingSnapshot() {
   const { model, plans } = calculateSiSizing();
   const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
   const commercial = calculateSiCommercial(selected);
-  return { schemaVersion: 2, savedAt: new Date().toISOString(), state: { ...studioState }, model: model.name, quoteStatus: studioState.siQuoteStatus, finalPrice: commercial.finalPrice, plans: plans.map((p) => ({ id: p.id, gpu: p.gpu.name, gpuCount: p.gpuCount, nodes: p.nodes, tco: p.threeYearTcoKrw })) };
+  const readiness = siReadinessChecks(model, plans);
+  return {
+    schemaVersion: 3,
+    appVersion: "4.9.0",
+    savedAt: new Date().toISOString(),
+    state: { ...studioState },
+    model: model.name,
+    quoteStatus: studioState.siQuoteStatus,
+    finalPrice: commercial.finalPrice,
+    readiness: {
+      passed: readiness.filter((check) => check.ok).length,
+      total: readiness.length,
+      pending: readiness.filter((check) => !check.ok).map((check) => check.id),
+    },
+    plans: plans.map((p) => ({
+      id: p.id,
+      gpu: p.gpu.name,
+      gpuCount: p.gpuCount,
+      nodes: p.nodes,
+      tco: p.threeYearTcoKrw,
+      fit: siPlanFit(p),
+    })),
+  };
 }
 
 function saveSizingProject(clone = false) {
@@ -1208,6 +1388,7 @@ function renderStudioConsulting() {
   const modelOptions = getAllModels().filter((item) => ["generative", "llm", "vlm", "ocr"].includes(item.type || "generative"));
   return `
     <div class="si-input-mode-switch"><button type="button" data-si-input-mode="simple" class="${studioState.siInputMode === "simple" ? "is-active" : ""}">${en ? "Easy estimate" : "간편 견적"}</button><button type="button" data-si-input-mode="expert" class="${studioState.siInputMode === "expert" ? "is-active" : ""}">${en ? "Detailed estimate" : "상세 견적"}</button></div>
+    ${renderV49Readiness(model, plans)}
     ${studioState.siInputMode === "simple" ? renderSimpleSizingWizard(model, plans) : ""}
     <div class="si-intro">
       <div><span class="section-kicker">v3.1 PRE-SALES</span><h3>${en ? "AI infrastructure sizing consultation" : "AI 인프라 사전 견적 상담"}</h3>
@@ -1215,7 +1396,7 @@ function renderStudioConsulting() {
       <div class="si-presets">${Object.entries(SI_SCENARIOS).map(([id, row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div>
     </div>
     ${studioState.siInputMode === "expert" ? renderSiBaselineGuide(activeScenario) : ""}
-    <details class="si-expert-form" ${studioState.siInputMode === "expert" ? "open" : ""}><summary>${en ? "Customer and workload details" : "고객·워크로드 상세 입력"}</summary><div class="studio-question-grid si-question-grid">
+    <details id="siRequirements" class="si-expert-form" ${studioState.siInputMode === "expert" ? "open" : ""}><summary>${en ? "Customer and workload details" : "고객·워크로드 상세 입력"}</summary><div class="studio-question-grid si-question-grid">
       <label><span>${en ? "Proposal company" : "제안 회사"}</span><input id="siCompanyName" value="${platformEscape(studioState.siCompanyName)}"></label>
       <label><span>${en ? "Customer" : "고객사"}</span><input id="siCustomerName" value="${platformEscape(studioState.siCustomerName)}"></label>
       <label class="studio-wide"><span>${en ? "Project name" : "프로젝트명"}</span><input id="siProjectName" value="${platformEscape(projectValue)}"></label>
@@ -1255,10 +1436,11 @@ function renderStudioConsulting() {
       <label><span>${en ? "Annual maintenance (%)" : "연 유지보수율 (%)"}</span><input id="siMaintenancePct" type="number" min="0" max="100" value="${studioState.siMaintenancePct}"></label>
     </div></details>
     ${studioState.siInputMode === "expert" ? `${renderEditableSiBom(plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0])}${renderV44V48Modules(model, plans)}` : ""}
-    <div class="si-plan-grid">${plans.map((plan) => {
+    <div id="siPlans" class="si-plan-grid">${plans.map((plan) => {
       const pricing = calculateSiCommercial(plan);
       const physicalVram = Number(plan.gpu.gpuUsableMemoryGb || plan.gpu.vram || 0) * plan.gpuCount;
       const headroomGb = Math.max(0, physicalVram - plan.requiredGb);
+      const fit = siPlanFit(plan);
       const confidenceLabel = en ? ({ 높음: "High", 중간: "Medium", 낮음: "Low" }[plan.confidence]) : plan.confidence;
       const reason = plan.id === "economy"
         ? (en ? "Lowest initial cost with a smaller operating reserve." : "운영 여유를 줄여 초기 도입비를 낮춘 구성입니다.")
@@ -1266,7 +1448,7 @@ function renderStudioConsulting() {
           ? (en ? "More capacity for traffic growth and failover." : "트래픽 증가와 장애 대응 여유를 크게 확보한 구성입니다.")
           : (en ? "Balanced cost, availability, and growth reserve." : "비용·가용성·성장 여유를 균형 있게 반영한 구성입니다.");
       return `<article class="si-plan-card ${plan.id === "recommended" ? "is-featured" : ""} ${studioState.siSelectedPlan === plan.id ? "is-selected" : ""}" data-si-plan="${plan.id}" role="button" tabindex="0" aria-pressed="${studioState.siSelectedPlan === plan.id}">
-        <div class="si-plan-card-head"><span class="si-plan-kind">${en ? plan.en : plan.ko}</span><span class="si-plan-selected">${studioState.siSelectedPlan === plan.id ? (en ? "Selected ✓" : "선택됨 ✓") : (en ? "Select option" : "구성 선택")}</span></div>
+        <div class="si-plan-card-head"><span class="si-plan-kind">${en ? plan.en : plan.ko}</span><span class="si-plan-fit ${fit.valid ? "is-fit" : "is-review"}" title="${platformEscape(fit.checks.filter((check) => !check.ok).map((check) => check.label).join(", "))}">${fit.valid ? (en ? "Fits" : "조건 충족") : (en ? "Review" : "검토 필요")} ${fit.passed}/${fit.total}</span><span class="si-plan-selected">${studioState.siSelectedPlan === plan.id ? (en ? "Selected ✓" : "선택됨 ✓") : (en ? "Select option" : "구성 선택")}</span></div>
         <h3>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3>
         <div class="si-decision-metrics">
           <span><small>${en ? "Estimated proposal" : "총 예상 가격"}</small><strong>${studioMoney(pricing.finalPrice)}</strong></span>
@@ -1282,7 +1464,7 @@ function renderStudioConsulting() {
       </article>`;
     }).join("")}</div>
     ${renderSelectedPlanDetail(model, plans)}
-    <div class="si-output-grid">
+    <div id="siDeliverables" class="si-output-grid">
       <article><h3>${en ? "Proposal rationale" : "제안 근거"}</h3><ul>
         <li>${en ? "Resident model memory, runtime overhead, and KV cache are included." : "모델 상주 메모리·런타임 오버헤드·KV cache를 반영했습니다."}</li>
         <li>${en ? `${studioState.siGrowthPct}% growth reserve and ${studioState.siAvailability.toUpperCase()} availability are applied.` : `트래픽 ${studioState.siGrowthPct}% 증가 여유와 ${studioState.siAvailability.toUpperCase()} 가용성 조건을 적용했습니다.`}</li>
@@ -1390,7 +1572,7 @@ function ensureDecisionStudio() {
   panel.setAttribute("aria-labelledby", "decisionStudioTitle");
   panel.innerHTML = `
     <div class="decision-studio-head">
-      <div><span class="section-kicker">v3.5</span><h2 id="decisionStudioTitle"></h2><p id="decisionStudioNote"></p></div>
+      <div><span class="section-kicker">v4.9</span><h2 id="decisionStudioTitle"></h2><p id="decisionStudioNote"></p></div>
       <div class="decision-studio-tabs" role="tablist"></div>
     </div>
     <div id="decisionStudioBody" class="decision-studio-body" aria-live="polite"></div>`;
@@ -1399,11 +1581,24 @@ function ensureDecisionStudio() {
   return panel;
 }
 
+function shareableStudioState() {
+  return Object.fromEntries(Object.entries(studioState).filter(([key]) =>
+    key === "tab" || key === "modelKey" || key.startsWith("si")));
+}
+
 function syncStudioUrl() {
   const url = new URL(window.location.href);
   url.searchParams.set("studio", studioState.tab);
-  url.searchParams.set("studioState", JSON.stringify(studioState));
+  url.searchParams.set("schema", "3");
+  url.searchParams.set("studioState", JSON.stringify(shareableStudioState()));
   history.replaceState({}, "", url);
+  try {
+    localStorage.setItem(SIZING_DRAFT_KEY, JSON.stringify({
+      schemaVersion: 3,
+      savedAt: new Date().toISOString(),
+      state: shareableStudioState(),
+    }));
+  } catch {}
 }
 
 function renderDecisionStudio() {
@@ -1429,6 +1624,10 @@ function renderDecisionStudio() {
   };
   $("decisionStudioBody").innerHTML = renderers[studioState.tab]();
   decorateSiDetailedFields();
+  if (studioState.tab === "consulting") {
+    const { model, plans } = calculateSiSizing();
+    applySiInputValidation(model, plans);
+  }
   bindDecisionStudio();
 }
 
@@ -1451,7 +1650,18 @@ function updateStudio(key, value) {
 }
 
 function bindDecisionStudio() {
-  document.querySelectorAll("[data-studio-tab]").forEach((button) => button.addEventListener("click", () => updateStudio("tab", button.dataset.studioTab)));
+  const studioTabs = [...document.querySelectorAll("[data-studio-tab]")];
+  studioTabs.forEach((button, index) => {
+    button.addEventListener("click", () => updateStudio("tab", button.dataset.studioTab));
+    button.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      const offset = event.key === "ArrowRight" ? 1 : -1;
+      const next = studioTabs[(index + offset + studioTabs.length) % studioTabs.length];
+      next?.focus();
+      next?.click();
+    });
+  });
   const fields = {
     studioCategory: ["category", String], studioModel: ["modelKey", String], studioTargetSpeed: ["targetSpeed", Number],
     studioBudget: ["budgetKrw", Number], siBudgetKrw: ["siBudgetKrw", Number], studioCondition: ["condition", String], studioFormFactor: ["formFactor", String],
@@ -1502,13 +1712,62 @@ function bindDecisionStudio() {
   $("siAutoscale")?.addEventListener("change", (event) => updateStudio("siAutoscale", event.target.checked));
   $("siSeparateNetworks")?.addEventListener("change", (event) => updateStudio("siSeparateNetworks", event.target.checked));
   document.querySelectorAll("[data-si-input-mode]").forEach((button) => button.addEventListener("click", () => updateStudio("siInputMode", button.dataset.siInputMode)));
+  document.querySelectorAll("[data-si-jump]").forEach((button) => button.addEventListener("click", () => {
+    const targetId = button.dataset.siJump;
+    if (targetId !== "siPlans" && studioState.siInputMode === "simple") {
+      studioState.siInputMode = "expert";
+      syncStudioUrl();
+      renderDecisionStudio();
+    }
+    queueMicrotask(() => {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      if (target.tagName === "DETAILS") target.open = true;
+      target.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      const focusTarget = target.matches("button, input, select, [tabindex]")
+        ? target
+        : target.querySelector("summary, button, input, select, [tabindex]");
+      focusTarget?.focus?.({ preventScroll: true });
+    });
+  }));
+  document.querySelectorAll("[data-si-focus]").forEach((button) => button.addEventListener("click", () => {
+    const control = document.getElementById(button.dataset.siFocus);
+    if (!control) return;
+    const details = control.closest("details");
+    if (details) details.open = true;
+    control.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    control.focus?.({ preventScroll: true });
+  }));
+  $("[data-si-save-draft]")?.addEventListener("click", () => {
+    localStorage.setItem(SIZING_DRAFT_KEY, JSON.stringify({
+      schemaVersion: 3,
+      savedAt: new Date().toISOString(),
+      state: shareableStudioState(),
+    }));
+    window.AIHardwareUI?.announce(uiLanguage === "en" ? "Saved the browser draft." : "브라우저에 견적 초안을 저장했습니다.", "success");
+  });
+  $("[data-si-share]")?.addEventListener("click", () => copyTextToClipboard(window.location.href, $("[data-si-share]")));
   document.querySelectorAll(".term-help").forEach((button) => {
     const alignTooltip = () => {
       const rect = button.getBoundingClientRect();
-      const tooltipWidth = Math.min(280, Math.max(160, window.innerWidth - 40));
-      button.classList.toggle("is-tip-left", rect.left < tooltipWidth / 2 + 20);
-      button.classList.toggle("is-tip-right", rect.right > window.innerWidth - tooltipWidth / 2 - 20);
+      if (!rect.width) return;
+      const panelRect = button.closest(".si-expert-form, .si-advanced, .decision-studio-body")?.getBoundingClientRect();
+      const leftBoundary = Math.max(16, panelRect?.left ?? 16);
+      const rightBoundary = Math.min(window.innerWidth - 16, panelRect?.right ?? window.innerWidth - 16);
+      const tooltipWidth = Math.min(360, Math.max(160, rightBoundary - leftBoundary));
+      const centeredLeft = rect.left + rect.width / 2 - tooltipWidth / 2;
+      const tooltipLeft = Math.min(Math.max(centeredLeft, leftBoundary), rightBoundary - tooltipWidth);
+      button.style.setProperty("--term-tip-width", `${tooltipWidth}px`);
+      button.style.setProperty("--term-tip-offset-x", `${tooltipLeft - rect.left}px`);
+      button.classList.add("is-tip-positioned");
+      button.classList.remove("is-tip-left", "is-tip-right");
+      if (tooltipLeft <= leftBoundary + 1) {
+        button.classList.add("is-tip-left");
+      } else if (tooltipLeft + tooltipWidth >= rightBoundary - 1) {
+        button.classList.add("is-tip-right");
+      }
     };
+    alignTooltip();
     button.addEventListener("mouseenter", alignTooltip);
     button.addEventListener("focus", alignTooltip);
     button.addEventListener("click", (event) => {
@@ -1669,11 +1928,13 @@ function bindDecisionStudio() {
 function restoreStudioState() {
   const params = new URL(window.location.href).searchParams;
   const raw = params.get("studioState");
-  const saved = raw || localStorage.getItem("ai-hardware-fit-saved-build");
+  const draft = localStorage.getItem(SIZING_DRAFT_KEY);
+  const saved = raw || draft || localStorage.getItem("ai-hardware-fit-saved-build");
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === "object") studioState = { ...studioState, ...parsed };
+      const restored = parsed?.state && typeof parsed.state === "object" ? parsed.state : parsed;
+      if (restored && typeof restored === "object") studioState = { ...studioState, ...restored };
     } catch {}
   }
   const scenarioId = params.get("scenario");

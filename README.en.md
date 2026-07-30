@@ -49,6 +49,14 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v4.9** — Adds estimate readiness, requirements→options→outputs navigation, per-plan fit checks, schema-v3 sharing and draft recovery, and release QA.
+- **v4.8.8** — Stores only infrastructure-sizing state in shared URLs to reduce link length and restore overhead.
+- **v4.8.7** — Adds arrow-key tabs, issue focus jumps, mobile tooltip boundary correction, and 44px workflow controls.
+- **v4.8.6** — Separates Korean pricing, supplier-quote, model-source, and GPU-source readiness.
+- **v4.8.5** — Upgrades project JSON to schema v3 with readiness and per-plan fit metadata.
+- **v4.8.4** — Shows model-memory, normal-capacity, failover-capacity, budget fit, and cost delta for each option.
+- **v4.8.3** — Validates users, concurrency, QPS, token lengths, and SLA inputs with direct issue navigation.
+- **v4.8.2** — Keeps detailed-setting help inside form boundaries and turns dev/production separation into a compact full-width row.
 - **v4.8.1** — Simplifies the landing page to three guided paths and samples, then adds a three-step infrastructure wizard, decision-first plans, evidence/price states, and mobile QA.
 - **v4.8** — Compares economy, recommended, and scalable options by proposal price, SLA, hardware, rack/power/cooling, failover capacity, and evidence confidence.
 - **v4.7** — Adds draft, review, approval, and revision states with owners, reviewers, approvers, timestamps, and saved estimate versions.
@@ -148,6 +156,7 @@ npm run check
 - [v2.0 decision platform](./docs/v2.0-decision-platform.md)
 - [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
 - [v3.0 purchase decision studio methodology](./docs/v3.0-decision-studio.md)
+- [v4.9 release notes](./docs/releases/v4.9.0.md)
 - [v4.8 release notes](./docs/releases/v4.8.0.md)
 - [v4.8 launch copy and two-week metrics sheet](./docs/promotion/v4.8-launch-kit.md)
 - [Editable AI infrastructure estimate example](./docs/examples/si-sizing-example.xlsx)

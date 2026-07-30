@@ -102,6 +102,12 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.equal(app.document.querySelectorAll(".si-plan-card").length, 3);
   assert.equal(app.document.querySelectorAll(".si-auto-parts > span").length, 6);
   assert.ok(app.document.querySelector(".si-plan-card .si-decision-metrics"));
+  assert.equal(app.document.querySelectorAll(".si-workflow-nav [data-si-jump]").length, 3);
+  assert.equal(app.document.querySelectorAll(".si-readiness-checks > button").length, 8);
+  assert.equal(app.document.querySelectorAll(".si-plan-fit").length, 3);
+  assert.equal(app.document.querySelectorAll(".si-plan-tradeoffs > span").length, 4);
+  app.document.querySelector('[data-si-jump="siRequirements"]').click();
+  assert.equal(app.document.querySelector(".si-expert-form").open, true);
 });
 
 test("detailed sizing explains every field and offers starting baselines", () => {
@@ -120,6 +126,24 @@ test("detailed sizing explains every field and offers starting baselines", () =>
   app.document.querySelector('[data-si-baseline="pilot"]').click();
   assert.ok(Number(app.document.getElementById("siTotalUsers").value) <= 10);
   assert.ok(Number(app.document.getElementById("siQps").value) > 0);
+  app.document.getElementById("siTotalUsers").value = "5";
+  app.document.getElementById("siTotalUsers").dispatchEvent(new app.Event("change", { bubbles: true }));
+  app.document.getElementById("siConcurrency").value = "10";
+  app.document.getElementById("siConcurrency").dispatchEvent(new app.Event("change", { bubbles: true }));
+  assert.equal(app.document.getElementById("siConcurrency").getAttribute("aria-invalid"), "true");
+  assert.ok(app.document.getElementById("siConcurrency").closest("label").querySelector(".si-field-warning"));
+  app.document.getElementById("siConcurrency").value = "2";
+  app.document.getElementById("siConcurrency").dispatchEvent(new app.Event("change", { bubbles: true }));
+  assert.equal(app.document.getElementById("siConcurrency").hasAttribute("aria-invalid"), false);
+});
+
+test("v4.9 snapshots and share links keep a versioned infrastructure state", () => {
+  app.eval("syncStudioUrl(); window.__smokeSizingSnapshot = sizingSnapshot(); window.__smokeShareState = shareableStudioState();");
+  assert.equal(app.__smokeSizingSnapshot.schemaVersion, 3);
+  assert.equal(app.__smokeSizingSnapshot.appVersion, "4.9.0");
+  assert.equal(app.__smokeSizingSnapshot.readiness.total, 8);
+  assert.equal(new URL(app.location.href).searchParams.get("schema"), "3");
+  assert.ok(Object.keys(app.__smokeShareState).every((key) => key === "tab" || key === "modelKey" || key.startsWith("si")));
 });
 
 test("price and evidence states avoid presenting estimates as live market prices", () => {
@@ -154,4 +178,8 @@ test("accessibility and responsive contracts are present", () => {
   for (const width of ["900", "560"]) assert.match(css, new RegExp(`max-width:\\s*${width}px`));
   assert.match(css, /min-height:\s*44px/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /\.si-expert-form \.studio-question-grid \.studio-check\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
+  assert.match(css, /\.studio-check-label input\[type="checkbox"\]\s*\{[^}]*width:\s*18px;[^}]*height:\s*18px;/s);
+  assert.match(css, /\.term-help::after\s*\{[^}]*width:\s*var\(--term-tip-width,\s*min\(360px,\s*calc\(100vw - 32px\)\)\)/s);
+  assert.match(read("platform-v3.js"), /const tooltipWidth = Math\.min\(360,[\s\S]*--term-tip-offset-x[\s\S]*button\.classList\.add\("is-tip-left"\)/);
 });

@@ -7065,10 +7065,31 @@ body.infra-task-active #benchmarkDashboard {
   flex-wrap: wrap;
 }
 
+.si-expert-form .studio-question-grid .studio-check {
+  grid-column: 1 / -1;
+  min-height: 0;
+  margin-top: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
 .studio-check-label {
   display: flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
+}
+
+.studio-check-label input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
 }
 
 .si-field-baseline {
@@ -7081,8 +7102,222 @@ body.infra-task-active #benchmarkDashboard {
   overflow-wrap: anywhere;
 }
 
+.si-field-warning {
+  display: block;
+  color: var(--yellow);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.studio-question-grid label.has-input-warning > input,
+.studio-question-grid label.has-input-warning > select {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--yellow) 30%, transparent);
+}
+
 .studio-check .si-field-baseline {
   flex: 0 0 100%;
+}
+
+.si-readiness-panel {
+  display: grid;
+  gap: 13px;
+  margin: 14px 0;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--blue) 8%, transparent), transparent 55%),
+    var(--panel-raised);
+}
+
+.si-readiness-panel.is-ready {
+  border-color: color-mix(in srgb, var(--green) 60%, var(--line));
+}
+
+.si-readiness-panel.is-warning {
+  border-color: color-mix(in srgb, var(--yellow) 55%, var(--line));
+}
+
+.si-readiness-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, .35fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.si-readiness-head h3 {
+  margin: 3px 0;
+}
+
+.si-readiness-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.si-readiness-progress {
+  height: 11px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.si-readiness-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.si-readiness-panel.is-ready .si-readiness-progress span {
+  background: var(--green);
+}
+
+.si-workflow-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.si-workflow-nav button,
+.si-readiness-checks button {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.si-workflow-nav button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 11px;
+  font-weight: 850;
+}
+
+.si-workflow-nav button b {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.si-workflow-nav button:hover,
+.si-workflow-nav button:focus-visible {
+  border-color: var(--blue);
+}
+
+.si-readiness-details > summary {
+  min-height: 44px;
+  padding: 10px 0;
+  cursor: pointer;
+  color: var(--blue);
+  font-weight: 850;
+}
+
+.si-readiness-checks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.si-readiness-checks button {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 3px 7px;
+  min-height: 70px;
+  padding: 9px;
+}
+
+.si-readiness-checks button > span {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  font-weight: 900;
+}
+
+.si-readiness-checks button small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.si-readiness-checks button.is-ok > span {
+  color: var(--green);
+}
+
+.si-readiness-checks button.is-warning > span,
+.si-readiness-checks button.is-advisory > span {
+  color: var(--yellow);
+}
+
+.si-readiness-checks button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.si-readiness-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.si-plan-fit {
+  margin-left: auto;
+  padding: 4px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.si-plan-fit.is-fit {
+  color: var(--green);
+}
+
+.si-plan-fit.is-review {
+  color: var(--yellow);
+}
+
+.si-plan-tradeoffs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 14px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--line);
+}
+
+.si-plan-tradeoffs span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px;
+  background: var(--surface-soft);
+}
+
+.si-plan-tradeoffs small {
+  color: var(--muted);
+}
+
+.si-plan-tradeoffs strong {
+  overflow-wrap: anywhere;
 }
 
 .decision-studio.is-simple-sizing .si-intro,
@@ -7110,6 +7345,10 @@ body.infra-task-active #benchmarkDashboard {
   .si-baseline-options {
     grid-template-columns: 1fr;
   }
+  .si-readiness-checks,
+  .si-plan-tradeoffs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -7129,6 +7368,22 @@ body.infra-task-active #benchmarkDashboard {
   }
   .si-plan-detail-head > strong {
     text-align: left;
+  }
+  .si-readiness-head,
+  .si-workflow-nav,
+  .si-readiness-checks,
+  .si-plan-tradeoffs {
+    grid-template-columns: 1fr;
+  }
+  .si-plan-card-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .si-plan-fit {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    text-align: center;
   }
 }
 
@@ -7361,9 +7616,9 @@ body.infra-task-active #benchmarkDashboard {
   content: attr(data-tooltip);
   position: absolute;
   z-index: 40;
-  left: 50%;
+  left: var(--term-tip-offset-x, 50%);
   bottom: calc(100% + 8px);
-  width: min(280px, calc(100vw - 40px));
+  width: var(--term-tip-width, min(360px, calc(100vw - 32px)));
   padding: 9px 11px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
@@ -7374,15 +7629,18 @@ body.infra-task-active #benchmarkDashboard {
   font-weight: 600;
   line-height: 1.45;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   transform: translate(-50%, 4px);
-  transition: opacity .12s ease, transform .12s ease;
+  transition: opacity .12s ease, transform .12s ease, visibility 0s linear .12s;
 }
 
 .term-help:hover::after,
 .term-help:focus-visible::after {
   opacity: 1;
+  visibility: visible;
   transform: translate(-50%, 0);
+  transition-delay: 0s;
 }
 
 .term-help.is-tip-left::after {
@@ -7396,10 +7654,18 @@ body.infra-task-active #benchmarkDashboard {
   transform: translate(0, 4px);
 }
 
+.term-help.is-tip-positioned::after {
+  right: auto;
+  left: var(--term-tip-offset-x);
+  transform: translate(0, 4px);
+}
+
 .term-help.is-tip-left:hover::after,
 .term-help.is-tip-left:focus-visible::after,
 .term-help.is-tip-right:hover::after,
-.term-help.is-tip-right:focus-visible::after {
+.term-help.is-tip-right:focus-visible::after,
+.term-help.is-tip-positioned:hover::after,
+.term-help.is-tip-positioned:focus-visible::after {
   transform: translate(0, 0);
 }
 
