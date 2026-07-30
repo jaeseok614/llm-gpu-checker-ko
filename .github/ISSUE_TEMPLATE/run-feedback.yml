@@ -1,0 +1,68 @@
+name: 실제 실행 결과 제보
+description: 추천된 GPU·모델 조합의 실행 성공 또는 실패 결과를 알려주세요.
+title: "[실행 결과] "
+labels:
+  - run-feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        제보 감사합니다. 같은 GPU·모델·런타임 조건의 결과가 쌓이면 예상 범위와 신뢰도를 개선할 수 있습니다.
+        고객명, 내부 프로젝트명, 프롬프트 원문, API 키 등 민감한 정보는 입력하지 마세요.
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: 실행 결과
+      options:
+        - 실행 성공
+        - 실행은 됐지만 너무 느림
+        - VRAM 부족
+        - 런타임·드라이버 오류
+        - 기타 실패
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: 예) GeForce RTX 4090 24GB
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: 모델
+      placeholder: 예) Qwen2.5 32B Instruct
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: 런타임·정밀도
+      placeholder: 예) Ollama · Q4_K_M
+    validations:
+      required: true
+  - type: input
+    id: measured_speed
+    attributes:
+      label: 실제 속도
+      placeholder: 예) 42 tok/s, 18x realtime, 이미지 1장 12초
+  - type: input
+    id: peak_vram
+    attributes:
+      label: 최대 VRAM 사용량
+      placeholder: 예) 18.7GB
+  - type: textarea
+    id: environment
+    attributes:
+      label: 실행 환경과 추가 설명
+      description: 운영체제, 드라이버, 입력 길이, 동시 요청 또는 오류 메시지를 적어주세요.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 공개 정보 확인
+      options:
+        - label: 공개 이슈에 민감한 정보가 포함되지 않았음을 확인했습니다.
+          required: true

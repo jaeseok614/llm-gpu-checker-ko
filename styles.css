@@ -5377,6 +5377,24 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+.run-feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.run-feedback-actions > span {
+  flex: 1 1 180px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.run-feedback-actions > a {
+  min-height: 40px;
+  text-decoration: none;
+}
+
 .simple-inspector-actions {
   display: flex;
   flex-wrap: wrap;

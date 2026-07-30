@@ -8,6 +8,18 @@ test("Pages deployment builds a cache-stamped artifact", () => {
   const html = fs.readFileSync("_site/index.html", "utf8");
   assert.equal(html.includes("__CACHE_VERSION__"), false);
   assert.match(html, /app\.js\?v=[a-f0-9]{7,}/);
+  assert.ok(fs.existsSync("_site/sitemap.xml"));
+  assert.ok(fs.existsSync("_site/robots.txt"));
+  assert.ok(fs.existsSync("_site/gpu/rtx4090-24/index.html"));
+  assert.ok(fs.existsSync("_site/model/xtts-v2/index.html"));
+  assert.ok(fs.existsSync("_site/workload/audiotts/index.html"));
+  const sitemap = fs.readFileSync("_site/sitemap.xml", "utf8");
+  assert.match(sitemap, /\/gpu\/rtx4090-24\//);
+  assert.match(sitemap, /\/model\/xtts-v2\//);
+  const modelPage = fs.readFileSync("_site/model/xtts-v2/index.html", "utf8");
+  assert.match(modelPage, /<link rel="canonical"/);
+  assert.match(modelPage, /application\/ld\+json/);
+  assert.match(modelPage, /목소리 복제/);
 });
 
 test("GPU request parser accepts a sourced normalized laptop record", () => {
@@ -70,6 +82,9 @@ Test Provider
 ### 라이선스
 
 MIT
+### 주요 용도
+
+실시간 자막, 받아쓰기
 ### 공식 모델 카드
 
 https://huggingface.co/test-provider/community-test-stt
@@ -84,6 +99,7 @@ https://huggingface.co/test-provider/community-test-stt/blob/main/LICENSE`;
   assert.equal(result.status, 0);
   assert.match(result.stdout, /Required metadata and sources are valid/);
   assert.match(result.stdout, /data\/audio-models\.js/);
+  assert.match(result.stdout, /realtime, transcription/);
 });
 
 test("GPU and benchmark request workflows have guarded approval labels", () => {
@@ -96,6 +112,19 @@ test("GPU and benchmark request workflows have guarded approval labels", () => {
   assert.match(benchmark, /steps\.benchmark\.outputs\.valid == 'true'/);
   assert.match(model, /model-ready/);
   assert.match(model, /steps\.model\.outputs\.valid == 'true'/);
+});
+
+test("run feedback and visual regression workflows are public and repeatable", () => {
+  const feedback = fs.readFileSync(".github/ISSUE_TEMPLATE/run-feedback.yml", "utf8");
+  const workflow = fs.readFileSync(".github/workflows/ci.yml", "utf8");
+  const visual = fs.readFileSync("scripts/ui-regression.mjs", "utf8");
+  assert.match(feedback, /실행 결과/);
+  assert.match(feedback, /민감한 정보/);
+  assert.match(workflow, /test:visual/);
+  assert.match(workflow, /ui-regression-screenshots/);
+  assert.match(visual, /1920, 1080/);
+  assert.match(visual, /390, 844/);
+  assert.match(visual, /horizontal overflow/);
 });
 
 test("v2 data health workflow audits translations, schemas, and source links", () => {

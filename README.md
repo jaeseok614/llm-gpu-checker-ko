@@ -49,6 +49,11 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v5.0** — 310개 모델의 용도·언어·입출력·품질·지연 특성을 정규화하고 추천 엔진과 실행 제보를 독립 모듈로 분리했습니다.
+- **v4.9.5** — 6개 화면 크기의 실제 Chromium 회귀 검사와 CI 스크린숏 산출물을 추가했습니다.
+- **v4.9.4** — GPU 116개·모델 310개·워크로드 11개의 정적 검색 페이지, JSON-LD와 sitemap을 자동 생성합니다.
+- **v4.9.3** — 추천 결과에서 실행 성공·실패를 계산 조건이 채워진 GitHub Issue로 제보할 수 있습니다.
+- **v4.9.2** — 워크로드별 용도를 모델 capability 데이터와 연결하고 추천 이유에 해당 용도 지원 여부를 표시합니다.
 - **v4.9** — 견적 준비도, 요구사항→3안→산출물 탐색, 구성안별 조건 충족도, 버전 3 공유·초안 복원과 공개 전 통합 QA를 추가했습니다.
 - **v4.8.8** — 인프라 견적에 필요한 상태만 공유 URL에 저장해 링크 길이와 초기 복원 부담을 줄였습니다.
 - **v4.8.7** — 탭 방향키 이동, 오류 항목 포커스, 모바일 도움말 경계 보정과 44px 작업 버튼을 보강했습니다.
@@ -111,6 +116,8 @@
 - 동일 GPU·모델 조건의 사용자 측정값을 이용한 속도 보정과 신뢰도 표시
 - 공식/추정 사양, 검증일, 측정 표본 수를 구분하는 데이터 품질 표시
 - 실측 데이터·GPU·모델 범위와 우선 측정 대상을 보여주는 벤치마크 대시보드
+- 실제 실행 성공·실패를 GPU·모델·런타임 조건이 채워진 GitHub Issue로 제보하는 커뮤니티 피드백
+- GPU·모델·워크로드별 검색용 정적 페이지, canonical URL, JSON-LD, sitemap과 robots.txt 자동 생성
 - 여러 GPU에 LLM·VLM·이미지·영상·STT·TTS 모델을 함께 배치하는 AI 스택 플래너와 AI 아바타 채팅 프리셋
 - 한국어/영어 UI, 반응형 모바일 화면, 키보드 포커스와 모션 감소 지원
 - [홍보 전 UI 회귀 체크리스트](./docs/ui-regression-checklist.md): 6개 화면 폭과 8개 핵심 흐름의 smoke/수동 검증 기준
@@ -141,9 +148,10 @@ Node.js 20 이상이 필요합니다.
 ```bash
 npm install
 npm run check
+npm run test:visual
 ```
 
-`npm run check`는 코드 문법, GPU/모델 데이터, 요청 자동화, 정적 빌드, 계산 테스트를 모두 검증합니다. `npm run build:static`의 결과는 `_site/`에 생성됩니다.
+`npm run check`는 코드 문법, GPU/모델 데이터, 요청 자동화, 정적 빌드, 계산 테스트를 모두 검증합니다. `npm run test:visual`은 Playwright가 설치된 환경에서 6개 화면 크기를 실제 Chromium으로 검사합니다. `npm run build:static`의 결과는 `_site/`에 생성됩니다.
 
 ## 문서
 
@@ -159,6 +167,7 @@ npm run check
 - [v2.0 의사결정 플랫폼](./docs/v2.0-decision-platform.md)
 - [v2.2 사용자 빌드 계산기](./docs/v2.2-build-calculator.md)
 - [v3.0 구매 결정 스튜디오 계산 기준](./docs/v3.0-decision-studio.md)
+- [v5.0 릴리스 노트](./docs/releases/v5.0.0.md)
 - [v4.9 릴리스 노트](./docs/releases/v4.9.0.md)
 - [v4.8 릴리스 노트](./docs/releases/v4.8.0.md)
 - [v4.8 홍보 문안·2주 측정표](./docs/promotion/v4.8-launch-kit.md)

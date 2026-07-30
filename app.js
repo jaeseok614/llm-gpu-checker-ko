@@ -113,11 +113,21 @@ const GENERAL_VLM_MODELS = OCR_MODELS.filter((model) => model.type === "general-
 
 function withModelMetadata(model, type) {
   const metadata = MODEL_METADATA[`${type}:${model.name}`] || MODEL_METADATA[model.name] || {};
+  const capabilities = DATA.modelCapabilities?.[`${type}:${model.name}`] || {
+    useCases: [],
+    languages: ["unknown"],
+    inputModality: [],
+    outputModality: [],
+    qualityTier: "unknown",
+    latencyTier: "unknown",
+    supports: [],
+  };
   return {
     maker: model.maker || model.provider || "",
     ...model,
     ...metadata,
     tags: Array.isArray(metadata.tags) ? metadata.tags : Array.isArray(model.tags) ? model.tags : [],
+    capabilities,
     type,
   };
 }
@@ -291,90 +301,8 @@ const WORKLOAD_META = {
   },
 };
 
-const SIMPLE_PURPOSE_OPTIONS = {
-  generative: [
-    { id: "general", ko: "일반 대화 / 비서", en: "Chat / assistant", tags: ["general"] },
-    { id: "korean", ko: "한국어 특화", en: "Korean", tags: ["korean"] },
-    { id: "coding", ko: "코딩", en: "Coding", tags: ["coding"] },
-    { id: "reasoning", ko: "추론 / 수학", en: "Reasoning / math", tags: ["reasoning"] },
-    { id: "long", ko: "긴 문서 / RAG", en: "Long documents / RAG", tags: ["long", "retrieval"] },
-    { id: "vision", ko: "이미지 이해", en: "Image understanding", tags: ["vision"] },
-  ],
-  embedding: [
-    { id: "retrieval", ko: "문서 검색 / RAG", en: "Document search / RAG", tags: ["retrieval"] },
-    { id: "korean", ko: "한국어 검색", en: "Korean search", tags: ["korean"] },
-    { id: "multilingual", ko: "다국어 검색", en: "Multilingual search", tags: ["multilingual"] },
-    { id: "long", ko: "긴 문서 임베딩", en: "Long-document embedding", tags: ["long", "document"] },
-    { id: "codeRetrieval", ko: "코드 검색", en: "Code search", tags: ["codeRetrieval"] },
-    { id: "lightweight", ko: "가벼운 실시간 검색", en: "Lightweight real-time search", rankBy: "lightweight" },
-  ],
-  reranker: [
-    { id: "retrieval", ko: "RAG 검색 결과 재정렬", en: "RAG result reranking", tags: ["retrieval"] },
-    { id: "korean", ko: "한국어 재정렬", en: "Korean reranking", tags: ["korean"] },
-    { id: "multilingual", ko: "다국어 재정렬", en: "Multilingual reranking", tags: ["multilingual"] },
-    { id: "long", ko: "긴 문서 재정렬", en: "Long-document reranking", tags: ["long"] },
-    { id: "codeRetrieval", ko: "코드 검색 재정렬", en: "Code-search reranking", tags: ["codeRetrieval"] },
-    { id: "quality", ko: "정확도 우선", en: "Accuracy first", rankBy: "quality" },
-  ],
-  ocrPipeline: [
-    { id: "document", ko: "문서 / PDF 인식", en: "Documents / PDFs", tags: ["document", "pdf"] },
-    { id: "korean", ko: "한국어 문서", en: "Korean documents", tags: ["korean"] },
-    { id: "table", ko: "표 / 레이아웃", en: "Tables / layout", tags: ["table", "layout"] },
-    { id: "handwriting", ko: "손글씨", en: "Handwriting", tags: ["handwriting"] },
-    { id: "math", ko: "수식 / 마크다운", en: "Math / Markdown", tags: ["math", "markdown"] },
-    { id: "lightweight", ko: "빠른 대량 처리", en: "Fast batch processing", rankBy: "speed" },
-  ],
-  documentVlm: [
-    { id: "document", ko: "문서 질의응답", en: "Document Q&A", tags: ["document", "document-vlm"] },
-    { id: "table", ko: "표 / 차트 분석", en: "Tables / charts", tags: ["table", "chart"] },
-    { id: "korean", ko: "한국어 문서", en: "Korean documents", tags: ["korean"] },
-    { id: "long", ko: "긴 문서 / 여러 페이지", en: "Long / multi-page documents", tags: ["long", "pdf"] },
-    { id: "quality", ko: "정확도 우선", en: "Accuracy first", rankBy: "quality" },
-  ],
-  generalVlm: [
-    { id: "vision", ko: "이미지 질의응답", en: "Image Q&A", tags: ["vision", "general-vlm"] },
-    { id: "video", ko: "비디오 이해", en: "Video understanding", tags: ["video"] },
-    { id: "reasoning", ko: "시각 추론", en: "Visual reasoning", tags: ["reasoning"] },
-    { id: "grounding", ko: "객체 위치 / 화면 조작", en: "Grounding / GUI", tags: ["grounding", "gui"] },
-    { id: "lightweight", ko: "가벼운 실시간 분석", en: "Lightweight real-time analysis", rankBy: "lightweight" },
-  ],
-  imageGeneration: [
-    { id: "image", ko: "일반 이미지 생성", en: "General image generation", tags: ["image-generation"] },
-    { id: "quality", ko: "고품질 이미지", en: "High-quality images", rankBy: "quality" },
-    { id: "speed", ko: "빠른 초안 생성", en: "Fast drafts", rankBy: "speed" },
-    { id: "lightweight", ko: "적은 VRAM으로 생성", en: "Low-VRAM generation", rankBy: "lightweight" },
-  ],
-  videoGeneration: [
-    { id: "video", ko: "텍스트로 비디오 생성", en: "Text-to-video", tags: ["video-generation"] },
-    { id: "imageToVideo", ko: "이미지로 비디오 생성", en: "Image-to-video", keywords: ["image-conditioned", "image based", "image-to-video", "i2v"] },
-    { id: "quality", ko: "영상 품질 우선", en: "Video quality first", rankBy: "quality" },
-    { id: "speed", ko: "생성 속도 우선", en: "Generation speed first", rankBy: "speed" },
-    { id: "lightweight", ko: "적은 VRAM으로 생성", en: "Low-VRAM generation", rankBy: "lightweight" },
-  ],
-  avatarGeneration: [
-    { id: "lipSync", ko: "립싱크", en: "Lip sync", tags: ["lip-sync"] },
-    { id: "talkingHead", ko: "말하는 아바타", en: "Talking avatar", tags: ["talking-head", "avatar"] },
-    { id: "portrait", ko: "사진 한 장으로 애니메이션", en: "Animate one portrait", tags: ["single-image", "portrait-animation"] },
-    { id: "realtime", ko: "실시간 아바타", en: "Real-time avatar", tags: ["realtime"], rankBy: "speed" },
-    { id: "quality", ko: "표현 품질 우선", en: "Visual quality first", rankBy: "quality" },
-  ],
-  audioStt: [
-    { id: "multilingual", ko: "한국어·다국어 받아쓰기", en: "Korean / multilingual transcription", keywords: ["multilingual"] },
-    { id: "realtime", ko: "실시간 자막 / 회의", en: "Live captions / meetings", rankBy: "speed" },
-    { id: "accuracy", ko: "정확도 우선 받아쓰기", en: "Accuracy-first transcription", rankBy: "quality" },
-    { id: "lightweight", ko: "가벼운 로컬 받아쓰기", en: "Lightweight local transcription", rankBy: "lightweight" },
-  ],
-  audioTts: [
-    { id: "natural", ko: "자연스러운 안내 음성", en: "Natural narration", rankBy: "quality" },
-    { id: "realtime", ko: "실시간 챗봇 음성", en: "Real-time chatbot voice", rankBy: "speed" },
-    { id: "voiceCloning", ko: "목소리 복제", en: "Voice cloning", keywords: ["voice cloning", "음성 복제", "xtts"] },
-    { id: "multilingual", ko: "한국어·다국어 합성", en: "Korean / multilingual speech", keywords: ["multilingual"] },
-    { id: "lightweight", ko: "가벼운 로컬 합성", en: "Lightweight local synthesis", rankBy: "lightweight" },
-  ],
-};
-
 function getSimplePurposeOptions(workload = activeWorkload) {
-  return SIMPLE_PURPOSE_OPTIONS[workload] || SIMPLE_PURPOSE_OPTIONS.generative;
+  return window.AIHardwareQuickRecommendation?.getOptions(workload) || [];
 }
 
 function refreshSimplePurposeOptions(preferredValue = $("simplePurpose")?.value) {
@@ -7546,58 +7474,34 @@ function renderSummary(estimates) {
   }).join("");
 }
 
-function getSimplePurposeModelText(model) {
-  return [
-    model?.name,
-    model?.maker,
-    model?.provider,
-    model?.language,
-    ...(Array.isArray(model?.tags) ? model.tags : []),
-    typeof model?.summary === "object" ? model.summary.ko : model?.summary,
-    typeof model?.summary === "object" ? model.summary.en : "",
-  ].filter(Boolean).join(" ").normalize("NFKC").toLocaleLowerCase();
-}
-
-function simplePurposeMatches(model, option) {
-  const tags = Array.isArray(model?.tags) ? model.tags : [];
-  if (option.tags?.some((tag) => tags.includes(tag))) return true;
-  if (!option.keywords?.length) return false;
-  const text = getSimplePurposeModelText(model);
-  return option.keywords.some((keyword) => text.includes(keyword.toLocaleLowerCase()));
-}
-
-function simplePurposeRank(estimate, option) {
-  if (!option?.rankBy) return 0;
-  if (option.rankBy === "speed") return Number(estimate.speed || 0);
-  if (option.rankBy === "quality") return Number(estimate.model?.params || 0);
-  if (option.rankBy === "lightweight") return -Number(estimate.requiredGb || 0);
-  return 0;
-}
-
 function computeSimpleRecommendations(allEstimates, purpose, priority, workload = activeWorkload) {
-  let candidates = allEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
-  // render() already supplies the active model group, but keep a hard
-  // category guard here as well so stale/cached callers can never mix TTS,
-  // video, LLM, or another workload in one recommendation result.
   const allowedModels = new Set(MODEL_GROUPS[workload] || []);
-  candidates = candidates.filter((estimate) => allowedModels.has(estimate.model));
-
-  const purposeOption = getSimplePurposeOptions(workload).find((option) => option.id === purpose);
-  if (purposeOption && (purposeOption.tags?.length || purposeOption.keywords?.length)) {
-    const purposeMatches = candidates.filter((estimate) => simplePurposeMatches(estimate.model, purposeOption));
-    if (purposeMatches.length) candidates = purposeMatches;
-  }
-
-  const sorted = [...candidates].sort((a, b) => {
-    const purposeDifference = simplePurposeRank(b, purposeOption) - simplePurposeRank(a, purposeOption);
-    if (purposeDifference) return purposeDifference;
-    if (priority === "speed") return b.speed - a.speed || gradeSort(a, b) || a.requiredGb - b.requiredGb;
-    if (priority === "quality") return gradeSort(a, b) || b.model.params - a.model.params || b.speed - a.speed;
-    if (priority === "vramHeadroom") return (b.effectiveVram - b.requiredGb) - (a.effectiveVram - a.requiredGb) || gradeSort(a, b);
-    return recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure;
+  return window.AIHardwareQuickRecommendation.recommend({
+    estimates: allEstimates,
+    workload,
+    purpose,
+    priority,
+    allowedModels,
+    isRunnable: (estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score,
+    compareByPriority: (a, b, selectedPriority) => {
+      if (selectedPriority === "speed") return b.speed - a.speed || gradeSort(a, b) || a.requiredGb - b.requiredGb;
+      if (selectedPriority === "quality") return gradeSort(a, b) || b.model.params - a.model.params || b.speed - a.speed;
+      if (selectedPriority === "vramHeadroom") return (b.effectiveVram - b.requiredGb) - (a.effectiveVram - a.requiredGb) || gradeSort(a, b);
+      return recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure;
+    },
   });
+}
 
-  return sorted.slice(0, 3);
+function buildSimpleRecommendationReasons(estimate, limit = 3) {
+  const purposeReason = window.AIHardwareQuickRecommendation?.reason(
+    estimate.model,
+    $("simplePurpose")?.value,
+    uiLanguage,
+  );
+  return [...new Set([
+    purposeReason,
+    ...buildRecommendationReasons(estimate).map(localizeRecommendationReason),
+  ].filter(Boolean))].slice(0, limit);
 }
 
 function getQuickRecommendationEstimates() {
@@ -7685,7 +7589,7 @@ function renderSimpleMode(hardware, allEstimates) {
     };
     const meta = GRADE_META[estimate.grade];
     const licensePolicy = getLicensePolicy(estimate.model);
-    const reasons = buildRecommendationReasons(estimate).slice(0, 3).map(localizeRecommendationReason);
+    const reasons = buildSimpleRecommendationReasons(estimate, 3);
     const key = modelKey(estimate.model);
     const isSelected = simpleExpandedKey === key;
     const ctaLabel = isSelected
@@ -7735,6 +7639,39 @@ function closeSimpleRecommendationPanel({ restoreFocus = true } = {}) {
   }
 }
 
+function applyRunFeedbackLinks(container, model, estimate, hardware) {
+  const feedback = window.AIHardwareCommunityFeedback;
+  if (!container || !feedback) return;
+  const workloadRuntime = {
+    embedding: "sentence-transformers",
+    reranker: "sentence-transformers / Transformers",
+    "ocr-pipeline": "PaddleOCR / PyTorch",
+    "ocr-vlm": "Transformers / PyTorch",
+    "document-vlm": "Transformers / PyTorch",
+    "general-vlm": "Transformers / PyTorch",
+    "image-generation": "Diffusers / PyTorch",
+    "video-generation": "Diffusers / PyTorch",
+    "avatar-generation": "PyTorch",
+    "audio-stt": "Transformers / PyTorch",
+    "audio-tts": "PyTorch",
+  };
+  container.querySelectorAll("[data-run-feedback]").forEach((link) => {
+    link.href = feedback.feedbackUrl({
+      outcome: link.dataset.runFeedback,
+      model: model.name,
+      gpu: formatHardwareName(hardware),
+      workload: WORKLOAD_META[activeWorkload]?.label || activeWorkload,
+      purpose: $("simplePurpose")?.selectedOptions?.[0]?.textContent || "",
+      runtime: model.type === "generative"
+        ? (getWorkloadSettings()?.runtime || $("runtimeMode")?.value || "")
+        : (workloadRuntime[model.type] || "PyTorch"),
+      setting: estimate.settingLabel || estimate.quant?.label || estimate.precision?.label || "",
+      requiredGb: formatGb(estimate.requiredGb),
+      estimatedSpeed: formatSpeedRange(estimate, getEstimateConfidence(model, estimate, hardware)),
+    });
+  });
+}
+
 function renderSimpleRecommendationPanel(hardware) {
   const panel = $("simpleRecommendationPanel");
   const backdrop = $("simpleInspectorBackdrop");
@@ -7761,7 +7698,7 @@ function renderSimpleRecommendationPanel(hardware) {
   const estimate = estimateAnyModel(model, hardware);
   const meta = GRADE_META[estimate.grade];
   const confidence = getEstimateConfidence(model, estimate, hardware);
-  const reasons = buildRecommendationReasons(estimate).slice(0, 4).map(localizeRecommendationReason);
+  const reasons = buildSimpleRecommendationReasons(estimate, 4);
   const licensePolicy = getLicensePolicy(model);
   const en = uiLanguage === "en";
   const setting = estimate.settingLabel || estimate.quant?.label || estimate.precision?.label || "-";
@@ -7813,6 +7750,12 @@ function renderSimpleRecommendationPanel(hardware) {
         <pre class="command-block"><code>${escapeHtml(command)}</code></pre>
         <button type="button" class="ghost-button" data-copy-command="${escapeAttr(command)}">${en ? "Copy command" : "명령어 복사"}</button>
       </section>
+      <section class="simple-inspector-section">
+        ${window.AIHardwareCommunityFeedback?.buttons(uiLanguage) || ""}
+        <p class="detail-note">${en
+          ? "GitHub opens with the GPU, model, and calculated conditions prefilled. Remove anything you do not want to share."
+          : "GPU·모델·계산 조건이 미리 채워진 GitHub 제보 화면이 열립니다. 공유하고 싶지 않은 항목은 지워 주세요."}</p>
+      </section>
       <div class="simple-inspector-actions">
         <button type="button" class="primary-button" data-open-full-simple-detail="${escapeAttr(simpleExpandedKey)}">${en ? "Open full analysis" : "전체 상세 분석"}</button>
         <button type="button" class="ghost-button" data-share-model-link="${escapeAttr(simpleExpandedKey)}">${en ? "Copy result link" : "결과 링크 복사"}</button>
@@ -7820,6 +7763,7 @@ function renderSimpleRecommendationPanel(hardware) {
       </div>
     </div>
   `;
+  applyRunFeedbackLinks(panel, model, estimate, hardware);
 }
 
 function localizeRecommendationReason(reason) {

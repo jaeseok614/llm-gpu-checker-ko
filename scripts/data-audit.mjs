@@ -14,6 +14,7 @@ const dataFiles = [
   "data/ocr-models.js",
   "data/audio-models.js",
   "data/model-metadata.js",
+  "data/model-capabilities.js",
   "data/benchmarks.js",
   "data/licenses.js",
   "data/decision-data.js",

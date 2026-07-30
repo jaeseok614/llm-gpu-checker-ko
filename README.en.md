@@ -49,6 +49,11 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v5.0** — Normalizes use cases, languages, modalities, quality, and latency for all 310 models, then separates recommendation and run-feedback modules.
+- **v4.9.5** — Adds real-Chromium regression checks at six viewport sizes with CI screenshot artifacts.
+- **v4.9.4** — Generates static search pages, JSON-LD, and a sitemap for 116 GPUs, 310 models, and 11 workloads.
+- **v4.9.3** — Lets users report successful or failed runs through a prefilled GitHub Issue.
+- **v4.9.2** — Connects workload purposes to normalized model capabilities and explains the matched purpose in recommendations.
 - **v4.9** — Adds estimate readiness, requirements→options→outputs navigation, per-plan fit checks, schema-v3 sharing and draft recovery, and release QA.
 - **v4.8.8** — Stores only infrastructure-sizing state in shared URLs to reduce link length and restore overhead.
 - **v4.8.7** — Adds arrow-key tabs, issue focus jumps, mobile tooltip boundary correction, and 44px workflow controls.
@@ -111,6 +116,8 @@
 - Measured-data speed calibration and confidence levels for matching GPU/model conditions
 - Data-quality labels for official/estimated specifications, verification date, and measurement count
 - A benchmark coverage dashboard for measured rows, GPUs, models, estimate error, and priority targets
+- Community run feedback with prefilled GPU, model, runtime, and calculated conditions
+- Search-ready static GPU, model, and workload pages with canonical URLs, JSON-LD, sitemap, and robots.txt
 - AI Stack Placement for assigning several models across several GPUs
 - Korean and English interfaces, responsive mobile layouts, keyboard focus, and reduced-motion support
 - [Pre-launch UI regression checklist](./docs/ui-regression-checklist.md) for six fixed viewport sizes and eight smoke-tested user flows
@@ -141,9 +148,10 @@ Node.js 20 or newer is required.
 ```bash
 npm install
 npm run check
+npm run test:visual
 ```
 
-`npm run check` validates syntax, GPU/model data, request automation, the static build, and calculation tests. `npm run build:static` writes the deployable site to `_site/`.
+`npm run check` validates syntax, GPU/model data, request automation, the static build, and calculation tests. `npm run test:visual` uses Chromium when Playwright is installed to verify six viewport sizes. `npm run build:static` writes the deployable site to `_site/`.
 
 ## Documentation
 
@@ -156,6 +164,7 @@ npm run check
 - [v2.0 decision platform](./docs/v2.0-decision-platform.md)
 - [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
 - [v3.0 purchase decision studio methodology](./docs/v3.0-decision-studio.md)
+- [v5.0 release notes](./docs/releases/v5.0.0.md)
 - [v4.9 release notes](./docs/releases/v4.9.0.md)
 - [v4.8 release notes](./docs/releases/v4.8.0.md)
 - [v4.8 launch copy and two-week metrics sheet](./docs/promotion/v4.8-launch-kit.md)

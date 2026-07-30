@@ -17,6 +17,7 @@ for (const file of [
   "data/audio-models.js",
   "data/benchmarks.js",
   "data/model-metadata.js",
+  "data/model-capabilities.js",
   "data/licenses.js",
 ]) {
   const source = fs.readFileSync(file, "utf8");
@@ -40,6 +41,12 @@ for (const model of data.audioModels) {
 if (!Array.isArray(data.benchmarks)) throw new Error("benchmarks must be an array");
 if (!data.modelMetadata || typeof data.modelMetadata !== "object" || Array.isArray(data.modelMetadata)) {
   throw new Error("modelMetadata must be an object");
+}
+if (!data.modelCapabilities || typeof data.modelCapabilities !== "object" || Array.isArray(data.modelCapabilities)) {
+  throw new Error("modelCapabilities must be an object");
+}
+if (!data.useCaseDefinitions || typeof data.useCaseDefinitions !== "object" || Array.isArray(data.useCaseDefinitions)) {
+  throw new Error("useCaseDefinitions must be an object");
 }
 if (!data.licensePolicies || typeof data.licensePolicies !== "object" || Array.isArray(data.licensePolicies)) {
   throw new Error("licensePolicies must be an object");
@@ -152,6 +159,38 @@ for (const model of data.ocrModels) {
   validateTagsAndName(model, "ocr model");
 }
 
+const capabilityModels = [
+  ...data.models.map((model) => [model.type || "generative", model]),
+  ...data.embeddingModels.map((model) => [model.type || "embedding", model]),
+  ...data.rerankerModels.map((model) => [model.type || "reranker", model]),
+  ...data.ocrModels.map((model) => [model.type || "ocr-pipeline", model]),
+  ...data.audioModels.map((model) => [model.type, model]),
+];
+const allowedQualityTiers = new Set(["light", "balanced", "high"]);
+const allowedLatencyTiers = new Set(["realtime", "interactive", "standard", "batch"]);
+for (const [type, model] of capabilityModels) {
+  const key = `${type}:${model.name}`;
+  const capabilities = data.modelCapabilities[key];
+  if (!capabilities) throw new Error(`model ${key} has no normalized capabilities`);
+  requireFields(
+    capabilities,
+    ["useCases", "languages", "inputModality", "outputModality", "qualityTier", "latencyTier", "supports"],
+    `model capabilities ${key}`,
+  );
+  for (const field of ["useCases", "languages", "inputModality", "outputModality", "supports"]) {
+    if (!Array.isArray(capabilities[field])) throw new Error(`model capabilities ${key}.${field} must be an array`);
+  }
+  if (!capabilities.useCases.length) throw new Error(`model capabilities ${key} needs at least one use case`);
+  if (!capabilities.inputModality.length || !capabilities.outputModality.length) {
+    throw new Error(`model capabilities ${key} needs input and output modalities`);
+  }
+  capabilities.useCases.forEach((useCase) => {
+    if (!data.useCaseDefinitions[useCase]) throw new Error(`model capabilities ${key} uses unknown use case: ${useCase}`);
+  });
+  if (!allowedQualityTiers.has(capabilities.qualityTier)) throw new Error(`model capabilities ${key} has invalid qualityTier`);
+  if (!allowedLatencyTiers.has(capabilities.latencyTier)) throw new Error(`model capabilities ${key} has invalid latencyTier`);
+}
+
 for (const row of data.benchmarks) {
   requireFields(row, ["modelName", "gpu", "workload", "sourceUrl"], "benchmark");
   if (!row.tokensPerSecond && !row.docsPerSecond && !row.pairsPerSecond && !row.pagesPerSecond && !row.metric) {
@@ -207,7 +246,7 @@ const qualityBenchmarkCount = metadataRows.filter((metadata) => metadata.quality
 console.log(
   `validated ${data.gpus.length} GPUs, ${data.quantizations.length} quantizations, ${data.models.length} LLMs, `
   + `${data.embeddingModels.length} embeddings, ${data.rerankerModels.length} rerankers, ${data.ocrModels.length} OCR models, ${data.audioModels.length} audio models, `
-  + `${data.benchmarks.length} measured benchmarks, ${metadataRows.length} metadata rows `
+  + `${data.benchmarks.length} measured benchmarks, ${capabilityModels.length} capability rows, ${metadataRows.length} metadata rows `
   + `(${releaseDateCount} release dates, ${qualityBenchmarkCount} quality benchmarks), `
   + `${allModelsByName.size} license policies`,
 );

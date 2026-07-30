@@ -17,9 +17,12 @@ const dataFiles = [
   "data/ocr-models.js",
   "data/audio-models.js",
   "data/model-metadata.js",
+  "data/model-capabilities.js",
   "data/benchmarks.js",
   "data/licenses.js",
   "data/decision-data.js",
+  "features/quick-recommendation.js",
+  "features/community-feedback.js",
 ];
 
 let dom;
@@ -55,6 +58,12 @@ test("GPU selection renders three quick recommendations", () => {
   app.eval('selectPrimaryGpu("rtx3060-12"); coreTaskMode = "finder"; appMode = "simple"; render();');
   assert.equal(app.document.querySelectorAll(".simple-pick-card").length, 3);
   assert.match(app.document.getElementById("simpleModeGpuReadout").textContent, /RTX 3060/);
+  const missingCapabilities = app.eval(`getAllModels().filter((model) =>
+    !model.capabilities?.useCases?.length
+    || !model.capabilities?.inputModality?.length
+    || !model.capabilities?.outputModality?.length
+  ).length`);
+  assert.equal(missingCapabilities, 0, "every catalog model should have normalized capabilities");
 });
 
 test("quick recommendations keep purpose choices and models inside the selected workload", () => {
@@ -78,6 +87,7 @@ test("quick recommendations keep purpose choices and models inside the selected 
   purpose.value = "voiceCloning";
   purpose.dispatchEvent(new app.Event("change", { bubbles: true }));
   assert.match(app.document.getElementById("simpleModeResult").textContent, /XTTS-v2/);
+  assert.match(app.document.getElementById("simpleModeResult").textContent, /목소리 복제 용도 지원/);
 
   app.document.querySelector("[data-language-toggle] [data-lang='en']")
     .dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
@@ -91,6 +101,28 @@ test("quick recommendations keep purpose choices and models inside the selected 
   );
   app.document.querySelector('[data-workload-tab="generative"]')
     .dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+});
+
+test("community run feedback keeps visible hardware conditions in a privacy-conscious issue link", () => {
+  const feedback = app.AIHardwareCommunityFeedback;
+  assert.match(feedback.buttons("ko"), /실행됐어요/);
+  assert.match(feedback.buttons("ko"), /실행 안 됐어요/);
+  const url = feedback.feedbackUrl({
+    outcome: "success",
+    model: "XTTS-v2",
+    gpu: "GeForce RTX 3060 12GB",
+    workload: "음성 합성",
+    purpose: "목소리 복제",
+    runtime: "PyTorch",
+    setting: "FP16",
+    requiredGb: "4.2 GB",
+    estimatedSpeed: "실시간",
+  });
+  assert.match(url, /github\.com\/jaeseok614\/llm-gpu-checker-ko\/issues\/new/);
+  const feedbackBody = new URL(url).searchParams.get("body");
+  assert.match(feedbackBody, /XTTS-v2/);
+  assert.match(feedbackBody, /RTX 3060/);
+  assert.doesNotMatch(feedbackBody, /고객명:|프로젝트명:/);
 });
 
 test("full catalog and advisor produce usable results", () => {

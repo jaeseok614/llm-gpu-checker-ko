@@ -43,6 +43,14 @@ body:
     attributes:
       label: 언어
       placeholder: multilingual, Korean
+  - type: input
+    id: use_cases
+    attributes:
+      label: 주요 용도
+      description: 쉼표로 구분해 적어 주세요.
+      placeholder: 일반 대화, 코딩, RAG, 음성 복제, 실시간 자막
+    validations:
+      required: true
   - type: textarea
     id: summary
     attributes:
