@@ -1135,6 +1135,17 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     assert.equal(platform.document.querySelector(".si-expert-form").open, false);
     platform.document.querySelector('[data-si-input-mode="expert"]').click();
     assert.equal(platform.document.querySelector(".si-expert-form").open, true);
+    assert.ok(platform.document.querySelector(".si-editable-bom"));
+    assert.ok(platform.document.querySelector("#siBomCpuId").options.length >= 10);
+    assert.ok(platform.document.querySelector("#siBomMemoryId").options.length >= 6);
+    assert.ok(platform.document.querySelector("#siBomPsuId").options.length >= 7);
+    const bomBefore = platform.eval("siEditableBom(calculateSiSizing().plans[1]).total");
+    const extra = platform.document.querySelector("#siBomExtraKrw");
+    extra.value = "1000000";
+    extra.dispatchEvent(new platform.Event("change", { bubbles: true }));
+    assert.equal(platform.eval("studioState.siBomExtraKrw"), 1000000);
+    assert.ok(platform.eval("siEditableBom(calculateSiSizing().plans[1]).total") > bomBefore);
+    assert.match(platform.document.querySelector(".si-bom-summary").textContent, /편집 견적 합계/);
   });
 
   test("expands workstation and server component tiers", () => {

@@ -136,6 +136,21 @@ let studioState = {
   siQualityPreset: "balanced",
   siUserPreset: 100,
   siSelectedPlan: "recommended",
+  siBomCpuId: "",
+  siBomCpuQty: 1,
+  siBomMemoryId: "",
+  siBomMemoryQty: 1,
+  siBomStorageId: "",
+  siBomStorageQty: 1,
+  siBomNicId: "",
+  siBomNicQty: 1,
+  siBomPsuId: "",
+  siBomPsuQty: 1,
+  siBomUpsId: "",
+  siBomUpsQty: 1,
+  siBomCaseId: "",
+  siBomCaseQty: 1,
+  siBomExtraKrw: 0,
 };
 
 function studioCopy(key) {
@@ -657,6 +672,75 @@ function autoComponentRecommendation(plan) {
   return { cpu, server, memory, storage, nic, power };
 }
 
+const SI_BOM_TYPES = [
+  ["cpu", "siBomCpuId", "siBomCpuQty", "CPU"],
+  ["memory", "siBomMemoryId", "siBomMemoryQty", "RAM"],
+  ["storage", "siBomStorageId", "siBomStorageQty", "Storage"],
+  ["nic", "siBomNicId", "siBomNicQty", "Network"],
+  ["psu", "siBomPsuId", "siBomPsuQty", "Power"],
+  ["ups", "siBomUpsId", "siBomUpsQty", "UPS"],
+  ["case", "siBomCaseId", "siBomCaseQty", "Server / case"],
+];
+
+function siBomAutoSelection(plan) {
+  const perNodeCores = Math.ceil(plan.cpuCores / Math.max(1, plan.nodes));
+  const perNodeRam = Math.ceil(plan.ramGb / Math.max(1, plan.nodes));
+  const perNodePower = Math.ceil(plan.powerW / Math.max(1, plan.nodes));
+  const cpu = SYSTEM_PART_CATALOG.cpu.find((item) => item.cores >= perNodeCores) || SYSTEM_PART_CATALOG.cpu.at(-1);
+  const memory = SYSTEM_PART_CATALOG.memory.find((item) => item.capacityGb >= perNodeRam) || SYSTEM_PART_CATALOG.memory.at(-1);
+  const storage = SYSTEM_PART_CATALOG.storage.find((item) => item.capacityTb >= plan.storageTb) || SYSTEM_PART_CATALOG.storage.at(-1);
+  const targetNic = Number.parseInt(plan.network, 10) || 25;
+  const nic = SYSTEM_PART_CATALOG.nic.find((item) => item.speedGbps >= targetNic) || SYSTEM_PART_CATALOG.nic.at(-1);
+  const psu = SYSTEM_PART_CATALOG.psu.find((item) => item.watts >= perNodePower) || SYSTEM_PART_CATALOG.psu.at(-1);
+  const ups = SYSTEM_PART_CATALOG.ups.find((item) => item.capacityVa >= perNodePower * 1.2) || SYSTEM_PART_CATALOG.ups.at(-1);
+  const chassis = SYSTEM_PART_CATALOG.case.find((item) => plan.gpuPerServer <= 4 ? item.id === "rack-4u-4gpu" : item.id === "rack-8gpu") || SYSTEM_PART_CATALOG.case.at(-1);
+  return {
+    siBomCpuId: cpu.id, siBomCpuQty: Math.max(1, plan.nodes * plan.cpuSockets),
+    siBomMemoryId: memory.id, siBomMemoryQty: Math.max(1, plan.nodes),
+    siBomStorageId: storage.id, siBomStorageQty: Math.max(1, Math.ceil(plan.storageTb / storage.capacityTb)),
+    siBomNicId: nic.id, siBomNicQty: Math.max(1, plan.nodes),
+    siBomPsuId: psu.id, siBomPsuQty: Math.max(1, plan.nodes * Math.ceil(perNodePower / psu.watts)),
+    siBomUpsId: ups.id, siBomUpsQty: Math.max(1, Math.ceil(plan.powerW * 1.2 / ups.capacityVa)),
+    siBomCaseId: chassis.id, siBomCaseQty: Math.max(1, plan.nodes),
+  };
+}
+
+function ensureSiBomSelection(plan) {
+  if (!studioState.siBomCpuId) Object.assign(studioState, siBomAutoSelection(plan));
+}
+
+function siEditableBom(plan) {
+  ensureSiBomSelection(plan);
+  const rows = SI_BOM_TYPES.map(([type, idKey, qtyKey, label]) => {
+    const item = SYSTEM_PART_CATALOG[type].find((part) => part.id === studioState[idKey]) || SYSTEM_PART_CATALOG[type][0];
+    const quantity = Math.max(1, Math.round(Number(studioState[qtyKey]) || 1));
+    return { type, idKey, qtyKey, label, item, quantity, subtotal: item.priceKrw * quantity };
+  });
+  const partsTotal = rows.reduce((sum, row) => sum + row.subtotal, 0);
+  const gpuUnitKrw = Number(studioMarket(plan.gpu.id)?.lowestKrw || 0);
+  const gpuTotal = gpuUnitKrw * plan.gpuCount;
+  const extra = Math.max(0, Number(studioState.siBomExtraKrw) || 0);
+  return { rows, partsTotal, gpuUnitKrw, gpuTotal, extra, total: partsTotal + gpuTotal + extra };
+}
+
+function renderEditableSiBom(plan) {
+  const en = uiLanguage === "en";
+  const bom = siEditableBom(plan);
+  return `<section class="si-editable-bom">
+    <div class="si-version-head"><div><span class="section-kicker">${en ? "EDITABLE BOM" : "편집용 부품 견적"}</span><h3>${en ? "Select components and quantities" : "CPU·RAM·전원 등을 직접 선택하세요"}</h3><p>${en ? "Reference prices are planning assumptions and can be adjusted with an extra-cost line." : "표시 가격은 계획용 참고값이며 설치·라이선스 등 추가 비용을 별도로 더할 수 있습니다."}</p></div><button type="button" class="ghost-button" data-si-bom-auto>${en ? "Reset to auto selection" : "자동 추천으로 초기화"}</button></div>
+    <div class="si-bom-editor">${bom.rows.map((row) => `<label><span>${en ? row.label : ({ Storage: "스토리지", Network: "네트워크", Power: "파워", "Server / case": "서버·케이스" }[row.label] || row.label)}</span><select id="${row.idKey}">${SYSTEM_PART_CATALOG[row.type].map((item) => `<option value="${item.id}" ${item.id === row.item.id ? "selected" : ""}>${platformEscape(item.name)} · ${studioMoney(item.priceKrw)}</option>`).join("")}</select><span class="si-bom-qty"><input id="${row.qtyKey}" type="number" min="1" max="128" value="${row.quantity}" aria-label="${platformEscape(row.label)} ${en ? "quantity" : "수량"}"><b>× ${row.quantity} = ${studioMoney(row.subtotal)}</b></span></label>`).join("")}
+      <label class="si-bom-extra"><span>${en ? "Installation · license · support" : "설치·라이선스·지원 추가 비용"}</span><input id="siBomExtraKrw" type="number" min="0" step="10000" value="${bom.extra}"><small>${en ? "Enter a negotiated or separately quoted amount." : "협의 금액이나 별도 견적 금액을 입력하세요."}</small></label>
+    </div>
+    <div class="si-bom-summary">
+      <span>${en ? "Selected parts" : "선택 부품"}<strong>${studioMoney(bom.partsTotal)}</strong></span>
+      <span>GPU ${plan.gpuCount} × ${bom.gpuUnitKrw ? studioMoney(bom.gpuUnitKrw) : (en ? "quote required" : "견적 필요")}<strong>${studioMoney(bom.gpuTotal)}</strong></span>
+      <span>${en ? "Extra cost" : "추가 비용"}<strong>${studioMoney(bom.extra)}</strong></span>
+      <span class="is-total">${en ? "Editable estimate total" : "편집 견적 합계"}<strong>${studioMoney(bom.total)}</strong></span>
+    </div>
+    <p class="studio-form-note">${en ? "Component prices are catalog references, not live vendor quotes. Confirm stock, tax, installation, and support before proposal submission." : "부품 가격은 실시간 판매가가 아닌 카탈로그 참고값입니다. 제안 전 재고·세금·설치·지원 비용을 확인하세요."}</p>
+  </section>`;
+}
+
 function renderSimpleSizingWizard(model, plans) {
   const en = uiLanguage === "en";
   const recommended = plans.find((plan) => plan.id === "recommended") || plans[0];
@@ -847,6 +931,7 @@ function renderStudioConsulting() {
       <label><span>${en ? "Electricity (KRW/kWh)" : "전력 단가 (원/kWh)"}</span><input id="siElectricityKrw" type="number" min="0" value="${studioState.siElectricityKrw}"></label>
       <label><span>${en ? "Annual maintenance (%)" : "연 유지보수율 (%)"}</span><input id="siMaintenancePct" type="number" min="0" max="100" value="${studioState.siMaintenancePct}"></label>
     </div></details>
+    ${studioState.siInputMode === "expert" ? renderEditableSiBom(plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0]) : ""}
     <div class="si-plan-grid">${plans.map((plan) => `<article class="si-plan-card ${plan.id === "recommended" ? "is-featured" : ""} ${studioState.siSelectedPlan === plan.id ? "is-selected" : ""}" data-si-plan="${plan.id}" role="button" tabindex="0" aria-pressed="${studioState.siSelectedPlan === plan.id}">
       <span>${en ? plan.en : plan.ko}</span><h3>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3>
       <p>${plan.nodes}${en ? " server(s)" : "서버"} · ${en ? `${plan.gpuPerServer} GPU/server` : `서버당 GPU ${plan.gpuPerServer}개`} · ${plan.capacity}${en ? " estimated concurrent responses" : "명 예상 동시 응답"}</p>
@@ -902,8 +987,17 @@ function siXmlEscape(value) {
 function downloadSiWorkbook() {
   const { model, plans } = calculateSiSizing();
   const rows = plans.map((plan) => [plan.ko, plan.gpu.name, plan.gpuCount, plan.nodes, plan.cpuCores, plan.ramGb, plan.storageTb, plan.network, plan.powerW, plan.confidence, plan.sampleCount]);
+  const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
+  const bom = siEditableBom(selected);
+  const bomRows = [
+    ["구분", "제품", "단가", "수량", "소계"],
+    ["GPU", selected.gpu.name, bom.gpuUnitKrw, selected.gpuCount, bom.gpuTotal],
+    ...bom.rows.map((row) => [row.label, row.item.name, row.item.priceKrw, row.quantity, row.subtotal]),
+    ["추가 비용", "설치·라이선스·지원", bom.extra, 1, bom.extra],
+    ["합계", "", "", "", bom.total],
+  ];
   const worksheet = (name, values) => `<Worksheet ss:Name="${siXmlEscape(name)}"><Table>${values.map((row) => `<Row>${row.map((cell) => `<Cell><Data ss:Type="${typeof cell === "number" ? "Number" : "String"}">${siXmlEscape(cell)}</Data></Cell>`).join("")}</Row>`).join("")}</Table></Worksheet>`;
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheet("고객 요구사항", [["항목", "값"], ["프로젝트", studioState.siProjectName], ["목적", studioState.siPurpose], ["모델", model.name], ["전체 사용자", studioState.siTotalUsers], ["동시 요청", studioState.siConcurrency], ["입력 토큰", studioState.siInputTokens], ["출력 토큰", studioState.siOutputTokens], ["가용성", studioState.siAvailability], ["성장 여유", `${studioState.siGrowthPct}%`]])}${worksheet("구성안 비교", [["구성안", "GPU", "GPU 수", "노드", "CPU 코어", "RAM GB", "NVMe TB", "네트워크", "전력 W", "신뢰도", "표본 수"], ...rows])}${worksheet("가정 및 PoC", [["구분", "내용"], ["가정", "모델 메모리·KV cache·런타임 오버헤드와 성장 여유를 포함한 사전 산정"], ["주의", "최종 수량은 벤더 검토와 실제 워크로드 PoC 후 확정"], ["PoC 1", "모델 버전·양자화·런타임 확정"], ["PoC 2", "대표 프롬프트 TTFT·tokens/s 측정"], ["PoC 3", "동시 요청·대기열 부하 테스트"], ["PoC 4", "장애 전환·모니터링 검증"]])}</Workbook>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheet("고객 요구사항", [["항목", "값"], ["프로젝트", studioState.siProjectName], ["목적", studioState.siPurpose], ["모델", model.name], ["전체 사용자", studioState.siTotalUsers], ["동시 요청", studioState.siConcurrency], ["입력 토큰", studioState.siInputTokens], ["출력 토큰", studioState.siOutputTokens], ["가용성", studioState.siAvailability], ["성장 여유", `${studioState.siGrowthPct}%`]])}${worksheet("구성안 비교", [["구성안", "GPU", "GPU 수", "노드", "CPU 코어", "RAM GB", "NVMe TB", "네트워크", "전력 W", "신뢰도", "표본 수"], ...rows])}${worksheet("편집 BOM", bomRows)}${worksheet("가정 및 PoC", [["구분", "내용"], ["가정", "모델 메모리·KV cache·런타임 오버헤드와 성장 여유를 포함한 사전 산정"], ["주의", "최종 수량은 벤더 검토와 실제 워크로드 PoC 후 확정"], ["PoC 1", "모델 버전·양자화·런타임 확정"], ["PoC 2", "대표 프롬프트 TTFT·tokens/s 측정"], ["PoC 3", "동시 요청·대기열 부하 테스트"], ["PoC 4", "장애 전환·모니터링 검증"]])}</Workbook>`;
   const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -1028,6 +1122,14 @@ function bindDecisionStudio() {
     siBenchmarkOutputs: ["siBenchmarkOutputs", String], siBenchmarkConcurrency: ["siBenchmarkConcurrency", String],
     siUtilizationPct: ["siUtilizationPct", Number], siCloudHourlyUsd: ["siCloudHourlyUsd", Number],
     siFacilityKrwMonth: ["siFacilityKrwMonth", Number], siSupportPct: ["siSupportPct", Number],
+    siBomCpuId: ["siBomCpuId", String], siBomCpuQty: ["siBomCpuQty", Number],
+    siBomMemoryId: ["siBomMemoryId", String], siBomMemoryQty: ["siBomMemoryQty", Number],
+    siBomStorageId: ["siBomStorageId", String], siBomStorageQty: ["siBomStorageQty", Number],
+    siBomNicId: ["siBomNicId", String], siBomNicQty: ["siBomNicQty", Number],
+    siBomPsuId: ["siBomPsuId", String], siBomPsuQty: ["siBomPsuQty", Number],
+    siBomUpsId: ["siBomUpsId", String], siBomUpsQty: ["siBomUpsQty", Number],
+    siBomCaseId: ["siBomCaseId", String], siBomCaseQty: ["siBomCaseQty", Number],
+    siBomExtraKrw: ["siBomExtraKrw", Number],
   };
   Object.entries(fields).forEach(([id, [key, cast]]) => $(id)?.addEventListener("change", (event) => updateStudio(key, cast(event.target.value))));
   $("customVision")?.addEventListener("change", (event) => updateStudio("customVision", event.target.checked));
@@ -1082,6 +1184,13 @@ function bindDecisionStudio() {
         selectPlan(card.dataset.siPlan);
       }
     });
+  });
+  $("[data-si-bom-auto]")?.addEventListener("click", () => {
+    const { plans } = calculateSiSizing();
+    const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
+    Object.assign(studioState, siBomAutoSelection(selected), { siBomExtraKrw: 0 });
+    syncStudioUrl();
+    renderDecisionStudio();
   });
   $("[data-si-export]")?.addEventListener("click", downloadSiWorkbook);
   $("[data-si-print]")?.addEventListener("click", () => window.print());

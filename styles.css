@@ -876,7 +876,113 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .si-actions {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 14px;
+}
+
+.si-actions > :is(button, a) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.si-editable-bom {
+  margin-top: 14px;
+  padding: 18px;
+  border: 2px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--panel-raised);
+}
+
+.si-editable-bom .si-version-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.si-bom-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.si-bom-editor > label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.si-bom-editor > label > span:first-child {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.si-bom-editor select,
+.si-bom-editor input {
+  width: 100%;
+  min-width: 0;
+}
+
+.si-bom-qty {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.si-bom-qty b {
+  min-width: 0;
+  color: var(--blue);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+.si-bom-extra small {
+  color: var(--muted);
+}
+
+.si-bom-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.si-bom-summary span {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+
+.si-bom-summary strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.si-bom-summary .is-total {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.si-bom-summary .is-total strong {
+  color: var(--blue);
 }
 
 .si-advanced {
@@ -6551,6 +6657,8 @@ button:focus-visible {
   .si-compact-grid, .si-metric-grid, .si-project-list { grid-template-columns: 1fr; }
   .si-avatar-latency b, .si-architecture b { align-self: center; transform: rotate(90deg); }
   .si-avatar-latency strong { margin-left: 0; white-space: normal; }
+  .si-bom-editor, .si-bom-summary { grid-template-columns: 1fr; }
+  .si-actions > :is(button, a) { width: 100%; }
 }
 .core-task-actions {
   grid-template-columns: repeat(4, minmax(0, 1fr));
