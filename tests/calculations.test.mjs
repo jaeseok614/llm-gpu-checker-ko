@@ -396,9 +396,10 @@ describe("quick recommendation navigation", () => {
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "ko");
 
+    const liveCard = fresh.document.querySelector(".simple-pick-card");
     const cardOrderBefore = [...fresh.document.querySelectorAll(".simple-pick-card-toggle")]
       .map((button) => button.dataset.modelKey);
-    card.querySelector(".simple-pick-card-toggle")
+    liveCard.querySelector(".simple-pick-card-toggle")
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.getElementById("modelDetail").hidden, true, "quick-recommend clicks must not open the expert-mode drawer");
     const inspector = fresh.document.getElementById("simpleRecommendationPanel");

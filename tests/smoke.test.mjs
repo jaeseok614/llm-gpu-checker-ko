@@ -57,6 +57,42 @@ test("GPU selection renders three quick recommendations", () => {
   assert.match(app.document.getElementById("simpleModeGpuReadout").textContent, /RTX 3060/);
 });
 
+test("quick recommendations keep purpose choices and models inside the selected workload", () => {
+  const ttsTab = app.document.querySelector('[data-workload-tab="audioTts"]');
+  ttsTab.dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+
+  const purpose = app.document.getElementById("simplePurpose");
+  assert.equal(purpose.dataset.workload, "audioTts");
+  assert.deepEqual(
+    [...purpose.options].map((option) => option.value),
+    ["natural", "realtime", "voiceCloning", "multilingual", "lightweight"],
+  );
+  assert.doesNotMatch(purpose.textContent, /코딩|추론|긴 문서/);
+
+  const cards = [...app.document.querySelectorAll(".simple-pick-card")];
+  assert.ok(cards.length > 0, "expected at least one runnable TTS recommendation");
+  assert.ok(cards.every((card) => card.dataset.workload === "audioTts"));
+  assert.ok(cards.every((card) => card.dataset.modelType === "audio-tts"));
+  assert.doesNotMatch(app.document.getElementById("simpleModeResult").textContent, /Wan2\.1|video/i);
+
+  purpose.value = "voiceCloning";
+  purpose.dispatchEvent(new app.Event("change", { bubbles: true }));
+  assert.match(app.document.getElementById("simpleModeResult").textContent, /XTTS-v2/);
+
+  app.document.querySelector("[data-language-toggle] [data-lang='en']")
+    .dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.match(purpose.textContent, /Natural narration|Voice cloning/);
+  assert.doesNotMatch(purpose.textContent, /[가-힣]/);
+  app.document.querySelector("[data-language-toggle] [data-lang='ko']")
+    .dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.doesNotMatch(
+    app.document.getElementById("simpleModeResult").textContent,
+    /Calculated estimate|Copy run command|Approx\./,
+  );
+  app.document.querySelector('[data-workload-tab="generative"]')
+    .dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+});
+
 test("full catalog and advisor produce usable results", () => {
   app.eval('setAppMode("expert");');
   assert.ok(app.document.querySelectorAll("#modelResults [data-model-key]").length > 0);

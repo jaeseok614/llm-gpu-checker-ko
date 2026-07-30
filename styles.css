@@ -6432,6 +6432,17 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .benchmark-body,
+  .benchmark-body > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .benchmark-chart-bar-row {
+    grid-template-columns: minmax(0, 1fr) minmax(72px, 1fr) 48px;
+    gap: 6px;
+  }
+
   .simple-explore-actions .ghost-button {
     width: 100%;
   }
