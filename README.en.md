@@ -37,7 +37,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
-- **v4.3** — Separates infrastructure sizing into its own workspace and adds a four-question easy estimate that automatically selects the model, GPU, CPU, RAM, storage, network, power, and expanded component tiers.
+- **v4.3** — Separates infrastructure sizing into its own workspace and adds chatbot, image, video, voice, and avatar scenarios, custom user counts, automatic component selection, clickable option details, and price evidence links.
 - **v4.2** — Compares 1/3/5-year TCO and utilization-based break-even for on-premises, cloud, and hybrid options.
 - **v4.1** — Adds vLLM, llama.cpp, Ollama, and NIM benchmark commands, result JSON import, calibration factors, and PoC verdicts.
 - **v4.0** — Adds customer and technical proposal modes, generated architecture and placement diagrams, editable Excel, and print-ready PDF outputs.

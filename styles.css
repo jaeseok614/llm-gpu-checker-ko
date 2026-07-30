@@ -677,9 +677,24 @@ html[lang="en"] .simple-mode-head > div:first-child {
   background: var(--surface-soft);
 }
 
+.si-plan-card {
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.si-plan-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+
 .si-plan-card.is-featured {
   border: 2px solid var(--blue);
   background: var(--blue-soft);
+}
+
+.si-plan-card.is-selected {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 24%, transparent);
 }
 
 .si-plan-card > span {
@@ -715,6 +730,126 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin: 0;
   font-weight: 800;
   text-align: right;
+}
+
+.si-plan-open {
+  display: block;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--blue) !important;
+}
+
+.si-plan-detail {
+  margin-top: 14px;
+  padding: 20px;
+  border: 2px solid var(--blue);
+  border-radius: 14px;
+  background: var(--panel-raised);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--blue) 10%, transparent);
+}
+
+.si-plan-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.si-plan-detail-head h3,
+.si-plan-detail-head p {
+  margin: 4px 0;
+}
+
+.si-plan-detail-head p,
+.si-price-disclaimer,
+.si-plan-detail-grid article > p {
+  color: var(--muted);
+}
+
+.si-plan-detail-head > strong {
+  display: grid;
+  gap: 3px;
+  color: var(--blue);
+  font-size: 1.2rem;
+  text-align: right;
+}
+
+.si-plan-detail-head small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.si-plan-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.si-plan-detail-grid article {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+
+.si-plan-detail-grid h4 {
+  margin: 0 0 10px;
+}
+
+.si-plan-detail-grid ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.si-plan-detail-grid dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.si-plan-detail-grid dl > div {
+  display: grid;
+  gap: 3px;
+  padding-bottom: 7px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.si-plan-detail-grid dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.si-plan-detail-grid dd {
+  margin: 0;
+  font-weight: 800;
+}
+
+.si-source-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.si-source-links a {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--blue);
+  background: var(--surface-soft);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.si-price-disclaimer {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
 }
 
 .si-output-grid {
@@ -6462,9 +6597,10 @@ body.infra-task-active #benchmarkDashboard {
 
 .si-simple-wizard {
   padding: 20px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--line-strong);
   border-radius: 14px;
   background: var(--surface-soft);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .si-wizard-head {
@@ -6480,6 +6616,10 @@ body.infra-task-active #benchmarkDashboard {
 
 .si-wizard-step {
   margin-top: 20px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-raised);
 }
 
 .si-choice-grid {
@@ -6496,9 +6636,13 @@ body.infra-task-active #benchmarkDashboard {
   padding: 10px;
   text-align: left;
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 2px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
+}
+
+.si-choice-grid button:hover {
+  border-color: var(--blue);
 }
 
 .si-choice-grid button.is-active {
@@ -6509,6 +6653,40 @@ body.infra-task-active #benchmarkDashboard {
 
 .si-choice-grid small {
   color: var(--muted);
+}
+
+.si-user-choice-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.si-custom-users {
+  display: grid;
+  gap: 5px;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.si-custom-users > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink);
+}
+
+.si-custom-users input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
 }
 
 .si-auto-result {
@@ -6581,6 +6759,12 @@ body.infra-task-active #benchmarkDashboard {
   .si-auto-parts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .si-user-choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .si-plan-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 560px) {
@@ -6591,5 +6775,14 @@ body.infra-task-active #benchmarkDashboard {
   }
   .si-wizard-head {
     flex-direction: column;
+  }
+  .si-user-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .si-plan-detail-head {
+    flex-direction: column;
+  }
+  .si-plan-detail-head > strong {
+    text-align: left;
   }
 }

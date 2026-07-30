@@ -135,6 +135,7 @@ let studioState = {
   siInputMode: "simple",
   siQualityPreset: "balanced",
   siUserPreset: 100,
+  siSelectedPlan: "recommended",
 };
 
 function studioCopy(key) {
@@ -484,20 +485,45 @@ function renderStudioCommunity() {
 }
 
 const SI_SCENARIOS = {
+  "ai-chatbot": {
+    ko: "고객 상담 AI 챗봇", en: "Customer service chatbot", purpose: "고객 문의 응답·상담 자동화", purposeEn: "Customer Q&A and support automation",
+    users: 100, concurrency: 12, input: 4096, output: 500, seconds: 6,
+    availability: "ha", growth: 35, vector: 500, logs: 12, retention: 90, security: "standard", serviceType: "rag",
+  },
   "internal-rag": {
     ko: "사내 문서 RAG", en: "Internal document RAG", purpose: "사내 문서 검색·질의응답", purposeEn: "Internal document search and Q&A",
     users: 100, concurrency: 10, input: 4096, output: 500, seconds: 8,
-    availability: "ha", growth: 30, vector: 500, logs: 10, retention: 90, security: "restricted",
+    availability: "ha", growth: 30, vector: 500, logs: 10, retention: 90, security: "restricted", serviceType: "rag",
   },
   "document-vlm": {
     ko: "문서 OCR·VLM", en: "Document OCR + VLM", purpose: "계약서·도면 OCR 및 시각 질의응답", purposeEn: "OCR and visual Q&A for contracts and drawings",
     users: 60, concurrency: 6, input: 8192, output: 350, seconds: 15,
-    availability: "ha", growth: 25, vector: 1200, logs: 18, retention: 180, security: "restricted",
+    availability: "ha", growth: 25, vector: 1200, logs: 18, retention: 180, security: "restricted", serviceType: "ocr",
   },
   "private-assistant": {
     ko: "폐쇄망 AI 비서", en: "Air-gapped AI assistant", purpose: "폐쇄망 업무 지원·코드·요약", purposeEn: "Air-gapped work assistant for code and summarization",
     users: 250, concurrency: 20, input: 8192, output: 700, seconds: 10,
-    availability: "nplus1", growth: 40, vector: 2000, logs: 30, retention: 365, security: "airgap",
+    availability: "nplus1", growth: 40, vector: 2000, logs: 30, retention: 365, security: "airgap", serviceType: "rag",
+  },
+  "image-studio": {
+    ko: "AI 이미지 생성", en: "AI image generation", purpose: "마케팅·상품 이미지 생성 서비스", purposeEn: "Marketing and product image generation service",
+    users: 50, concurrency: 5, input: 2048, output: 350, seconds: 20,
+    availability: "ha", growth: 30, vector: 200, logs: 20, retention: 60, security: "standard", serviceType: "image",
+  },
+  "video-studio": {
+    ko: "AI 영상 생성", en: "AI video generation", purpose: "홍보·교육용 AI 영상 생성", purposeEn: "AI video generation for marketing and training",
+    users: 30, concurrency: 3, input: 2048, output: 500, seconds: 60,
+    availability: "ha", growth: 30, vector: 300, logs: 40, retention: 60, security: "standard", serviceType: "video",
+  },
+  "voice-agent": {
+    ko: "음성 상담 AI", en: "Voice AI agent", purpose: "STT·LLM·TTS 기반 실시간 음성 상담", purposeEn: "Real-time voice support with STT, LLM, and TTS",
+    users: 100, concurrency: 15, input: 2048, output: 250, seconds: 3,
+    availability: "ha", growth: 40, vector: 500, logs: 25, retention: 90, security: "restricted", serviceType: "voice",
+  },
+  "avatar-chat": {
+    ko: "AI 아바타 채팅", en: "AI avatar chat", purpose: "STT·LLM·TTS·립싱크 실시간 아바타 대화", purposeEn: "Real-time avatar conversation with STT, LLM, TTS, and lip sync",
+    users: 50, concurrency: 8, input: 2048, output: 250, seconds: 3,
+    availability: "ha", growth: 40, vector: 500, logs: 35, retention: 90, security: "restricted", serviceType: "avatar",
   },
 };
 
@@ -582,6 +608,44 @@ function applySimpleSizingPreset() {
   studioState.siDevProd = users >= 50;
 }
 
+function renderSelectedPlanDetail(model, plans) {
+  const en = uiLanguage === "en";
+  const plan = plans.find((item) => item.id === studioState.siSelectedPlan)
+    || plans.find((item) => item.id === "recommended")
+    || plans[0];
+  if (!plan) return "";
+  const market = studioMarket(plan.gpu.id);
+  const unitKrw = Number(market?.lowestKrw || 0);
+  const gpuSubtotal = unitKrw * plan.gpuCount;
+  const baseInfra = Math.max(0, plan.purchaseKrw - gpuSubtotal);
+  const parts = autoComponentRecommendation(plan);
+  const label = en ? plan.en : plan.ko;
+  const marketLabel = market?.estimated
+    ? (en ? "Planning reference converted from MSRP/spec grade" : "출시가·사양 등급을 환산한 계획 참고가")
+    : (en ? "Recorded Korean market reference" : "국내 시세 기록값");
+  const sourceLinks = [
+    market?.sourceUrl ? [en ? "GPU price/spec source" : "GPU 가격·사양 출처", market.sourceUrl] : null,
+    model.sourceUrl ? [en ? "Model source" : "모델 출처", model.sourceUrl] : null,
+    [en ? "AWS calculator" : "AWS 요금 계산기", "https://calculator.aws/"],
+    [en ? "Azure calculator" : "Azure 요금 계산기", "https://azure.microsoft.com/pricing/calculator/"],
+    [en ? "Google Cloud calculator" : "Google Cloud 요금 계산기", "https://cloud.google.com/products/calculator"],
+  ].filter(Boolean);
+  return `<section class="si-plan-detail" aria-live="polite">
+    <div class="si-plan-detail-head"><div><span class="section-kicker">${en ? "SELECTED OPTION" : "선택한 구성안"}</span><h3>${label} · ${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3><p>${en ? "Click another option above to compare its sizing assumptions and cost evidence." : "위의 다른 구성안을 누르면 산정 조건과 비용 근거가 바로 바뀝니다."}</p></div><strong>${studioMoney(plan.threeYearTcoKrw)}<small>${en ? "3-year TCO estimate" : "3년 TCO 추정"}</small></strong></div>
+    <div class="si-plan-detail-grid">
+      <article><h4>${en ? "Why this option" : "이 구성안의 특징"}</h4><ul>
+        <li>${plan.id === "economy" ? (en ? "Minimizes initial cost with a smaller safety margin." : "안전 여유를 줄여 초기 도입비를 우선합니다.") : plan.id === "scalable" ? (en ? "Keeps more capacity for traffic growth and expansion." : "트래픽 증가와 향후 증설을 위한 여유를 크게 확보합니다.") : (en ? "Balances availability, performance, and growth reserve." : "가용성·성능·성장 여유를 균형 있게 반영합니다.")}</li>
+        <li>${en ? `${plan.nodes} server(s), ${plan.gpuPerServer} GPU/server, estimated capacity ${plan.capacity}.` : `${plan.nodes}대 서버, 서버당 GPU ${plan.gpuPerServer}개, 예상 동시 응답 ${plan.capacity}명입니다.`}</li>
+        <li>${en ? `Failover capacity is ${plan.failoverCapacity}; PoC verification is required.` : `장애 시 잔여 처리량은 ${plan.failoverCapacity}이며 최종 확정 전 PoC가 필요합니다.`}</li>
+      </ul></article>
+      <article><h4>${en ? "Automatically selected infrastructure" : "자동 선택 인프라"}</h4><dl><div><dt>CPU</dt><dd>${parts.cpu} · ${plan.cpuCores}${en ? " cores+" : "코어+"}</dd></div><div><dt>RAM</dt><dd>${parts.memory}</dd></div><div><dt>${en ? "Storage" : "스토리지"}</dt><dd>${parts.storage}</dd></div><div><dt>${en ? "Network" : "네트워크"}</dt><dd>${parts.nic}</dd></div><div><dt>${en ? "Server / power" : "서버·전원"}</dt><dd>${parts.server} · ${parts.power}</dd></div></dl></article>
+      <article><h4>${en ? "Cost basis" : "비용 산정 근거"}</h4><dl><div><dt>${en ? "GPU unit reference" : "GPU 1개 참고가"}</dt><dd>${unitKrw ? studioMoney(unitKrw) : (en ? "Quote required" : "견적 문의 필요")}</dd></div><div><dt>${en ? "GPU subtotal" : "GPU 소계"}</dt><dd>${studioMoney(gpuSubtotal)}</dd></div><div><dt>${en ? "Server/base infrastructure" : "서버·기반 인프라 가정"}</dt><dd>${studioMoney(baseInfra)}</dd></div><div><dt>${en ? "Annual energy" : "연 전력비"}</dt><dd>${studioMoney(plan.annualEnergyKrw)}</dd></div></dl><p>${marketLabel} · ${en ? "updated" : "기준일"} ${platformEscape(market?.updatedAt || DATA_UPDATED_AT)}</p></article>
+    </div>
+    <div class="si-source-links"><strong>${en ? "Verify prices and evidence" : "가격·근거 확인"}</strong>${sourceLinks.map(([name,url]) => `<a href="${platformEscape(url)}" target="_blank" rel="noopener noreferrer">${platformEscape(name)} ↗</a>`).join("")}</div>
+    <p class="si-price-disclaimer">${en ? "These values are planning assumptions, not a vendor quote. Taxes, licenses, installation, support, exchange-rate changes, and volume discounts may change the final price." : "표시 금액은 벤더 확정 견적이 아닌 계획용 참고값입니다. 세금·라이선스·설치·지원·환율·수량 할인에 따라 최종 금액이 달라질 수 있습니다."}</p>
+  </section>`;
+}
+
 function autoComponentRecommendation(plan) {
   const en = uiLanguage === "en";
   const cpu = plan.cpuCores <= 24 ? "Ryzen 9 / Core Ultra 9" : plan.cpuCores <= 64 ? "Threadripper Pro / Xeon W" : "AMD EPYC / Xeon Scalable";
@@ -606,7 +670,7 @@ function renderSimpleSizingWizard(model, plans) {
     <div class="si-wizard-head"><div><span class="section-kicker">${en ? "EASY ESTIMATE" : "간편 견적"}</span><h3>${en ? "Answer four simple questions" : "쉬운 질문 4개만 선택하세요"}</h3><p>${en ? "The model, GPU, CPU, RAM, storage, network, and power are selected automatically." : "모델·GPU·CPU·RAM·스토리지·네트워크·전원을 자동으로 골라드립니다."}</p></div><button type="button" class="ghost-button" data-si-input-mode="expert">${en ? "Open expert settings" : "전문가 설정 열기"}</button></div>
     <div class="si-wizard-step"><strong>1. ${en ? "What are you building?" : "무엇을 만드나요?"}</strong><div class="si-choice-grid">${Object.entries(SI_SCENARIOS).map(([id,row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div></div>
     <div class="si-wizard-step"><strong>2. ${en ? "What matters most?" : "무엇이 가장 중요한가요?"}</strong><div class="si-choice-grid">${quality.map(([id,title,note]) => `<button type="button" data-si-quality="${id}" class="${studioState.siQualityPreset === id ? "is-active" : ""}"><b>${title}</b><small>${note}</small></button>`).join("")}</div></div>
-    <div class="si-wizard-step"><strong>3. ${en ? "How many people will use it?" : "몇 명이 사용하나요?"}</strong><div class="si-choice-grid">${[10,50,100,300].map((value) => `<button type="button" data-si-users="${value}" class="${Number(studioState.siUserPreset) === value ? "is-active" : ""}">${value}${en ? " users" : "명"}</button>`).join("")}</div></div>
+    <div class="si-wizard-step"><strong>3. ${en ? "How many people will use it?" : "몇 명이 사용하나요?"}</strong><div class="si-choice-grid si-user-choice-grid">${[10,50,100,300].map((value) => `<button type="button" data-si-users="${value}" class="${Number(studioState.siUserPreset) === value ? "is-active" : ""}">${value}${en ? " users" : "명"}</button>`).join("")}<label class="si-custom-users"><span>${en ? "Custom" : "직접 입력"}</span><span><input id="siCustomUsers" type="number" min="1" max="100000" step="1" value="${studioState.siUserPreset}" aria-label="${en ? "Custom number of users" : "사용자 수 직접 입력"}">${en ? "users" : "명"}</span></label></div></div>
     <div class="si-wizard-step"><strong>4. ${en ? "Where will it run?" : "어디에 구축하나요?"}</strong><div class="si-choice-grid">${[["onprem",en?"On-premises":"사내 서버"],["cloud",en?"Cloud":"클라우드"],["compare",en?"Compare both":"둘 다 비교"]].map(([id,label]) => `<button type="button" data-si-deployment="${id}" class="${studioState.siDeployment === id ? "is-active" : ""}">${label}</button>`).join("")}</div></div>
     <div class="si-auto-result"><div><span>${en ? "Automatically selected model" : "자동 선택 모델"}</span><strong>${platformEscape(model.name)}</strong><small>${en ? "You can change it in expert settings." : "전문가 설정에서 직접 바꿀 수 있습니다."}</small></div><div class="si-auto-parts"><span><b>GPU</b>${platformEscape(shortGpuName(recommended.gpu.name))} × ${recommended.gpuCount}</span><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server / power" : "서버·전원"}</b>${en ? parts.server : parts.server} · ${parts.power}</span></div><p>${en ? "Why: the selected model memory, expected concurrency, failover, and growth reserve determine the parts automatically." : "선정 이유: 모델 메모리, 예상 동시 사용자, 장애 대비와 성장 여유를 기준으로 부품을 자동 선택했습니다."}</p></div>
   </section>`;
@@ -751,7 +815,7 @@ function renderStudioConsulting() {
       <label class="studio-wide"><span>${en ? "Business purpose" : "구축 목적"}</span><input id="siPurpose" value="${platformEscape(purposeValue)}"></label>
       <label><span>${en ? "Customer industry" : "고객 업종"}</span><input id="siIndustry" value="${platformEscape(studioState.siIndustry)}"></label>
       <label><span>${en ? "Consultant / owner" : "상담 담당자"}</span><input id="siContact" value="${platformEscape(studioState.siContact)}" placeholder="${en ? "Name or team" : "이름 또는 조직"}"></label>
-      <label><span>${en ? "Service type" : "서비스 유형"}</span><select id="siServiceType"><option value="rag" ${studioState.siServiceType === "rag" ? "selected" : ""}>RAG / Chatbot</option><option value="ocr" ${studioState.siServiceType === "ocr" ? "selected" : ""}>OCR / VLM</option><option value="image" ${studioState.siServiceType === "image" ? "selected" : ""}>${en ? "Image generation" : "이미지 생성"}</option><option value="video" ${studioState.siServiceType === "video" ? "selected" : ""}>${en ? "Video generation" : "영상 생성"}</option></select></label>
+      <label><span>${en ? "Service type" : "서비스 유형"}</span><select id="siServiceType"><option value="rag" ${studioState.siServiceType === "rag" ? "selected" : ""}>RAG / Chatbot</option><option value="ocr" ${studioState.siServiceType === "ocr" ? "selected" : ""}>OCR / VLM</option><option value="image" ${studioState.siServiceType === "image" ? "selected" : ""}>${en ? "Image generation" : "이미지 생성"}</option><option value="video" ${studioState.siServiceType === "video" ? "selected" : ""}>${en ? "Video generation" : "영상 생성"}</option><option value="voice" ${studioState.siServiceType === "voice" ? "selected" : ""}>${en ? "Voice AI (STT + LLM + TTS)" : "음성 AI (STT + LLM + TTS)"}</option><option value="avatar" ${studioState.siServiceType === "avatar" ? "selected" : ""}>${en ? "Avatar chat" : "AI 아바타 채팅"}</option></select></label>
       <label><span>${en ? "External data transfer" : "데이터 외부 반출"}</span><select id="siExportAllowed"><option value="false" ${!studioState.siExportAllowed ? "selected" : ""}>${en ? "Not allowed" : "불가"}</option><option value="true" ${studioState.siExportAllowed ? "selected" : ""}>${en ? "Allowed" : "허용"}</option></select></label>
       <label class="studio-wide"><span>${en ? "Primary model" : "주 모델"}</span><select id="siModel">${modelOptions.map((item) => `<option value="${platformEscape(modelKey(item))}" ${modelKey(item) === modelKey(model) ? "selected" : ""}>${platformEscape(item.name)}</option>`).join("")}</select></label>
       <label><span>${en ? "Deployment" : "구축 방식"}</span><select id="siDeployment"><option value="onprem" ${studioState.siDeployment === "onprem" ? "selected" : ""}>${en ? "On-premises" : "온프레미스"}</option><option value="cloud" ${studioState.siDeployment === "cloud" ? "selected" : ""}>${en ? "Cloud" : "클라우드"}</option><option value="compare" ${studioState.siDeployment === "compare" ? "selected" : ""}>${en ? "Compare both" : "온프레미스·클라우드 비교"}</option></select></label>
@@ -783,14 +847,15 @@ function renderStudioConsulting() {
       <label><span>${en ? "Electricity (KRW/kWh)" : "전력 단가 (원/kWh)"}</span><input id="siElectricityKrw" type="number" min="0" value="${studioState.siElectricityKrw}"></label>
       <label><span>${en ? "Annual maintenance (%)" : "연 유지보수율 (%)"}</span><input id="siMaintenancePct" type="number" min="0" max="100" value="${studioState.siMaintenancePct}"></label>
     </div></details>
-    <div class="si-plan-grid">${plans.map((plan) => `<article class="si-plan-card ${plan.id === "recommended" ? "is-featured" : ""}">
+    <div class="si-plan-grid">${plans.map((plan) => `<article class="si-plan-card ${plan.id === "recommended" ? "is-featured" : ""} ${studioState.siSelectedPlan === plan.id ? "is-selected" : ""}" data-si-plan="${plan.id}" role="button" tabindex="0" aria-pressed="${studioState.siSelectedPlan === plan.id}">
       <span>${en ? plan.en : plan.ko}</span><h3>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3>
       <p>${plan.nodes}${en ? " server(s)" : "서버"} · ${en ? `${plan.gpuPerServer} GPU/server` : `서버당 GPU ${plan.gpuPerServer}개`} · ${plan.capacity}${en ? " estimated concurrent responses" : "명 예상 동시 응답"}</p>
       <dl><div><dt>CPU</dt><dd>${plan.cpuSockets}S · ${plan.cpuCores}${en ? " cores" : "코어 이상"}</dd></div><div><dt>RAM</dt><dd>${plan.ramGb}GB</dd></div>
       <div><dt>${en ? "Storage" : "스토리지"}</dt><dd>NVMe ${plan.storageTb}TB+</dd></div><div><dt>${en ? "Network" : "네트워크"}</dt><dd>${plan.network}</dd></div>
       <div><dt>${en ? "Facility power" : "설비 전력"}</dt><dd>${plan.powerW.toLocaleString()}W+</dd></div><div><dt>${en ? "Confidence" : "신뢰도"}</dt><dd>${en ? ({ 높음: "High", 중간: "Medium", 낮음: "Low" }[plan.confidence]) : plan.confidence} · n=${plan.sampleCount}</dd></div></dl>
-      <div class="si-plan-foot"><span>${en ? "Failover capacity" : "장애 시 잔여 처리량"} <strong>${plan.failoverCapacity}</strong></span><span>${en ? "3-year TCO" : "3년 TCO"} <strong>${studioMoney(plan.threeYearTcoKrw)}</strong></span></div>
+      <div class="si-plan-foot"><span>${en ? "Failover capacity" : "장애 시 잔여 처리량"} <strong>${plan.failoverCapacity}</strong></span><span>${en ? "3-year TCO" : "3년 TCO"} <strong>${studioMoney(plan.threeYearTcoKrw)}</strong></span></div><span class="si-plan-open">${en ? "View assumptions and price sources →" : "상세 조건·가격 근거 보기 →"}</span>
     </article>`).join("")}</div>
+    ${renderSelectedPlanDetail(model, plans)}
     <div class="si-output-grid">
       <article><h3>${en ? "Proposal rationale" : "제안 근거"}</h3><ul>
         <li>${en ? "Resident model memory, runtime overhead, and KV cache are included." : "모델 상주 메모리·런타임 오버헤드·KV cache를 반영했습니다."}</li>
@@ -982,6 +1047,12 @@ function bindDecisionStudio() {
     syncStudioUrl();
     renderDecisionStudio();
   }));
+  $("siCustomUsers")?.addEventListener("change", (event) => {
+    studioState.siUserPreset = Math.max(1, Math.round(Number(event.target.value) || 1));
+    applySimpleSizingPreset();
+    syncStudioUrl();
+    renderDecisionStudio();
+  });
   document.querySelectorAll("[data-si-deployment]").forEach((button) => button.addEventListener("click", () => updateStudio("siDeployment", button.dataset.siDeployment)));
   $("siExportAllowed")?.addEventListener("change", (event) => updateStudio("siExportAllowed", event.target.value === "true"));
   document.querySelectorAll("[data-si-preset]").forEach((button) => button.addEventListener("click", () => {
@@ -992,11 +1063,26 @@ function bindDecisionStudio() {
       siTotalUsers: preset.users, siConcurrency: preset.concurrency, siInputTokens: preset.input,
       siOutputTokens: preset.output, siTargetSeconds: preset.seconds, siAvailability: preset.availability,
       siGrowthPct: preset.growth, siVectorDataGb: preset.vector, siLogGbDay: preset.logs,
-      siRetentionDays: preset.retention, siSecurity: preset.security,
+      siRetentionDays: preset.retention, siSecurity: preset.security, siServiceType: preset.serviceType || "rag",
+      siUserPreset: preset.users,
     };
     syncStudioUrl();
     renderDecisionStudio();
   }));
+  const selectPlan = (id) => {
+    studioState.siSelectedPlan = id;
+    syncStudioUrl();
+    renderDecisionStudio();
+  };
+  document.querySelectorAll("[data-si-plan]").forEach((card) => {
+    card.addEventListener("click", () => selectPlan(card.dataset.siPlan));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectPlan(card.dataset.siPlan);
+      }
+    });
+  });
   $("[data-si-export]")?.addEventListener("click", downloadSiWorkbook);
   $("[data-si-print]")?.addEventListener("click", () => window.print());
   $("[data-si-deploy]")?.addEventListener("click", downloadSiDeployment);

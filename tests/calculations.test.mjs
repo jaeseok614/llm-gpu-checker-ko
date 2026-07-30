@@ -1184,6 +1184,22 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     assert.equal(platform.document.querySelector("#siConcurrency").value, "20");
   });
 
+  test("supports easy sizing scenarios, custom users, clickable plans, and price sources", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko&studio=consulting", {}, { platformV2: true });
+    assert.ok(platform.document.querySelector('[data-si-preset="ai-chatbot"]'));
+    assert.ok(platform.document.querySelector('[data-si-preset="avatar-chat"]'));
+    const customUsers = platform.document.querySelector("#siCustomUsers");
+    customUsers.value = "175";
+    customUsers.dispatchEvent(new platform.Event("change", { bubbles: true }));
+    assert.equal(platform.document.querySelector("#siCustomUsers").value, "175");
+    assert.equal(platform.eval("studioState.siTotalUsers"), 175);
+    platform.document.querySelector('[data-si-plan="economy"]').click();
+    assert.equal(platform.document.querySelector('[data-si-plan="economy"]').getAttribute("aria-pressed"), "true");
+    assert.match(platform.document.querySelector(".si-plan-detail").textContent, /경제형|비용 산정 근거/);
+    assert.ok(platform.document.querySelectorAll(".si-source-links a").length >= 3);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+
   test("captures detailed SLA, BOM, TCO, confidence, and measured PoC fields", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=en&studio=consulting", {}, { platformV2: true });
     ["siIndustry", "siContact", "siQps", "siMaxInputTokens", "siTtftP95", "siLatencyP95", "siOperatingHours"].forEach((id) => assert.ok(platform.document.querySelector(`#${id}`)));
