@@ -50,6 +50,10 @@ const SYSTEM_PART_CATALOG = {
     { id: "x870-atx", name: "X870 ATX · AM5", socket: "AM5", form: "ATX", priceKrw: 390000 },
     { id: "z790-atx", name: "Z790 ATX · LGA1700", socket: "LGA1700", form: "ATX", priceKrw: 330000 },
     { id: "z890-atx", name: "Z890 ATX · LGA1851", socket: "LGA1851", form: "ATX", priceKrw: 410000 },
+    { id: "wrx90-eatx", name: "WRX90 E-ATX · sTR5", socket: "sTR5", form: "E-ATX", priceKrw: 1650000 },
+    { id: "w790-eatx", name: "W790 E-ATX · LGA4677", socket: "LGA4677", form: "E-ATX", priceKrw: 1350000 },
+    { id: "sp5-server", name: "SP5 Dual-socket Server Board", socket: "SP5", form: "SSI EEB", priceKrw: 2450000 },
+    { id: "lga4710-server", name: "LGA4710 Dual-socket Server Board", socket: "LGA4710", form: "SSI EEB", priceKrw: 2750000 },
   ],
   psu: [
     { id: "gold750", name: "750W Gold ATX 3.1", watts: 750, atx: 3.1, connector: "12V-2x6", priceKrw: 145000 },

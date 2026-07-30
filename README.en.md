@@ -37,6 +37,11 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v4.8** — Compares economy, recommended, and scalable options by proposal price, SLA, hardware, rack/power/cooling, failover capacity, and evidence confidence.
+- **v4.7** — Adds draft, review, approval, and revision states with owners, reviewers, approvers, timestamps, and saved estimate versions.
+- **v4.6** — Sizes rack units, switches, NIC links, optics, cables, redundant PDU circuits, and cooling demand.
+- **v4.5** — Adds supplier quote metadata, price dates, validity, discounts, margins, VAT, and final proposal pricing.
+- **v4.4** — Validates CPU/socket fit, CPU/RAM/storage capacity, NICs, PSU/UPS headroom, and GPU server fit.
 - **v4.3** — Improves easy and expert infrastructure sizing with an editable CPU, RAM, storage, NIC, PSU, UPS, and chassis BOM, live cost totals, and Excel export.
 - **v4.2** — Compares 1/3/5-year TCO and utilization-based break-even for on-premises, cloud, and hybrid options.
 - **v4.1** — Adds vLLM, llama.cpp, Ollama, and NIM benchmark commands, result JSON import, calibration factors, and PoC verdicts.

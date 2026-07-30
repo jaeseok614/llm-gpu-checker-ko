@@ -1151,6 +1151,7 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
   test("expands workstation and server component tiers", () => {
     const platform = loadApp("https://example.com/?mode=infra&lang=en", {}, { platformV2: true });
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.cpu.length") >= 11);
+    assert.ok(platform.eval("SYSTEM_PART_CATALOG.motherboard.length") >= 8);
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.memory.length") >= 6);
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.storage.length") >= 5);
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.nic.length") >= 5);
@@ -1212,6 +1213,27 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     assert.equal(platform.document.querySelector('[data-si-plan="economy"]').getAttribute("aria-pressed"), "true");
     assert.match(platform.document.querySelector(".si-plan-detail").textContent, /경제형|비용 산정 근거/);
     assert.ok(platform.document.querySelectorAll(".si-source-links a").length >= 3);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+
+  test("supports v4.4-v4.8 validation, commercial pricing, topology, approval, and option comparison", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko&studio=consulting", {}, { platformV2: true });
+    platform.document.querySelector('[data-si-input-mode="expert"]').click();
+    assert.equal(platform.document.querySelectorAll(".si-validation-grid article").length, 8);
+    assert.ok(platform.document.querySelector("#siBomMotherboardId"));
+    const commercial = platform.eval("calculateSiCommercial(calculateSiSizing().plans[1])");
+    assert.ok(commercial.finalPrice > commercial.listPrice);
+    assert.ok(commercial.topology.racks >= 1);
+    assert.ok(commercial.topology.pduCircuits >= 2);
+    assert.equal(platform.document.querySelectorAll(".si-v48-table thead th").length, 4);
+    const discount = platform.document.querySelector("#siDiscountPct");
+    discount.value = "10";
+    discount.dispatchEvent(new platform.Event("change", { bubbles: true }));
+    assert.equal(platform.eval("studioState.siDiscountPct"), 10);
+    platform.document.querySelector('[data-si-status="approved"]').click();
+    assert.equal(platform.eval("studioState.siQuoteStatus"), "approved");
+    assert.ok(platform.eval("Boolean(studioState.siApprovedAt)"));
+    assert.match(platform.document.querySelector(".si-quote-status").textContent, /승인/);
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 

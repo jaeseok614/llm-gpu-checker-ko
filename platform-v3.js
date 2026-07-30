@@ -138,6 +138,8 @@ let studioState = {
   siSelectedPlan: "recommended",
   siBomCpuId: "",
   siBomCpuQty: 1,
+  siBomMotherboardId: "",
+  siBomMotherboardQty: 1,
   siBomMemoryId: "",
   siBomMemoryQty: 1,
   siBomStorageId: "",
@@ -151,6 +153,23 @@ let studioState = {
   siBomCaseId: "",
   siBomCaseQty: 1,
   siBomExtraKrw: 0,
+  siSupplierName: "",
+  siSupplierQuoteNo: "",
+  siPriceBasis: "catalog",
+  siPriceDate: new Date().toISOString().slice(0, 10),
+  siDiscountPct: 0,
+  siMarginPct: 12,
+  siVatPct: 10,
+  siExchangeRate: 1400,
+  siQuoteValidDays: 30,
+  siQuoteStatus: "draft",
+  siReviewer: "",
+  siApprover: "",
+  siApprovedAt: "",
+  siSeparateNetworks: true,
+  siRackCapacityU: 42,
+  siPduCircuitKw: 8,
+  siCoolingPue: 1.4,
 };
 
 function studioCopy(key) {
@@ -674,6 +693,7 @@ function autoComponentRecommendation(plan) {
 
 const SI_BOM_TYPES = [
   ["cpu", "siBomCpuId", "siBomCpuQty", "CPU"],
+  ["motherboard", "siBomMotherboardId", "siBomMotherboardQty", "Motherboard"],
   ["memory", "siBomMemoryId", "siBomMemoryQty", "RAM"],
   ["storage", "siBomStorageId", "siBomStorageQty", "Storage"],
   ["nic", "siBomNicId", "siBomNicQty", "Network"],
@@ -687,6 +707,7 @@ function siBomAutoSelection(plan) {
   const perNodeRam = Math.ceil(plan.ramGb / Math.max(1, plan.nodes));
   const perNodePower = Math.ceil(plan.powerW / Math.max(1, plan.nodes));
   const cpu = SYSTEM_PART_CATALOG.cpu.find((item) => item.cores >= perNodeCores) || SYSTEM_PART_CATALOG.cpu.at(-1);
+  const motherboard = SYSTEM_PART_CATALOG.motherboard.find((item) => item.socket === cpu.socket) || SYSTEM_PART_CATALOG.motherboard.at(-1);
   const memory = SYSTEM_PART_CATALOG.memory.find((item) => item.capacityGb >= perNodeRam) || SYSTEM_PART_CATALOG.memory.at(-1);
   const storage = SYSTEM_PART_CATALOG.storage.find((item) => item.capacityTb >= plan.storageTb) || SYSTEM_PART_CATALOG.storage.at(-1);
   const targetNic = Number.parseInt(plan.network, 10) || 25;
@@ -696,6 +717,7 @@ function siBomAutoSelection(plan) {
   const chassis = SYSTEM_PART_CATALOG.case.find((item) => plan.gpuPerServer <= 4 ? item.id === "rack-4u-4gpu" : item.id === "rack-8gpu") || SYSTEM_PART_CATALOG.case.at(-1);
   return {
     siBomCpuId: cpu.id, siBomCpuQty: Math.max(1, plan.nodes * plan.cpuSockets),
+    siBomMotherboardId: motherboard.id, siBomMotherboardQty: Math.max(1, plan.nodes),
     siBomMemoryId: memory.id, siBomMemoryQty: Math.max(1, plan.nodes),
     siBomStorageId: storage.id, siBomStorageQty: Math.max(1, Math.ceil(plan.storageTb / storage.capacityTb)),
     siBomNicId: nic.id, siBomNicQty: Math.max(1, plan.nodes),
@@ -739,6 +761,145 @@ function renderEditableSiBom(plan) {
     </div>
     <p class="studio-form-note">${en ? "Component prices are catalog references, not live vendor quotes. Confirm stock, tax, installation, and support before proposal submission." : "부품 가격은 실시간 판매가가 아닌 카탈로그 참고값입니다. 제안 전 재고·세금·설치·지원 비용을 확인하세요."}</p>
   </section>`;
+}
+
+function validateSiBom(plan, bom = siEditableBom(plan)) {
+  const byType = Object.fromEntries(bom.rows.map((row) => [row.type, row]));
+  const cpu = byType.cpu;
+  const board = byType.motherboard;
+  const memory = byType.memory;
+  const storage = byType.storage;
+  const nic = byType.nic;
+  const psu = byType.psu;
+  const ups = byType.ups;
+  const chassis = byType.case;
+  const requiredNic = Number.parseInt(plan.network, 10) || 25;
+  const chassisGpuLimit = chassis.item.id === "rack-8gpu" ? 8 : chassis.item.id === "rack-4u-4gpu" ? 4 : Math.max(1, Number(chassis.item.slots) || 1);
+  const checks = [
+    { id: "socket", ok: cpu.item.socket === board.item.socket, ko: "CPU·메인보드 소켓", en: "CPU / motherboard socket", detail: `${cpu.item.socket} / ${board.item.socket}` },
+    { id: "cpu", ok: cpu.item.cores * cpu.quantity >= plan.cpuCores, ko: "CPU 코어", en: "CPU cores", detail: `${cpu.item.cores * cpu.quantity} / ${plan.cpuCores}+` },
+    { id: "memory", ok: memory.item.capacityGb * memory.quantity >= plan.ramGb, ko: "RAM 용량", en: "RAM capacity", detail: `${memory.item.capacityGb * memory.quantity}GB / ${plan.ramGb}GB+` },
+    { id: "storage", ok: storage.item.capacityTb * storage.quantity >= plan.storageTb, ko: "스토리지 용량", en: "Storage capacity", detail: `${(storage.item.capacityTb * storage.quantity).toFixed(1)}TB / ${plan.storageTb}TB+` },
+    { id: "nic", ok: nic.item.speedGbps >= requiredNic && nic.quantity >= plan.nodes, ko: "NIC 속도·수량", en: "NIC speed / quantity", detail: `${nic.item.speedGbps}GbE × ${nic.quantity} / ${requiredNic}GbE × ${plan.nodes}` },
+    { id: "psu", ok: psu.item.watts * psu.quantity >= plan.powerW * 1.15, ko: "파워 15% 여유", en: "PSU 15% headroom", detail: `${psu.item.watts * psu.quantity}W / ${Math.ceil(plan.powerW * 1.15)}W+` },
+    { id: "ups", ok: ups.item.capacityVa * ups.quantity >= plan.powerW * 1.2, ko: "UPS 20% 여유", en: "UPS 20% headroom", detail: `${ups.item.capacityVa * ups.quantity}VA / ${Math.ceil(plan.powerW * 1.2)}VA+` },
+    { id: "chassis", ok: chassis.quantity >= plan.nodes && chassisGpuLimit >= plan.gpuPerServer, ko: "서버·GPU 장착", en: "Server / GPU fit", detail: `${chassisGpuLimit} GPU × ${chassis.quantity} / ${plan.gpuPerServer} GPU × ${plan.nodes}` },
+  ];
+  return { checks, passed: checks.filter((item) => item.ok).length, total: checks.length, valid: checks.every((item) => item.ok) };
+}
+
+function calculateSiTopology(plan) {
+  const switchSpeed = plan.nodes > 1 ? (plan.gpuCount > 8 ? 400 : 200) : 25;
+  const switchCount = plan.nodes > 1 ? Math.max(2, Math.ceil(plan.nodes / 32)) : 1;
+  const nicLinks = Math.max(plan.nodes, plan.nodes * (studioState.siSeparateNetworks ? 2 : 1));
+  const optics = nicLinks * 2;
+  const cables = nicLinks;
+  const serverU = plan.gpuPerServer > 4 ? 8 : 4;
+  const upsU = Math.max(2, Math.ceil(plan.powerW / 5000) * 3);
+  const totalU = plan.nodes * serverU + switchCount + upsU + 4;
+  const racks = Math.max(1, Math.ceil(totalU / Math.max(12, Number(studioState.siRackCapacityU) || 42)));
+  const circuitW = Math.max(1000, Number(studioState.siPduCircuitKw) * 1000 || 8000);
+  const pduCircuits = Math.max(2, Math.ceil(plan.powerW * 1.2 / circuitW) * 2);
+  const coolingKw = plan.powerW / 1000 * Math.max(1.05, Number(studioState.siCoolingPue) || 1.4);
+  const accessoryCost = switchCount * (switchSpeed >= 400 ? 35000000 : switchSpeed >= 200 ? 18000000 : 1800000)
+    + optics * (switchSpeed >= 200 ? 1200000 : 180000)
+    + cables * 250000 + racks * 4000000 + pduCircuits * 1500000;
+  return { switchSpeed, switchCount, nicLinks, optics, cables, serverU, totalU, racks, pduCircuits, coolingKw, accessoryCost };
+}
+
+function calculateSiCommercial(plan, bom = siEditableBom(plan)) {
+  const topology = calculateSiTopology(plan);
+  const listPrice = bom.total + topology.accessoryCost;
+  const discount = Math.round(listPrice * Math.max(0, Number(studioState.siDiscountPct) || 0) / 100);
+  const netSupply = Math.max(0, listPrice - discount);
+  const margin = Math.round(netSupply * Math.max(0, Number(studioState.siMarginPct) || 0) / 100);
+  const beforeVat = netSupply + margin;
+  const vat = Math.round(beforeVat * Math.max(0, Number(studioState.siVatPct) || 0) / 100);
+  const finalPrice = beforeVat + vat;
+  const validUntil = new Date(`${studioState.siPriceDate || new Date().toISOString().slice(0, 10)}T00:00:00`);
+  validUntil.setDate(validUntil.getDate() + Math.max(1, Number(studioState.siQuoteValidDays) || 30));
+  return { bom, topology, listPrice, discount, netSupply, margin, beforeVat, vat, finalPrice, validUntil: validUntil.toISOString().slice(0, 10) };
+}
+
+function autoSiBomEstimate(plan) {
+  const selection = siBomAutoSelection(plan);
+  const rows = SI_BOM_TYPES.map(([type, idKey, qtyKey, label]) => {
+    const item = SYSTEM_PART_CATALOG[type].find((part) => part.id === selection[idKey]) || SYSTEM_PART_CATALOG[type][0];
+    const quantity = selection[qtyKey];
+    return { type, idKey, qtyKey, label, item, quantity, subtotal: item.priceKrw * quantity };
+  });
+  const partsTotal = rows.reduce((sum, row) => sum + row.subtotal, 0);
+  const gpuUnitKrw = Number(studioMarket(plan.gpu.id)?.lowestKrw || 0);
+  const gpuTotal = gpuUnitKrw * plan.gpuCount;
+  return { rows, partsTotal, gpuUnitKrw, gpuTotal, extra: 0, total: partsTotal + gpuTotal };
+}
+
+function renderV44V48Modules(model, plans) {
+  const en = uiLanguage === "en";
+  const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
+  const bom = siEditableBom(selected);
+  const validation = validateSiBom(selected, bom);
+  const commercial = calculateSiCommercial(selected, bom);
+  const topology = commercial.topology;
+  const statusLabels = {
+    draft: en ? "Draft" : "초안",
+    review: en ? "Under review" : "검토 중",
+    approved: en ? "Approved" : "승인",
+    rejected: en ? "Revision required" : "수정 필요",
+  };
+  const comparison = plans.map((plan) => {
+    const autoBom = autoSiBomEstimate(plan);
+    const pricing = calculateSiCommercial(plan, autoBom);
+    const sla = calculateRealtimeSla(plan);
+    return { plan, autoBom, pricing, sla, validation: validateSiBom(plan, autoBom) };
+  });
+  return `
+    <section class="si-version-section si-v44"><div class="si-version-head"><div><span class="section-kicker">v4.4</span><h3>${en ? "BOM validation engine" : "BOM 호환성·용량 검증"}</h3><p>${en ? "Checks sockets, capacity, power headroom, network links, and server fit." : "소켓·용량·전력 여유·네트워크 링크·서버 장착 가능 여부를 검사합니다."}</p></div><div class="si-validation-score ${validation.valid ? "is-good" : "is-risk"}">${validation.passed}/${validation.total} ${en ? "passed" : "통과"}</div></div>
+      <div class="si-validation-grid">${validation.checks.map((check) => `<article class="${check.ok ? "is-ok" : "is-warning"}"><strong>${check.ok ? "✓" : "!"} ${en ? check.en : check.ko}</strong><span>${platformEscape(check.detail)}</span></article>`).join("")}</div>
+      <button type="button" class="ghost-button" data-si-bom-auto>${en ? "Auto-fix incompatible parts" : "호환 부품으로 자동 수정"}</button>
+    </section>
+    <section class="si-version-section si-v45"><div class="si-version-head"><div><span class="section-kicker">v4.5</span><h3>${en ? "Commercial pricing" : "실제 견적 가격 관리"}</h3><p>${en ? "Separates catalog assumptions from supplier quotes and calculates discount, margin, and VAT." : "카탈로그 참고가와 공급사 견적을 구분하고 할인·마진·부가세를 계산합니다."}</p></div><strong>${studioMoney(commercial.finalPrice)}</strong></div>
+      <div class="studio-question-grid si-price-grid">
+        <label><span>${en ? "Supplier" : "공급사"}</span><input id="siSupplierName" value="${platformEscape(studioState.siSupplierName)}" placeholder="${en ? "Vendor / distributor" : "벤더·총판·협력사"}"></label>
+        <label><span>${en ? "Quote number" : "견적 번호"}</span><input id="siSupplierQuoteNo" value="${platformEscape(studioState.siSupplierQuoteNo)}"></label>
+        <label><span>${en ? "Price basis" : "가격 기준"}</span><select id="siPriceBasis"><option value="catalog" ${studioState.siPriceBasis === "catalog" ? "selected" : ""}>${en ? "Catalog reference" : "카탈로그 참고가"}</option><option value="vendor" ${studioState.siPriceBasis === "vendor" ? "selected" : ""}>${en ? "Supplier quote" : "공급사 견적"}</option><option value="contract" ${studioState.siPriceBasis === "contract" ? "selected" : ""}>${en ? "Contract price" : "계약 단가"}</option></select></label>
+        <label><span>${en ? "Price date" : "가격 확인일"}</span><input id="siPriceDate" type="date" value="${studioState.siPriceDate}"></label>
+        <label><span>${en ? "Valid days" : "견적 유효일"}</span><input id="siQuoteValidDays" type="number" min="1" value="${studioState.siQuoteValidDays}"></label>
+        <label><span>${en ? "Exchange rate (KRW/USD)" : "환율 (원/USD)"}</span><input id="siExchangeRate" type="number" min="1" value="${studioState.siExchangeRate}"></label>
+        <label><span>${en ? "Discount (%)" : "할인율 (%)"}</span><input id="siDiscountPct" type="number" min="0" max="100" step="0.1" value="${studioState.siDiscountPct}"></label>
+        <label><span>${en ? "Margin (%)" : "마진율 (%)"}</span><input id="siMarginPct" type="number" min="0" max="100" step="0.1" value="${studioState.siMarginPct}"></label>
+        <label><span>${en ? "VAT (%)" : "부가세 (%)"}</span><input id="siVatPct" type="number" min="0" max="100" step="0.1" value="${studioState.siVatPct}"></label>
+      </div>
+      <div class="si-commercial-flow"><span>${en ? "Catalog + infrastructure" : "부품·기반시설"}<strong>${studioMoney(commercial.listPrice)}</strong></span><b>−</b><span>${en ? "Discount" : "할인"}<strong>${studioMoney(commercial.discount)}</strong></span><b>+</b><span>${en ? "Margin" : "마진"}<strong>${studioMoney(commercial.margin)}</strong></span><b>+</b><span>VAT<strong>${studioMoney(commercial.vat)}</strong></span><b>=</b><span class="is-total">${en ? "Proposal price" : "최종 제안가"}<strong>${studioMoney(commercial.finalPrice)}</strong></span></div>
+      <p class="studio-form-note">${en ? "Valid until" : "유효기간"} ${commercial.validUntil} · ${en ? "Price links and supplier documents must be rechecked before approval." : "승인 전 가격 링크와 공급사 견적서를 다시 확인해야 합니다."}</p>
+    </section>
+    <section class="si-version-section si-v46"><div class="si-version-head"><div><span class="section-kicker">v4.6</span><h3>${en ? "Rack, network, and power topology" : "랙·네트워크·전원 구성"}</h3><p>${en ? "Adds shared infrastructure that is often omitted from GPU-only estimates." : "GPU 단독 견적에서 빠지기 쉬운 공통 기반시설을 계산합니다."}</p></div><strong>${studioMoney(topology.accessoryCost)}</strong></div>
+      <div class="studio-question-grid si-compact-grid"><label class="studio-check"><input id="siSeparateNetworks" type="checkbox" ${studioState.siSeparateNetworks ? "checked" : ""}><span>${en ? "Separate service / storage / management" : "서비스·스토리지·관리망 분리"}</span></label><label><span>${en ? "Rack capacity (U)" : "랙 용량 (U)"}</span><input id="siRackCapacityU" type="number" min="12" max="52" value="${studioState.siRackCapacityU}"></label><label><span>${en ? "PDU circuit (kW)" : "PDU 회로 (kW)"}</span><input id="siPduCircuitKw" type="number" min="1" value="${studioState.siPduCircuitKw}"></label><label><span>PUE</span><input id="siCoolingPue" type="number" min="1.05" max="3" step="0.05" value="${studioState.siCoolingPue}"></label></div>
+      <div class="si-topology-metrics"><span>${en ? "Racks" : "랙"}<strong>${topology.racks} × ${studioState.siRackCapacityU}U</strong><small>${topology.totalU}U ${en ? "used" : "사용"}</small></span><span>${en ? "Fabric" : "패브릭"}<strong>${topology.switchSpeed}GbE × ${topology.switchCount}</strong><small>${topology.nicLinks} links</small></span><span>${en ? "Optics / cables" : "광모듈·케이블"}<strong>${topology.optics} / ${topology.cables}</strong><small>${en ? "redundancy included" : "이중화 포함"}</small></span><span>PDU<strong>${topology.pduCircuits} ${en ? "circuits" : "회로"}</strong><small>N+1 A/B feed</small></span><span>${en ? "Cooling" : "냉각"}<strong>${topology.coolingKw.toFixed(1)}kW</strong><small>PUE ${studioState.siCoolingPue}</small></span></div>
+      <div class="si-architecture"><span>${planLabel(selected, en)}</span><b>→</b><span>${selected.nodes}× GPU Server</span><b>→</b><span>${topology.switchCount}× ${topology.switchSpeed}GbE Switch</span><b>→</b><span>${topology.racks}× Rack · ${topology.pduCircuits} PDU</span><b>→</b><span>${topology.coolingKw.toFixed(1)}kW Cooling</span></div>
+    </section>
+    <section class="si-version-section si-v47"><div class="si-version-head"><div><span class="section-kicker">v4.7</span><h3>${en ? "Estimate review and approval" : "견적 버전·승인 흐름"}</h3></div><span class="si-quote-status is-${studioState.siQuoteStatus}">${statusLabels[studioState.siQuoteStatus] || studioState.siQuoteStatus}</span></div>
+      <div class="studio-question-grid si-compact-grid"><label><span>${en ? "Owner" : "담당자"}</span><input id="siWorkflowOwner" value="${platformEscape(studioState.siContact)}"></label><label><span>${en ? "Reviewer" : "검토자"}</span><input id="siReviewer" value="${platformEscape(studioState.siReviewer)}"></label><label><span>${en ? "Approver" : "승인자"}</span><input id="siApprover" value="${platformEscape(studioState.siApprover)}"></label><label><span>${en ? "Status" : "상태"}</span><select id="siQuoteStatus">${Object.entries(statusLabels).map(([id,label]) => `<option value="${id}" ${studioState.siQuoteStatus === id ? "selected" : ""}>${label}</option>`).join("")}</select></label></div>
+      <div class="si-approval-actions"><button type="button" class="ghost-button" data-si-status="draft">${en ? "Back to draft" : "초안으로"}</button><button type="button" class="ghost-button" data-si-status="review">${en ? "Request review" : "검토 요청"}</button><button type="button" class="primary-button" data-si-status="approved">${en ? "Approve estimate" : "견적 승인"}</button><button type="button" class="ghost-button" data-si-status="rejected">${en ? "Request revision" : "수정 요청"}</button></div>
+      <p>${en ? "Version" : "버전"} v${studioState.siEstimateVersion} · ${en ? "approved at" : "승인 시각"} ${platformEscape(studioState.siApprovedAt || "—")} · ${en ? "customer and internal reports remain separated." : "고객 전달본과 내부 원가표를 분리해 관리합니다."}</p>
+    </section>
+    <section class="si-version-section si-v48"><div class="si-version-head"><div><span class="section-kicker">v4.8</span><h3>${en ? "Three-option decision table" : "최저비용·권장·확장 3안 비교"}</h3><p>${en ? "Compares cost, SLA, capacity, infrastructure, resilience, and evidence in one view." : "비용·SLA·용량·기반시설·장애 대응·근거를 한 화면에서 비교합니다."}</p></div></div>
+      <div class="studio-table-wrap"><table class="studio-table si-v48-table"><thead><tr><th>${en ? "Metric" : "항목"}</th>${comparison.map(({plan}) => `<th>${en ? plan.en : plan.ko}</th>`).join("")}</tr></thead><tbody>
+        <tr><td>${en ? "Proposal price" : "최종 제안가"}</td>${comparison.map(({pricing}) => `<td><strong>${studioMoney(pricing.finalPrice)}</strong></td>`).join("")}</tr>
+        <tr><td>GPU / CPU / RAM</td>${comparison.map(({plan}) => `<td>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}<br>${plan.cpuCores}C · ${plan.ramGb}GB</td>`).join("")}</tr>
+        <tr><td>${en ? "Capacity / QPS" : "동시 처리·QPS"}</td>${comparison.map(({plan,sla}) => `<td>${plan.capacity} · ${sla.capacityRps.toFixed(2)} RPS</td>`).join("")}</tr>
+        <tr><td>TTFT / p95</td>${comparison.map(({sla}) => `<td>${sla.ttftP95.toFixed(2)}s / ${sla.latencyP95.toFixed(2)}s</td>`).join("")}</tr>
+        <tr><td>${en ? "Rack / power / cooling" : "랙·전력·냉각"}</td>${comparison.map(({plan,pricing}) => `<td>${pricing.topology.racks} rack · ${plan.powerW.toLocaleString()}W · ${pricing.topology.coolingKw.toFixed(1)}kW</td>`).join("")}</tr>
+        <tr><td>${en ? "Failover" : "장애 시 처리량"}</td>${comparison.map(({plan}) => `<td>${plan.failoverCapacity} / ${plan.capacity}</td>`).join("")}</tr>
+        <tr><td>${en ? "BOM validation" : "BOM 검증"}</td>${comparison.map(({validation}) => `<td>${validation.passed}/${validation.total}</td>`).join("")}</tr>
+        <tr><td>${en ? "Evidence" : "근거"}</td>${comparison.map(({plan}) => `<td>${en ? ({ 높음: "High", 중간: "Medium", 낮음: "Low" }[plan.confidence]) : plan.confidence} · n=${plan.sampleCount}</td>`).join("")}</tr>
+        <tr><td>${en ? "Trade-off" : "선택·제외 이유"}</td><td>${en ? "Lowest initial cost; less reserve." : "초기비용 최소, 여유·확장성은 낮음"}</td><td>${en ? "Best balance for proposal baseline." : "제안 기준안으로 비용·가용성 균형"}</td><td>${en ? "Highest growth and resilience; highest cost." : "성장·장애 대응 우수, 비용은 가장 높음"}</td></tr>
+      </tbody></table></div>
+    </section>`;
+}
+
+function planLabel(plan, en) {
+  return en ? plan.en : plan.ko;
 }
 
 function renderSimpleSizingWizard(model, plans) {
@@ -804,7 +965,9 @@ function sizingProjects() {
 
 function sizingSnapshot() {
   const { model, plans } = calculateSiSizing();
-  return { schemaVersion: 1, savedAt: new Date().toISOString(), state: { ...studioState }, model: model.name, plans: plans.map((p) => ({ id: p.id, gpu: p.gpu.name, gpuCount: p.gpuCount, nodes: p.nodes, tco: p.threeYearTcoKrw })) };
+  const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
+  const commercial = calculateSiCommercial(selected);
+  return { schemaVersion: 2, savedAt: new Date().toISOString(), state: { ...studioState }, model: model.name, quoteStatus: studioState.siQuoteStatus, finalPrice: commercial.finalPrice, plans: plans.map((p) => ({ id: p.id, gpu: p.gpu.name, gpuCount: p.gpuCount, nodes: p.nodes, tco: p.threeYearTcoKrw })) };
 }
 
 function saveSizingProject(clone = false) {
@@ -931,7 +1094,7 @@ function renderStudioConsulting() {
       <label><span>${en ? "Electricity (KRW/kWh)" : "전력 단가 (원/kWh)"}</span><input id="siElectricityKrw" type="number" min="0" value="${studioState.siElectricityKrw}"></label>
       <label><span>${en ? "Annual maintenance (%)" : "연 유지보수율 (%)"}</span><input id="siMaintenancePct" type="number" min="0" max="100" value="${studioState.siMaintenancePct}"></label>
     </div></details>
-    ${studioState.siInputMode === "expert" ? renderEditableSiBom(plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0]) : ""}
+    ${studioState.siInputMode === "expert" ? `${renderEditableSiBom(plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0])}${renderV44V48Modules(model, plans)}` : ""}
     <div class="si-plan-grid">${plans.map((plan) => `<article class="si-plan-card ${plan.id === "recommended" ? "is-featured" : ""} ${studioState.siSelectedPlan === plan.id ? "is-selected" : ""}" data-si-plan="${plan.id}" role="button" tabindex="0" aria-pressed="${studioState.siSelectedPlan === plan.id}">
       <span>${en ? plan.en : plan.ko}</span><h3>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</h3>
       <p>${plan.nodes}${en ? " server(s)" : "서버"} · ${en ? `${plan.gpuPerServer} GPU/server` : `서버당 GPU ${plan.gpuPerServer}개`} · ${plan.capacity}${en ? " estimated concurrent responses" : "명 예상 동시 응답"}</p>
@@ -989,6 +1152,9 @@ function downloadSiWorkbook() {
   const rows = plans.map((plan) => [plan.ko, plan.gpu.name, plan.gpuCount, plan.nodes, plan.cpuCores, plan.ramGb, plan.storageTb, plan.network, plan.powerW, plan.confidence, plan.sampleCount]);
   const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
   const bom = siEditableBom(selected);
+  const validation = validateSiBom(selected, bom);
+  const commercial = calculateSiCommercial(selected, bom);
+  const topology = commercial.topology;
   const bomRows = [
     ["구분", "제품", "단가", "수량", "소계"],
     ["GPU", selected.gpu.name, bom.gpuUnitKrw, selected.gpuCount, bom.gpuTotal],
@@ -997,7 +1163,7 @@ function downloadSiWorkbook() {
     ["합계", "", "", "", bom.total],
   ];
   const worksheet = (name, values) => `<Worksheet ss:Name="${siXmlEscape(name)}"><Table>${values.map((row) => `<Row>${row.map((cell) => `<Cell><Data ss:Type="${typeof cell === "number" ? "Number" : "String"}">${siXmlEscape(cell)}</Data></Cell>`).join("")}</Row>`).join("")}</Table></Worksheet>`;
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheet("고객 요구사항", [["항목", "값"], ["프로젝트", studioState.siProjectName], ["목적", studioState.siPurpose], ["모델", model.name], ["전체 사용자", studioState.siTotalUsers], ["동시 요청", studioState.siConcurrency], ["입력 토큰", studioState.siInputTokens], ["출력 토큰", studioState.siOutputTokens], ["가용성", studioState.siAvailability], ["성장 여유", `${studioState.siGrowthPct}%`]])}${worksheet("구성안 비교", [["구성안", "GPU", "GPU 수", "노드", "CPU 코어", "RAM GB", "NVMe TB", "네트워크", "전력 W", "신뢰도", "표본 수"], ...rows])}${worksheet("편집 BOM", bomRows)}${worksheet("가정 및 PoC", [["구분", "내용"], ["가정", "모델 메모리·KV cache·런타임 오버헤드와 성장 여유를 포함한 사전 산정"], ["주의", "최종 수량은 벤더 검토와 실제 워크로드 PoC 후 확정"], ["PoC 1", "모델 버전·양자화·런타임 확정"], ["PoC 2", "대표 프롬프트 TTFT·tokens/s 측정"], ["PoC 3", "동시 요청·대기열 부하 테스트"], ["PoC 4", "장애 전환·모니터링 검증"]])}</Workbook>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheet("고객 요구사항", [["항목", "값"], ["프로젝트", studioState.siProjectName], ["목적", studioState.siPurpose], ["모델", model.name], ["전체 사용자", studioState.siTotalUsers], ["동시 요청", studioState.siConcurrency], ["입력 토큰", studioState.siInputTokens], ["출력 토큰", studioState.siOutputTokens], ["가용성", studioState.siAvailability], ["성장 여유", `${studioState.siGrowthPct}%`]])}${worksheet("구성안 비교", [["구성안", "GPU", "GPU 수", "노드", "CPU 코어", "RAM GB", "NVMe TB", "네트워크", "전력 W", "신뢰도", "표본 수"], ...rows])}${worksheet("편집 BOM", bomRows)}${worksheet("상업 견적", [["항목", "값"], ["공급사", studioState.siSupplierName], ["공급사 견적번호", studioState.siSupplierQuoteNo], ["가격 기준", studioState.siPriceBasis], ["가격 확인일", studioState.siPriceDate], ["유효기한", commercial.validUntil], ["카탈로그·기반시설", commercial.listPrice], ["할인", commercial.discount], ["마진", commercial.margin], ["부가세", commercial.vat], ["최종 제안가", commercial.finalPrice]])}${worksheet("랙·전원·네트워크", [["항목", "값"], ["랙", topology.racks], ["총 사용 U", topology.totalU], ["스위치 속도", `${topology.switchSpeed}GbE`], ["스위치 수", topology.switchCount], ["NIC 링크", topology.nicLinks], ["광모듈", topology.optics], ["케이블", topology.cables], ["PDU 회로", topology.pduCircuits], ["냉각 kW", topology.coolingKw], ["기반시설 비용", topology.accessoryCost]])}${worksheet("검증·승인", [["항목", "값"], ["BOM 통과", `${validation.passed}/${validation.total}`], ["상태", studioState.siQuoteStatus], ["담당자", studioState.siContact], ["검토자", studioState.siReviewer], ["승인자", studioState.siApprover], ["승인 시각", studioState.siApprovedAt], ...validation.checks.map((check) => [check.ko, check.ok ? "통과" : `경고: ${check.detail}`])])}${worksheet("가정 및 PoC", [["구분", "내용"], ["가정", "모델 메모리·KV cache·런타임 오버헤드와 성장 여유를 포함한 사전 산정"], ["주의", "최종 수량은 벤더 검토와 실제 워크로드 PoC 후 확정"], ["PoC 1", "모델 버전·양자화·런타임 확정"], ["PoC 2", "대표 프롬프트 TTFT·tokens/s 측정"], ["PoC 3", "동시 요청·대기열 부하 테스트"], ["PoC 4", "장애 전환·모니터링 검증"]])}</Workbook>`;
   const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -1123,6 +1289,7 @@ function bindDecisionStudio() {
     siUtilizationPct: ["siUtilizationPct", Number], siCloudHourlyUsd: ["siCloudHourlyUsd", Number],
     siFacilityKrwMonth: ["siFacilityKrwMonth", Number], siSupportPct: ["siSupportPct", Number],
     siBomCpuId: ["siBomCpuId", String], siBomCpuQty: ["siBomCpuQty", Number],
+    siBomMotherboardId: ["siBomMotherboardId", String], siBomMotherboardQty: ["siBomMotherboardQty", Number],
     siBomMemoryId: ["siBomMemoryId", String], siBomMemoryQty: ["siBomMemoryQty", Number],
     siBomStorageId: ["siBomStorageId", String], siBomStorageQty: ["siBomStorageQty", Number],
     siBomNicId: ["siBomNicId", String], siBomNicQty: ["siBomNicQty", Number],
@@ -1130,12 +1297,21 @@ function bindDecisionStudio() {
     siBomUpsId: ["siBomUpsId", String], siBomUpsQty: ["siBomUpsQty", Number],
     siBomCaseId: ["siBomCaseId", String], siBomCaseQty: ["siBomCaseQty", Number],
     siBomExtraKrw: ["siBomExtraKrw", Number],
+    siSupplierName: ["siSupplierName", String], siSupplierQuoteNo: ["siSupplierQuoteNo", String],
+    siPriceBasis: ["siPriceBasis", String], siPriceDate: ["siPriceDate", String],
+    siDiscountPct: ["siDiscountPct", Number], siMarginPct: ["siMarginPct", Number],
+    siVatPct: ["siVatPct", Number], siExchangeRate: ["siExchangeRate", Number],
+    siQuoteValidDays: ["siQuoteValidDays", Number], siQuoteStatus: ["siQuoteStatus", String],
+    siWorkflowOwner: ["siContact", String], siReviewer: ["siReviewer", String], siApprover: ["siApprover", String],
+    siRackCapacityU: ["siRackCapacityU", Number], siPduCircuitKw: ["siPduCircuitKw", Number],
+    siCoolingPue: ["siCoolingPue", Number],
   };
   Object.entries(fields).forEach(([id, [key, cast]]) => $(id)?.addEventListener("change", (event) => updateStudio(key, cast(event.target.value))));
   $("customVision")?.addEventListener("change", (event) => updateStudio("customVision", event.target.checked));
   $("siDevProd")?.addEventListener("change", (event) => updateStudio("siDevProd", event.target.checked));
   $("siStreaming")?.addEventListener("change", (event) => updateStudio("siStreaming", event.target.checked));
   $("siAutoscale")?.addEventListener("change", (event) => updateStudio("siAutoscale", event.target.checked));
+  $("siSeparateNetworks")?.addEventListener("change", (event) => updateStudio("siSeparateNetworks", event.target.checked));
   document.querySelectorAll("[data-si-input-mode]").forEach((button) => button.addEventListener("click", () => updateStudio("siInputMode", button.dataset.siInputMode)));
   document.querySelectorAll("[data-si-quality]").forEach((button) => button.addEventListener("click", () => {
     studioState.siQualityPreset = button.dataset.siQuality;
@@ -1185,13 +1361,19 @@ function bindDecisionStudio() {
       }
     });
   });
-  $("[data-si-bom-auto]")?.addEventListener("click", () => {
-    const { plans } = calculateSiSizing();
-    const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
-    Object.assign(studioState, siBomAutoSelection(selected), { siBomExtraKrw: 0 });
+  document.querySelectorAll("[data-si-bom-auto]").forEach((button) => button.addEventListener("click", () => {
+      const { plans } = calculateSiSizing();
+      const selected = plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0];
+      Object.assign(studioState, siBomAutoSelection(selected), { siBomExtraKrw: 0 });
+      syncStudioUrl();
+      renderDecisionStudio();
+    }));
+  document.querySelectorAll("[data-si-status]").forEach((button) => button.addEventListener("click", () => {
+    studioState.siQuoteStatus = button.dataset.siStatus;
+    studioState.siApprovedAt = button.dataset.siStatus === "approved" ? new Date().toISOString() : "";
     syncStudioUrl();
     renderDecisionStudio();
-  });
+  }));
   $("[data-si-export]")?.addEventListener("click", downloadSiWorkbook);
   $("[data-si-print]")?.addEventListener("click", () => window.print());
   $("[data-si-deploy]")?.addEventListener("click", downloadSiDeployment);

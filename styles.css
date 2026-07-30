@@ -985,6 +985,139 @@ html[lang="en"] .simple-mode-head > div:first-child {
   color: var(--blue);
 }
 
+.si-validation-score {
+  min-width: 90px;
+  padding: 10px 12px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.si-validation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.si-validation-grid article {
+  display: grid;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.si-validation-grid article.is-ok {
+  border-color: color-mix(in srgb, #45b97c 55%, var(--line));
+}
+
+.si-validation-grid article.is-warning {
+  border-color: color-mix(in srgb, #ef8f70 70%, var(--line));
+}
+
+.si-validation-grid span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.si-price-grid {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+}
+
+.si-commercial-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.si-commercial-flow > span {
+  display: grid;
+  flex: 1 0 145px;
+  gap: 5px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.si-commercial-flow > b {
+  align-self: center;
+  color: var(--muted);
+}
+
+.si-commercial-flow .is-total {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.si-commercial-flow strong {
+  color: var(--ink);
+}
+
+.si-topology-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.si-topology-metrics span {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.si-topology-metrics strong {
+  color: var(--ink);
+}
+
+.si-topology-metrics small {
+  font-size: 0.72rem;
+}
+
+.si-quote-status {
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.si-quote-status.is-approved {
+  color: #45b97c;
+  border-color: currentColor;
+}
+
+.si-quote-status.is-rejected {
+  color: #ef8f70;
+  border-color: currentColor;
+}
+
+.si-quote-status.is-review {
+  color: var(--blue);
+  border-color: currentColor;
+}
+
+.si-approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.si-v48-table th:not(:first-child),
+.si-v48-table td:not(:first-child) {
+  min-width: 190px;
+}
+
 .si-advanced {
   margin-top: 12px;
   border: 1px solid var(--line);
@@ -6657,8 +6790,11 @@ button:focus-visible {
   .si-compact-grid, .si-metric-grid, .si-project-list { grid-template-columns: 1fr; }
   .si-avatar-latency b, .si-architecture b { align-self: center; transform: rotate(90deg); }
   .si-avatar-latency strong { margin-left: 0; white-space: normal; }
-  .si-bom-editor, .si-bom-summary { grid-template-columns: 1fr; }
+  .si-bom-editor, .si-bom-summary, .si-validation-grid, .si-price-grid, .si-topology-metrics { grid-template-columns: 1fr; }
   .si-actions > :is(button, a) { width: 100%; }
+  .si-commercial-flow { align-items: stretch; flex-direction: column; overflow: visible; }
+  .si-commercial-flow > span { flex-basis: auto; }
+  .si-commercial-flow > b { transform: rotate(90deg); }
 }
 .core-task-actions {
   grid-template-columns: repeat(4, minmax(0, 1fr));
