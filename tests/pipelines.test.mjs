@@ -13,13 +13,21 @@ test("Pages deployment builds a cache-stamped artifact", () => {
   assert.ok(fs.existsSync("_site/gpu/rtx4090-24/index.html"));
   assert.ok(fs.existsSync("_site/model/xtts-v2/index.html"));
   assert.ok(fs.existsSync("_site/workload/audiotts/index.html"));
+  assert.ok(fs.existsSync("_site/en/gpu/rtx4090-24/index.html"));
+  assert.ok(fs.existsSync("_site/en/model/xtts-v2/index.html"));
+  assert.ok(fs.existsSync("_site/en/workload/audiotts/index.html"));
   const sitemap = fs.readFileSync("_site/sitemap.xml", "utf8");
   assert.match(sitemap, /\/gpu\/rtx4090-24\//);
   assert.match(sitemap, /\/model\/xtts-v2\//);
+  assert.match(sitemap, /\/en\/model\/xtts-v2\//);
   const modelPage = fs.readFileSync("_site/model/xtts-v2/index.html", "utf8");
   assert.match(modelPage, /<link rel="canonical"/);
   assert.match(modelPage, /application\/ld\+json/);
   assert.match(modelPage, /목소리 복제/);
+  const englishModelPage = fs.readFileSync("_site/en/model/xtts-v2/index.html", "utf8");
+  assert.match(englishModelPage, /<html lang="en">/);
+  assert.match(englishModelPage, /Voice cloning/);
+  assert.doesNotMatch(englishModelPage, /계산기에서|공식·등록 출처/);
 });
 
 test("GPU request parser accepts a sourced normalized laptop record", () => {

@@ -62,102 +62,103 @@ window.LLM_GPU_CHECKER_DATA = window.LLM_GPU_CHECKER_DATA || {};
   };
 
   const TAG_TO_USE_CASE = {
-    general: "general",
-    korean: "korean",
-    coding: "coding",
-    reasoning: "reasoning",
-    long: "long",
-    vision: "vision",
-    retrieval: "retrieval",
-    multilingual: "multilingual",
-    codeRetrieval: "codeRetrieval",
-    document: "document",
-    pdf: "document",
-    table: "table",
-    layout: "table",
-    handwriting: "handwriting",
-    math: "math",
-    markdown: "math",
-    video: "video",
-    grounding: "grounding",
-    gui: "grounding",
-    "lip-sync": "lipSync",
-    "talking-head": "talkingHead",
-    "single-image": "portrait",
-    "portrait-animation": "portrait",
+    general: "general", korean: "korean", coding: "coding", reasoning: "reasoning",
+    long: "long", vision: "vision", retrieval: "retrieval", multilingual: "multilingual",
+    codeRetrieval: "codeRetrieval", document: "document", pdf: "document", table: "table",
+    layout: "table", handwriting: "handwriting", math: "math", markdown: "math",
+    video: "video", grounding: "grounding", gui: "grounding", "lip-sync": "lipSync",
+    "talking-head": "talkingHead", "single-image": "portrait", "portrait-animation": "portrait",
     realtime: "realtime",
   };
 
-  function unique(values) {
-    return [...new Set(values.filter(Boolean))];
-  }
-
-  function modelText(model) {
+  const unique = (values) => [...new Set(values.filter(Boolean))];
+  const modelText = (model) => {
     const summary = typeof model.summary === "object"
       ? `${model.summary.ko || ""} ${model.summary.en || ""}`
       : model.summary || "";
     return `${model.name || ""} ${model.provider || ""} ${model.maker || ""} ${summary}`.normalize("NFKC").toLowerCase();
-  }
+  };
 
   function qualityTier(model, type) {
     const params = Number(model.params || 0);
-    if (["audio-stt", "audio-tts", "embedding", "reranker"].includes(type)) {
-      return params >= 0.5 ? "high" : params >= 0.15 ? "balanced" : "light";
-    }
-    if (["image-generation", "video-generation", "avatar-generation"].includes(type)) {
-      return params >= 5 ? "high" : params >= 1 ? "balanced" : "light";
-    }
+    if (["audio-stt", "audio-tts", "embedding", "reranker"].includes(type)) return params >= .5 ? "high" : params >= .15 ? "balanced" : "light";
+    if (["image-generation", "video-generation", "avatar-generation"].includes(type)) return params >= 5 ? "high" : params >= 1 ? "balanced" : "light";
     return params >= 30 ? "high" : params >= 7 ? "balanced" : "light";
-  }
-
-  function latencyTier(model, type, text) {
-    if ((model.tags || []).includes("realtime") || /realtime|real-time|실시간/.test(text)) return "realtime";
-    if (Number(model.realtimeBase || 0) >= 15) return "realtime";
-    if (["video-generation", "image-generation"].includes(type)) return "batch";
-    return Number(model.params || 0) <= 3 ? "interactive" : "standard";
   }
 
   function languages(model) {
     const tags = model.tags || [];
-    const values = [];
     const language = String(model.language || "").toLowerCase();
+    const values = [];
     if (tags.includes("korean") || language.includes("korean")) values.push("ko");
     if (tags.includes("multilingual") || language.includes("multilingual")) values.push("multilingual");
     if (language.includes("english")) values.push("en");
-    if (!values.length) values.push("unknown");
-    return unique(values);
+    return unique(values.length ? values : ["unknown"]);
   }
 
   function resolve(model, type) {
     const defaults = TYPE_DEFAULTS[type] || TYPE_DEFAULTS.generative;
     const text = modelText(model);
-    const useCases = [...defaults.useCases, ...(Array.isArray(model.useCases) ? model.useCases : [])];
-    (model.tags || []).forEach((tag) => {
-      if (TAG_TO_USE_CASE[tag]) useCases.push(TAG_TO_USE_CASE[tag]);
-    });
-    if (type === "audio-stt") useCases.push("multilingual", "realtime", "accuracy", "lightweight");
-    if (type === "audio-tts") useCases.push("multilingual", "realtime", "lightweight");
-    if (type === "image-generation") useCases.push("quality", "speed", "lightweight");
-    if (type === "video-generation") useCases.push("quality", "speed", "lightweight");
-    if (type === "avatar-generation") useCases.push("quality");
-    if (/voice cloning|음성 복제|xtts|fish speech/.test(text)) useCases.push("voiceCloning");
-    if (/image-conditioned|image based|image-to-video|i2v/.test(text)) useCases.push("imageToVideo");
-    if (/light|tiny|small|mini|schnell|distil|경량|초경량/.test(text)) useCases.push("lightweight");
+    const useCases = [];
+    const evidence = {};
+    const add = (id, kind) => {
+      if (!id || !USE_CASES[id]) return;
+      useCases.push(id);
+      evidence[id] = evidence[id] === "type" ? "type" : kind;
+    };
+    defaults.useCases.forEach((id) => add(id, "type"));
+    (model.useCases || []).forEach((id) => add(id, "metadata"));
+    (model.tags || []).forEach((tag) => add(TAG_TO_USE_CASE[tag], "metadata"));
+
+    const params = Number(model.params || 0);
+    const realtime = Number(model.realtimeBase || 0);
+    const multilingual = languages(model).includes("multilingual");
+    if (multilingual) add("multilingual", "metadata");
+    if (type === "audio-stt") {
+      if (realtime >= 8 || (model.tags || []).includes("realtime")) add("realtime", realtime ? "metadata" : "tag");
+      if (params >= .7 || /large|canary|distil-large/.test(text)) add("accuracy", "inferred");
+      if (params <= .5 || /tiny|small|mini|distil/.test(text)) add("lightweight", "inferred");
+    }
+    if (type === "audio-tts") {
+      if (realtime >= 15 || (model.tags || []).includes("realtime")) add("realtime", realtime ? "metadata" : "tag");
+      if (params <= .15 || /kokoro|melo|piper|small|mini/.test(text)) add("lightweight", "inferred");
+      if (/voice cloning|음성 복제|xtts|fish speech|clone/.test(text)) add("voiceCloning", "metadata");
+    }
+    if (type === "image-generation") {
+      if (params >= 3 || /\bxl\b|flux.*dev|quality/.test(text)) add("quality", "inferred");
+      if (/schnell|turbo|lightning|lcm|fast/.test(text) || params <= 2) add("speed", "inferred");
+      if (params <= 1.5 || /tiny|small|mini|schnell/.test(text)) add("lightweight", "inferred");
+    }
+    if (type === "video-generation") {
+      if (params >= 5 || /quality|pro/.test(text)) add("quality", "inferred");
+      if (params <= 2 || /fast|turbo|light/.test(text)) add("speed", "inferred");
+      if (params <= 2 || /tiny|small|mini|light/.test(text)) add("lightweight", "inferred");
+      if (/image-conditioned|image based|image-to-video|\bi2v\b/.test(text)) add("imageToVideo", "metadata");
+    }
+    if (type === "avatar-generation" && params >= 2) add("quality", "inferred");
+    if (/light|tiny|small|mini|schnell|distil|경량|초경량/.test(text)) add("lightweight", "inferred");
 
     const supports = unique([
       ...(model.tags || []),
-      /voice cloning|음성 복제|xtts|fish speech/.test(text) ? "voice-cloning" : "",
-      /image-conditioned|image based|image-to-video|i2v/.test(text) ? "image-to-video" : "",
+      /voice cloning|음성 복제|xtts|fish speech|clone/.test(text) ? "voice-cloning" : "",
+      /image-conditioned|image based|image-to-video|\bi2v\b/.test(text) ? "image-to-video" : "",
       /flash attention/i.test(text) || model.supportsFlashAttention ? "flash-attention" : "",
     ]);
-
+    const latencyTier = realtime >= 15 || (model.tags || []).includes("realtime")
+      ? "realtime"
+      : ["video-generation", "image-generation"].includes(type)
+        ? "batch"
+        : params <= 3 ? "interactive" : "standard";
+    const inferredCount = Object.values(evidence).filter((kind) => kind === "inferred").length;
     return {
       useCases: unique(useCases),
+      useCaseEvidence: evidence,
+      capabilityConfidence: inferredCount === 0 ? "high" : inferredCount <= 2 ? "medium" : "low",
       languages: languages(model),
       inputModality: [...defaults.input],
       outputModality: [...defaults.output],
       qualityTier: qualityTier(model, type),
-      latencyTier: latencyTier(model, type, text),
+      latencyTier,
       supports,
     };
   }
@@ -169,7 +170,6 @@ window.LLM_GPU_CHECKER_DATA = window.LLM_GPU_CHECKER_DATA || {};
       capabilities[`${type}:${model.name}`] = resolve(model, type);
     });
   });
-
   data.useCaseDefinitions = USE_CASES;
   data.modelCapabilities = capabilities;
 })();

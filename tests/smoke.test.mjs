@@ -23,6 +23,10 @@ const dataFiles = [
   "data/decision-data.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
+  "features/workspace-controller.js",
+  "features/pricing-policy.js",
+  "features/infrastructure-sizing.js",
+  "features/runtime-localization.js",
 ];
 
 let dom;
@@ -64,6 +68,15 @@ test("GPU selection renders three quick recommendations", () => {
     || !model.capabilities?.outputModality?.length
   ).length`);
   assert.equal(missingCapabilities, 0, "every catalog model should have normalized capabilities");
+  const capabilityEvidenceMissing = app.eval(`getAllModels().filter((model) =>
+    model.capabilities.useCases.some((useCase) => !model.capabilities.useCaseEvidence?.[useCase])
+  ).length`);
+  assert.equal(capabilityEvidenceMissing, 0, "every use case should explain its evidence");
+  assert.notEqual(
+    app.eval(`getAllModels().filter((model) => model.type === "audio-tts" && model.capabilities.useCases.includes("voiceCloning")).length`),
+    app.eval(`getAllModels().filter((model) => model.type === "audio-tts").length`),
+    "voice cloning must not be assigned to every TTS model",
+  );
 });
 
 test("quick recommendations keep purpose choices and models inside the selected workload", () => {
@@ -151,6 +164,9 @@ test("full catalog and advisor produce usable results", () => {
     app.document.querySelectorAll(".gpu-advisor-card").length > 0,
     `${app.document.getElementById("gpuAdvisorResult").textContent.trim()} ${JSON.stringify(app.__smokeAdvisorDebug)}`,
   );
+  app.eval('setUiLanguage("ko"); renderGpuAdvisor();');
+  assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "KRW");
+  assert.equal(app.document.querySelectorAll(".gpu-advisor-card").length, 3);
 });
 
 test("advanced placement remains available but outside the beginner choices", () => {
@@ -174,6 +190,17 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.equal(app.document.querySelectorAll(".si-readiness-checks > button").length, 8);
   assert.equal(app.document.querySelectorAll(".si-plan-fit").length, 3);
   assert.equal(app.document.querySelectorAll(".si-plan-tradeoffs > span").length, 4);
+  const planSnapshot = app.eval(`calculateSiSizing().plans.map((plan) => ({
+    id: plan.id,
+    price: plan.purchaseKrw,
+    capacity: plan.capacityRps,
+    production: plan.productionGpuCount,
+    reserve: plan.reserveGpuCount,
+  }))`);
+  assert.equal(planSnapshot.map((plan) => plan.id).join(","), "economy,recommended,scalable");
+  assert.ok(planSnapshot[0].price <= planSnapshot[1].price && planSnapshot[1].price <= planSnapshot[2].price);
+  assert.ok(planSnapshot[2].capacity > planSnapshot[1].capacity);
+  assert.ok(planSnapshot.every((plan) => plan.production >= 1 && plan.reserve >= 0));
   app.document.querySelector('[data-si-jump="siRequirements"]').click();
   assert.equal(app.document.querySelector(".si-expert-form").open, true);
 });
@@ -205,10 +232,10 @@ test("detailed sizing explains every field and offers starting baselines", () =>
   assert.equal(app.document.getElementById("siConcurrency").hasAttribute("aria-invalid"), false);
 });
 
-test("v4.9 snapshots and share links keep a versioned infrastructure state", () => {
+test("v5.4 snapshots and share links keep a versioned infrastructure state", () => {
   app.eval("syncStudioUrl(); window.__smokeSizingSnapshot = sizingSnapshot(); window.__smokeShareState = shareableStudioState();");
   assert.equal(app.__smokeSizingSnapshot.schemaVersion, 3);
-  assert.equal(app.__smokeSizingSnapshot.appVersion, "4.9.0");
+  assert.equal(app.__smokeSizingSnapshot.appVersion, "5.4.0");
   assert.equal(app.__smokeSizingSnapshot.readiness.total, 8);
   assert.equal(new URL(app.location.href).searchParams.get("schema"), "3");
   assert.ok(Object.keys(app.__smokeShareState).every((key) => key === "tab" || key === "modelKey" || key.startsWith("si")));

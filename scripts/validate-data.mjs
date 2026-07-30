@@ -174,9 +174,18 @@ for (const [type, model] of capabilityModels) {
   if (!capabilities) throw new Error(`model ${key} has no normalized capabilities`);
   requireFields(
     capabilities,
-    ["useCases", "languages", "inputModality", "outputModality", "qualityTier", "latencyTier", "supports"],
+    ["useCases", "useCaseEvidence", "capabilityConfidence", "languages", "inputModality", "outputModality", "qualityTier", "latencyTier", "supports"],
     `model capabilities ${key}`,
   );
+  if (!["high", "medium", "low"].includes(capabilities.capabilityConfidence)) {
+    throw new Error(`model capabilities ${key} has invalid capabilityConfidence`);
+  }
+  for (const useCase of capabilities.useCases) {
+    if (!data.useCaseDefinitions[useCase]) throw new Error(`model capabilities ${key} has unknown use case ${useCase}`);
+    if (!["type", "metadata", "tag", "inferred"].includes(capabilities.useCaseEvidence[useCase])) {
+      throw new Error(`model capabilities ${key} has no evidence for ${useCase}`);
+    }
+  }
   for (const field of ["useCases", "languages", "inputModality", "outputModality", "supports"]) {
     if (!Array.isArray(capabilities[field])) throw new Error(`model capabilities ${key}.${field} must be an array`);
   }

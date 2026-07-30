@@ -926,4 +926,8 @@ function initPlatformV2() {
   ["gpuPreset", "advisorModel", "contextSize", "gpuCount"].forEach((id) => $(id)?.addEventListener("change", renderDecisionHub));
 }
 
-document.addEventListener("DOMContentLoaded", initPlatformV2);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPlatformV2);
+} else {
+  initPlatformV2();
+}

@@ -31,6 +31,10 @@ const DATA_FILES = [
   "data/decision-data.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
+  "features/workspace-controller.js",
+  "features/pricing-policy.js",
+  "features/infrastructure-sizing.js",
+  "features/runtime-localization.js",
 ];
 
 // Loads the app into a fresh jsdom window and returns that window. Each

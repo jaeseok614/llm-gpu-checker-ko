@@ -96,7 +96,8 @@ function appModelKey(model, type) {
   return type !== "generative" ? `${model.type || type}-${slug}` : slug;
 }
 
-function pageTemplate({ title, description, canonical, eyebrow, facts, body, appUrl, sourceUrl = "", schemaType = "WebPage" }) {
+function pageTemplate({ title, description, canonical, alternate, eyebrow, facts, body, appUrl, sourceUrl = "", schemaType = "WebPage", lang = "ko" }) {
+  const en = lang === "en";
   const schema = {
     "@context": "https://schema.org",
     "@type": schemaType,
@@ -106,11 +107,13 @@ function pageTemplate({ title, description, canonical, eyebrow, facts, body, app
     isPartOf: { "@type": "WebSite", name: "AI Hardware Fit", url: `${baseUrl}/` },
   };
   return `<!doctype html>
-<html lang="ko"><head>
+<html lang="${lang}"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)} — AI Hardware Fit</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="canonical" href="${escapeHtml(canonical)}">
+${alternate ? `<link rel="alternate" hreflang="${en ? "ko" : "en"}" href="${escapeHtml(alternate)}">` : ""}
+<link rel="alternate" hreflang="${lang}" href="${escapeHtml(canonical)}">
 <meta property="og:type" content="website"><meta property="og:title" content="${escapeHtml(title)} — AI Hardware Fit">
 <meta property="og:description" content="${escapeHtml(description)}"><meta property="og:url" content="${escapeHtml(canonical)}">
 <meta property="og:image" content="https://raw.githubusercontent.com/jaeseok614/llm-gpu-checker-ko/main/docs/social-preview.png">
@@ -123,7 +126,7 @@ function pageTemplate({ title, description, canonical, eyebrow, facts, body, app
 <p>${escapeHtml(description)}</p>
 <div class="facts">${facts.map(([label, value]) => `<div class="fact"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}</div>
 ${body}
-<div class="actions"><a class="primary" href="${escapeHtml(appUrl)}">계산기에서 바로 확인</a>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">공식·등록 출처</a>` : ""}<a href="https://github.com/jaeseok614/llm-gpu-checker-ko">GitHub</a></div>
+<div class="actions"><a class="primary" href="${escapeHtml(appUrl)}">${en ? "Open in calculator" : "계산기에서 바로 확인"}</a>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">${en ? "Official / registered source" : "공식·등록 출처"}</a>` : ""}<a href="https://github.com/jaeseok614/llm-gpu-checker-ko">GitHub</a></div>
 </main></body></html>`;
 }
 
@@ -134,15 +137,18 @@ function writePage(relativePath, html) {
 }
 
 const sitemapUrls = [`${baseUrl}/`];
+const gpuPageRows = [];
 for (const gpu of data.gpus || []) {
   const slug = slugify(gpu.id || gpu.name);
   const canonical = `${baseUrl}/gpu/${slug}/`;
   sitemapUrls.push(canonical);
+  gpuPageRows.push({ gpu, slug });
   const description = `${gpu.name}의 VRAM ${gpu.gpuUsableMemoryGb || gpu.vram}GB, 메모리 대역폭 ${gpu.bandwidth}GB/s와 실행 가능한 AI 모델을 확인합니다.`;
   writePage(path.join("gpu", slug), pageTemplate({
     title: gpu.name,
     description,
     canonical,
+    alternate: `${baseUrl}/en/gpu/${slug}/`,
     eyebrow: "GPU PROFILE · GPU 상세",
     facts: [
       ["GPU 메모리", `${gpu.gpuUsableMemoryGb || gpu.vram} GB`],
@@ -159,6 +165,7 @@ for (const gpu of data.gpus || []) {
 }
 
 const usedModelSlugs = new Map();
+const modelPageRows = [];
 for (const [workload, fallbackType, models] of modelGroups) {
   for (const model of models) {
     const baseSlug = slugify(model.name);
@@ -172,10 +179,12 @@ for (const [workload, fallbackType, models] of modelGroups) {
     const summary = typeof model.summary === "object" ? model.summary.ko || model.summary.en : model.summary;
     const description = summary || `${model.name}의 GPU 메모리 요구량과 실행 가능 하드웨어를 확인합니다.`;
     const useCases = (capabilities.useCases || []).map((id) => data.useCaseDefinitions?.[id]?.ko || id);
+    modelPageRows.push({ workload, fallbackType, model, slug, type, capabilities });
     writePage(path.join("model", slug), pageTemplate({
       title: model.name,
       description,
       canonical,
+      alternate: `${baseUrl}/en/model/${slug}/`,
       eyebrow: `${workloadMeta[workload][0]} · MODEL PROFILE`,
       facts: [
         ["제공자", model.maker || model.provider || "확인 필요"],
@@ -200,10 +209,81 @@ for (const [workload, [ko, en]] of Object.entries(workloadMeta)) {
     title: `${ko} GPU 추천`,
     description: `${ko} 모델 ${models.length}종을 GPU 메모리, 속도, 품질, 라이선스와 용도 기준으로 비교합니다.`,
     canonical,
+    alternate: `${baseUrl}/en/workload/${slugify(workload)}/`,
     eyebrow: `${en.toUpperCase()} · WORKLOAD`,
     facts: [["등록 모델", `${models.length}개`], ["지원 언어", "한국어 · English"], ["결과", "실행 가능 모델 3개 · 전체 탐색"]],
     body: `<p>${escapeHtml(ko)} 용도에 맞는 모델을 선택하고 GPU별 실행 가능 여부와 예상 범위를 확인하세요.</p>`,
     appUrl: `${baseUrl}/?mode=${encodeURIComponent(workload)}&lang=ko`,
+  }));
+}
+
+for (const { gpu, slug } of gpuPageRows) {
+  const canonical = `${baseUrl}/en/gpu/${slug}/`;
+  const alternate = `${baseUrl}/gpu/${slug}/`;
+  sitemapUrls.push(canonical);
+  writePage(path.join("en", "gpu", slug), pageTemplate({
+    lang: "en",
+    title: gpu.name,
+    description: `Check ${gpu.name} VRAM (${gpu.gpuUsableMemoryGb || gpu.vram} GB), ${gpu.bandwidth} GB/s memory bandwidth, and runnable AI models.`,
+    canonical,
+    alternate,
+    eyebrow: "GPU PROFILE",
+    facts: [
+      ["GPU memory", `${gpu.gpuUsableMemoryGb || gpu.vram} GB`],
+      ["Bandwidth", `${gpu.bandwidth} GB/s`],
+      ["Architecture", gpu.architecture || "Needs review"],
+      ["Form factor", gpu.formFactor || "Needs review"],
+      ["Runtime", (gpu.runtimes || []).join(" · ") || "Needs review"],
+      ["Specification status", gpu.specStatus || "Needs validation"],
+    ],
+    body: "<p>Actual performance depends on the model, precision, context, runtime, and power limit. Open the calculator to review the estimate range and evidence.</p>",
+    appUrl: `${baseUrl}/?gpu=${encodeURIComponent(gpu.id)}&lang=en`,
+    sourceUrl: gpu.sourceUrl,
+  }));
+}
+
+for (const { workload, fallbackType, model, slug, type, capabilities } of modelPageRows) {
+  const canonical = `${baseUrl}/en/model/${slug}/`;
+  const alternate = `${baseUrl}/model/${slug}/`;
+  sitemapUrls.push(canonical);
+  const summary = typeof model.summary === "object" ? model.summary.en || model.summary.ko : model.summary;
+  const useCases = (capabilities.useCases || []).map((id) => data.useCaseDefinitions?.[id]?.en || id);
+  writePage(path.join("en", "model", slug), pageTemplate({
+    lang: "en",
+    title: model.name,
+    description: summary || `Check estimated GPU memory requirements and compatible hardware for ${model.name}.`,
+    canonical,
+    alternate,
+    eyebrow: `${workloadMeta[workload][1].toUpperCase()} · MODEL PROFILE`,
+    facts: [
+      ["Provider", model.maker || model.provider || "Needs review"],
+      ["Parameters", model.params ? `${model.params}B` : "Needs review"],
+      ["License", model.license || "Needs review"],
+      ["Primary use cases", useCases.slice(0, 6).join(" · ") || "Needs review"],
+      ["Input", (capabilities.inputModality || []).join(" · ")],
+      ["Output", (capabilities.outputModality || []).join(" · ")],
+    ],
+    body: "<p>VRAM and speed figures are calculated estimates. Validate the exact driver, runtime, input length, and batch settings in a representative PoC.</p>",
+    appUrl: `${baseUrl}/?mode=${encodeURIComponent(workload)}&ui=expert&model=${encodeURIComponent(appModelKey(model, fallbackType))}&lang=en`,
+    sourceUrl: model.sourceUrl,
+  }));
+}
+
+for (const [workload, [ko, en]] of Object.entries(workloadMeta)) {
+  const canonical = `${baseUrl}/en/workload/${slugify(workload)}/`;
+  const alternate = `${baseUrl}/workload/${slugify(workload)}/`;
+  sitemapUrls.push(canonical);
+  const models = modelGroups.find(([id]) => id === workload)?.[2] || [];
+  writePage(path.join("en", "workload", slugify(workload)), pageTemplate({
+    lang: "en",
+    title: `${en} GPU recommendations`,
+    description: `Compare ${models.length} ${en} models by GPU memory, speed, quality, license, and intended use.`,
+    canonical,
+    alternate,
+    eyebrow: `${en.toUpperCase()} · WORKLOAD`,
+    facts: [["Registered models", `${models.length}`], ["Languages", "Korean · English"], ["Results", "3 quick picks · full catalog"]],
+    body: `<p>Choose a model for ${escapeHtml(en)} and review estimated compatibility and performance ranges across GPUs.</p>`,
+    appUrl: `${baseUrl}/?mode=${encodeURIComponent(workload)}&lang=en`,
   }));
 }
 

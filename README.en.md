@@ -49,6 +49,11 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v5.4** — Completes English UI and workbook exports, bilingual static detail pages with hreflang, and modular core features.
+- **v5.3** — Makes KRW the Korean GPU Advisor default and separates dated market prices, launch references, supplier quotes, and planning assumptions.
+- **v5.2** — Sizes QPS, batching, safe utilization, production/reserve/non-production GPUs, failover capacity, and queue health separately.
+- **v5.1** — Separates model finding, GPU recommendations, stack placement, and infrastructure sizing into isolated workspaces with less inactive loading.
+- **v5.0.1** — Replaces broad media and voice tags with per-model capability evidence so purpose filters produce meaningfully different candidates.
 - **v5.0** — Normalizes use cases, languages, modalities, quality, and latency for all 310 models, then separates recommendation and run-feedback modules.
 - **v4.9.5** — Adds real-Chromium regression checks at six viewport sizes with CI screenshot artifacts.
 - **v4.9.4** — Generates static search pages, JSON-LD, and a sitemap for 116 GPUs, 310 models, and 11 workloads.

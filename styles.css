@@ -1596,18 +1596,35 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .gpu-advisor-controls {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(130px, 1fr));
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) minmax(260px, 1.8fr) minmax(170px, .8fr);
   gap: 12px;
   margin-top: 16px;
 }
 
-.advisor-model-search-field,
-.advisor-model-select-field {
-  grid-column: span 2;
-}
-
 .advisor-model-select-field {
   position: relative;
+}
+
+.advisor-detailed-settings {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.advisor-detailed-settings > summary {
+  min-height: 44px;
+  padding: 11px 14px;
+  cursor: pointer;
+  color: var(--blue);
+  font-weight: 850;
+}
+
+.advisor-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 14px 14px;
 }
 
 .advisor-model-select-field small {
@@ -1687,8 +1704,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .gpu-advisor-card dl > div {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(92px, .8fr) minmax(0, 1.2fr);
   gap: 8px;
 }
 
@@ -1700,6 +1717,36 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin: 0;
   font-weight: 800;
   text-align: right;
+  overflow-wrap: anywhere;
+}
+
+body[data-workspace="finder"] #gpuAdvisorPanel,
+body[data-workspace="finder"] #gpuPlacementPanel,
+body[data-workspace="finder"] #decisionStudio,
+body[data-workspace="modelFinder"] #onboardingScreen,
+body[data-workspace="modelFinder"] #hardwarePanel,
+body[data-workspace="modelFinder"] #resultsPanel,
+body[data-workspace="modelFinder"] #gpuInsightsPanel,
+body[data-workspace="modelFinder"] #benchmarkSheet,
+body[data-workspace="modelFinder"] #benchmarkDashboard,
+body[data-workspace="placement"] #onboardingScreen,
+body[data-workspace="placement"] #resultsPanel,
+body[data-workspace="placement"] #gpuAdvisorPanel,
+body[data-workspace="placement"] #gpuInsightsPanel,
+body[data-workspace="placement"] #benchmarkSheet,
+body[data-workspace="placement"] #benchmarkDashboard,
+body[data-workspace="infra"] #onboardingScreen,
+body[data-workspace="infra"] #hardwarePanel,
+body[data-workspace="infra"] #resultsPanel,
+body[data-workspace="infra"] #gpuAdvisorPanel,
+body[data-workspace="infra"] #gpuInsightsPanel,
+body[data-workspace="infra"] #benchmarkSheet,
+body[data-workspace="infra"] #benchmarkDashboard {
+  display: none !important;
+}
+
+body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
+  display: none !important;
 }
 
 .benchmark-dashboard {
@@ -1745,7 +1792,11 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 @media (max-width: 1100px) {
   .gpu-advisor-controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .advisor-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .gpu-advisor-list {
@@ -1754,8 +1805,18 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 @media (max-width: 680px) {
+  button,
+  .ghost-button,
+  .primary-button,
+  [data-language-toggle] button,
+  [data-theme-toggle] button {
+    min-height: 44px;
+    height: auto;
+  }
+
   .gpu-advisor-controls,
-  .gpu-advisor-list {
+  .gpu-advisor-list,
+  .advisor-detail-grid {
     grid-template-columns: 1fr;
   }
 
@@ -7820,5 +7881,17 @@ body.infra-task-active #benchmarkDashboard {
   .skip-link,
   .term-help::after {
     transition: none;
+  }
+}
+
+/* Final v5.4 mobile touch-target override. */
+@media (max-width: 680px) {
+  button,
+  .ghost-button,
+  .primary-button,
+  [data-language-toggle] button,
+  [data-theme-toggle] button {
+    min-height: 44px !important;
+    height: auto !important;
   }
 }

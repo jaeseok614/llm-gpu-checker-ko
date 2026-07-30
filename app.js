@@ -99,6 +99,12 @@ function applyV15Translations() {
       ? ["Status", "Model", "Release / language", "Summary", "Provider · license", "Precision", "Estimated VRAM", "Realtime factor", "Audio", ""]
       : ["상태", "모델", "출시/언어", "요약", "제공자·라이선스", "정밀도", "계산 VRAM", "실시간 배속", "오디오", ""],
   });
+  Object.assign(WORKLOAD_META.avatarGeneration, {
+    label: uiText("workload.avatarGeneration"),
+    statusLabel: en ? "Avatar" : "아바타",
+    modelCountLabel: en ? "Avatar and lip-sync models" : "아바타·립싱크 모델",
+    searchPlaceholder: en ? "Search avatar, lip-sync, or talking-head models" : "아바타, 립싱크, talking-head 모델 검색",
+  });
   refreshCoreTaskUi();
 }
 const HF_MODEL_STORAGE_KEY = "llm-gpu-checker-hf-models-v1";
@@ -1330,6 +1336,7 @@ function refreshCoreTaskUi() {
   if (avatarTab) avatarTab.textContent = uiText("workload.avatarGeneration");
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
   if ($("decisionStudio")) $("decisionStudio").hidden = !infraActive;
+  window.AIHardwareWorkspace?.apply(coreTaskMode);
 }
 
 function seedPlacementInventoryFromCurrentHardware() {
@@ -1398,6 +1405,7 @@ function setUiLanguage(language) {
   url.searchParams.set("lang", uiLanguage);
   window.history.replaceState({}, "", url);
   document.documentElement.lang = uiLanguage;
+  syncAdvisorCurrencyInputs();
   applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
   const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
@@ -1471,6 +1479,8 @@ function setUiLanguage(language) {
     renderHardwareCapabilities(languageHardware, languageEstimates);
   }
   if (hasPrimaryGpuSelection) renderGpuAdvisor();
+  window.AIHardwareLocalization?.apply(uiLanguage);
+  document.dispatchEvent(new CustomEvent("ai-hardware-languagechange", { detail: { language: uiLanguage } }));
 }
 
 function restoreUiLanguage() {
@@ -1621,12 +1631,17 @@ function ensureGpuAdvisorPanel() {
       <label class="field"><span id="advisorModelCategoryLabel"></span><select id="advisorModelCategory"></select></label>
       <label class="field advisor-model-search-field"><span id="advisorModelSearchLabel"></span><input id="advisorModelSearch" type="search" autocomplete="off"></label>
       <label class="field advisor-model-select-field"><span id="advisorModelLabel"></span><select id="advisorModel"></select><small id="advisorModelCount" aria-live="polite"></small></label>
-      <label class="field"><span id="advisorBudgetLabel"></span><input id="advisorBudgetUsd" type="number" min="0" max="100000" step="50" value="2000"></label>
-      <label class="field"><span id="advisorCurrentPriceLabel"></span><input id="advisorCurrentPriceUsd" type="number" min="0" max="100000" step="10" value="0"></label>
-      <label class="field"><span id="advisorElectricityLabel"></span><input id="advisorElectricityRate" type="number" min="0" max="5" step="0.01" value="0.15"></label>
-      <label class="field"><span id="advisorHoursLabel"></span><input id="advisorHoursMonth" type="number" min="1" max="744" step="1" value="120"></label>
-      <label class="field"><span id="advisorVendorLabel"></span><select id="advisorVendor"><option value="all">All</option><option>NVIDIA</option><option>AMD</option><option>Intel</option><option>Apple</option></select></label>
-      <label class="field"><span id="advisorFormFactorLabel"></span><select id="advisorFormFactor"><option value="all">All</option><option value="desktop">Desktop</option><option value="laptop">Laptop</option><option value="datacenter">Data center</option><option value="integrated">Unified memory</option></select></label>
+      <label class="field"><span id="advisorBudgetLabel"></span><input id="advisorBudgetUsd" data-currency="KRW" type="number" min="0" max="200000000" step="100000" value="2800000"></label>
+      <details class="advisor-detailed-settings">
+        <summary><span class="advisor-detail-summary"></span></summary>
+        <div class="advisor-detail-grid">
+          <label class="field"><span id="advisorCurrentPriceLabel"></span><input id="advisorCurrentPriceUsd" data-currency="KRW" type="number" min="0" max="200000000" step="100000" value="0"></label>
+          <label class="field"><span id="advisorElectricityLabel"></span><input id="advisorElectricityRate" data-currency="KRW" type="number" min="0" max="2000" step="10" value="150"></label>
+          <label class="field"><span id="advisorHoursLabel"></span><input id="advisorHoursMonth" type="number" min="1" max="744" step="1" value="120"></label>
+          <label class="field"><span id="advisorVendorLabel"></span><select id="advisorVendor"><option value="all">All</option><option>NVIDIA</option><option>AMD</option><option>Intel</option><option>Apple</option></select></label>
+          <label class="field"><span id="advisorFormFactorLabel"></span><select id="advisorFormFactor"><option value="all">All</option><option value="desktop">Desktop</option><option value="laptop">Laptop</option><option value="datacenter">Data center</option><option value="integrated">Unified memory</option></select></label>
+        </div>
+      </details>
     </div>
     <div class="gpu-advisor-result" id="gpuAdvisorResult" role="region" aria-live="polite"></div>
   `;
@@ -1641,6 +1656,26 @@ function ensureGpuAdvisorPanel() {
     .map((category) => `<option value="${category.id}">${escapeHtml(category.en)}</option>`)
     .join("");
   refreshAdvisorModelOptions();
+}
+
+function syncAdvisorCurrencyInputs() {
+  const pricing = window.AIHardwarePricing;
+  if (!pricing) return;
+  const targetCurrency = uiLanguage === "en" ? "USD" : "KRW";
+  [["advisorBudgetUsd", 2000], ["advisorCurrentPriceUsd", 0], ["advisorElectricityRate", .15]].forEach(([id, fallback]) => {
+    const input = $(id);
+    if (!input) return;
+    const sourceCurrency = input.dataset.currency || "USD";
+    if (sourceCurrency !== targetCurrency) {
+      const numeric = Number(input.value || fallback);
+      input.value = targetCurrency === "KRW"
+        ? Math.round(pricing.toKrw(numeric, sourceCurrency))
+        : Number(pricing.toUsd(numeric, sourceCurrency).toFixed(id === "advisorElectricityRate" ? 2 : 0));
+    }
+    input.dataset.currency = targetCurrency;
+    input.max = targetCurrency === "KRW" ? (id === "advisorElectricityRate" ? "2000" : "200000000") : (id === "advisorElectricityRate" ? "5" : "100000");
+    input.step = targetCurrency === "KRW" ? (id === "advisorElectricityRate" ? "10" : "100000") : (id === "advisorElectricityRate" ? "0.01" : "50");
+  });
 }
 
 const ADVISOR_MODEL_CATEGORIES = [
@@ -6771,6 +6806,29 @@ function render(options = {}) {
   refreshCoreTaskUi();
   renderPlacementWorkspaceUi();
 
+  if (infraActive) {
+    if (typeof renderDecisionStudio === "function") renderDecisionStudio();
+    else window.loadInfrastructureStudio?.().then(() => renderDecisionStudio?.());
+    if (syncUrl) syncUrlState();
+    window.AIHardwareLocalization?.apply(uiLanguage);
+    return;
+  }
+  if (placementActive) {
+    renderGpuInventory();
+    renderPlacementModelList();
+    renderPlacementSelectedChips();
+    renderPlacementPrimarySelect();
+    if (syncUrl) syncUrlState();
+    window.AIHardwareLocalization?.apply(uiLanguage);
+    return;
+  }
+  if (modelFinderActive) {
+    renderGpuAdvisor();
+    if (syncUrl) syncUrlState();
+    window.AIHardwareLocalization?.apply(uiLanguage);
+    return;
+  }
+
   const hardware = getHardware();
   const allEstimates = hasPrimaryGpuSelection
     ? getActiveModels().map((model) => estimateAnyModel(model, hardware))
@@ -6800,6 +6858,7 @@ function render(options = {}) {
 
   if (syncUrl) syncUrlState();
   if (uiLanguage === "en") setUiLanguage("en");
+  else window.AIHardwareLocalization?.apply(uiLanguage);
 }
 
 function renderBenchmarkDashboard() {
@@ -7000,13 +7059,17 @@ function renderGpuAdvisor() {
     advisorModelCategoryLabel: en ? "Model category" : "모델 종류",
     advisorModelSearchLabel: en ? "Search models" : "모델 검색",
     advisorModelLabel: en ? "Model to run" : "실행할 모델",
-    advisorBudgetLabel: en ? "GPU budget (USD)" : "GPU 예산 (USD)",
-    advisorElectricityLabel: en ? "Electricity (USD/kWh)" : "전기요금 (USD/kWh)",
+    advisorBudgetLabel: en ? "GPU budget (USD)" : "GPU 예산 (원)",
+    advisorCurrentPriceLabel: en ? "Current GPU price (USD)" : "현재 GPU 견적가 (원)",
+    advisorElectricityLabel: en ? "Electricity (USD/kWh)" : "전기요금 (원/kWh)",
     advisorHoursLabel: en ? "Hours per month" : "월 사용 시간",
     advisorVendorLabel: en ? "Vendor" : "제조사",
     advisorFormFactorLabel: en ? "Form factor" : "형태",
   };
   Object.entries(labels).forEach(([id, text]) => { if ($(id)) $(id).textContent = text; });
+  document.querySelectorAll(".advisor-detail-summary").forEach((node) => {
+    node.textContent = en ? "Detailed constraints" : "상세 조건";
+  });
   if ($("advisorModelSearch")) $("advisorModelSearch").placeholder = en ? "Name, provider, or tag" : "이름·제공사·태그 부분검색";
   [...($("advisorModelCategory")?.options || [])].forEach((option) => {
     const category = ADVISOR_MODEL_CATEGORIES.find((item) => item.id === option.value);
@@ -7033,15 +7096,18 @@ function renderGpuAdvisor() {
     $("gpuAdvisorResult").innerHTML = `<p class="empty-state">${en ? "No matching model. Try another category or search term." : "일치하는 모델이 없습니다. 종류나 검색어를 바꿔보세요."}</p>`;
     return;
   }
-  const budget = clampNumber($("advisorBudgetUsd").value, 0, 100000, 2000);
-  const rate = clampNumber($("advisorElectricityRate").value, 0, 5, 0.15);
+  syncAdvisorCurrencyInputs();
+  const pricing = window.AIHardwarePricing;
+  const advisorCurrency = $("advisorBudgetUsd").dataset.currency || "USD";
+  const budget = pricing ? pricing.toUsd($("advisorBudgetUsd").value, advisorCurrency) : clampNumber($("advisorBudgetUsd").value, 0, 100000, 2000);
+  const rate = pricing ? pricing.toUsd($("advisorElectricityRate").value, advisorCurrency) : clampNumber($("advisorElectricityRate").value, 0, 5, .15);
   const hours = clampNumber($("advisorHoursMonth").value, 1, 744, 120);
   const vendor = $("advisorVendor").value;
   const formFactor = $("advisorFormFactor").value;
   const currentHardware = hasPrimaryGpuSelection ? getHardware() : null;
   const currentEstimate = currentHardware ? estimateAnyModelForHardware(model, currentHardware) : null;
   const currentSpeed = Number(currentEstimate?.speed || currentEstimate?.throughput || 0);
-  const currentPrice = clampNumber($("advisorCurrentPriceUsd")?.value, 0, 100000, 0);
+  const currentPrice = pricing ? pricing.toUsd($("advisorCurrentPriceUsd")?.value, advisorCurrency) : clampNumber($("advisorCurrentPriceUsd")?.value, 0, 100000, 0);
   const evaluatedCandidates = GPU_PRESETS
     .filter((gpu) => gpu.id !== "custom")
     .map((preset) => {
@@ -7072,7 +7138,7 @@ function renderGpuAdvisor() {
   const strictCandidates = evaluatedCandidates
     .filter((item) => item.runnable && item.fitsBudget && item.fitsVendor && item.fitsFormFactor)
     .sort((a, b) => b.valueScore - a.valueScore || b.speed - a.speed)
-    .slice(0, 6);
+    .slice(0, 12);
   const showingAlternatives = strictCandidates.length === 0;
   const candidates = showingAlternatives
     ? evaluatedCandidates
@@ -7081,15 +7147,30 @@ function renderGpuAdvisor() {
         const penalty = (item) => (item.fitsBudget ? 0 : 4) + (item.fitsVendor ? 0 : 2) + (item.fitsFormFactor ? 0 : 2);
         return penalty(a) - penalty(b) || b.valueScore - a.valueScore || b.speed - a.speed;
       })
-      .slice(0, 6)
+      .slice(0, 12)
     : strictCandidates;
+  const roleCandidates = [];
+  if (candidates.length) {
+    const priced = candidates.filter((item) => item.market.priceUsd > 0);
+    const roleRows = [
+      { role: en ? "Lowest cost" : "최저 비용", item: [...(priced.length ? priced : candidates)].sort((a, b) => (a.market.priceUsd || Infinity) - (b.market.priceUsd || Infinity))[0] },
+      { role: en ? "Balanced" : "균형 추천", item: candidates[0] },
+      { role: en ? "Highest performance" : "최고 성능", item: [...candidates].sort((a, b) => b.speed - a.speed)[0] },
+    ];
+    roleRows.forEach((row) => {
+      if (!row.item) return;
+      const existing = roleCandidates.find((entry) => entry.item.preset.id === row.item.preset.id);
+      if (existing) existing.role = `${existing.role} · ${row.role}`;
+      else roleCandidates.push(row);
+    });
+  }
 
-  $("gpuAdvisorResult").innerHTML = candidates.length ? `
+  $("gpuAdvisorResult").innerHTML = roleCandidates.length ? `
     ${showingAlternatives ? `<div class="advisor-alternative-notice"><span>${en ? "No exact match. Showing the closest runnable alternatives." : "조건에 정확히 맞는 GPU가 없어 실행 가능한 가까운 대안을 보여드립니다."}</span><button type="button" class="ghost-button" data-advisor-relax>${en ? "Clear vendor and form filters" : "제조사·형태 필터 해제"}</button></div>` : ""}
     <div class="gpu-advisor-list">
-      ${candidates.map((item, index) => `
+      ${roleCandidates.map(({ item, role }, index) => `
         <article class="gpu-advisor-card">
-          <div><span class="advisor-rank">#${index + 1}</span><strong>${escapeHtml(shortGpuName(item.preset.name))}</strong></div>
+          <div><span class="advisor-rank">${escapeHtml(role)}</span><strong>${escapeHtml(shortGpuName(item.preset.name))}</strong></div>
           <p>${escapeHtml(formatGb(item.preset.gpuUsableMemoryGb || item.preset.vram))} · ${escapeHtml(item.preset.vendor)} · ${escapeHtml(item.preset.formFactor)}</p>
           ${showingAlternatives ? `<p class="advisor-difference">${[
             !item.fitsVendor ? (en ? `Vendor alternative: ${item.preset.vendor}` : `제조사 대안: ${item.preset.vendor}`) : "",
@@ -7103,7 +7184,7 @@ function renderGpuAdvisor() {
               : item.priceState.kind === "launch"
                 ? `$${item.market.priceUsd.toLocaleString("en-US")}`
                 : item.priceState.label}<small>${escapeHtml(item.priceState.label)}${item.priceState.note ? ` · ${escapeHtml(item.priceState.note)}` : ""}</small></dd></div>
-            <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>$${item.monthlyEnergy.toFixed(2)}</dd></div>
+            <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>${pricing ? pricing.formatMoney(advisorCurrency === "KRW" ? pricing.toKrw(item.monthlyEnergy, "USD") : item.monthlyEnergy, advisorCurrency, uiLanguage) : `$${item.monthlyEnergy.toFixed(2)}`}</dd></div>
             <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${escapeHtml(gpuEvidenceLabel(item.preset, en))}</dd></div>
             <div><dt>${en ? "vs current GPU" : "현재 GPU 대비"}</dt><dd>${currentSpeed ? `${(item.speed / currentSpeed).toFixed(2)}×` : "—"}</dd></div>
             <div><dt>${en ? "Speed / $1K" : "가격 대비 속도"}</dt><dd>${(item.speed / Math.max(0.2, (item.market.priceUsd || currentPrice || budget) / 1000)).toFixed(1)}</dd></div>

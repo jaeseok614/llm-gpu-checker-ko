@@ -130,7 +130,14 @@
     if (!purpose || !modelMatches(model, purpose)) return "";
     const definition = window.LLM_GPU_CHECKER_DATA?.useCaseDefinitions?.[purpose];
     const label = definition?.[language] || definition?.ko || purpose;
-    return language === "en" ? `Supports ${label}` : `${label} 용도 지원`;
+    const evidence = model.capabilities?.useCaseEvidence?.[purpose] || "inferred";
+    const basis = {
+      type: language === "en" ? "model type" : "모델 유형",
+      metadata: language === "en" ? "published metadata" : "등록 메타데이터",
+      tag: language === "en" ? "published tag" : "등록 태그",
+      inferred: language === "en" ? "calculated inference" : "계산 추정",
+    }[evidence];
+    return language === "en" ? `Supports ${label} · ${basis}` : `${label} 용도 지원 · ${basis}`;
   }
 
   window.AIHardwareQuickRecommendation = { getOptions, modelMatches, reason, recommend };

@@ -6,6 +6,7 @@
   const ownUrl = new URL(document.currentScript?.src || window.location.href);
   const cacheVersion = ownUrl.searchParams.get("v") || "";
   let infrastructurePromise = null;
+  let decisionToolsPromise = null;
 
   function loadScript(path) {
     return new Promise((resolve, reject) => {
@@ -34,7 +35,9 @@
 
   window.loadInfrastructureStudio = () => {
     if (!infrastructurePromise) {
-      infrastructurePromise = loadScript("platform-v3.js").catch((error) => {
+      infrastructurePromise = window.loadDecisionTools()
+        .then(() => loadScript("platform-v3.js"))
+        .catch((error) => {
         infrastructurePromise = null;
         window.AIHardwareUI?.announce(
           document.documentElement.lang === "en"
@@ -43,15 +46,36 @@
           "error",
         );
         throw error;
-      });
+        });
     }
     return infrastructurePromise;
+  };
+
+  window.loadDecisionTools = () => {
+    if (!decisionToolsPromise) {
+      decisionToolsPromise = loadScript("platform-v2.js").catch((error) => {
+        decisionToolsPromise = null;
+        throw error;
+      });
+    }
+    return decisionToolsPromise;
   };
 
   document.addEventListener("DOMContentLoaded", () => {
     const params = new URL(window.location.href).searchParams;
     if (params.get("mode") === "infra" || params.get("studio") === "consulting" || params.has("scenario")) {
       window.loadInfrastructureStudio();
+    }
+    const targets = [document.getElementById("benchmarkSheet"), document.getElementById("calculationBasis")].filter(Boolean);
+    if ("IntersectionObserver" in window && targets.length) {
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        window.loadDecisionTools();
+      }, { rootMargin: "500px" });
+      targets.forEach((target) => observer.observe(target));
+    } else {
+      window.setTimeout(() => window.loadDecisionTools(), 2500);
     }
   });
 })();
