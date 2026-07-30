@@ -33,8 +33,8 @@ const BENCHMARKS = DATA.benchmarks || [];
 const BENCHMARK_META = DATA.benchmarkMeta || {};
 const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
 const UI_COPY_V15 = {
-  "core.modelFinder.title": { ko: "모델로 GPU 찾기", en: "Find a GPU for a model" },
-  "core.modelFinder.note": { ko: "모델·예산·전력 기준 GPU 추천", en: "Recommendations by model, budget, and power" },
+  "core.modelFinder.title": { ko: "예산·전력 GPU 추천", en: "GPU advisor" },
+  "core.modelFinder.note": { ko: "실행 모델과 예산으로 구매 후보 찾기", en: "Find buying options by model, budget, and power" },
   "core.infra.title": { ko: "AI 인프라 견적", en: "AI infrastructure estimate" },
   "core.infra.note": { ko: "용도와 규모만으로 서버 구성 자동 추천", en: "Automatic server sizing from workload and scale" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
@@ -1549,6 +1549,12 @@ function ensureGpuAdvisorPanel() {
     <div class="gpu-advisor-result" id="gpuAdvisorResult" role="region" aria-live="polite"></div>
   `;
   results.parentNode.insertBefore(panel, results);
+  // Model results belong directly below the workload tabs. GPU details are
+  // supporting information, and Advisor is exposed as its own top-level task.
+  const hardwarePanel = $("hardwarePanel");
+  if (hardwarePanel?.parentNode === results.parentNode) {
+    hardwarePanel.insertAdjacentElement("afterend", results);
+  }
   $("advisorModelCategory").innerHTML = ADVISOR_MODEL_CATEGORIES
     .map((category) => `<option value="${category.id}">${escapeHtml(category.en)}</option>`)
     .join("");
@@ -6830,7 +6836,7 @@ function getAdvisorWorkloadSettings(model, hardware) {
 function renderGpuAdvisor() {
   const panel = $("gpuAdvisorPanel");
   if (!panel) return;
-  panel.hidden = coreTaskMode === "placement" || (!hasPrimaryGpuSelection && coreTaskMode !== "modelFinder");
+  panel.hidden = coreTaskMode !== "modelFinder";
   if (panel.hidden) return;
   const en = uiLanguage === "en";
   $("gpuAdvisorTitle").textContent = en ? "GPU recommendations by model, budget, and power" : "예산·전력·모델 기준 GPU 추천";

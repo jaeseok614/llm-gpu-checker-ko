@@ -37,7 +37,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
-- **v4.3** — Separates infrastructure sizing into its own workspace and adds chatbot, image, video, voice, and avatar scenarios, custom user counts, automatic component selection, clickable option details, and price evidence links.
+- **v4.3** — Improves easy infrastructure sizing, moves quick-find results directly below workload tabs, separates the budget/power GPU advisor, and adds the Ryzen AI Max+ 395 64GB configuration.
 - **v4.2** — Compares 1/3/5-year TCO and utilization-based break-even for on-premises, cloud, and hybrid options.
 - **v4.1** — Adds vLLM, llama.cpp, Ollama, and NIM benchmark commands, result JSON import, calibration factors, and PoC verdicts.
 - **v4.0** — Adds customer and technical proposal modes, generated architecture and placement diagrams, editable Excel, and print-ready PDF outputs.

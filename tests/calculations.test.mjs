@@ -823,6 +823,8 @@ describe("GPU contribution and media-generation upgrades", () => {
   test("finds a GPU by community-friendly aliases and uses its GPU-usable memory", () => {
     const fresh = loadApp("https://example.com/");
     assert.equal(fresh.eval(`findGpuPresetByName("Radeon 8060S", false)?.id`), "ryzen-ai-max-plus-395-128");
+    assert.equal(fresh.eval(`findGpuPresetByName("AI Max 395 64GB", false)?.id`), "ryzen-ai-max-plus-395-64");
+    assert.equal(fresh.eval(`GPU_PRESETS.find((gpu) => gpu.id === "ryzen-ai-max-plus-395-64")?.gpuUsableMemoryGb`), 48);
     fresh.eval(`selectPrimaryGpu("ryzen-ai-max-plus-395-128")`);
     const hardware = fresh.eval("getHardware()");
     assert.equal(hardware.preset.memoryType, "unified");
@@ -937,7 +939,7 @@ describe("v1.3 GPU platform upgrades", () => {
 
 describe("v1.4 advisor and media optimization", () => {
   test("ranks model-first GPU recommendations with budget and energy cost", () => {
-    const fresh = loadApp("https://example.com/?gpu=rtx4090-24&lang=en");
+    const fresh = loadApp("https://example.com/?gpu=rtx4090-24&lang=en&mode=modelFinder");
     const panel = fresh.document.getElementById("gpuAdvisorPanel");
     fresh.eval(`$("advisorModel").value = modelKey(GENERATIVE_MODELS.find((model) => model.name === "Llama 3.1 8B Instruct")); renderGpuAdvisor()`);
     assert.equal(panel.hidden, false);
@@ -1015,7 +1017,7 @@ describe("v1.5 catalog, audio, and model-first experience", () => {
     assert.equal(fresh.document.getElementById("onboardingScreen").hidden, true);
     assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(fresh.document.getElementById("resultsPanel").hidden, true);
-    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for a model/);
+    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /GPU advisor/);
 
     const selected = loadApp("https://example.com/?gpu=rtx6000ada-48&lang=ko");
     assert.equal(selected.document.getElementById("simpleModePanel").hidden, false);
@@ -1121,6 +1123,8 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
   test("opens infrastructure sizing as a separate beginner-first workspace", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
+    assert.equal(platform.document.querySelector("#gpuAdvisorPanel").hidden, true);
+    assert.equal(platform.document.querySelector("#resultsPanel").previousElementSibling.id, "hardwarePanel");
     assert.equal(platform.document.querySelector("#decisionStudio").hidden, true);
     platform.document.querySelector('[data-core-task="infra"]').click();
     assert.equal(platform.document.querySelector("#decisionStudio").hidden, false);

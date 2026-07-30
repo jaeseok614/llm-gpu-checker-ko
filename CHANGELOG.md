@@ -9,6 +9,8 @@
 - 기존 SLA·BOM·TCO 입력은 전문가 견적으로 분리하고 기본 화면에서는 접힌 상태로 변경
 - Threadripper·Xeon W·EPYC, 64GB~2TB ECC RAM, Enterprise NVMe, 10~400GbE, 4/8-GPU 서버, 이중화 PSU와 UPS 카탈로그 확장
 - 챗봇·이미지·영상·음성 상담·AI 아바타 용도, 사용자 수 직접 입력, 클릭형 3안 상세 비교와 GPU·클라우드 가격 근거 링크 추가
+- 빠른 찾기의 모델 결과를 워크로드 탭 바로 아래로 이동하고 GPU Advisor를 `예산·전력 GPU 추천` 독립 작업으로 분리
+- AMD Ryzen AI Max+ 395 / Radeon 8060S 64GB 통합메모리 구성 추가
 
 ### v4.2 — 온프레미스·클라우드 비교
 
