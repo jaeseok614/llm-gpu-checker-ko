@@ -23,6 +23,10 @@
 
 ![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
 
+### v4.8 동작 미리보기
+
+![AI Hardware Fit v4.8 데모](./docs/demo-v4.8.gif)
+
 ## 대표 사례 바로 열기
 
 | 사례 | 바로 시작 |

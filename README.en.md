@@ -23,6 +23,10 @@
 
 ![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
 
+### v4.8 Preview
+
+![AI Hardware Fit v4.8 demo](./docs/demo-v4.8.gif)
+
 ## Open a sample scenario
 
 | Scenario | Start |
