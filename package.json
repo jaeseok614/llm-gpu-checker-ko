@@ -8,8 +8,8 @@
     "ai-hardware-fit": "./scripts/benchmark-cli.mjs"
   },
   "scripts": {
-    "check": "node --check app.js && node --check platform-v2.js && node --check platform-v3.js && node --check data/decision-data.js && node --check scripts/benchmark-cli.mjs && node --check scripts/gpu-request-tools.mjs && node --check scripts/model-request-tools.mjs && node --check scripts/benchmark-request-tools.mjs && node scripts/validate-data.mjs && node scripts/data-audit.mjs && node scripts/build-static.mjs && node --test tests/*.test.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "check": "node --check app.js && node --check platform-v2.js && node --check platform-v3.js && node --check data/decision-data.js && node --check scripts/benchmark-cli.mjs && node --check scripts/gpu-request-tools.mjs && node --check scripts/model-request-tools.mjs && node --check scripts/benchmark-request-tools.mjs && node scripts/validate-data.mjs && node scripts/data-audit.mjs && node scripts/build-static.mjs && node scripts/run-tests.mjs",
+    "test": "node scripts/run-tests.mjs",
     "benchmark": "node scripts/benchmark-cli.mjs",
     "social-preview": "node scripts/generate-social-preview.mjs",
     "si-example": "node scripts/generate-si-example.mjs",
