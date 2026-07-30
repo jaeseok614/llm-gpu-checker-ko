@@ -1118,6 +1118,32 @@ describe("v2.2 user build calculator", () => {
 });
 
 describe("v3.7 infrastructure sizing and multimodal stack", () => {
+  test("opens infrastructure sizing as a separate beginner-first workspace", () => {
+    const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
+    assert.equal(platform.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
+    assert.equal(platform.document.querySelector("#decisionStudio").hidden, true);
+    platform.document.querySelector('[data-core-task="infra"]').click();
+    assert.equal(platform.document.querySelector("#decisionStudio").hidden, false);
+    assert.equal(platform.document.querySelector("#hardwarePanel").hidden, true);
+    const wizard = platform.document.querySelector(".si-simple-wizard");
+    assert.ok(wizard);
+    assert.match(platform.document.querySelector(".si-auto-result").textContent, /GPU|CPU|RAM|Storage|Network/);
+    assert.equal(platform.document.querySelector(".si-expert-form").open, false);
+    platform.document.querySelector('[data-si-input-mode="expert"]').click();
+    assert.equal(platform.document.querySelector(".si-expert-form").open, true);
+  });
+
+  test("expands workstation and server component tiers", () => {
+    const platform = loadApp("https://example.com/?mode=infra&lang=en", {}, { platformV2: true });
+    assert.ok(platform.eval("SYSTEM_PART_CATALOG.cpu.length") >= 11);
+    assert.ok(platform.eval("SYSTEM_PART_CATALOG.memory.length") >= 6);
+    assert.ok(platform.eval("SYSTEM_PART_CATALOG.storage.length") >= 5);
+    assert.ok(platform.eval("SYSTEM_PART_CATALOG.nic.length") >= 5);
+    assert.ok(platform.eval("SYSTEM_PART_CATALOG.ups.length") >= 4);
+    assert.match(platform.document.querySelector(".si-simple-wizard").textContent, /Answer four simple questions/);
+    assert.doesNotMatch(platform.document.querySelector(".si-simple-wizard").textContent, /[가-힣]/);
+  });
+
   test("renders seven decision tools and source-linked Korean prices", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);

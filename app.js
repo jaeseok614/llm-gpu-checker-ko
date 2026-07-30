@@ -35,6 +35,8 @@ const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
 const UI_COPY_V15 = {
   "core.modelFinder.title": { ko: "모델로 GPU 찾기", en: "Find a GPU for a model" },
   "core.modelFinder.note": { ko: "모델·예산·전력 기준 GPU 추천", en: "Recommendations by model, budget, and power" },
+  "core.infra.title": { ko: "AI 인프라 견적", en: "AI infrastructure estimate" },
+  "core.infra.note": { ko: "용도와 규모만으로 서버 구성 자동 추천", en: "Automatic server sizing from workload and scale" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
   "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
   "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
@@ -1226,9 +1228,11 @@ function setAppMode(mode) {
 function refreshCoreTaskUi() {
   const placementActive = coreTaskMode === "placement";
   const modelFinderActive = coreTaskMode === "modelFinder";
+  const infraActive = coreTaskMode === "infra";
   document.body.classList.toggle("placement-task-active", placementActive);
   document.body.classList.toggle("finder-task-active", coreTaskMode === "finder");
   document.body.classList.toggle("model-finder-task-active", modelFinderActive);
+  document.body.classList.toggle("infra-task-active", infraActive);
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
     button.classList.toggle("is-active", active);
@@ -1239,6 +1243,11 @@ function refreshCoreTaskUi() {
     modelFinderButton.querySelector("span").textContent = uiText("core.modelFinder.title");
     modelFinderButton.querySelector("small").textContent = uiText("core.modelFinder.note");
   }
+  const infraButton = document.querySelector('[data-core-task="infra"]');
+  if (infraButton) {
+    infraButton.querySelector("span").textContent = uiText("core.infra.title");
+    infraButton.querySelector("small").textContent = uiText("core.infra.note");
+  }
   const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
   const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
   const avatarTab = document.querySelector('[data-workload-tab="avatarGeneration"]');
@@ -1246,6 +1255,7 @@ function refreshCoreTaskUi() {
   if (ttsTab) ttsTab.textContent = uiText("workload.audioTts");
   if (avatarTab) avatarTab.textContent = uiText("workload.avatarGeneration");
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
+  if ($("decisionStudio")) $("decisionStudio").hidden = !infraActive;
 }
 
 function seedPlacementInventoryFromCurrentHardware() {
@@ -1299,10 +1309,12 @@ function setCoreTaskMode(mode) {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
     return;
   }
-  coreTaskMode = mode === "modelFinder" ? "modelFinder" : "finder";
+  coreTaskMode = mode === "modelFinder" || mode === "infra" ? mode : "finder";
   refreshCoreTaskUi();
   render();
+  if (coreTaskMode === "infra" && typeof renderDecisionStudio === "function") renderDecisionStudio();
   if (coreTaskMode === "modelFinder") $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  if (coreTaskMode === "infra") $("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
 function setUiLanguage(language) {
@@ -6604,9 +6616,10 @@ function render(options = {}) {
   const resultsPanel = $("resultsPanel");
   const placementActive = coreTaskMode === "placement";
   const modelFinderActive = coreTaskMode === "modelFinder";
-  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || hasPrimaryGpuSelection;
-  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || (!placementActive && !hasPrimaryGpuSelection);
-  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || !hasPrimaryGpuSelection;
+  const infraActive = coreTaskMode === "infra";
+  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || infraActive || hasPrimaryGpuSelection;
+  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || infraActive || (!placementActive && !hasPrimaryGpuSelection);
+  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || infraActive || !hasPrimaryGpuSelection;
   refreshCoreTaskUi();
   renderPlacementWorkspaceUi();
 
@@ -9705,7 +9718,7 @@ function syncUrlState() {
   const params = new URLSearchParams();
   params.set("ui", appMode);
   params.set("lang", uiLanguage);
-  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : activeWorkload);
+  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : coreTaskMode === "infra" ? "infra" : activeWorkload);
   if (coreTaskMode === "placement") params.set("workload", activeWorkload);
   const hardware = getHardware();
   if (hasPrimaryGpuSelection) {
@@ -9797,7 +9810,7 @@ function syncUrlState() {
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
   const modeParam = params.get("mode");
-  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : "finder";
+  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : modeParam === "infra" ? "infra" : "finder";
   const uiParam = params.get("ui");
   appMode = uiParam === "expert" || uiParam === "simple"
     ? uiParam

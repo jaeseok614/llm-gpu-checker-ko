@@ -132,6 +132,9 @@ let studioState = {
   siMeasuredLatencyP95: 0,
   siBenchmarkSamples: 0,
   siBenchmarkOutliers: 0,
+  siInputMode: "simple",
+  siQualityPreset: "balanced",
+  siUserPreset: 100,
 };
 
 function studioCopy(key) {
@@ -561,6 +564,54 @@ function calculateSiSizing() {
   return { model, plans };
 }
 
+function applySimpleSizingPreset() {
+  const models = getAllModels();
+  const names = {
+    economy: ["Qwen3 8B", "Qwen2.5 7B Instruct"],
+    balanced: ["Qwen2.5 32B Instruct", "Qwen3 32B"],
+    quality: ["Llama 3.3 70B Instruct", "Qwen2.5 72B Instruct"],
+  };
+  const selected = names[studioState.siQualityPreset].map((name) => models.find((model) => model.name === name)).find(Boolean);
+  if (selected) studioState.modelKey = modelKey(selected);
+  const users = Math.max(1, Number(studioState.siUserPreset) || 10);
+  studioState.siTotalUsers = users;
+  studioState.siConcurrency = Math.max(1, Math.ceil(users * (users <= 10 ? .2 : users <= 50 ? .12 : .1)));
+  studioState.siQps = Math.max(.1, Number((studioState.siConcurrency / 8).toFixed(2)));
+  studioState.siAvailability = users >= 50 ? "ha" : "single";
+  studioState.siGrowthPct = users >= 100 ? 30 : 20;
+  studioState.siDevProd = users >= 50;
+}
+
+function autoComponentRecommendation(plan) {
+  const en = uiLanguage === "en";
+  const cpu = plan.cpuCores <= 24 ? "Ryzen 9 / Core Ultra 9" : plan.cpuCores <= 64 ? "Threadripper Pro / Xeon W" : "AMD EPYC / Xeon Scalable";
+  const server = plan.gpuCount <= 1 ? (en ? "AI workstation" : "AI 워크스테이션") : plan.gpuPerServer <= 4 ? (en ? "4U GPU server" : "4U GPU 서버") : (en ? "HGX 8-GPU server" : "HGX 8-GPU 서버");
+  const memory = `${Math.max(64, plan.ramGb)}GB ${plan.gpuCount > 1 ? "ECC RDIMM" : "DDR5"}`;
+  const storage = `Enterprise NVMe ${plan.storageTb}TB+`;
+  const nic = plan.nodes > 1 ? plan.network : plan.gpuCount > 1 ? "25/100GbE" : "2.5/10GbE";
+  const power = plan.powerW >= 3000 ? (en ? "Redundant PSU + three-phase power review" : "이중화 PSU + 3상 전원 검토") : `${Math.max(850, Math.ceil(plan.powerW / 100) * 100)}W ${en ? "power supply" : "급 전원"}`;
+  return { cpu, server, memory, storage, nic, power };
+}
+
+function renderSimpleSizingWizard(model, plans) {
+  const en = uiLanguage === "en";
+  const recommended = plans.find((plan) => plan.id === "recommended") || plans[0];
+  const parts = autoComponentRecommendation(recommended);
+  const quality = [
+    ["economy", en ? "Cost first" : "비용 우선", en ? "Smaller model and simpler server" : "가벼운 모델과 단순한 서버"],
+    ["balanced", en ? "Balanced" : "균형 추천", en ? "Practical quality and response speed" : "품질과 응답 속도의 균형"],
+    ["quality", en ? "Quality first" : "고품질", en ? "Larger model and more headroom" : "큰 모델과 넉넉한 확장 여유"],
+  ];
+  return `<section class="si-simple-wizard">
+    <div class="si-wizard-head"><div><span class="section-kicker">${en ? "EASY ESTIMATE" : "간편 견적"}</span><h3>${en ? "Answer four simple questions" : "쉬운 질문 4개만 선택하세요"}</h3><p>${en ? "The model, GPU, CPU, RAM, storage, network, and power are selected automatically." : "모델·GPU·CPU·RAM·스토리지·네트워크·전원을 자동으로 골라드립니다."}</p></div><button type="button" class="ghost-button" data-si-input-mode="expert">${en ? "Open expert settings" : "전문가 설정 열기"}</button></div>
+    <div class="si-wizard-step"><strong>1. ${en ? "What are you building?" : "무엇을 만드나요?"}</strong><div class="si-choice-grid">${Object.entries(SI_SCENARIOS).map(([id,row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div></div>
+    <div class="si-wizard-step"><strong>2. ${en ? "What matters most?" : "무엇이 가장 중요한가요?"}</strong><div class="si-choice-grid">${quality.map(([id,title,note]) => `<button type="button" data-si-quality="${id}" class="${studioState.siQualityPreset === id ? "is-active" : ""}"><b>${title}</b><small>${note}</small></button>`).join("")}</div></div>
+    <div class="si-wizard-step"><strong>3. ${en ? "How many people will use it?" : "몇 명이 사용하나요?"}</strong><div class="si-choice-grid">${[10,50,100,300].map((value) => `<button type="button" data-si-users="${value}" class="${Number(studioState.siUserPreset) === value ? "is-active" : ""}">${value}${en ? " users" : "명"}</button>`).join("")}</div></div>
+    <div class="si-wizard-step"><strong>4. ${en ? "Where will it run?" : "어디에 구축하나요?"}</strong><div class="si-choice-grid">${[["onprem",en?"On-premises":"사내 서버"],["cloud",en?"Cloud":"클라우드"],["compare",en?"Compare both":"둘 다 비교"]].map(([id,label]) => `<button type="button" data-si-deployment="${id}" class="${studioState.siDeployment === id ? "is-active" : ""}">${label}</button>`).join("")}</div></div>
+    <div class="si-auto-result"><div><span>${en ? "Automatically selected model" : "자동 선택 모델"}</span><strong>${platformEscape(model.name)}</strong><small>${en ? "You can change it in expert settings." : "전문가 설정에서 직접 바꿀 수 있습니다."}</small></div><div class="si-auto-parts"><span><b>GPU</b>${platformEscape(shortGpuName(recommended.gpu.name))} × ${recommended.gpuCount}</span><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server / power" : "서버·전원"}</b>${en ? parts.server : parts.server} · ${parts.power}</span></div><p>${en ? "Why: the selected model memory, expected concurrency, failover, and growth reserve determine the parts automatically." : "선정 이유: 모델 메모리, 예상 동시 사용자, 장애 대비와 성장 여유를 기준으로 부품을 자동 선택했습니다."}</p></div>
+  </section>`;
+}
+
 const SIZING_PROJECTS_KEY = "ai-infra-sizing-projects-v1";
 
 function calculateRealtimeSla(plan) {
@@ -686,12 +737,14 @@ function renderStudioConsulting() {
   const purposeValue = en && studioState.siPurpose === activeScenario.purpose ? activeScenario.purposeEn : studioState.siPurpose;
   const modelOptions = getAllModels().filter((item) => ["generative", "llm", "vlm", "ocr"].includes(item.type || "generative"));
   return `
+    <div class="si-input-mode-switch"><button type="button" data-si-input-mode="simple" class="${studioState.siInputMode === "simple" ? "is-active" : ""}">${en ? "Easy estimate" : "간편 견적"}</button><button type="button" data-si-input-mode="expert" class="${studioState.siInputMode === "expert" ? "is-active" : ""}">${en ? "Expert estimate" : "전문가 견적"}</button></div>
+    ${studioState.siInputMode === "simple" ? renderSimpleSizingWizard(model, plans) : ""}
     <div class="si-intro">
       <div><span class="section-kicker">v3.1 PRE-SALES</span><h3>${en ? "AI infrastructure sizing consultation" : "AI 인프라 사전 견적 상담"}</h3>
       <p>${en ? "Turn customer workload assumptions into three reviewable infrastructure options." : "고객 요구와 트래픽 가정을 검토 가능한 인프라 3안으로 변환합니다."}</p></div>
       <div class="si-presets">${Object.entries(SI_SCENARIOS).map(([id, row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div>
     </div>
-    <div class="studio-question-grid si-question-grid">
+    <details class="si-expert-form" ${studioState.siInputMode === "expert" ? "open" : ""}><summary>${en ? "Customer and workload details" : "고객·워크로드 상세 입력"}</summary><div class="studio-question-grid si-question-grid">
       <label><span>${en ? "Proposal company" : "제안 회사"}</span><input id="siCompanyName" value="${platformEscape(studioState.siCompanyName)}"></label>
       <label><span>${en ? "Customer" : "고객사"}</span><input id="siCustomerName" value="${platformEscape(studioState.siCustomerName)}"></label>
       <label class="studio-wide"><span>${en ? "Project name" : "프로젝트명"}</span><input id="siProjectName" value="${platformEscape(projectValue)}"></label>
@@ -719,7 +772,7 @@ function renderStudioConsulting() {
       <label><span>${en ? "Logs per day (GB)" : "일 로그 (GB)"}</span><input id="siLogGbDay" type="number" min="0" value="${studioState.siLogGbDay}"></label>
       <label><span>${en ? "Retention days" : "보관 일수"}</span><input id="siRetentionDays" type="number" min="1" value="${studioState.siRetentionDays}"></label>
       <label class="studio-check"><input id="siDevProd" type="checkbox" ${studioState.siDevProd ? "checked" : ""}> ${en ? "Separate dev and production" : "개발계·운영계 분리"}</label>
-    </div>
+    </div></details>
     <details class="si-advanced"><summary>${en ? "Infrastructure and operating assumptions" : "인프라·운영 조건 상세"}</summary><div class="studio-question-grid">
       <label><span>PCIe</span><select id="siPcieGen"><option value="gen4" ${studioState.siPcieGen === "gen4" ? "selected" : ""}>Gen 4</option><option value="gen5" ${studioState.siPcieGen === "gen5" ? "selected" : ""}>Gen 5</option></select></label>
       <label><span>${en ? "Network fabric" : "네트워크 패브릭"}</span><select id="siNetworkFabric"><option value="ethernet" ${studioState.siNetworkFabric === "ethernet" ? "selected" : ""}>Ethernet</option><option value="infiniband" ${studioState.siNetworkFabric === "infiniband" ? "selected" : ""}>InfiniBand</option></select></label>
@@ -852,6 +905,11 @@ function syncStudioUrl() {
 
 function renderDecisionStudio() {
   const panel = ensureDecisionStudio();
+  const infraActive = typeof coreTaskMode !== "undefined" && coreTaskMode === "infra";
+  panel.hidden = !infraActive;
+  if (infraActive) studioState.tab = "consulting";
+  panel.classList.toggle("is-infra-workspace", infraActive);
+  panel.classList.toggle("is-simple-sizing", infraActive && studioState.siInputMode === "simple");
   $("decisionStudioTitle").textContent = studioCopy("title");
   $("decisionStudioNote").textContent = studioCopy("note");
   const tabs = ["consulting", "recommend", "market", "custom", "parts", "runtime", "community"];
@@ -911,6 +969,20 @@ function bindDecisionStudio() {
   $("siDevProd")?.addEventListener("change", (event) => updateStudio("siDevProd", event.target.checked));
   $("siStreaming")?.addEventListener("change", (event) => updateStudio("siStreaming", event.target.checked));
   $("siAutoscale")?.addEventListener("change", (event) => updateStudio("siAutoscale", event.target.checked));
+  document.querySelectorAll("[data-si-input-mode]").forEach((button) => button.addEventListener("click", () => updateStudio("siInputMode", button.dataset.siInputMode)));
+  document.querySelectorAll("[data-si-quality]").forEach((button) => button.addEventListener("click", () => {
+    studioState.siQualityPreset = button.dataset.siQuality;
+    applySimpleSizingPreset();
+    syncStudioUrl();
+    renderDecisionStudio();
+  }));
+  document.querySelectorAll("[data-si-users]").forEach((button) => button.addEventListener("click", () => {
+    studioState.siUserPreset = Number(button.dataset.siUsers);
+    applySimpleSizingPreset();
+    syncStudioUrl();
+    renderDecisionStudio();
+  }));
+  document.querySelectorAll("[data-si-deployment]").forEach((button) => button.addEventListener("click", () => updateStudio("siDeployment", button.dataset.siDeployment)));
   $("siExportAllowed")?.addEventListener("change", (event) => updateStudio("siExportAllowed", event.target.value === "true"));
   document.querySelectorAll("[data-si-preset]").forEach((button) => button.addEventListener("click", () => {
     const preset = SI_SCENARIOS[button.dataset.siPreset];
