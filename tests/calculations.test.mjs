@@ -1017,7 +1017,7 @@ describe("v1.5 catalog, audio, and model-first experience", () => {
     assert.equal(fresh.document.getElementById("onboardingScreen").hidden, true);
     assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(fresh.document.getElementById("resultsPanel").hidden, true);
-    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /GPU advisor/);
+    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for my model/);
 
     const selected = loadApp("https://example.com/?gpu=rtx6000ada-48&lang=ko");
     assert.equal(selected.document.getElementById("simpleModePanel").hidden, false);
