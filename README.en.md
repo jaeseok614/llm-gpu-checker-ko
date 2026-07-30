@@ -49,6 +49,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v4.8.1** — Simplifies the landing page to three guided paths and samples, then adds a three-step infrastructure wizard, decision-first plans, evidence/price states, and mobile QA.
 - **v4.8** — Compares economy, recommended, and scalable options by proposal price, SLA, hardware, rack/power/cooling, failover capacity, and evidence confidence.
 - **v4.7** — Adds draft, review, approval, and revision states with owners, reviewers, approvers, timestamps, and saved estimate versions.
 - **v4.6** — Sizes rack units, switches, NIC links, optics, cables, redundant PDU circuits, and cooling demand.
@@ -92,7 +93,7 @@
 - Purchase Advisor supports new/used prices, KRW conversion, current-GPU resale value, electricity, and ownership period.
 - Launch Assistant generates Ollama, llama.cpp, vLLM, and Docker Compose configurations for the selected model and GPU.
 - GPU and model comparison now supports up to four items, with dedicated mobile cards.
-- 115 desktop, data-center, Apple Silicon, and laptop GPU presets
+- 116 desktop, data-center, Apple Silicon, and laptop GPU presets
 - Generative LLM, embedding, reranker, OCR, document/general VLM, image/video generation, avatar/lip-sync, STT, and TTS workloads
 - Separate GPU-first and model/budget-first starting paths
 - GPU details and three-way comparison across VRAM, bandwidth, runnable models, and estimated speed
@@ -104,6 +105,7 @@
 - A benchmark coverage dashboard for measured rows, GPUs, models, estimate error, and priority targets
 - AI Stack Placement for assigning several models across several GPUs
 - Korean and English interfaces, responsive mobile layouts, keyboard focus, and reduced-motion support
+- [Pre-launch UI regression checklist](./docs/ui-regression-checklist.md) for six fixed viewport sizes and eight smoke-tested user flows
 
 ## Automated contribution pipelines
 

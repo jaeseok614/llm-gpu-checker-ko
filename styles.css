@@ -7030,3 +7030,381 @@ body.infra-task-active #benchmarkDashboard {
     text-align: left;
   }
 }
+
+/* v4.8.1 pre-launch UX foundation */
+.skip-link {
+  position: fixed;
+  z-index: 10000;
+  top: 8px;
+  left: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-weight: 800;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform .15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.core-task-switcher {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.core-task-intro {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-width: 760px;
+}
+
+.core-task-switcher > .core-task-intro:first-child {
+  flex: 0 0 auto;
+}
+
+.core-task-intro small {
+  color: var(--muted);
+}
+
+.core-task-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.core-task-button {
+  min-height: 72px;
+  padding: 12px 14px;
+}
+
+.core-task-demos {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.demo-chip,
+.advanced-entry > summary,
+.advanced-entry button {
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.demo-chip {
+  padding: 0 13px;
+  font-weight: 800;
+}
+
+.demo-chip:hover,
+.advanced-entry > summary:hover,
+.advanced-entry button:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.advanced-entry {
+  position: relative;
+  margin-left: auto;
+}
+
+.advanced-entry > summary {
+  display: grid;
+  place-items: center;
+  min-width: 104px;
+  padding: 0 13px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.advanced-entry > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-entry[open] > button {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  top: calc(100% + 6px);
+  display: grid;
+  gap: 3px;
+  width: min(330px, calc(100vw - 48px));
+  padding: 12px;
+  text-align: left;
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.advanced-entry button span {
+  font-weight: 800;
+}
+
+.advanced-entry button small {
+  color: var(--muted);
+}
+
+.si-simple-budget {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.si-simple-budget > label {
+  display: grid;
+  gap: 6px;
+}
+
+.si-simple-budget input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.si-plan-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.si-plan-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.si-plan-kind,
+.si-plan-selected {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.si-plan-selected {
+  color: var(--muted);
+}
+
+.si-plan-card.is-selected .si-plan-selected {
+  color: var(--green);
+}
+
+.si-decision-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--line);
+}
+
+.si-decision-metrics > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  background: var(--surface-soft);
+}
+
+.si-decision-metrics small {
+  color: var(--muted);
+}
+
+.si-decision-metrics strong {
+  overflow-wrap: anywhere;
+}
+
+.si-plan-reason {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.si-plan-error-note {
+  color: var(--muted);
+}
+
+.term-help {
+  display: inline-grid;
+  position: relative;
+  place-items: center;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 3px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--blue);
+  cursor: help;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.term-help::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 40;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  width: min(280px, calc(100vw - 40px));
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 16%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+
+.term-help:hover::after,
+.term-help:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.evidence-badge,
+.price-state {
+  overflow-wrap: anywhere;
+}
+
+.evidence-badge.is-estimate,
+.price-state.is-launch {
+  color: var(--yellow);
+}
+
+.evidence-badge.is-user,
+.evidence-badge.is-external,
+.price-state.is-market {
+  color: var(--green);
+}
+
+.price-state.is-quote {
+  color: var(--muted);
+}
+
+.price-state small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.studio-aging {
+  display: block;
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.app-toast {
+  position: fixed;
+  z-index: 12000;
+  right: 20px;
+  bottom: 20px;
+  max-width: min(380px, calc(100vw - 40px));
+  padding: 12px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  box-shadow: 0 14px 38px color-mix(in srgb, var(--ink) 20%, transparent);
+  font-weight: 800;
+}
+
+.app-toast[data-tone="success"] {
+  border-color: var(--green);
+}
+
+:where(button, a, input, select, summary, [role="button"]) {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .core-task-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .core-task-button {
+    min-height: 60px;
+  }
+}
+
+@media (max-width: 560px) {
+  .header-inner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .brand-block {
+    width: 100%;
+  }
+
+  .brand-block h1 {
+    min-width: 0;
+    font-size: 19px;
+    line-height: 1.3;
+  }
+
+  .header-nav {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: visible;
+  }
+
+  .core-task-demos {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .demo-chip,
+  .advanced-entry,
+  .advanced-entry > summary {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .advanced-entry[open] > button {
+    position: static;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .si-decision-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .si-plan-card,
+  .si-simple-wizard {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link,
+  .term-help::after {
+    transition: none;
+  }
+}

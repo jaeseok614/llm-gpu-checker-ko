@@ -678,7 +678,7 @@ describe("URL state save / restore", () => {
     assert.match(modelControls, /Preferred setting/);
     assert.doesNotMatch(modelControls, /선호|요청 비율|최소 동시|GPU 고정/);
 
-    english.document.querySelector(".core-task-actions [data-core-task='placement']")
+    english.document.querySelector(".advanced-entry [data-core-task='placement']")
       .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
     english.document.querySelector("[data-placement-starter='rag']")
       .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
@@ -1122,7 +1122,8 @@ describe("v2.2 user build calculator", () => {
 describe("v3.7 infrastructure sizing and multimodal stack", () => {
   test("opens infrastructure sizing as a separate beginner-first workspace", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
-    assert.equal(platform.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
+    assert.equal(platform.document.querySelectorAll(".core-task-actions [data-core-task]").length, 3);
+    assert.ok(platform.document.querySelector(".advanced-entry [data-core-task='placement']"));
     assert.equal(platform.document.querySelector("#gpuAdvisorPanel").hidden, true);
     assert.equal(platform.document.querySelector("#resultsPanel").previousElementSibling.id, "hardwarePanel");
     assert.equal(platform.document.querySelector("#decisionStudio").hidden, true);
@@ -1156,7 +1157,7 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.storage.length") >= 5);
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.nic.length") >= 5);
     assert.ok(platform.eval("SYSTEM_PART_CATALOG.ups.length") >= 4);
-    assert.match(platform.document.querySelector(".si-simple-wizard").textContent, /Answer four simple questions/);
+    assert.match(platform.document.querySelector(".si-simple-wizard").textContent, /Complete the estimate in three steps/);
     assert.doesNotMatch(platform.document.querySelector(".si-simple-wizard").textContent, /[가-힣]/);
   });
 
@@ -1164,7 +1165,7 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
     assert.equal(platform.document.querySelectorAll("[data-studio-tab]").length, 7);
     platform.eval(`updateStudio("tab", "market")`);
-    assert.equal(platform.document.querySelectorAll(".studio-table tbody tr").length, platform.eval("GPU_PRESETS.filter((gpu) => gpu.id !== 'custom').length"));
+    assert.equal(platform.document.querySelectorAll(".studio-table tbody tr").length, platform.eval("KOREAN_GPU_MARKET.length"));
     assert.match(platform.document.querySelector("#decisionStudioBody").textContent, /다나와|성능\/가격/);
     assert.equal(platform.eval("KOREAN_GPU_MARKET.every((row) => row.sourceUrl && row.updatedAt && row.newKrw > 0)"), true);
   });

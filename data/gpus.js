@@ -227,6 +227,24 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "m2max-96", name: "Apple M2 Max 96GB 통합메모리", vram: 96, ram: 96, bandwidth: 400 },
 ];
 
+function officialGpuFamilySource(vendor, text) {
+  if (vendor === "NVIDIA") {
+    if (/geforce|rtx 20|rtx 30|rtx 40|rtx 50/.test(text)) {
+      return "https://www.nvidia.com/en-us/geforce/graphics-cards/compare/?section=compare-specs";
+    }
+    return "https://www.nvidia.com/en-us/data-center/";
+  }
+  if (vendor === "AMD") {
+    if (/instinct|mi\d/.test(text)) return "https://www.amd.com/en/products/accelerators/instinct.html";
+    if (/ryzen ai/.test(text)) return "https://www.amd.com/en/products/processors/consumer/ryzen-ai.html";
+    if (/radeon pro|w\d/.test(text)) return "https://www.amd.com/en/products/graphics/workstations.html";
+    return "https://www.amd.com/en/products/graphics/desktops/radeon.html";
+  }
+  if (vendor === "Intel") return "https://www.intel.com/content/www/us/en/products/details/discrete-gpus.html";
+  if (vendor === "Apple") return "https://support.apple.com/en-us/102231";
+  return "";
+}
+
 window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) => {
   const text = `${gpu.id} ${gpu.name}`.toLowerCase();
   const vendor = gpu.vendor || (
@@ -258,6 +276,7 @@ window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) =>
         : vendor === "Intel"
           ? ["OpenVINO", "oneAPI"]
           : [];
+  const familySourceUrl = officialGpuFamilySource(vendor, text);
   return {
     aliases: [],
     vendor,
@@ -270,7 +289,9 @@ window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) =>
       : /instinct|data center|h100|h200|b100|b200|a100|a30|t4|v100|p100|l40|l4|flex/.test(text)
         ? "datacenter"
         : memoryType === "unified" ? "integrated" : "desktop",
-    specStatus: gpu.sourceUrl ? "sourced" : "estimated",
     ...gpu,
+    sourceUrl: gpu.sourceUrl || familySourceUrl,
+    sourceScope: gpu.sourceUrl ? "model" : familySourceUrl ? "family" : "missing",
+    specStatus: gpu.sourceUrl ? "sourced" : familySourceUrl ? "family" : "estimated",
   };
 });

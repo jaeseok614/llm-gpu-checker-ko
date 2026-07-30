@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="./styles.css?v=__CACHE_VERSION__" />
   </head>
   <body>
+    <a class="skip-link" href="#mainContent">본문 바로가기</a>
     <header class="app-header">
       <div class="header-inner">
         <div class="brand-block">
@@ -49,29 +50,37 @@
       </div>
     </header>
 
-    <main class="app-shell">
+    <main class="app-shell" id="mainContent" tabindex="-1">
       <section class="core-task-switcher" id="coreTaskSwitcher" aria-label="주요 작업 선택">
-        <div>
-          <span class="section-kicker">무엇을 하시나요?</span>
-          <strong>원하는 작업부터 선택하세요</strong>
+        <div class="core-task-intro">
+          <span class="section-kicker">처음 오셨나요?</span>
+          <strong>가지고 있는 GPU가 있나요, 아니면 실행할 모델부터 정하고 싶나요?</strong>
+          <small>하나를 선택하면 필요한 입력만 단계별로 보여드립니다.</small>
         </div>
         <div class="core-task-actions" role="tablist" aria-label="주요 작업">
           <button type="button" class="core-task-button is-active" data-core-task="finder" aria-selected="true">
-            <span>내 GPU에 맞는 모델 찾기</span>
-            <small>빠른 추천과 전체 모델 탐색</small>
+            <span>내 GPU에서 실행할 모델 찾기</span>
+            <small>가지고 있는 GPU로 가능한 모델 확인</small>
           </button>
           <button type="button" class="core-task-button" data-core-task="modelFinder" aria-selected="false">
-            <span>예산·전력 GPU 추천</span>
-            <small>실행 모델과 예산으로 구매 후보 찾기</small>
-          </button>
-          <button type="button" class="core-task-button" data-core-task="placement" aria-selected="false">
-            <span>여러 모델 함께 돌리기</span>
-            <small>AI 스택 배치 플래너</small>
+            <span>실행할 모델에 맞는 GPU 찾기</span>
+            <small>모델·예산·전력 기준 구매 후보 확인</small>
           </button>
           <button type="button" class="core-task-button" data-core-task="infra" aria-selected="false">
-            <span>AI 인프라 견적</span>
-            <small>용도와 규모만으로 서버 구성 자동 추천</small>
+            <span>AI 인프라 간편 견적</span>
+            <small>서비스와 사용자 수로 전체 구성 자동 추천</small>
           </button>
+        </div>
+        <div class="core-task-demos" aria-label="샘플로 시작">
+          <button type="button" class="demo-chip" data-demo-gpu="rtx3060-12">RTX 3060으로 체험</button>
+          <button type="button" class="demo-chip" data-demo-infra="internal-rag" data-demo-users="30">사내 RAG 30명 예시</button>
+          <details class="advanced-entry">
+            <summary>고급 도구</summary>
+            <button type="button" data-core-task="placement">
+              <span>여러 모델 함께 배치</span>
+              <small>LLM·RAG·VLM·음성 모델을 여러 GPU에 배치</small>
+            </button>
+          </details>
         </div>
       </section>
 
@@ -869,9 +878,9 @@
     </section>
 
     <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
-    <aside class="model-detail" id="modelDetail" aria-label="모델 상세 분석" hidden></aside>
+    <aside class="model-detail" id="modelDetail" role="dialog" aria-modal="true" aria-label="모델 상세 분석" tabindex="-1" hidden></aside>
     <div class="simple-inspector-backdrop" id="simpleInspectorBackdrop" hidden></div>
-    <aside class="simple-recommendation-inspector" id="simpleRecommendationPanel" role="dialog" aria-label="빠른 추천 상세" tabindex="-1" hidden></aside>
+    <aside class="simple-recommendation-inspector" id="simpleRecommendationPanel" role="dialog" aria-modal="true" aria-label="빠른 추천 상세" tabindex="-1" hidden></aside>
 
     <div class="compare-modal-backdrop" id="compareModalBackdrop" hidden></div>
     <div class="compare-modal" id="compareModal" role="dialog" aria-modal="true" aria-label="모델 비교" hidden></div>
@@ -879,6 +888,7 @@
     <footer class="app-footer" id="calculationBasis">
       <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실제 측정과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>
     </footer>
+    <div class="app-toast" id="appToast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
     <script src="./data/gpus.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/quantizations.js?v=__CACHE_VERSION__" defer></script>
@@ -892,8 +902,9 @@
     <script src="./data/model-metadata.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/licenses.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/decision-data.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./ui-foundation.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./feature-loader.js?v=__CACHE_VERSION__" defer></script>
     <script src="./app.js?v=__CACHE_VERSION__" defer></script>
     <script src="./platform-v2.js?v=__CACHE_VERSION__" defer></script>
-    <script src="./platform-v3.js?v=__CACHE_VERSION__" defer></script>
   </body>
 </html>

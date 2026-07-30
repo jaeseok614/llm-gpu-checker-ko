@@ -33,10 +33,23 @@ const BENCHMARKS = DATA.benchmarks || [];
 const BENCHMARK_META = DATA.benchmarkMeta || {};
 const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
 const UI_COPY_V15 = {
-  "core.modelFinder.title": { ko: "예산·전력 GPU 추천", en: "GPU advisor" },
-  "core.modelFinder.note": { ko: "실행 모델과 예산으로 구매 후보 찾기", en: "Find buying options by model, budget, and power" },
-  "core.infra.title": { ko: "AI 인프라 견적", en: "AI infrastructure estimate" },
-  "core.infra.note": { ko: "용도와 규모만으로 서버 구성 자동 추천", en: "Automatic server sizing from workload and scale" },
+  "core.intro.kicker": { ko: "처음 오셨나요?", en: "New here?" },
+  "core.intro.title": { ko: "가지고 있는 GPU가 있나요, 아니면 실행할 모델부터 정하고 싶나요?", en: "Do you already have a GPU, or do you want to start with a model?" },
+  "core.intro.note": { ko: "하나를 선택하면 필요한 입력만 단계별로 보여드립니다.", en: "Choose one path and we will show only the inputs you need." },
+  "core.finder.title": { ko: "내 GPU에서 실행할 모델 찾기", en: "Find models for my GPU" },
+  "core.finder.note": { ko: "가지고 있는 GPU로 가능한 모델 확인", en: "Check what runs on hardware you already own" },
+  "core.modelFinder.title": { ko: "실행할 모델에 맞는 GPU 찾기", en: "Find a GPU for my model" },
+  "core.modelFinder.note": { ko: "모델·예산·전력 기준 구매 후보 확인", en: "Compare buying options by model, budget, and power" },
+  "core.infra.title": { ko: "AI 인프라 간편 견적", en: "Quick AI infrastructure estimate" },
+  "core.infra.note": { ko: "서비스와 사용자 수로 전체 구성 자동 추천", en: "Size a complete system from service type and users" },
+  "core.placement.title": { ko: "여러 모델 함께 배치", en: "Place multiple models together" },
+  "core.placement.note": { ko: "LLM·RAG·VLM·음성 모델을 여러 GPU에 배치", en: "Place LLM, RAG, VLM, and voice models across GPUs" },
+  "core.advanced": { ko: "고급 도구", en: "Advanced tools" },
+  "core.aria.section": { ko: "주요 작업 선택", en: "Choose a primary task" },
+  "core.aria.tabs": { ko: "주요 작업", en: "Primary tasks" },
+  "core.aria.demos": { ko: "샘플로 시작", en: "Start with a sample" },
+  "core.demo.gpu": { ko: "RTX 3060으로 체험", en: "Try with an RTX 3060" },
+  "core.demo.infra": { ko: "사내 RAG 30명 예시", en: "30-user internal RAG example" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
   "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
   "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
@@ -49,6 +62,24 @@ function uiText(key) {
 }
 function applyV15Translations() {
   const en = uiLanguage === "en";
+  const intro = document.querySelector(".core-task-intro");
+  if (intro) {
+    const [kicker, title, note] = intro.children;
+    if (kicker) kicker.textContent = uiText("core.intro.kicker");
+    if (title) title.textContent = uiText("core.intro.title");
+    if (note) note.textContent = uiText("core.intro.note");
+  }
+  const gpuDemo = document.querySelector("[data-demo-gpu]");
+  if (gpuDemo) gpuDemo.textContent = uiText("core.demo.gpu");
+  const infraDemo = document.querySelector("[data-demo-infra]");
+  if (infraDemo) infraDemo.textContent = uiText("core.demo.infra");
+  const taskSection = document.querySelector(".core-task-switcher");
+  taskSection?.setAttribute("aria-label", uiText("core.aria.section"));
+  taskSection?.querySelector(".core-task-actions")?.setAttribute("aria-label", uiText("core.aria.tabs"));
+  const demos = taskSection?.querySelector(".core-task-demos");
+  demos?.setAttribute("aria-label", uiText("core.aria.demos"));
+  const advancedSummary = demos?.querySelector(".advanced-entry > summary");
+  if (advancedSummary) advancedSummary.textContent = uiText("core.advanced");
   if ($("advisorCurrentPriceLabel")) $("advisorCurrentPriceLabel").textContent = uiText("advisor.currentPrice");
   Object.assign(WORKLOAD_META.audioStt, {
     label: uiText("workload.audioStt"),
@@ -142,6 +173,7 @@ function gpuMarketReference(gpu) {
 
 function gpuEvidenceLabel(gpu, en = uiLanguage === "en") {
   if (gpu.sourceUrl && gpu.specStatus === "sourced") return en ? "Official/source-linked spec" : "공식·출처 연결 사양";
+  if (gpu.sourceUrl && (gpu.specStatus === "family" || gpu.sourceScope === "family")) return en ? "Official product-family source · model details need review" : "제조사 공식 제품군 출처·개별 사양 검토 필요";
   if (gpu.sourceUrl) return en ? "Catalog source · review date recorded" : "카탈로그 출처·검증일 기록";
   if (gpu.verifiedAt) return en ? `Catalog estimate · checked ${gpu.verifiedAt}` : `카탈로그 추정·${gpu.verifiedAt} 확인`;
   return en ? "Calculated estimate · source needed" : "계산 추정·출처 보강 필요";
@@ -301,6 +333,7 @@ let viewMode = "list";
 let settingsExpanded = false;
 let compareKeys = [];
 let compareModalOpen = false;
+let dialogReturnFocus = null;
 const MAX_COMPARE_MODELS = 4;
 let benchmarkSearchQuery = "";
 let benchmarkCompareKeys = [];
@@ -1238,16 +1271,26 @@ function refreshCoreTaskUi() {
     button.classList.toggle("is-active", active);
     if (button.closest("[role='tablist']")) button.setAttribute("aria-selected", String(active));
   });
+  const finderButton = document.querySelector('.core-task-actions [data-core-task="finder"]');
+  if (finderButton) {
+    finderButton.querySelector("span").textContent = uiText("core.finder.title");
+    finderButton.querySelector("small").textContent = uiText("core.finder.note");
+  }
   const modelFinderButton = document.querySelector('[data-core-task="modelFinder"]');
   if (modelFinderButton) {
     modelFinderButton.querySelector("span").textContent = uiText("core.modelFinder.title");
     modelFinderButton.querySelector("small").textContent = uiText("core.modelFinder.note");
   }
-  const infraButton = document.querySelector('[data-core-task="infra"]');
+    const infraButton = document.querySelector('[data-core-task="infra"]');
   if (infraButton) {
     infraButton.querySelector("span").textContent = uiText("core.infra.title");
-    infraButton.querySelector("small").textContent = uiText("core.infra.note");
-  }
+      infraButton.querySelector("small").textContent = uiText("core.infra.note");
+    }
+    const placementButton = document.querySelector('[data-core-task="placement"]');
+    if (placementButton) {
+      placementButton.querySelector("span").textContent = uiText("core.placement.title");
+      placementButton.querySelector("small").textContent = uiText("core.placement.note");
+    }
   const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
   const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
   const avatarTab = document.querySelector('[data-workload-tab="avatarGeneration"]');
@@ -2046,7 +2089,49 @@ function refreshFilterOptions() {
 
 function bindEvents() {
   document.querySelectorAll("[data-core-task]").forEach((button) => {
-    button.addEventListener("click", () => setCoreTaskMode(button.dataset.coreTask));
+    button.addEventListener("click", () => {
+      if (button.dataset.coreTask === "infra" && typeof window.loadInfrastructureStudio === "function") {
+        window.AIHardwareUI?.announce(uiLanguage === "en" ? "Loading the infrastructure workspace…" : "인프라 견적 화면을 불러오는 중입니다.");
+        window.loadInfrastructureStudio().then(() => setCoreTaskMode("infra")).catch(() => {});
+        return;
+      }
+      setCoreTaskMode(button.dataset.coreTask);
+    });
+  });
+  document.querySelectorAll("[data-demo-gpu]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const selected = selectPrimaryGpu(button.dataset.demoGpu, { persist: true });
+      if (!selected) return;
+      coreTaskMode = "finder";
+      appMode = "simple";
+      refreshSecondaryGpuUi();
+      refreshCoreTaskUi();
+      refreshAppModeUi();
+      render();
+      window.AIHardwareUI?.announce(uiLanguage === "en"
+        ? "Loaded the RTX 3060 quick-recommendation example."
+        : "RTX 3060 빠른 추천 예시를 불러왔습니다.");
+      $("simpleModePanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    });
+  });
+  document.querySelectorAll("[data-demo-infra]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const openExample = () => {
+        setCoreTaskMode("infra");
+        window.dispatchEvent(new CustomEvent("ai-hardware-fit:infra-demo", {
+          detail: {
+            scenario: button.dataset.demoInfra,
+            users: Number(button.dataset.demoUsers) || 30,
+          },
+        }));
+      };
+      if (typeof window.loadInfrastructureStudio === "function") {
+        window.AIHardwareUI?.announce(uiLanguage === "en" ? "Loading the example…" : "예시 견적을 불러오는 중입니다.");
+        window.loadInfrastructureStudio().then(openExample).catch(() => {});
+      } else {
+        openExample();
+      }
+    });
   });
 
   $("openPlacementFromHardware")?.addEventListener("click", () => {
@@ -2215,6 +2300,13 @@ function bindEvents() {
   $("simpleModeResult").addEventListener("click", (event) => {
     if (event.target.closest("[data-focus-primary-gpu]")) {
       focusPrimaryGpuSelector();
+      return;
+    }
+    if (event.target.closest("[data-reset-simple-filters]")) {
+      $("simplePurpose").value = "general";
+      $("simplePriority").value = "balanced";
+      render();
+      window.AIHardwareUI?.announce(uiLanguage === "en" ? "Reset the recommendation filters." : "추천 조건을 초기화했습니다.");
       return;
     }
     const copyCommand = event.target.closest("[data-copy-command]");
@@ -2490,8 +2582,10 @@ function bindEvents() {
   $("quantRecommendations").addEventListener("click", (event) => {
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
+    dialogReturnFocus = target;
     selectedModelKey = target.dataset.modelKey;
     render();
+    $("modelDetail")?.focus();
   });
 
   document.querySelectorAll("[data-app-mode]").forEach((button) => {
@@ -2567,8 +2661,10 @@ function bindEvents() {
 
     const target = event.target.closest("[data-model-key]");
     if (!target) return;
+    dialogReturnFocus = target;
     selectedModelKey = target.dataset.modelKey;
     render();
+    $("modelDetail")?.focus();
   });
 
   $("modelResults").addEventListener("change", (event) => {
@@ -2584,8 +2680,10 @@ function bindEvents() {
       return;
     }
     if (event.target.closest("[data-open-compare]")) {
+      dialogReturnFocus = event.target.closest("[data-open-compare]");
       compareModalOpen = true;
       render();
+      $("compareModal")?.querySelector("[data-close-compare]")?.focus();
       return;
     }
     if (event.target.closest("[data-clear-compare]")) {
@@ -4912,6 +5010,10 @@ function copyTextToClipboard(text, button) {
     setTimeout(() => {
       button.textContent = original;
     }, 1500);
+    window.AIHardwareUI?.announce(
+      uiLanguage === "en" ? "Copied to the clipboard." : "클립보드에 복사했습니다.",
+      "success",
+    );
   };
 
   if (navigator.clipboard?.writeText) {
@@ -6782,7 +6884,13 @@ function estimateAnyModelForHardware(model, hardware) {
   if (model.type === "reranker") return estimateRerankerModel(model, hardware, workload);
   if (model.type === "audio-stt" || model.type === "audio-tts") return estimateAudioModel(model, hardware);
   if (isVisionModel(model)) return estimateOcrModel(model, hardware, workload);
-  return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, hardware));
+  return normalizeGenerativeEstimate(estimateModel(model, $("quantization").value, {
+    ...hardware,
+    context: workload.context,
+    concurrency: workload.concurrency,
+    outputTokens: workload.outputTokens,
+    kvPrecision: workload.kvPrecision,
+  }));
 }
 
 function getAdvisorWorkloadSettings(model, hardware) {
@@ -6824,9 +6932,14 @@ function getAdvisorWorkloadSettings(model, hardware) {
       optimization: $("mediaOptimization")?.value || "standard",
     };
   }
+  const modelContextLimit = Math.max(1024, Number(model.context || 0) * 1024 || hardware.context);
   return {
     type: "generative",
-    context: hardware.context,
+    // The Advisor starts from a model, so a context value inherited from a
+    // previously selected GPU must not exceed that model's own context limit.
+    // Otherwise even a tiny model can incorrectly make every GPU look
+    // incompatible before the user has opened advanced settings.
+    context: Math.min(hardware.context, modelContextLimit),
     concurrency: hardware.concurrency,
     outputTokens: hardware.outputTokens,
     kvPrecision: hardware.kvPrecision,
@@ -6895,6 +7008,18 @@ function renderGpuAdvisor() {
       const hardware = buildHardwareForPreset(preset);
       const estimate = estimateAnyModelForHardware(model, hardware);
       const market = gpuMarketReference(preset);
+      const koreanMarket = KOREAN_GPU_MARKET.find((row) => row.gpuId === preset.id);
+      const priceState = window.AIHardwareUI?.priceState({
+        marketPrice: koreanMarket?.lowestKrw || 0,
+        launchPrice: market.priceKind === "launch-reference" ? market.priceUsd : 0,
+        updatedAt: koreanMarket?.updatedAt || "",
+      }) || {
+        kind: market.priceKind === "launch-reference" ? "launch" : "quote",
+        label: market.priceKind === "launch-reference"
+          ? (en ? "Launch-price reference" : "출시 가격 참고")
+          : (en ? "No public Korean market price" : "공개 국내 시세 없음"),
+        note: en ? "Enter a supplier quote or your own price" : "공급사 견적 또는 직접 입력으로 계산 가능",
+      };
       const monthlyEnergy = market.powerW / 1000 * hours * rate;
       const fitsBudget = !market.priceUsd || market.priceUsd <= budget;
       const runnable = estimate && GRADE_META[estimate.grade]?.score >= GRADE_META.B.score;
@@ -6902,7 +7027,7 @@ function renderGpuAdvisor() {
       const valueScore = runnable ? speed / Math.max(200, market.priceUsd || budget || 1000) : 0;
       const fitsVendor = vendor === "all" || preset.vendor === vendor;
       const fitsFormFactor = formFactor === "all" || preset.formFactor === formFactor;
-      return { preset, estimate, market, monthlyEnergy, fitsBudget, fitsVendor, fitsFormFactor, runnable, speed, valueScore };
+      return { preset, estimate, market, koreanMarket, priceState, monthlyEnergy, fitsBudget, fitsVendor, fitsFormFactor, runnable, speed, valueScore };
     });
   const strictCandidates = evaluatedCandidates
     .filter((item) => item.runnable && item.fitsBudget && item.fitsVendor && item.fitsFormFactor)
@@ -6933,7 +7058,11 @@ function renderGpuAdvisor() {
           ].filter(Boolean).map((text) => `<span>${escapeHtml(text)}</span>`).join("")}</p>` : ""}
           <dl>
             <div><dt>${en ? "Estimated speed" : "예상 속도"}</dt><dd>${escapeHtml(formatThroughput(item.speed, item.estimate?.unitLabel || "tok/s"))}</dd></div>
-            <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd>$${item.market.priceUsd.toLocaleString("en-US")} · ${item.market.priceKind === "calculated-reference" ? (en ? "calculated" : "계산 참고") : (en ? "launch/MSRP" : "출시가·MSRP")}</dd></div>
+            <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd class="price-state is-${escapeAttr(item.priceState.kind)}">${item.koreanMarket?.lowestKrw
+              ? `${Math.round(item.koreanMarket.lowestKrw).toLocaleString(en ? "en-US" : "ko-KR")}${en ? " KRW" : "원"}`
+              : item.priceState.kind === "launch"
+                ? `$${item.market.priceUsd.toLocaleString("en-US")}`
+                : item.priceState.label}<small>${escapeHtml(item.priceState.label)}${item.priceState.note ? ` · ${escapeHtml(item.priceState.note)}` : ""}</small></dd></div>
             <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>$${item.monthlyEnergy.toFixed(2)}</dd></div>
             <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${escapeHtml(gpuEvidenceLabel(item.preset, en))}</dd></div>
             <div><dt>${en ? "vs current GPU" : "현재 GPU 대비"}</dt><dd>${currentSpeed ? `${(item.speed / currentSpeed).toFixed(2)}×` : "—"}</dd></div>
@@ -6943,7 +7072,7 @@ function renderGpuAdvisor() {
         </article>
       `).join("")}
     </div>
-    <p class="advisor-disclaimer">${en ? "Prices are launch-price references, not live quotes. Energy cost uses the selected hours and rate." : "가격은 실시간 시세가 아닌 출시가 참고값이며, 전력비는 입력한 시간과 요금으로 계산합니다."}</p>
+    <p class="advisor-disclaimer">${en ? "A dated Korean market price is shown when available. Otherwise the UI clearly separates launch-price references from supplier-quote-required items. Energy cost uses the selected hours and rate." : "기준일이 있는 국내 시세만 시세로 표시하며, 나머지는 출시 가격 참고와 공급사 견적 필요 상태를 구분합니다. 전력비는 입력한 시간과 요금으로 계산합니다."}</p>
   ` : `<p class="empty-state">${en ? "No GPU with known specifications fits these conditions. Raise the budget or change a filter." : "현재 조건에 맞는 GPU가 없습니다. 예산을 높이거나 필터를 바꿔보세요."}</p>`;
   panel.querySelector("[data-advisor-relax]")?.addEventListener("click", () => {
     $("advisorVendor").value = "all";
@@ -7378,6 +7507,7 @@ function renderSimpleMode(hardware, allEstimates) {
       <div class="empty-state">
         <strong>현재 조건에 맞는 모델이 없습니다.</strong>
         <span>GPU 설정이나 우선순위를 바꿔 다시 확인해 보세요.</span>
+        <button type="button" class="primary-button" data-reset-simple-filters>${uiLanguage === "en" ? "Reset recommendation filters" : "추천 조건 초기화"}</button>
       </div>
     `;
     return;
@@ -7393,6 +7523,15 @@ function renderSimpleMode(hardware, allEstimates) {
 
   target.innerHTML = picks.map((estimate, index) => {
     const confidence = getEstimateConfidence(estimate.model, estimate, hardware);
+    const evidence = window.AIHardwareUI?.evidenceState({
+      kind: confidence.sampleCount ? "user" : confidence.matchedRow ? "external" : "estimate",
+      sampleCount: confidence.sampleCount || (confidence.matchedRow ? 1 : 0),
+      reason: confidence.reason,
+    }) || {
+      label: uiLanguage === "en" ? "Calculated estimate" : "계산 추정",
+      errorPct: Math.round((confidence.spread || .4) * 100),
+      reason: confidence.reason,
+    };
     const meta = GRADE_META[estimate.grade];
     const licensePolicy = getLicensePolicy(estimate.model);
     const reasons = buildRecommendationReasons(estimate).slice(0, 3).map(localizeRecommendationReason);
@@ -7414,7 +7553,7 @@ function renderSimpleMode(hardware, allEstimates) {
             <span>${escapeHtml(estimate.model.maker)} · ${escapeHtml(licenseCommercialLabel(licensePolicy))}</span>
             <span>VRAM ${formatGb(estimate.requiredGb)}</span>
             <span>${escapeHtml(formatSpeedRange(estimate, confidence))}</span>
-            <span>${uiLanguage === "en" ? `Estimated · ${confidence.label}` : `추정 · ${confidence.label}`}</span>
+            <span class="evidence-badge is-${escapeAttr(evidence.kind || "estimate")}" title="${escapeAttr(evidence.reason)}">${escapeHtml(evidence.label)} · ${uiLanguage === "en" ? "expected error" : "예상 오차"} ±${Math.round((confidence.spread || evidence.errorPct / 100 || .4) * 100)}%</span>
           </span>
           ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
         </button>
@@ -9494,9 +9633,26 @@ function formatBenchmarkScaleRelease(row) {
   return parts.length ? parts.join(" · ") : "-";
 }
 
+function restoreDialogFocus(target) {
+  window.requestAnimationFrame?.(() => {
+    if (target?.isConnected) {
+      target.focus();
+      return;
+    }
+    const modelKeyValue = target?.dataset?.modelKey;
+    const replacement = modelKeyValue
+      ? [...document.querySelectorAll("[data-model-key]")].find((node) => node.dataset.modelKey === modelKeyValue)
+      : document.querySelector("[data-open-compare]");
+    replacement?.focus();
+  });
+}
+
 function closeModelDetail() {
   selectedModelKey = "";
   render();
+  const target = dialogReturnFocus;
+  dialogReturnFocus = null;
+  restoreDialogFocus(target);
 }
 
 function toggleCompareModel(key) {
@@ -9514,6 +9670,9 @@ function toggleCompareModel(key) {
 function closeCompareModal() {
   compareModalOpen = false;
   render();
+  const target = dialogReturnFocus;
+  dialogReturnFocus = null;
+  restoreDialogFocus(target);
 }
 
 function renderViewToggle() {
