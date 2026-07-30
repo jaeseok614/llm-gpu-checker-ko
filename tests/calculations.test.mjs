@@ -1216,6 +1216,16 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
   });
 
+  test("opens shareable infrastructure scenarios with a custom user count", () => {
+    const platform = loadApp("https://example.com/?mode=infra&lang=en&studio=consulting&scenario=avatar-chat&users=75", {}, { platformV2: true });
+    assert.equal(platform.document.querySelector("#decisionStudio").hidden, false);
+    assert.equal(platform.eval("studioState.siScenario"), "avatar-chat");
+    assert.equal(platform.eval("studioState.siTotalUsers"), 75);
+    assert.equal(platform.eval("studioState.siConcurrency"), 12);
+    assert.equal(platform.eval("studioState.siInputMode"), "simple");
+    assert.match(platform.document.querySelector(".si-simple-wizard").textContent, /AI avatar chat/);
+  });
+
   test("supports v4.4-v4.8 validation, commercial pricing, topology, approval, and option comparison", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko&studio=consulting", {}, { platformV2: true });
     platform.document.querySelector('[data-si-input-mode="expert"]').click();

@@ -15,13 +15,21 @@
 
 <p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the app</strong></a>
-  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en&amp;studio=consulting"><strong>AI infrastructure sizing</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&amp;lang=en&amp;studio=consulting"><strong>AI infrastructure sizing</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=en">AI Stack Placement</a>
   · <a href="./README.md">한국어</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">Request a GPU</a>
 </p>
 
-![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
+![AI Hardware Fit v4.8 demo](./docs/demo-v4.8.gif)
+
+## Open a sample scenario
+
+| Scenario | Start |
+| --- | --- |
+| Internal document RAG · 30 users | [Open quick sizing](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=en&studio=consulting&scenario=internal-rag&users=30) |
+| Customer support chatbot · 100 users | [Open quick sizing](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=en&studio=consulting&scenario=ai-chatbot&users=100) |
+| Real-time AI avatar chat · 50 users | [Open quick sizing](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=en&studio=consulting&scenario=avatar-chat&users=50) |
 
 ## In 10 seconds
 
@@ -134,9 +142,11 @@ npm run check
 - [v2.0 decision platform](./docs/v2.0-decision-platform.md)
 - [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
 - [v3.0 purchase decision studio methodology](./docs/v3.0-decision-studio.md)
+- [v4.8 release notes](./docs/releases/v4.8.0.md)
+- [v4.8 launch copy and two-week metrics sheet](./docs/promotion/v4.8-launch-kit.md)
+- [Editable AI infrastructure estimate example](./docs/examples/si-sizing-example.xlsx)
+- [AI infrastructure proposal PDF example](./docs/examples/ai-infra-proposal-example.pdf)
 - [Contributing](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 
 Repository code is distributed under the [MIT License](./LICENSE); each listed AI model retains its own license.
-- [Editable AI infrastructure estimate example](./docs/examples/si-sizing-example.xlsx)
-- [AI infrastructure proposal PDF example](./docs/examples/ai-infra-proposal-example.pdf)

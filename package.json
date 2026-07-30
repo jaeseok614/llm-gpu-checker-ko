@@ -2,7 +2,7 @@
   "name": "ai-hardware-fit",
   "version": "4.8.0",
   "private": false,
-  "description": "Bilingual static web app for estimating LLM, retrieval, vision, image, video, STT, and TTS workloads on GPUs.",
+  "description": "Open-source AI infrastructure sizing assistant for LLM, RAG, VLM, media, voice, and avatar workloads with SLA, BOM, TCO, and proposal exports.",
   "type": "module",
   "bin": {
     "ai-hardware-fit": "./scripts/benchmark-cli.mjs"
@@ -34,6 +34,10 @@
     "video-generation",
     "speech-to-text",
     "text-to-speech",
+    "ai-infrastructure",
+    "capacity-planning",
+    "bill-of-materials",
+    "tco",
     "korean",
     "hardware"
   ],

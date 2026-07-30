@@ -5,13 +5,13 @@
 ## Description (About)
 
 ```
-AI hardware fit calculator for LLM, embedding, reranker, OCR and VLM workloads — VRAM, throughput, licensing and multi-GPU planning
+AI infrastructure sizing assistant for LLM, RAG, VLM, voice and avatar workloads — GPU sizing, SLA, BOM, TCO and proposal exports
 ```
 
 한국어 버전이 필요하면:
 
 ```
-내 GPU에서 LLM·임베딩·리랭커·OCR/VLM을 얼마나 돌릴 수 있는지 계산 — VRAM, 처리량, 멀티 GPU 배치 계획
+LLM·RAG·VLM·음성·아바타 요구를 GPU 서버 구성, SLA, BOM, TCO와 견적 3안으로 변환하는 AI 인프라 산정 도구
 ```
 
 ## Website
@@ -26,9 +26,6 @@ https://jaeseok614.github.io/llm-gpu-checker-ko/
 
 ```
 rag
-embedding
-reranker
-ocr
 vlm
 vision-language-model
 ai-inference
@@ -38,11 +35,20 @@ llm
 gpu
 vram
 local-llm
+ai-infrastructure
+capacity-planning
+sizing-calculator
+bill-of-materials
+tco
+on-premise-ai
+vllm
+ollama
+korean
 ```
 
 ## 적용 상태
 
-- 2026-07-24: 권장 Description과 Topics를 GitHub 저장소에 적용
+- 2026-07-30: v4.8 포지셔닝에 맞춰 Description과 Topics 권장값 갱신
 - Issues 기능: 활성화
 - Issue 생성 정책: `ALL`
 - 저장소 임시 상호작용 제한: 없음

@@ -1465,6 +1465,38 @@ function restoreStudioState() {
       if (parsed && typeof parsed === "object") studioState = { ...studioState, ...parsed };
     } catch {}
   }
+  const scenarioId = params.get("scenario");
+  const scenario = SI_SCENARIOS[scenarioId];
+  if (scenario) {
+    studioState = {
+      ...studioState,
+      tab: "consulting",
+      siInputMode: "simple",
+      siScenario: scenarioId,
+      siProjectName: uiLanguage === "en" ? scenario.en : scenario.ko,
+      siPurpose: uiLanguage === "en" ? scenario.purposeEn : scenario.purpose,
+      siTotalUsers: scenario.users,
+      siUserPreset: scenario.users,
+      siConcurrency: scenario.concurrency,
+      siInputTokens: scenario.input,
+      siOutputTokens: scenario.output,
+      siTargetSeconds: scenario.seconds,
+      siAvailability: scenario.availability,
+      siGrowthPct: scenario.growth,
+      siVectorDataGb: scenario.vector,
+      siLogGbDay: scenario.logs,
+      siRetentionDays: scenario.retention,
+      siSecurity: scenario.security,
+      siServiceType: scenario.serviceType || "rag",
+    };
+  }
+  const requestedUsers = Number(params.get("users"));
+  if (scenario && Number.isFinite(requestedUsers) && requestedUsers >= 1) {
+    const users = Math.min(10000, Math.round(requestedUsers));
+    studioState.siTotalUsers = users;
+    studioState.siUserPreset = users;
+    studioState.siConcurrency = Math.max(1, Math.ceil(scenario.concurrency * users / scenario.users));
+  }
   if (params.get("studio")) studioState.tab = params.get("studio");
   if (!["consulting", "recommend", "market", "custom", "parts", "runtime", "community"].includes(studioState.tab)) studioState.tab = "consulting";
 }

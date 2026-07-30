@@ -2,7 +2,7 @@
 
 ## Bio
 
-`Building open-source AI infrastructure sizing tools for LLM, RAG, vision and GPU pre-sales. Seoul, Korea.`
+`Building open-source AI infrastructure sizing tools for LLM, RAG, vision and capacity planning. Seoul, Korea.`
 
 ## 프로필 README 첫 문단
 
@@ -14,4 +14,4 @@
 
 ## 공개 글 핵심 문장
 
-“GPU 추천기”보다 **“모델과 트래픽 요구를 경제형·권장형·확장형 인프라 3안으로 바꾸는 오픈소스 Pre-sales sizing assistant”**로 설명합니다. 계산 정확도를 과장하지 않고, 대표 워크로드 PoC 후 최종 확정한다는 문구를 함께 둡니다.
+“GPU 추천기”보다 **“모델과 트래픽 요구를 경제형·권장형·확장형 인프라 견적 3안으로 바꾸는 오픈소스 sizing assistant”**로 설명합니다. 계산 정확도를 과장하지 않고, 대표 워크로드 PoC 후 최종 확정한다는 문구를 함께 둡니다.

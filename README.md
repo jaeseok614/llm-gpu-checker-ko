@@ -15,13 +15,21 @@
 
 <p align="center">
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 바로 사용</strong></a>
-  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko&amp;studio=consulting"><strong>AI 인프라 견적</strong></a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&amp;lang=ko&amp;studio=consulting"><strong>AI 인프라 견적</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=ko">AI 스택 배치</a>
   · <a href="./README.en.md">English</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">GPU 추가 요청</a>
 </p>
 
-![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
+![AI Hardware Fit v4.8 데모](./docs/demo-v4.8.gif)
+
+## 대표 사례 바로 열기
+
+| 사례 | 바로 시작 |
+| --- | --- |
+| 사내 문서 RAG · 사용자 30명 | [간편 견적 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=ko&studio=consulting&scenario=internal-rag&users=30) |
+| 고객 상담 AI 챗봇 · 사용자 100명 | [간편 견적 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=ko&studio=consulting&scenario=ai-chatbot&users=100) |
+| 실시간 AI 아바타 채팅 · 사용자 50명 | [간편 견적 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=ko&studio=consulting&scenario=avatar-chat&users=50) |
 
 ## 10초 요약
 
@@ -137,6 +145,8 @@ npm run check
 - [v2.0 의사결정 플랫폼](./docs/v2.0-decision-platform.md)
 - [v2.2 사용자 빌드 계산기](./docs/v2.2-build-calculator.md)
 - [v3.0 구매 결정 스튜디오 계산 기준](./docs/v3.0-decision-studio.md)
+- [v4.8 릴리스 노트](./docs/releases/v4.8.0.md)
+- [v4.8 홍보 문안·2주 측정표](./docs/promotion/v4.8-launch-kit.md)
 - [기여 방법](./CONTRIBUTING.md)
 - [변경 이력](./CHANGELOG.md)
 

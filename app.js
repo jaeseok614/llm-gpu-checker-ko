@@ -9805,7 +9805,7 @@ function syncUrlState() {
     params.set("pgModels", JSON.stringify([...placementSelectedKeys]));
     params.set("pgConfig", JSON.stringify([...placementSelectedKeys].map((key) => [key, getPlacementModelConfig(key)])));
   }
-  ["hub", "detail", "build"].forEach((key) => {
+  ["hub", "detail", "build", "studio", "studioState", "scenario", "users"].forEach((key) => {
     if (existingParams.get(key)) params.set(key, existingParams.get(key));
   });
 

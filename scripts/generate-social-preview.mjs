@@ -29,23 +29,26 @@ function main() {
   strokeRect(104, 98, 92, 92, colors.blue, 6);
   rect(130, 124, 40, 40, colors.greenSoft);
   strokeRect(130, 124, 40, 40, colors.green, 6);
-  text(230, 112, "AI HARDWARE FIT", 4, colors.blue);
-  text(230, 166, "GPU MODEL FIT", 8, colors.ink);
-  text(230, 252, "LLM EMBEDDING RERANKER OCR VLM", 4, colors.muted);
-  infoCard(104, 336, "90 GPUS", "RTX GB10 H100", colors.greenSoft, colors.green);
-  infoCard(376, 336, "286 MODELS", "147 LLMS", colors.blueSoft, colors.blue);
-  infoCard(648, 336, "RAG FIT", "BATCH TOKENS", colors.violetSoft, colors.violet);
-  infoCard(920, 336, "OCR FIT", "DPI PAGES", colors.yellowSoft, colors.yellow);
+  text(230, 104, "AI HARDWARE FIT", 4, colors.blue);
+  text(230, 156, "AI INFRA SIZING", 7, colors.ink);
+  text(230, 230, "LLM RAG VLM VOICE AVATAR", 4, colors.muted);
+  rect(1000, 104, 150, 48, colors.blue);
+  text(1023, 119, "V4.8", 4, colors.panel);
+  infoCard(104, 326, "3 PLANS", "COST SLA CAPACITY", colors.greenSoft, colors.green);
+  infoCard(376, 326, "BOM CHECK", "CPU RAM POWER", colors.blueSoft, colors.blue);
+  infoCard(648, 326, "TOPOLOGY", "RACK NET COOLING", colors.violetSoft, colors.violet);
+  infoCard(920, 326, "EXPORT", "EXCEL PDF JSON", colors.yellowSoft, colors.yellow);
   rect(104, 496, 1058, 48, colors.ink);
-  text(130, 511, "JAESEOK614.GITHUB.IO/LLM-GPU-CHECKER-KO", 3, colors.panel);
+  text(130, 511, "SIZING  SLA  BOM  TCO  POC", 3, colors.panel);
 
   writePng("docs/social-preview.png");
+  writePng("docs/social-preview-v4.8.png");
 }
 
 function infoCard(x, y, title, body, fillColor, titleColor) {
   rect(x, y, 242, 116, fillColor);
   text(x + 26, y + 32, title, 4, titleColor);
-  text(x + 26, y + 78, body, 3, colors.ink);
+  text(x + 26, y + 78, body, 2, colors.ink);
 }
 
 function fill(color) {
