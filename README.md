@@ -21,7 +21,7 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">GPU 추가 요청</a>
 </p>
 
-![AI Hardware Fit v4.8 데모](./docs/demo-v4.8.gif)
+![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
 
 ## 대표 사례 바로 열기
 

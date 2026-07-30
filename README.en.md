@@ -21,7 +21,7 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">Request a GPU</a>
 </p>
 
-![AI Hardware Fit v4.8 demo](./docs/demo-v4.8.gif)
+![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
 
 ## Open a sample scenario
 
