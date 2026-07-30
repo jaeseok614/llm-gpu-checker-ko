@@ -133,6 +133,7 @@ let studioState = {
   siBenchmarkSamples: 0,
   siBenchmarkOutliers: 0,
   siInputMode: "simple",
+  siBaselineProfile: "production",
   siQualityPreset: "balanced",
   siUserPreset: 100,
   siBudgetKrw: 0,
@@ -563,6 +564,124 @@ const SI_SCENARIOS = {
   },
 };
 
+const SI_BASELINE_PROFILES = {
+  pilot: {
+    ko: "소규모 체험", en: "Small pilot",
+    noteKo: "10명 안팎이 기능을 확인하는 단계", noteEn: "A functional trial for about 10 people",
+    userScale: 0.1, concurrencyScale: 0.2, maxUsers: 10, hours: 8, availability: "single", growth: 20, devProd: false,
+  },
+  team: {
+    ko: "팀 운영", en: "Team use",
+    noteKo: "한 부서가 실제 업무에 사용하는 단계", noteEn: "A department using the service in daily work",
+    userScale: 0.5, concurrencyScale: 0.5, maxUsers: 50, hours: 12, availability: "single", growth: 25, devProd: true,
+  },
+  production: {
+    ko: "운영 서비스", en: "Production",
+    noteKo: "외부 또는 전사 서비스의 시작 기준", noteEn: "A starting point for company-wide or external service",
+    userScale: 1, concurrencyScale: 1, maxUsers: Infinity, hours: 24, availability: "", growth: 0, devProd: true,
+  },
+};
+
+const SI_FIELD_GUIDES = {
+  siCompanyName: { ko: "견적서와 제안서에 표시할 공급 또는 제안 회사명입니다.", en: "The supplier or proposal company shown in exports.", baseKo: "개인 검토라면 비워도 됩니다.", baseEn: "Optional for a personal estimate." },
+  siCustomerName: { ko: "인프라를 사용할 고객사 또는 조직명입니다.", en: "The customer or organization that will use the infrastructure.", baseKo: "내부 검토라면 비워도 됩니다.", baseEn: "Optional for an internal review." },
+  siProjectName: { ko: "저장·공유·견적 버전을 구분할 프로젝트 이름입니다.", en: "A project name used to identify saved and shared estimate versions.", baseKo: "서비스명 + 구축 목적", baseEn: "Service name + purpose" },
+  siPurpose: { ko: "AI를 도입해 해결하려는 업무를 짧게 적습니다.", en: "A short description of the business task the AI should solve.", baseKo: "예: 사내 문서 검색·질의응답", baseEn: "Example: internal document search and Q&A" },
+  siIndustry: { ko: "보안·규제·운영 조건을 판단할 고객 업종입니다.", en: "The customer industry used to assess security and operating constraints.", baseKo: "일반 기업이면 ‘제조·일반기업’", baseEn: "Use a general-industry label when no special regulation applies." },
+  siContact: { ko: "요구사항과 견적 변경을 확인할 담당자 또는 팀입니다.", en: "The person or team responsible for requirements and estimate changes.", baseKo: "이름 또는 조직명", baseEn: "Name or team" },
+  siServiceType: { ko: "구축할 AI 서비스 종류이며 필요한 모델과 지연시간 기준에 영향을 줍니다.", en: "The AI service type; it affects model selection and latency targets.", baseKo: "문서 질의응답은 RAG / Chatbot", baseEn: "Use RAG / Chatbot for document Q&A." },
+  siExportAllowed: { ko: "업무 데이터나 요청 내용을 외부 클라우드로 보낼 수 있는지 정합니다.", en: "Whether workload data and prompts may leave the organization for a cloud service.", baseKo: "모르면 ‘불가’로 시작", baseEn: "Start with Not allowed when unsure." },
+  siModel: { ko: "서비스에서 주로 실행할 AI 모델입니다. 모델 크기가 GPU 메모리와 비용을 크게 좌우합니다.", en: "The primary AI model. Its size strongly affects GPU memory and cost.", baseKo: "간편 견적의 자동 선택 모델", baseEn: "Keep the model selected by the easy estimate." },
+  siDeployment: { ko: "장비를 직접 보유할지, 클라우드를 사용할지 정합니다.", en: "Whether to own the hardware, use cloud resources, or compare both.", baseKo: "보안 데이터는 온프레미스, 변동 사용량은 비교", baseEn: "On-premises for restricted data; compare both for variable demand." },
+  siSecurity: { ko: "인터넷·외부망 연결 허용 범위를 나타냅니다.", en: "The permitted level of internet and external-network connectivity.", baseKo: "사내 문서는 내부망", baseEn: "Restricted network for internal documents." },
+  siTotalUsers: { ko: "서비스를 사용할 전체 인원입니다. 동시에 접속하는 인원과는 다릅니다.", en: "Everyone expected to use the service; this differs from simultaneous requests.", baseKo: "부서 50명, 전사 시작 100명", baseEn: "50 for a department, 100 for an initial company-wide rollout" },
+  siConcurrency: { ko: "같은 순간에 AI 답변을 기다리는 사람 또는 요청 수입니다.", en: "People or requests waiting for an AI response at the same moment.", baseKo: "전체 사용자의 10~15%", baseEn: "Start with 10–15% of total users." },
+  siQps: { ko: "QPS는 초당 시작되는 요청 수입니다. 동시 요청 수와 응답시간을 함께 반영한 트래픽 값입니다.", en: "QPS means queries per second: how many new requests begin each second.", baseKo: "팀 서비스 0.5~1, 운영 서비스 1~2", baseEn: "0.5–1 for team use, 1–2 for an initial production service" },
+  siInputTokens: { ko: "한 요청에서 모델이 평균적으로 읽는 대화·문서 분량입니다.", en: "The average amount of prompt, conversation, or document text read per request.", baseKo: "일반 대화 2,048, 문서 RAG 4,096", baseEn: "2,048 for chat, 4,096 for document RAG" },
+  siMaxInputTokens: { ko: "가장 긴 요청에서 모델이 읽어야 하는 최대 분량입니다. 평균값보다 큰 예외 요청을 대비합니다.", en: "The longest prompt or document that must be processed in one request.", baseKo: "평균 입력의 4배, 보통 16,384", baseEn: "About 4× the average input; commonly 16,384" },
+  siOutputTokens: { ko: "한 번의 답변에서 생성하는 평균 토큰 수입니다.", en: "The average number of tokens generated in one response.", baseKo: "짧은 답변 250, 일반 답변 500", baseEn: "250 for short answers, 500 for general responses" },
+  siTtftP95: { ko: "요청 100건 중 95건에서 답변 첫 글자가 나오기까지 허용할 시간입니다.", en: "The first-token target met by 95 out of 100 requests.", baseKo: "챗봇 2~3초, 배치 업무 5초", baseEn: "2–3 seconds for chat, 5 seconds for batch work" },
+  siTargetSeconds: { ko: "평균적인 답변 하나를 끝까지 생성하는 목표 시간입니다.", en: "The target time to finish generating an average response.", baseKo: "일반 챗봇 6~8초", baseEn: "6–8 seconds for a general chatbot" },
+  siLatencyP95: { ko: "큐 대기부터 답변 완료까지 전체 시간이 이 값 안에 들어오는 요청의 비율을 95%로 잡습니다.", en: "The end-to-end time, including queueing, met by 95% of requests.", baseKo: "목표 응답시간의 약 1.5배", baseEn: "About 1.5× the target response time" },
+  siOperatingHours: { ko: "하루 중 시스템을 실제 서비스 상태로 운영하는 시간입니다.", en: "Hours per day that the system is expected to remain in service.", baseKo: "사내 업무 8~12시간, 외부 서비스 24시간", baseEn: "8–12 hours for internal work, 24 hours for external service" },
+  siAvailability: { ko: "장비 한 대가 멈춰도 서비스를 계속할지 정합니다. HA는 이중화, N+1은 필요한 수량에 예비 1대를 더합니다.", en: "Whether service continues after a failure. HA duplicates capacity; N+1 adds one spare.", baseKo: "체험은 단일, 운영 서비스는 HA", baseEn: "Single for a pilot, HA for production" },
+  siGrowthPct: { ko: "향후 사용자·트래픽 증가를 위해 미리 확보할 용량입니다.", en: "Capacity reserved for future user and traffic growth.", baseKo: "초기 운영 20~30%", baseEn: "20–30% for an initial production service" },
+  siVectorDataGb: { ko: "임베딩된 문서와 벡터 인덱스가 차지할 예상 저장 공간입니다.", en: "Expected storage for embedded documents and vector indexes.", baseKo: "소규모 50GB, 부서 RAG 500GB", baseEn: "50 GB for a pilot, 500 GB for departmental RAG" },
+  siLogGbDay: { ko: "요청·응답·감사·모니터링 로그가 하루에 늘어나는 양입니다.", en: "Daily growth of request, response, audit, and monitoring logs.", baseKo: "팀 서비스 2~10GB/일", baseEn: "2–10 GB/day for a team service" },
+  siRetentionDays: { ko: "로그와 운영 기록을 보관할 기간입니다.", en: "How long logs and operating records are retained.", baseKo: "일반 90일, 규제·감사 180~365일", baseEn: "90 days normally; 180–365 for audit or regulation" },
+  siDevProd: { ko: "개발·검증 환경과 실제 운영 환경의 장비를 분리할지 정합니다.", en: "Whether development and validation resources are separated from production.", baseKo: "체험은 해제, 실제 운영은 선택", baseEn: "Off for a pilot, on for production" },
+  siPcieGen: { ko: "CPU와 GPU·스토리지 사이의 연결 규격입니다. 최신 GPU의 대역폭과 확장성에 영향을 줍니다.", en: "The connection generation between CPU, GPU, and storage; it affects bandwidth and expansion.", baseKo: "기존 장비 Gen 4, 신규 서버 Gen 5", baseEn: "Gen 4 for existing systems, Gen 5 for a new server" },
+  siNetworkFabric: { ko: "서버와 GPU 노드 사이의 고속 통신 방식입니다.", en: "The high-speed interconnect used between servers and GPU nodes.", baseKo: "단일 서버·일반 RAG는 Ethernet", baseEn: "Ethernet for a single server or general RAG" },
+  siBackup: { ko: "모델 설정·벡터DB·운영 데이터를 복구할 백업 주기입니다.", en: "The backup policy for model settings, vector databases, and operating data.", baseKo: "일반 운영은 일 1회", baseEn: "Daily for a general production service" },
+  siMonitoring: { ko: "GPU 상태, 지연시간, 오류와 감사 기록을 관찰하는 수준입니다.", en: "The level of GPU, latency, error, and audit monitoring.", baseKo: "일반 운영은 GPU / latency / error", baseEn: "GPU / latency / error for general production" },
+  siCooling: { ko: "서버 열을 처리하는 방식입니다. 고밀도 GPU 서버는 수랭 검토가 필요할 수 있습니다.", en: "How server heat is removed; dense GPU servers may require liquid-cooling review.", baseKo: "1~4 GPU는 공랭부터 검토", baseEn: "Start with air cooling for 1–4 GPUs." },
+  siUpsMinutes: { ko: "정전 후 안전 종료나 발전기 전환까지 UPS가 버틸 시간입니다.", en: "How long the UPS must sustain the system for shutdown or generator transfer.", baseKo: "일반 서버 15분", baseEn: "15 minutes for a general server" },
+  siElectricityKrw: { ko: "전력비 계산에 사용할 1kWh당 원화 단가입니다.", en: "The KRW price per kWh used for energy-cost calculations.", baseKo: "초기 계산 150원/kWh, 실제 고지서로 교체", baseEn: "Start at KRW 150/kWh, then replace with the actual bill rate." },
+  siMaintenancePct: { ko: "장비 구매가 대비 매년 예상하는 유지보수·지원 비용 비율입니다.", en: "Annual maintenance and support cost as a percentage of purchase price.", baseKo: "초기 계산 8~10%", baseEn: "8–10% for an initial estimate" },
+};
+
+function siBaselineSnapshot(scenario, profileId) {
+  const profile = SI_BASELINE_PROFILES[profileId] || SI_BASELINE_PROFILES.production;
+  const users = Math.max(1, Math.min(profile.maxUsers, Math.round(scenario.users * profile.userScale)));
+  const concurrency = Math.max(1, Math.round(scenario.concurrency * profile.concurrencyScale));
+  const targetSeconds = Math.max(1, scenario.seconds);
+  return {
+    siBaselineProfile: profileId,
+    siTotalUsers: users,
+    siUserPreset: users,
+    siConcurrency: concurrency,
+    siQps: Math.max(0.1, Number((concurrency / Math.max(4, Math.min(12, targetSeconds))).toFixed(2))),
+    siInputTokens: scenario.input,
+    siMaxInputTokens: Math.max(8192, scenario.input * 4),
+    siOutputTokens: scenario.output,
+    siTtftP95: profileId === "pilot" ? 3 : profileId === "team" ? 2.5 : 2,
+    siTargetSeconds: targetSeconds,
+    siLatencyP95: Math.ceil(targetSeconds * 1.5),
+    siOperatingHours: profile.hours,
+    siAvailability: profile.availability || scenario.availability,
+    siGrowthPct: profile.growth || scenario.growth,
+    siVectorDataGb: Math.max(10, Math.round(scenario.vector * profile.userScale)),
+    siLogGbDay: Math.max(1, Math.round(scenario.logs * profile.userScale)),
+    siRetentionDays: profileId === "pilot" ? 30 : profileId === "team" ? 90 : scenario.retention,
+    siDevProd: profile.devProd,
+  };
+}
+
+function renderSiBaselineGuide(scenario) {
+  const en = uiLanguage === "en";
+  return `<section class="si-baseline-guide" aria-labelledby="siBaselineTitle">
+    <div><span class="section-kicker">${en ? "STARTING BASELINE" : "권장 시작 기준"}</span><h3 id="siBaselineTitle">${en ? "Not sure about the numbers? Start with a baseline." : "수치가 어렵다면 기준값부터 적용하세요"}</h3><p>${en ? "These are planning defaults, not guaranteed capacity. Replace them with measured traffic when available." : "아래 값은 견적을 시작하기 위한 가정값이며 성능 보장값이 아닙니다. 실제 트래픽을 알게 되면 교체하세요."}</p></div>
+    <div class="si-baseline-options">${Object.entries(SI_BASELINE_PROFILES).map(([id, profile]) => {
+      const values = siBaselineSnapshot(scenario, id);
+      return `<button type="button" data-si-baseline="${id}" class="${studioState.siBaselineProfile === id ? "is-active" : ""}"><strong>${en ? profile.en : profile.ko}</strong><small>${en ? profile.noteEn : profile.noteKo}</small><span>${values.siTotalUsers}${en ? " users" : "명"} · ${en ? "concurrent" : "동시"} ${values.siConcurrency} · ${values.siQps} QPS · ${values.siAvailability === "single" ? (en ? "single" : "단일") : values.siAvailability.toUpperCase()}</span></button>`;
+    }).join("")}</div>
+  </section>`;
+}
+
+function decorateSiDetailedFields() {
+  const en = uiLanguage === "en";
+  Object.entries(SI_FIELD_GUIDES).forEach(([id, guide]) => {
+    const control = document.getElementById(id);
+    const label = control?.closest("label");
+    const heading = label?.querySelector(":scope > span");
+    if (!control || !label || !heading) return;
+    heading.querySelector(".term-help")?.remove();
+    const help = document.createElement("button");
+    help.type = "button";
+    help.className = "term-help";
+    help.textContent = "?";
+    help.dataset.tooltip = `${en ? guide.en : guide.ko} ${en ? "Starting point:" : "시작 기준:"} ${en ? guide.baseEn : guide.baseKo}`;
+    help.setAttribute("aria-label", `${heading.textContent.trim()} ${en ? "help" : "도움말"}`);
+    heading.append(" ", help);
+    const baseline = document.createElement("small");
+    baseline.className = "si-field-baseline";
+    baseline.id = `${id}Baseline`;
+    baseline.textContent = `${en ? "Starting point" : "시작 기준"}: ${en ? guide.baseEn : guide.baseKo}`;
+    label.append(baseline);
+    control.setAttribute("aria-describedby", baseline.id);
+  });
+}
+
 function siEnterpriseGpus() {
   const ids = ["rtx6000ada-48", "l40s-48", "h100-pcie-80", "rtxpro6000blackwell-96", "h200-141"];
   return ids.map((id) => GPU_PRESETS.find((gpu) => gpu.id === id)).filter(Boolean);
@@ -653,6 +772,7 @@ function applySimpleSizingPreset() {
   studioState.siAvailability = users >= 50 ? "ha" : "single";
   studioState.siGrowthPct = users >= 100 ? 30 : 20;
   studioState.siDevProd = users >= 50;
+  studioState.siBaselineProfile = "";
   if (!(Number(studioState.siBudgetKrw) > 0)) {
     studioState.siSelectedPlan = {
       economy: "economy",
@@ -946,11 +1066,11 @@ function renderSimpleSizingWizard(model, plans) {
     ["quality", en ? "Quality first" : "고품질", en ? "Larger model and more headroom" : "큰 모델과 넉넉한 확장 여유"],
   ];
   return `<section class="si-simple-wizard">
-    <div class="si-wizard-head"><div><span class="section-kicker">${en ? "EASY ESTIMATE" : "간편 견적"}</span><h3>${en ? "Complete the estimate in three steps" : "3단계로 간편 견적을 완성하세요"}</h3><p>${en ? "The model, GPU, CPU, RAM, storage, network, and power are selected automatically." : "모델·GPU·CPU·RAM·스토리지·네트워크·전원을 자동으로 골라드립니다."}</p></div><button type="button" class="ghost-button" data-si-input-mode="expert">${en ? "Open expert settings" : "전문가 설정 열기"}</button></div>
+    <div class="si-wizard-head"><div><span class="section-kicker">${en ? "EASY ESTIMATE" : "간편 견적"}</span><h3>${en ? "Complete the estimate in three steps" : "3단계로 간편 견적을 완성하세요"}</h3><p>${en ? "The model, GPU, CPU, RAM, storage, network, and power are selected automatically." : "모델·GPU·CPU·RAM·스토리지·네트워크·전원을 자동으로 골라드립니다."}</p></div><button type="button" class="ghost-button" data-si-input-mode="expert">${en ? "Open detailed settings" : "상세 설정 열기"}</button></div>
     <div class="si-wizard-step"><strong>1. ${en ? "What are you building?" : "무엇을 만드나요?"}</strong><div class="si-choice-grid">${Object.entries(SI_SCENARIOS).map(([id,row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div></div>
     <div class="si-wizard-step"><strong>2. ${en ? "How many people will use it?" : "몇 명이 사용하나요?"}</strong><div class="si-choice-grid si-user-choice-grid">${[10,50,100,300].map((value) => `<button type="button" data-si-users="${value}" class="${Number(studioState.siUserPreset) === value ? "is-active" : ""}">${value}${en ? " users" : "명"}</button>`).join("")}<label class="si-custom-users"><span>${en ? "Custom" : "직접 입력"}</span><span><input id="siCustomUsers" type="number" min="1" max="100000" step="1" value="${studioState.siUserPreset}" aria-label="${en ? "Custom number of users" : "사용자 수 직접 입력"}">${en ? "users" : "명"}</span></label></div></div>
     <div class="si-wizard-step"><strong>3. ${en ? "Set a budget or quality priority" : "예산 또는 품질 우선순위를 정하세요"}</strong><div class="si-simple-budget"><label><span>${en ? "Maximum hardware budget (KRW, optional)" : "최대 하드웨어 예산 (원, 선택)"}</span><input id="siBudgetKrw" type="number" min="0" step="1000000" value="${studioState.siBudgetKrw}" placeholder="${en ? "0 = no budget limit" : "0 = 예산 제한 없음"}"></label><div class="si-choice-grid">${quality.map(([id,title,note]) => `<button type="button" data-si-quality="${id}" class="${studioState.siQualityPreset === id ? "is-active" : ""}"><b>${title}</b><small>${note}</small></button>`).join("")}</div></div></div>
-    <div class="si-auto-result"><div><span>${en ? "Automatically selected model and option" : "자동 선택 모델·구성안"}</span><strong>${platformEscape(model.name)} · ${planLabel(recommended, en)}</strong><small>${budget > 0 && !budgetMatches.length ? (en ? "No option fits the budget exactly; showing the lowest-cost option." : "예산 안에 들어오는 구성이 없어 최저비용안을 표시합니다.") : (en ? "You can change every assumption in expert settings." : "전문가 설정에서 모든 가정을 수정할 수 있습니다.")}</small></div><div class="si-auto-parts"><span><b>GPU</b>${platformEscape(shortGpuName(recommended.gpu.name))} × ${recommended.gpuCount}</span><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server / power" : "서버·전원"}</b>${parts.server} · ${parts.power}</span></div><p>${en ? "Why: the selected model memory, expected concurrency, failover, growth reserve, and optional budget determine the parts automatically." : "선정 이유: 모델 메모리, 예상 동시 사용자, 장애 대비, 성장 여유와 선택 예산을 기준으로 부품을 자동 선택했습니다."}</p></div>
+    <div class="si-auto-result"><div><span>${en ? "Automatically selected model and option" : "자동 선택 모델·구성안"}</span><strong>${platformEscape(model.name)} · ${planLabel(recommended, en)}</strong><small>${budget > 0 && !budgetMatches.length ? (en ? "No option fits the budget exactly; showing the lowest-cost option." : "예산 안에 들어오는 구성이 없어 최저비용안을 표시합니다.") : (en ? "You can change every assumption in detailed settings." : "상세 설정에서 모든 가정을 수정할 수 있습니다.")}</small></div><div class="si-auto-parts"><span><b>GPU</b>${platformEscape(shortGpuName(recommended.gpu.name))} × ${recommended.gpuCount}</span><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server / power" : "서버·전원"}</b>${parts.server} · ${parts.power}</span></div><p>${en ? "Why: the selected model memory, expected concurrency, failover, growth reserve, and optional budget determine the parts automatically." : "선정 이유: 모델 메모리, 예상 동시 사용자, 장애 대비, 성장 여유와 선택 예산을 기준으로 부품을 자동 선택했습니다."}</p></div>
   </section>`;
 }
 
@@ -1082,21 +1202,25 @@ function renderStudioConsulting() {
   const activeScenario = SI_SCENARIOS[studioState.siScenario] || SI_SCENARIOS["internal-rag"];
   const projectValue = en && studioState.siProjectName.startsWith(activeScenario.ko) ? activeScenario.en : studioState.siProjectName;
   const purposeValue = en && studioState.siPurpose === activeScenario.purpose ? activeScenario.purposeEn : studioState.siPurpose;
+  const industryValue = en
+    ? (studioState.siIndustry === "제조·일반기업" ? "Manufacturing / general business" : studioState.siIndustry)
+    : (studioState.siIndustry === "Manufacturing / general business" ? "제조·일반기업" : studioState.siIndustry);
   const modelOptions = getAllModels().filter((item) => ["generative", "llm", "vlm", "ocr"].includes(item.type || "generative"));
   return `
-    <div class="si-input-mode-switch"><button type="button" data-si-input-mode="simple" class="${studioState.siInputMode === "simple" ? "is-active" : ""}">${en ? "Easy estimate" : "간편 견적"}</button><button type="button" data-si-input-mode="expert" class="${studioState.siInputMode === "expert" ? "is-active" : ""}">${en ? "Expert estimate" : "전문가 견적"}</button></div>
+    <div class="si-input-mode-switch"><button type="button" data-si-input-mode="simple" class="${studioState.siInputMode === "simple" ? "is-active" : ""}">${en ? "Easy estimate" : "간편 견적"}</button><button type="button" data-si-input-mode="expert" class="${studioState.siInputMode === "expert" ? "is-active" : ""}">${en ? "Detailed estimate" : "상세 견적"}</button></div>
     ${studioState.siInputMode === "simple" ? renderSimpleSizingWizard(model, plans) : ""}
     <div class="si-intro">
       <div><span class="section-kicker">v3.1 PRE-SALES</span><h3>${en ? "AI infrastructure sizing consultation" : "AI 인프라 사전 견적 상담"}</h3>
       <p>${en ? "Turn customer workload assumptions into three reviewable infrastructure options." : "고객 요구와 트래픽 가정을 검토 가능한 인프라 3안으로 변환합니다."}</p></div>
       <div class="si-presets">${Object.entries(SI_SCENARIOS).map(([id, row]) => `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}">${en ? row.en : row.ko}</button>`).join("")}</div>
     </div>
+    ${studioState.siInputMode === "expert" ? renderSiBaselineGuide(activeScenario) : ""}
     <details class="si-expert-form" ${studioState.siInputMode === "expert" ? "open" : ""}><summary>${en ? "Customer and workload details" : "고객·워크로드 상세 입력"}</summary><div class="studio-question-grid si-question-grid">
       <label><span>${en ? "Proposal company" : "제안 회사"}</span><input id="siCompanyName" value="${platformEscape(studioState.siCompanyName)}"></label>
       <label><span>${en ? "Customer" : "고객사"}</span><input id="siCustomerName" value="${platformEscape(studioState.siCustomerName)}"></label>
       <label class="studio-wide"><span>${en ? "Project name" : "프로젝트명"}</span><input id="siProjectName" value="${platformEscape(projectValue)}"></label>
       <label class="studio-wide"><span>${en ? "Business purpose" : "구축 목적"}</span><input id="siPurpose" value="${platformEscape(purposeValue)}"></label>
-      <label><span>${en ? "Customer industry" : "고객 업종"}</span><input id="siIndustry" value="${platformEscape(studioState.siIndustry)}"></label>
+      <label><span>${en ? "Customer industry" : "고객 업종"}</span><input id="siIndustry" value="${platformEscape(industryValue)}"></label>
       <label><span>${en ? "Consultant / owner" : "상담 담당자"}</span><input id="siContact" value="${platformEscape(studioState.siContact)}" placeholder="${en ? "Name or team" : "이름 또는 조직"}"></label>
       <label><span>${en ? "Service type" : "서비스 유형"}</span><select id="siServiceType"><option value="rag" ${studioState.siServiceType === "rag" ? "selected" : ""}>RAG / Chatbot</option><option value="ocr" ${studioState.siServiceType === "ocr" ? "selected" : ""}>OCR / VLM</option><option value="image" ${studioState.siServiceType === "image" ? "selected" : ""}>${en ? "Image generation" : "이미지 생성"}</option><option value="video" ${studioState.siServiceType === "video" ? "selected" : ""}>${en ? "Video generation" : "영상 생성"}</option><option value="voice" ${studioState.siServiceType === "voice" ? "selected" : ""}>${en ? "Voice AI (STT + LLM + TTS)" : "음성 AI (STT + LLM + TTS)"}</option><option value="avatar" ${studioState.siServiceType === "avatar" ? "selected" : ""}>${en ? "Avatar chat" : "AI 아바타 채팅"}</option></select></label>
       <label><span>${en ? "External data transfer" : "데이터 외부 반출"}</span><select id="siExportAllowed"><option value="false" ${!studioState.siExportAllowed ? "selected" : ""}>${en ? "Not allowed" : "불가"}</option><option value="true" ${studioState.siExportAllowed ? "selected" : ""}>${en ? "Allowed" : "허용"}</option></select></label>
@@ -1118,7 +1242,7 @@ function renderStudioConsulting() {
       <label><span>${en ? "Vector data (GB)" : "벡터 데이터 (GB)"}</span><input id="siVectorDataGb" type="number" min="0" value="${studioState.siVectorDataGb}"></label>
       <label><span>${en ? "Logs per day (GB)" : "일 로그 (GB)"}</span><input id="siLogGbDay" type="number" min="0" value="${studioState.siLogGbDay}"></label>
       <label><span>${en ? "Retention days" : "보관 일수"}</span><input id="siRetentionDays" type="number" min="1" value="${studioState.siRetentionDays}"></label>
-      <label class="studio-check"><input id="siDevProd" type="checkbox" ${studioState.siDevProd ? "checked" : ""}> ${en ? "Separate dev and production" : "개발계·운영계 분리"}</label>
+      <label class="studio-check"><span class="studio-check-label"><input id="siDevProd" type="checkbox" ${studioState.siDevProd ? "checked" : ""}> ${en ? "Separate dev and production" : "개발계·운영계 분리"}</span></label>
     </div></details>
     <details class="si-advanced"><summary>${en ? "Infrastructure and operating assumptions" : "인프라·운영 조건 상세"}</summary><div class="studio-question-grid">
       <label><span>PCIe</span><select id="siPcieGen"><option value="gen4" ${studioState.siPcieGen === "gen4" ? "selected" : ""}>Gen 4</option><option value="gen5" ${studioState.siPcieGen === "gen5" ? "selected" : ""}>Gen 5</option></select></label>
@@ -1304,11 +1428,15 @@ function renderDecisionStudio() {
     community: renderStudioCommunity,
   };
   $("decisionStudioBody").innerHTML = renderers[studioState.tab]();
+  decorateSiDetailedFields();
   bindDecisionStudio();
 }
 
 function updateStudio(key, value) {
   studioState[key] = value;
+  if (["siTotalUsers", "siConcurrency", "siQps", "siInputTokens", "siMaxInputTokens", "siOutputTokens", "siTtftP95", "siTargetSeconds", "siLatencyP95", "siOperatingHours", "siAvailability", "siGrowthPct", "siVectorDataGb", "siLogGbDay", "siRetentionDays", "siDevProd"].includes(key)) {
+    studioState.siBaselineProfile = "";
+  }
   if (key === "category" && ["image", "video", "stt", "tts"].includes(value)) studioState.targetSpeed = 0;
   if (key === "siBudgetKrw") {
     const budget = Math.max(0, Number(value) || 0);
@@ -1374,6 +1502,27 @@ function bindDecisionStudio() {
   $("siAutoscale")?.addEventListener("change", (event) => updateStudio("siAutoscale", event.target.checked));
   $("siSeparateNetworks")?.addEventListener("change", (event) => updateStudio("siSeparateNetworks", event.target.checked));
   document.querySelectorAll("[data-si-input-mode]").forEach((button) => button.addEventListener("click", () => updateStudio("siInputMode", button.dataset.siInputMode)));
+  document.querySelectorAll(".term-help").forEach((button) => {
+    const alignTooltip = () => {
+      const rect = button.getBoundingClientRect();
+      const tooltipWidth = Math.min(280, Math.max(160, window.innerWidth - 40));
+      button.classList.toggle("is-tip-left", rect.left < tooltipWidth / 2 + 20);
+      button.classList.toggle("is-tip-right", rect.right > window.innerWidth - tooltipWidth / 2 - 20);
+    };
+    button.addEventListener("mouseenter", alignTooltip);
+    button.addEventListener("focus", alignTooltip);
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+  });
+  document.querySelectorAll("[data-si-baseline]").forEach((button) => button.addEventListener("click", () => {
+    const scenario = SI_SCENARIOS[studioState.siScenario] || SI_SCENARIOS["internal-rag"];
+    Object.assign(studioState, siBaselineSnapshot(scenario, button.dataset.siBaseline));
+    syncStudioUrl();
+    renderDecisionStudio();
+    window.AIHardwareUI?.announce(uiLanguage === "en" ? "The starting baseline was applied." : "권장 시작 기준을 적용했습니다.", "success");
+  }));
   document.querySelectorAll("[data-si-quality]").forEach((button) => button.addEventListener("click", () => {
     studioState.siQualityPreset = button.dataset.siQuality;
     applySimpleSizingPreset();
@@ -1403,7 +1552,7 @@ function bindDecisionStudio() {
       siOutputTokens: preset.output, siTargetSeconds: preset.seconds, siAvailability: preset.availability,
       siGrowthPct: preset.growth, siVectorDataGb: preset.vector, siLogGbDay: preset.logs,
       siRetentionDays: preset.retention, siSecurity: preset.security, siServiceType: preset.serviceType || "rag",
-      siUserPreset: preset.users,
+      siUserPreset: preset.users, siBaselineProfile: "production",
     };
     syncStudioUrl();
     renderDecisionStudio();

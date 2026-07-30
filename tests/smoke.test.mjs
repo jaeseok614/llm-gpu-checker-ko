@@ -104,6 +104,24 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.ok(app.document.querySelector(".si-plan-card .si-decision-metrics"));
 });
 
+test("detailed sizing explains every field and offers starting baselines", () => {
+  app.document.querySelector('[data-si-input-mode="expert"]').click();
+  assert.match(app.document.querySelector('[data-si-input-mode="expert"]').textContent, /상세 견적/);
+  assert.equal(app.document.querySelector(".si-expert-form").open, true);
+  assert.equal(app.document.querySelectorAll("[data-si-baseline]").length, 3);
+  const detailedControls = [...app.document.querySelectorAll(".si-expert-form input[id], .si-expert-form select[id], .si-advanced input[id], .si-advanced select[id]")];
+  assert.ok(detailedControls.length >= 30);
+  for (const control of detailedControls) {
+    const label = control.closest("label");
+    assert.ok(label.querySelector(".term-help"), `${control.id} should have a help tooltip`);
+    assert.ok(label.querySelector(".si-field-baseline"), `${control.id} should show a starting point`);
+  }
+  assert.match(app.document.querySelector("#siQps").closest("label").querySelector(".term-help").dataset.tooltip, /초당 시작되는 요청/);
+  app.document.querySelector('[data-si-baseline="pilot"]').click();
+  assert.ok(Number(app.document.getElementById("siTotalUsers").value) <= 10);
+  assert.ok(Number(app.document.getElementById("siQps").value) > 0);
+});
+
 test("price and evidence states avoid presenting estimates as live market prices", () => {
   app.document.querySelector('[data-studio-tab="market"]').click();
   const marketText = app.document.getElementById("decisionStudioBody").textContent;
@@ -113,6 +131,8 @@ test("price and evidence states avoid presenting estimates as live market prices
 });
 
 test("English mode updates the primary navigation and infrastructure wizard", () => {
+  app.document.querySelector('[data-studio-tab="consulting"]').click();
+  app.document.querySelector('[data-si-input-mode="simple"]').click();
   app.eval('setUiLanguage("en"); setCoreTaskMode("infra");');
   app.document.querySelector('[data-studio-tab="consulting"]').click();
   assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for my model/);
@@ -120,6 +140,10 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   assert.match(app.document.querySelector("[data-demo-infra]").textContent, /30-user internal RAG example/);
   assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /[가-힣]/);
   assert.match(app.document.querySelector(".si-simple-wizard").textContent, /three steps/i);
+  app.document.querySelector('[data-si-input-mode="expert"]').click();
+  assert.match(app.document.querySelector('[data-si-input-mode="expert"]').textContent, /Detailed estimate/);
+  assert.match(app.document.getElementById("siIndustry").value, /Manufacturing/);
+  assert.match(app.document.querySelector("#siQps").closest("label").querySelector(".term-help").dataset.tooltip, /queries per second/i);
 });
 
 test("accessibility and responsive contracts are present", () => {

@@ -6987,6 +6987,104 @@ body.infra-task-active #benchmarkDashboard {
   padding: 0 16px 16px;
 }
 
+.si-baseline-guide {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.si-baseline-guide h3 {
+  margin: 4px 0 6px;
+}
+
+.si-baseline-guide p {
+  max-width: 880px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.si-baseline-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.si-baseline-options button {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.si-baseline-options button:hover,
+.si-baseline-options button:focus-visible,
+.si-baseline-options button.is-active {
+  border-color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+.si-baseline-options button.is-active {
+  background: var(--blue-soft);
+}
+
+.si-baseline-options strong {
+  color: var(--blue);
+  font-size: 0.92rem;
+}
+
+.si-baseline-options small,
+.si-baseline-options span {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.si-baseline-options span {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.studio-question-grid label > span:first-child {
+  min-width: 0;
+}
+
+.studio-question-grid .studio-check {
+  flex-wrap: wrap;
+}
+
+.studio-check-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.si-field-baseline {
+  display: block;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.studio-check .si-field-baseline {
+  flex: 0 0 100%;
+}
+
 .decision-studio.is-simple-sizing .si-intro,
 .decision-studio.is-simple-sizing .si-expert-form,
 .decision-studio.is-simple-sizing .si-advanced,
@@ -7007,6 +7105,9 @@ body.infra-task-active #benchmarkDashboard {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .si-plan-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .si-baseline-options {
     grid-template-columns: 1fr;
   }
 }
@@ -7282,6 +7383,24 @@ body.infra-task-active #benchmarkDashboard {
 .term-help:focus-visible::after {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.term-help.is-tip-left::after {
+  left: 0;
+  transform: translate(0, 4px);
+}
+
+.term-help.is-tip-right::after {
+  right: 0;
+  left: auto;
+  transform: translate(0, 4px);
+}
+
+.term-help.is-tip-left:hover::after,
+.term-help.is-tip-left:focus-visible::after,
+.term-help.is-tip-right:hover::after,
+.term-help.is-tip-right:focus-visible::after {
+  transform: translate(0, 0);
 }
 
 .evidence-badge,
