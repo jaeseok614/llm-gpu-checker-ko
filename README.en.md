@@ -54,7 +54,7 @@
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
 - **v7.0** — Completes a zero-input 60-second tour, workflow feedback form, price freshness states, and decision guidance after selecting an option.
-- **v6.9** — Splits long calculation tests into three parallel CI jobs, enforces static size budgets, and removes duplicate validation from Pages deployment.
+- **v6.9** — Splits long calculation tests into five parallel CI jobs, enforces static size budgets, and removes duplicate validation from Pages deployment.
 - **v6.8** — Reduces plan cards to price, GPU, users, VRAM, power, confidence, and rationale while moving operating assumptions and avoid-when guidance into details.
 - **v6.7** — Validates Korean price sources, dates, freshness, and missing coverage while labeling exchange rates as editable planning assumptions.
 - **v6.6.1** — Localizes remaining confidence and used-price-method labels and centralizes Korean KRW versus English USD display rules.

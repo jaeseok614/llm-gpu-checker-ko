@@ -145,7 +145,7 @@ test("run feedback and visual regression workflows are public and repeatable", (
   assert.match(feedback, /민감한 정보/);
   assert.match(productFeedback, /What was confusing or missing/);
   assert.match(productFeedback, /confidential pricing/);
-  assert.match(workflow, /batch: \[1, 2, 3\]/);
+  assert.match(workflow, /batch: \[1, 2, 3, 4, 5\]/);
   assert.match(workflow, /run-tests\.mjs --batch=/);
   assert.match(workflow, /test:visual/);
   assert.match(workflow, /ui-regression-screenshots/);

@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        batch: [1, 2, 3]
+        batch: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6

@@ -13,6 +13,8 @@
     "test:batch1": "node scripts/run-tests.mjs --batch=1",
     "test:batch2": "node scripts/run-tests.mjs --batch=2",
     "test:batch3": "node scripts/run-tests.mjs --batch=3",
+    "test:batch4": "node scripts/run-tests.mjs --batch=4",
+    "test:batch5": "node scripts/run-tests.mjs --batch=5",
     "test:smoke": "node --test --test-force-exit tests/smoke.test.mjs",
     "test:visual": "node scripts/ui-regression.mjs",
     "test:full": "node scripts/run-tests.mjs",

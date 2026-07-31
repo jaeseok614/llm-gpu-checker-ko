@@ -29,8 +29,12 @@ const groups = [
     "v1.3 GPU",
     "v1.4 advisor",
     "v1.5 catalog",
+  ],
+  [
     "v2.0 decision",
     "v2.2 user",
+  ],
+  [
     "v3.7 infrastructure",
   ],
 ];
