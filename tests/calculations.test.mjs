@@ -407,9 +407,14 @@ describe("quick recommendation navigation", () => {
     englishButton.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "en");
     assert.equal(englishButton.classList.contains("active"), true);
+    assert.equal(fresh.document.querySelector("[data-theme-toggle]").getAttribute("aria-label"), "Theme");
+    assert.equal(fresh.document.getElementById("workspaceJourney").getAttribute("aria-label"), "Current task progress");
+    assert.doesNotMatch(fresh.document.getElementById("gpuSourceLinks").textContent, /스펙|출처/);
     languageToggle.querySelector("[data-lang='ko']")
       .dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
     assert.equal(fresh.document.documentElement.lang, "ko");
+    assert.equal(fresh.document.querySelector("[data-theme-toggle]").getAttribute("aria-label"), "테마 선택");
+    assert.equal(fresh.document.getElementById("workspaceJourney").getAttribute("aria-label"), "현재 작업 진행 단계");
 
     const liveCard = fresh.document.querySelector(".simple-pick-card");
     const cardOrderBefore = [...fresh.document.querySelectorAll(".simple-pick-card-toggle")]

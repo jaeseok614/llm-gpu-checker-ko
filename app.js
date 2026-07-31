@@ -1469,6 +1469,7 @@ function setUiLanguage(language) {
   if (hasPrimaryGpuSelection) {
     const languageHardware = getHardware();
     const languageEstimates = getActiveModels().map((model) => estimateAnyModel(model, languageHardware));
+    renderHardware(languageHardware, languageEstimates);
     renderSimpleMode(languageHardware, languageEstimates);
   }
   // Same reasoning for the multi-GPU placement result, its 3-plan comparison,
@@ -1489,6 +1490,10 @@ function setUiLanguage(language) {
   refreshSimplePurposeOptions();
   // Refresh the theme-toggle button labels ("라이트"/"다크" vs "Light"/"Dark"),
   // which depend on uiLanguage but live outside the dictionary sweep above.
+  const themeToggle = document.querySelector("[data-theme-toggle]");
+  if (themeToggle) themeToggle.setAttribute("aria-label", uiLanguage === "en" ? "Theme" : "테마 선택");
+  const workspaceJourney = $("workspaceJourney");
+  if (workspaceJourney) workspaceJourney.setAttribute("aria-label", uiLanguage === "en" ? "Current task progress" : "현재 작업 진행 단계");
   document.querySelectorAll("[data-theme-toggle] [data-theme]").forEach((button) => {
     button.textContent = THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage];
   });
@@ -7011,7 +7016,7 @@ function renderHardware(hardware, allEstimates) {
   const sourceTarget = $("gpuSourceLinks");
   sourceTarget.hidden = sourceGpus.length === 0;
   sourceTarget.innerHTML = sourceGpus
-    .map((gpu) => `<a href="${escapeAttr(gpu.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(shortGpuName(gpu.name))} 스펙 출처</a>`)
+    .map((gpu) => `<a href="${escapeAttr(gpu.sourceUrl)}" target="_blank" rel="noreferrer">${escapeHtml(shortGpuName(gpu.name))} ${uiLanguage === "en" ? "specifications source" : "스펙 출처"}</a>`)
     .join("");
   renderGpuRuntimeFacts(hardware);
   renderHardwareCapabilities(hardware, allEstimates);
