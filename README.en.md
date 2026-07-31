@@ -49,6 +49,12 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v6.0** — Reframes the first screen around three situations—own a GPU, know a model, or build an AI service—with a 30-second guide, current-step bar, and zero-input demos.
+- **v5.9** — Adds a GPU, model, and Korean-price request center with duplicate checks and a transparent source-review-to-release workflow.
+- **v5.8** — Turns eight AI service scenarios into descriptive cards and shows the service → users → priority → result journey.
+- **v5.7** — Adds a read-only customer result that excludes internal contact and supplier fields and supports print/PDF delivery.
+- **v5.6** — Shows the coverage of dated Korean market sources and separates unverified prices into supplier-quote or direct-input states.
+- **v5.5** — Explains recommendation and exclusion reasons and adds cost-saving simulations for concurrency, answer length, and growth reserve.
 - **v5.4** — Completes English UI and workbook exports, bilingual static detail pages with hreflang, and modular core features.
 - **v5.3** — Makes KRW the Korean GPU Advisor default and separates dated market prices, launch references, supplier quotes, and planning assumptions.
 - **v5.2** — Sizes QPS, batching, safe utilization, production/reserve/non-production GPUs, failover capacity, and queue health separately.

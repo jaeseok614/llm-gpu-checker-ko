@@ -3,6 +3,7 @@
 
   function apply(mode) {
     const active = WORKSPACES.has(mode) ? mode : "finder";
+    const previous = document.body.dataset.workspace;
     document.body.dataset.workspace = active;
     for (const name of WORKSPACES) {
       document.body.classList.toggle(`${name === "modelFinder" ? "model-finder" : name}-task-active`, name === active);
@@ -19,6 +20,9 @@
       const node = document.getElementById(id);
       if (node) node.hidden = !visible;
     });
+    if (previous !== active) {
+      window.dispatchEvent(new CustomEvent("ai-hardware-workspacechange", { detail: { mode: active, previous } }));
+    }
     return active;
   }
 

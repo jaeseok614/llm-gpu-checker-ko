@@ -73,27 +73,38 @@
     <main class="app-shell" id="mainContent" tabindex="-1">
       <section class="core-task-switcher" id="coreTaskSwitcher" aria-label="주요 작업 선택">
         <div class="core-task-intro">
-          <span class="section-kicker">처음 오셨나요?</span>
-          <strong>가지고 있는 GPU가 있나요, 아니면 실행할 모델부터 정하고 싶나요?</strong>
-          <small>하나를 선택하면 필요한 입력만 단계별로 보여드립니다.</small>
+          <div>
+            <span class="section-kicker">30초 시작</span>
+            <strong>지금 알고 있는 것 하나만 고르세요</strong>
+            <small>선택한 작업에 필요한 화면만 열고, 다음에 누를 버튼까지 안내합니다.</small>
+          </div>
+          <button type="button" class="ghost-button start-guide-button" data-open-start-guide aria-expanded="false" aria-controls="gettingStartedPanel">처음 사용 가이드</button>
         </div>
         <div class="core-task-actions" role="tablist" aria-label="주요 작업">
           <button type="button" class="core-task-button is-active" data-core-task="finder" aria-selected="true">
-            <span>내 GPU에서 실행할 모델 찾기</span>
-            <small>가지고 있는 GPU로 가능한 모델 확인</small>
+            <b class="task-choice-number">1</b>
+            <span>GPU가 이미 있어요</span>
+            <small>GPU 선택 → 실행 가능한 모델 추천</small>
+            <em>입력 1개 · 약 10초</em>
           </button>
           <button type="button" class="core-task-button" data-core-task="modelFinder" aria-selected="false">
-            <span>실행할 모델에 맞는 GPU 찾기</span>
-            <small>모델·예산·전력 기준 구매 후보 확인</small>
+            <b class="task-choice-number">2</b>
+            <span>실행할 모델을 알아요</span>
+            <small>모델 선택 → 예산에 맞는 GPU 추천</small>
+            <em>입력 2개 · 약 20초</em>
           </button>
           <button type="button" class="core-task-button" data-core-task="infra" aria-selected="false">
-            <span>AI 인프라 간편 견적</span>
-            <small>서비스와 사용자 수로 전체 구성 자동 추천</small>
+            <b class="task-choice-number">3</b>
+            <span>AI 서비스를 만들 거예요</span>
+            <small>서비스·사용자 수 → 전체 장비 간편 견적</small>
+            <em>3단계 · 약 1분</em>
           </button>
         </div>
         <div class="core-task-demos" aria-label="샘플로 시작">
-          <button type="button" class="demo-chip" data-demo-gpu="rtx3060-12">RTX 3060으로 체험</button>
-          <button type="button" class="demo-chip" data-demo-infra="internal-rag" data-demo-users="30">사내 RAG 30명 예시</button>
+          <span data-demo-label>입력 없이 체험:</span>
+          <button type="button" class="demo-chip" data-demo-gpu="rtx3060-12">RTX 3060 모델 추천</button>
+          <button type="button" class="demo-chip" data-demo-model="Qwen2.5 32B">Qwen 32B용 GPU 찾기</button>
+          <button type="button" class="demo-chip" data-demo-infra="internal-rag" data-demo-users="30">사내 RAG 30명 견적</button>
           <details class="advanced-entry">
             <summary>고급 도구</summary>
             <button type="button" data-core-task="placement">
@@ -102,7 +113,29 @@
             </button>
           </details>
         </div>
+        <div class="getting-started-panel" id="gettingStartedPanel" hidden>
+          <div>
+            <strong>내 상황에 맞는 시작점</strong>
+            <button type="button" class="icon-button" data-close-start-guide aria-label="가이드 닫기">×</button>
+          </div>
+          <ol>
+            <li><b>보유 GPU 확인</b><span>GPU 이름만 선택하면 바로 실행할 수 있는 모델 3개를 보여줍니다.</span></li>
+            <li><b>새 GPU 구매</b><span>실행할 모델과 예산을 고르면 적합한 GPU를 비교합니다.</span></li>
+            <li><b>회사·팀 서비스 견적</b><span>챗봇, RAG, 이미지, 음성 등 서비스와 사용자 수만 입력합니다.</span></li>
+          </ol>
+          <p>모르는 전문 용어는 상세 설정을 열기 전에는 입력하지 않아도 됩니다.</p>
+        </div>
+        <details class="catalog-request-center">
+          <summary>찾는 GPU나 모델이 없나요?</summary>
+          <div>
+            <span><b>1</b> 이름 중복 확인</span><span><b>2</b> 공식 출처 확인</span><span><b>3</b> 데이터 검토</span><span><b>4</b> 다음 릴리스 반영</span>
+          </div>
+          <p>요청 전에 검색창에서 별칭까지 확인합니다. 새 항목은 공식 제품·모델 링크가 있으면 더 빠르게 검토할 수 있습니다.</p>
+          <nav><a data-catalog-request="gpu" target="_blank" rel="noopener noreferrer">GPU 추가 요청</a><a data-catalog-request="model" target="_blank" rel="noopener noreferrer">모델 추가 요청</a><a data-catalog-request="price" target="_blank" rel="noopener noreferrer">국내 가격 제보</a></nav>
+        </details>
       </section>
+
+      <nav class="workspace-journey" id="workspaceJourney" aria-label="현재 작업 진행 단계" aria-live="polite"></nav>
 
       <section class="onboarding-screen" id="onboardingScreen" aria-label="시작하기: GPU 선택" hidden>
         <div class="onboarding-inner">
@@ -925,6 +958,9 @@
     <script src="./data/decision-data.js?v=__CACHE_VERSION__" defer></script>
     <script src="./ui-foundation.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/workspace-controller.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./features/guided-experience.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./features/decision-guidance.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./features/catalog-requests.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/pricing-policy.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/infrastructure-sizing.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/runtime-localization.js?v=__CACHE_VERSION__" defer></script>

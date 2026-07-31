@@ -33,23 +33,28 @@ const BENCHMARKS = DATA.benchmarks || [];
 const BENCHMARK_META = DATA.benchmarkMeta || {};
 const DATA_UPDATED_AT = BENCHMARK_META.updatedAt || "2026-07-23";
 const UI_COPY_V15 = {
-  "core.intro.kicker": { ko: "처음 오셨나요?", en: "New here?" },
-  "core.intro.title": { ko: "가지고 있는 GPU가 있나요, 아니면 실행할 모델부터 정하고 싶나요?", en: "Do you already have a GPU, or do you want to start with a model?" },
-  "core.intro.note": { ko: "하나를 선택하면 필요한 입력만 단계별로 보여드립니다.", en: "Choose one path and we will show only the inputs you need." },
-  "core.finder.title": { ko: "내 GPU에서 실행할 모델 찾기", en: "Find models for my GPU" },
-  "core.finder.note": { ko: "가지고 있는 GPU로 가능한 모델 확인", en: "Check what runs on hardware you already own" },
-  "core.modelFinder.title": { ko: "실행할 모델에 맞는 GPU 찾기", en: "Find a GPU for my model" },
-  "core.modelFinder.note": { ko: "모델·예산·전력 기준 구매 후보 확인", en: "Compare buying options by model, budget, and power" },
-  "core.infra.title": { ko: "AI 인프라 간편 견적", en: "Quick AI infrastructure estimate" },
-  "core.infra.note": { ko: "서비스와 사용자 수로 전체 구성 자동 추천", en: "Size a complete system from service type and users" },
+  "core.intro.kicker": { ko: "30초 시작", en: "START IN 30 SECONDS" },
+  "core.intro.title": { ko: "지금 알고 있는 것 하나만 고르세요", en: "Choose the one thing you already know" },
+  "core.intro.note": { ko: "선택한 작업에 필요한 화면만 열고, 다음에 누를 버튼까지 안내합니다.", en: "We open only the workspace you need and show what to do next." },
+  "core.finder.title": { ko: "GPU가 이미 있어요", en: "I already have a GPU" },
+  "core.finder.note": { ko: "GPU 선택 → 실행 가능한 모델 추천", en: "Choose a GPU → get runnable model picks" },
+  "core.finder.time": { ko: "입력 1개 · 약 10초", en: "1 input · about 10 sec" },
+  "core.modelFinder.title": { ko: "실행할 모델을 알아요", en: "I know which model to run" },
+  "core.modelFinder.note": { ko: "모델 선택 → 예산에 맞는 GPU 추천", en: "Choose a model → find GPUs in budget" },
+  "core.modelFinder.time": { ko: "입력 2개 · 약 20초", en: "2 inputs · about 20 sec" },
+  "core.infra.title": { ko: "AI 서비스를 만들 거예요", en: "I am building an AI service" },
+  "core.infra.note": { ko: "서비스·사용자 수 → 전체 장비 간편 견적", en: "Service and users → complete system estimate" },
+  "core.infra.time": { ko: "3단계 · 약 1분", en: "3 steps · about 1 min" },
   "core.placement.title": { ko: "여러 모델 함께 배치", en: "Place multiple models together" },
   "core.placement.note": { ko: "LLM·RAG·VLM·음성 모델을 여러 GPU에 배치", en: "Place LLM, RAG, VLM, and voice models across GPUs" },
   "core.advanced": { ko: "고급 도구", en: "Advanced tools" },
   "core.aria.section": { ko: "주요 작업 선택", en: "Choose a primary task" },
   "core.aria.tabs": { ko: "주요 작업", en: "Primary tasks" },
   "core.aria.demos": { ko: "샘플로 시작", en: "Start with a sample" },
-  "core.demo.gpu": { ko: "RTX 3060으로 체험", en: "Try with an RTX 3060" },
-  "core.demo.infra": { ko: "사내 RAG 30명 예시", en: "30-user internal RAG example" },
+  "core.demo.gpu": { ko: "RTX 3060 모델 추천", en: "RTX 3060 model picks" },
+  "core.demo.label": { ko: "입력 없이 체험:", en: "Try without typing:" },
+  "core.demo.model": { ko: "Qwen 32B용 GPU 찾기", en: "Find a GPU for Qwen 32B" },
+  "core.demo.infra": { ko: "사내 RAG 30명 견적", en: "30-user internal RAG estimate" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
   "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
   "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
@@ -62,7 +67,7 @@ function uiText(key) {
 }
 function applyV15Translations() {
   const en = uiLanguage === "en";
-  const intro = document.querySelector(".core-task-intro");
+  const intro = document.querySelector(".core-task-intro > div");
   if (intro) {
     const [kicker, title, note] = intro.children;
     if (kicker) kicker.textContent = uiText("core.intro.kicker");
@@ -71,8 +76,12 @@ function applyV15Translations() {
   }
   const gpuDemo = document.querySelector("[data-demo-gpu]");
   if (gpuDemo) gpuDemo.textContent = uiText("core.demo.gpu");
+  const demoLabel = document.querySelector("[data-demo-label]");
+  if (demoLabel) demoLabel.textContent = uiText("core.demo.label");
   const infraDemo = document.querySelector("[data-demo-infra]");
   if (infraDemo) infraDemo.textContent = uiText("core.demo.infra");
+  const modelDemo = document.querySelector("[data-demo-model]");
+  if (modelDemo) modelDemo.textContent = uiText("core.demo.model");
   const taskSection = document.querySelector(".core-task-switcher");
   taskSection?.setAttribute("aria-label", uiText("core.aria.section"));
   taskSection?.querySelector(".core-task-actions")?.setAttribute("aria-label", uiText("core.aria.tabs"));
@@ -1312,16 +1321,19 @@ function refreshCoreTaskUi() {
   if (finderButton) {
     finderButton.querySelector("span").textContent = uiText("core.finder.title");
     finderButton.querySelector("small").textContent = uiText("core.finder.note");
+    finderButton.querySelector("em").textContent = uiText("core.finder.time");
   }
   const modelFinderButton = document.querySelector('[data-core-task="modelFinder"]');
   if (modelFinderButton) {
     modelFinderButton.querySelector("span").textContent = uiText("core.modelFinder.title");
     modelFinderButton.querySelector("small").textContent = uiText("core.modelFinder.note");
+    modelFinderButton.querySelector("em").textContent = uiText("core.modelFinder.time");
   }
     const infraButton = document.querySelector('[data-core-task="infra"]');
   if (infraButton) {
     infraButton.querySelector("span").textContent = uiText("core.infra.title");
       infraButton.querySelector("small").textContent = uiText("core.infra.note");
+      infraButton.querySelector("em").textContent = uiText("core.infra.time");
     }
     const placementButton = document.querySelector('[data-core-task="placement"]');
     if (placementButton) {
@@ -1337,6 +1349,7 @@ function refreshCoreTaskUi() {
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
   if ($("decisionStudio")) $("decisionStudio").hidden = !infraActive;
   window.AIHardwareWorkspace?.apply(coreTaskMode);
+  window.AIHardwareGuide?.render(coreTaskMode, coreTaskMode === "finder" && hasPrimaryGpuSelection ? 1 : 0);
 }
 
 function seedPlacementInventoryFromCurrentHardware() {
@@ -2205,6 +2218,24 @@ function bindEvents() {
       } else {
         openExample();
       }
+    });
+  });
+  document.querySelectorAll("[data-demo-model]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setCoreTaskMode("modelFinder");
+      const query = button.dataset.demoModel || "";
+      const search = $("advisorModelSearch");
+      if (search) search.value = query;
+      const matches = refreshAdvisorModelOptions();
+      if (!matches.length && search) {
+        search.value = "Qwen";
+        refreshAdvisorModelOptions();
+      }
+      renderGpuAdvisor();
+      window.AIHardwareUI?.announce(uiLanguage === "en"
+        ? "Loaded the Qwen 32B GPU recommendation example."
+        : "Qwen 32B용 GPU 추천 예시를 불러왔습니다.");
+      $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     });
   });
 

@@ -24,6 +24,9 @@ const dataFiles = [
   "features/quick-recommendation.js",
   "features/community-feedback.js",
   "features/workspace-controller.js",
+  "features/guided-experience.js",
+  "features/decision-guidance.js",
+  "features/catalog-requests.js",
   "features/pricing-policy.js",
   "features/infrastructure-sizing.js",
   "features/runtime-localization.js",
@@ -56,6 +59,9 @@ test("first screen presents three beginner choices and one advanced placement to
   assert.ok(app.document.querySelector('.advanced-entry [data-core-task="placement"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
+  assert.ok(app.document.querySelector('[data-demo-model]'));
+  assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 3);
+  assert.ok(app.document.getElementById("workspaceJourney"));
 });
 
 test("GPU selection renders three quick recommendations", () => {
@@ -185,6 +191,11 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.equal(app.document.querySelectorAll(".si-wizard-step").length, 3);
   assert.equal(app.document.querySelectorAll(".si-plan-card").length, 3);
   assert.equal(app.document.querySelectorAll(".si-auto-parts > span").length, 6);
+  assert.equal(app.document.querySelectorAll(".si-scenario-grid > button").length, 8);
+  assert.equal(app.document.querySelectorAll(".si-wizard-progress > li").length, 4);
+  assert.ok(app.document.querySelector(".decision-guidance"));
+  assert.equal(app.document.querySelectorAll("[data-si-adjust]").length, 3);
+  assert.ok(app.document.querySelector(".price-coverage-note"));
   assert.ok(app.document.querySelector(".si-plan-card .si-decision-metrics"));
   assert.equal(app.document.querySelectorAll(".si-workflow-nav [data-si-jump]").length, 3);
   assert.equal(app.document.querySelectorAll(".si-readiness-checks > button").length, 8);
@@ -232,10 +243,23 @@ test("detailed sizing explains every field and offers starting baselines", () =>
   assert.equal(app.document.getElementById("siConcurrency").hasAttribute("aria-invalid"), false);
 });
 
-test("v5.4 snapshots and share links keep a versioned infrastructure state", () => {
+test("customer proposal links exclude internal sales fields and render read-only", () => {
+  const url = new URL(app.eval("proposalUrl()"));
+  const state = JSON.parse(url.searchParams.get("studioState"));
+  assert.equal(url.searchParams.get("view"), "proposal");
+  for (const key of ["siCompanyName", "siCustomerName", "siContact", "siSupplierName", "siReviewer", "siApprover"]) {
+    assert.equal(Object.hasOwn(state, key), false, `${key} must not be shared`);
+  }
+  app.eval('updateStudio("siReadOnly", true);');
+  assert.ok(app.document.querySelector(".customer-proposal"));
+  assert.equal(app.document.querySelector(".decision-studio-tabs").hidden, true);
+  app.eval('updateStudio("siReadOnly", false);');
+});
+
+test("v6.0 snapshots and share links keep a versioned infrastructure state", () => {
   app.eval("syncStudioUrl(); window.__smokeSizingSnapshot = sizingSnapshot(); window.__smokeShareState = shareableStudioState();");
   assert.equal(app.__smokeSizingSnapshot.schemaVersion, 3);
-  assert.equal(app.__smokeSizingSnapshot.appVersion, "5.4.0");
+  assert.equal(app.__smokeSizingSnapshot.appVersion, "6.0.0");
   assert.equal(app.__smokeSizingSnapshot.readiness.total, 8);
   assert.equal(new URL(app.location.href).searchParams.get("schema"), "3");
   assert.ok(Object.keys(app.__smokeShareState).every((key) => key === "tab" || key === "modelKey" || key.startsWith("si")));
@@ -254,9 +278,9 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.document.querySelector('[data-si-input-mode="simple"]').click();
   app.eval('setUiLanguage("en"); setCoreTaskMode("infra");');
   app.document.querySelector('[data-studio-tab="consulting"]').click();
-  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for my model/);
-  assert.match(app.document.querySelector(".core-task-intro").textContent, /Do you already have a GPU/);
-  assert.match(app.document.querySelector("[data-demo-infra]").textContent, /30-user internal RAG example/);
+  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /I know which model to run/);
+  assert.match(app.document.querySelector(".core-task-intro").textContent, /Choose the one thing you already know/);
+  assert.match(app.document.querySelector("[data-demo-infra]").textContent, /30-user internal RAG estimate/);
   assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /[가-힣]/);
   assert.match(app.document.querySelector(".si-simple-wizard").textContent, /three steps/i);
   app.document.querySelector('[data-si-input-mode="expert"]').click();
