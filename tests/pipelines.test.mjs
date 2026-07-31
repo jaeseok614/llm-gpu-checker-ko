@@ -122,6 +122,20 @@ test("GPU and benchmark request workflows have guarded approval labels", () => {
   assert.match(model, /steps\.model\.outputs\.valid == 'true'/);
 });
 
+test("catalog requests prevent duplicates and expose a structured price report", () => {
+  const gpu = fs.readFileSync(".github/ISSUE_TEMPLATE/gpu-request.yml", "utf8");
+  const model = fs.readFileSync(".github/ISSUE_TEMPLATE/model-request.yml", "utf8");
+  const price = fs.readFileSync(".github/ISSUE_TEMPLATE/price-report.yml", "utf8");
+  const requests = fs.readFileSync("features/catalog-requests.js", "utf8");
+  assert.match(gpu, /id: duplicate_check/);
+  assert.match(model, /id: duplicate_check/);
+  assert.match(price, /labels: \["data", "price"\]/);
+  assert.match(price, /id: checked_at/);
+  assert.match(price, /id: source_url/);
+  assert.match(requests, /function statusUrl/);
+  assert.match(requests, /function duplicateSummary/);
+});
+
 test("run feedback and visual regression workflows are public and repeatable", () => {
   const feedback = fs.readFileSync(".github/ISSUE_TEMPLATE/run-feedback.yml", "utf8");
   const workflow = fs.readFileSync(".github/workflows/ci.yml", "utf8");

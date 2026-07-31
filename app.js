@@ -1732,17 +1732,14 @@ function refreshAdvisorModelOptions(preferredKey = $("advisorModel")?.value) {
   const select = $("advisorModel");
   if (!select) return [];
   const category = $("advisorModelCategory")?.value || "all";
-  const tokens = ($("advisorModelSearch")?.value || "")
-    .normalize("NFKC")
-    .toLocaleLowerCase()
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  const models = getAllModels().filter((model) => {
-    if (category !== "all" && getAdvisorModelCategory(model) !== category) return false;
-    const searchText = getAdvisorModelSearchText(model);
-    return tokens.every((token) => searchText.includes(token));
-  });
+  const query = $("advisorModelSearch")?.value || "";
+  const candidates = getAllModels().filter((model) => category === "all" || getAdvisorModelCategory(model) === category);
+  const models = query.trim()
+    ? (window.AIHardwareCatalogSearch?.search(query, candidates, { limit: candidates.length }) || candidates.filter((model) => {
+      const searchText = getAdvisorModelSearchText(model);
+      return query.normalize("NFKC").toLocaleLowerCase().trim().split(/\s+/).filter(Boolean).every((token) => searchText.includes(token));
+    }))
+    : candidates;
   select.innerHTML = models
     .map((model) => `<option value="${escapeAttr(modelKey(model))}">${escapeHtml(model.name)}</option>`)
     .join("");
@@ -1833,13 +1830,15 @@ function findGpuPresetByName(name, allowCustom = true) {
   if (!trimmed) return null;
   const presets = allowCustom ? GPU_PRESETS : GPU_PRESETS.filter((gpu) => gpu.id !== "custom");
   const normalized = normalizeGpuSearchText(trimmed);
-  return (
+  const direct = (
     presets.find((gpu) => gpu.name === trimmed) ||
     presets.find((gpu) => gpu.name.toLowerCase() === trimmed.toLowerCase()) ||
     presets.find((gpu) => [gpu.id, gpu.name, ...(gpu.aliases || [])].some((value) => normalizeGpuSearchText(value) === normalized)) ||
     presets.find((gpu) => [gpu.name, ...(gpu.aliases || [])].some((value) => normalizeGpuSearchText(value).includes(normalized))) ||
     null
   );
+  if (direct) return direct;
+  return window.AIHardwareCatalogSearch?.search(trimmed, presets, { limit: 1 })[0] || null;
 }
 
 function normalizeGpuSearchText(value) {
@@ -1858,10 +1857,33 @@ function refreshGpuNotFoundUi(rawValue) {
   const target = $("onboardingGpuNotFound");
   if (!target) return;
   const raw = String(rawValue || "").trim();
-  const missing = raw.length >= 2 && !findGpuPresetByName(raw, false);
+  const normalized = normalizeGpuSearchText(raw);
+  const exact = GPU_PRESETS.some((gpu) => gpu.id !== "custom"
+    && [gpu.id, gpu.name, ...(gpu.aliases || [])].some((value) => normalizeGpuSearchText(value) === normalized));
+  const missing = raw.length >= 2 && !exact;
   target.hidden = !missing;
   const requestLink = target.querySelector("[data-request-gpu]");
   if (requestLink) requestLink.href = gpuRequestUrl(raw);
+  const suggestions = $("onboardingGpuSuggestions");
+  if (!suggestions) return;
+  if (!missing) {
+    suggestions.innerHTML = "";
+    return;
+  }
+  const search = window.AIHardwareCatalogSearch;
+  const intent = search?.parseGpuIntent(raw) || {};
+  const matches = search?.search(raw, GPU_PRESETS, {
+    limit: 3,
+    filter: (gpu) => gpu.id !== "custom"
+      && (!intent.memoryMinGb || Number(gpu.gpuUsableMemoryGb || gpu.vram || 0) >= intent.memoryMinGb)
+      && (!intent.vendor || String(gpu.vendor || "").toLowerCase() === intent.vendor)
+      && (!intent.formFactor || (intent.formFactor === "unified"
+        ? gpu.memoryType === "unified"
+        : gpu.formFactor === intent.formFactor)),
+  }) || [];
+  suggestions.innerHTML = matches.length
+    ? `${uiLanguage === "en" ? "<span>Did you mean?</span>" : "<span>혹시 이 GPU인가요?</span>"}${matches.map((gpu) => `<button type="button" class="ghost-button" data-suggest-gpu="${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</button>`).join("")}`
+    : "";
 }
 
 function syncGpuPresetSearchDisplay() {
@@ -2376,6 +2398,11 @@ function bindEvents() {
   });
   $("onboardingGpuSearch")?.addEventListener("input", (event) => refreshGpuNotFoundUi(event.target.value));
   $("onboardingGpuNotFound")?.addEventListener("click", (event) => {
+    const suggestion = event.target.closest("[data-suggest-gpu]");
+    if (suggestion) {
+      selectOnboardingGpu(suggestion.dataset.suggestGpu);
+      return;
+    }
     if (!event.target.closest("[data-use-custom-gpu]")) return;
     selectOnboardingGpu("custom");
     settingsExpanded = true;
@@ -7248,6 +7275,11 @@ function renderGpuInsights(hardware) {
   if (!show) return;
   const preset = hardware.preset;
   const benchmarkRows = getGpuBenchmarkRows(preset);
+  const evidence = window.AIHardwareEvidence?.sourceStatus(preset) || {
+    id: preset.specStatus === "sourced" ? "official" : "missing",
+    ko: preset.specStatus === "sourced" ? "공식 출처 연결" : "모델별 공식 출처 필요",
+    en: preset.specStatus === "sourced" ? "Official source linked" : "Model-specific source needed",
+  };
   const detail = $("gpuDetailSummary");
   detail.innerHTML = [
     [uiLanguage === "en" ? "Architecture" : "아키텍처", preset.architecture, preset.vendor],
@@ -7266,8 +7298,8 @@ function renderGpuInsights(hardware) {
   detail.insertAdjacentHTML("beforeend", `
     <div class="gpu-detail-fact">
       <span>${uiLanguage === "en" ? "Specification evidence" : "사양 근거"}</span>
-      <strong>${preset.specStatus === "sourced" ? (uiLanguage === "en" ? "Official source linked" : "공식 출처 연결") : (uiLanguage === "en" ? "Estimated / needs review" : "추정값·검토 필요")}</strong>
-      <small>${uiLanguage === "en" ? "Verified" : "검증일"}: ${escapeHtml(preset.verifiedAt || DATA_UPDATED_AT)}</small>
+      <strong><span class="evidence-status is-${escapeAttr(evidence.id)}">${escapeHtml(uiLanguage === "en" ? evidence.en : evidence.ko)}</span></strong>
+      <small>${uiLanguage === "en" ? "Verified" : "검증일"}: ${escapeHtml(preset.verifiedAt || DATA_UPDATED_AT)}${evidence.id !== "official" ? ` · <a href="${escapeAttr(window.AIHardwareEvidence?.issueUrl(preset) || gpuRequestUrl(preset.name))}" target="_blank" rel="noopener noreferrer">${uiLanguage === "en" ? "Improve source" : "출처 보강"}</a>` : ""}</small>
     </div>
   `);
 

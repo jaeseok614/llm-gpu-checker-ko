@@ -49,6 +49,12 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v6.6** — Splits guidance, catalog search, evidence policy, and v6 styles into focused modules covered by the static build and smoke tests.
+- **v6.5** — Adds duplicate checks to GPU, model, and price reports, plus direct views for open and completed catalog requests.
+- **v6.4** — Adds typo-, alias-, and intent-aware search for queries such as `RTX 509O`, `24GB laptop`, and `speech synthesis`.
+- **v6.3** — Separates model-specific official, family-level, external, and missing sources while surfacing source and Korean price coverage.
+- **v6.2** — Reduces infrastructure results to three decision-first options focused on price, GPU, concurrency, VRAM headroom, power, and confidence.
+- **v6.1** — Collapses the task chooser after entry and turns easy sizing into one screen per service, users, priority, and result step.
 - **v6.0** — Reframes the first screen around three situations—own a GPU, know a model, or build an AI service—with a 30-second guide, current-step bar, and zero-input demos.
 - **v5.9** — Adds a GPU, model, and Korean-price request center with duplicate checks and a transparent source-review-to-release workflow.
 - **v5.8** — Turns eight AI service scenarios into descriptive cards and shows the service → users → priority → result journey.

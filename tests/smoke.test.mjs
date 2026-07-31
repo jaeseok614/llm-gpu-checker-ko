@@ -27,6 +27,8 @@ const dataFiles = [
   "features/guided-experience.js",
   "features/decision-guidance.js",
   "features/catalog-requests.js",
+  "features/catalog-search.js",
+  "features/evidence-policy.js",
   "features/pricing-policy.js",
   "features/infrastructure-sizing.js",
   "features/runtime-localization.js",
@@ -62,6 +64,36 @@ test("first screen presents three beginner choices and one advanced placement to
   assert.ok(app.document.querySelector('[data-demo-model]'));
   assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 3);
   assert.ok(app.document.getElementById("workspaceJourney"));
+});
+
+test("guided workspace collapses the chooser and can return to it", () => {
+  app.document.querySelector('[data-core-task="finder"]').click();
+  assert.equal(app.document.getElementById("coreTaskSwitcher").classList.contains("is-collapsed"), true);
+  app.document.querySelector("[data-change-path]").click();
+  assert.equal(app.document.getElementById("coreTaskSwitcher").classList.contains("is-collapsed"), false);
+});
+
+test("catalog search accepts aliases, typos, and natural GPU conditions", () => {
+  const gpus = app.LLM_GPU_CHECKER_DATA.gpus;
+  const typo = app.AIHardwareCatalogSearch.search("RTX 509O", gpus, { limit: 1 });
+  assert.match(typo[0].name, /5090/);
+  const natural = app.AIHardwareCatalogSearch.search("24GB 노트북", gpus, {
+    limit: 5,
+    filter: (gpu) => gpu.formFactor === "laptop" && Number(gpu.vram) >= 24,
+  });
+  assert.ok(natural.length > 0);
+  assert.ok(natural.every((gpu) => gpu.formFactor === "laptop" && Number(gpu.vram) >= 24));
+  app.eval("window.__catalogModels = getAllModels()");
+  const speech = app.AIHardwareCatalogSearch.search("음성 합성", app.__catalogModels, { limit: 5 });
+  assert.ok(speech.some((model) => model.type === "audio-tts"));
+});
+
+test("evidence policy distinguishes official model and family sources", () => {
+  const audit = app.AIHardwareEvidence.audit(app.LLM_GPU_CHECKER_DATA.gpus, app.LLM_GPU_CHECKER_DATA.koreanGpuMarket);
+  assert.equal(audit.total, app.LLM_GPU_CHECKER_DATA.gpus.filter((gpu) => gpu.id !== "custom").length);
+  assert.ok(audit.official > 0);
+  assert.ok(audit.family + audit.missing > 0);
+  assert.ok(audit.priority.length >= 10);
 });
 
 test("GPU selection renders three quick recommendations", () => {
@@ -196,6 +228,8 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.ok(app.document.querySelector(".decision-guidance"));
   assert.equal(app.document.querySelectorAll("[data-si-adjust]").length, 3);
   assert.ok(app.document.querySelector(".price-coverage-note"));
+  assert.ok(app.document.querySelector(".evidence-coverage-note"));
+  assert.equal(app.document.getElementById("decisionStudio").dataset.wizardStep, "4");
   assert.ok(app.document.querySelector(".si-plan-card .si-decision-metrics"));
   assert.equal(app.document.querySelectorAll(".si-workflow-nav [data-si-jump]").length, 3);
   assert.equal(app.document.querySelectorAll(".si-readiness-checks > button").length, 8);
@@ -214,6 +248,18 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.ok(planSnapshot.every((plan) => plan.production >= 1 && plan.reserve >= 0));
   app.document.querySelector('[data-si-jump="siRequirements"]').click();
   assert.equal(app.document.querySelector(".si-expert-form").open, true);
+});
+
+test("easy infrastructure sizing advances one screen at a time", () => {
+  app.eval('updateStudio("siInputMode", "simple"); updateStudio("siWizardStep", 1);');
+  for (let step = 1; step <= 4; step += 1) {
+    const wizard = app.document.querySelector(".si-simple-wizard");
+    assert.equal(wizard.dataset.step, String(step));
+    assert.equal(app.document.getElementById("decisionStudio").dataset.wizardStep, String(step));
+    if (step < 4) app.document.querySelector("[data-si-wizard-next]").click();
+  }
+  assert.ok(app.document.querySelector(".simple-verdict"));
+  assert.ok(app.document.querySelector(".simple-result-actions"));
 });
 
 test("detailed sizing explains every field and offers starting baselines", () => {
@@ -256,10 +302,10 @@ test("customer proposal links exclude internal sales fields and render read-only
   app.eval('updateStudio("siReadOnly", false);');
 });
 
-test("v6.0 snapshots and share links keep a versioned infrastructure state", () => {
+test("v6.6 snapshots and share links keep a versioned infrastructure state", () => {
   app.eval("syncStudioUrl(); window.__smokeSizingSnapshot = sizingSnapshot(); window.__smokeShareState = shareableStudioState();");
   assert.equal(app.__smokeSizingSnapshot.schemaVersion, 3);
-  assert.equal(app.__smokeSizingSnapshot.appVersion, "6.0.0");
+  assert.equal(app.__smokeSizingSnapshot.appVersion, "6.6.0");
   assert.equal(app.__smokeSizingSnapshot.readiness.total, 8);
   assert.equal(new URL(app.location.href).searchParams.get("schema"), "3");
   assert.ok(Object.keys(app.__smokeShareState).every((key) => key === "tab" || key === "modelKey" || key.startsWith("si")));

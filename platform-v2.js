@@ -861,8 +861,8 @@ function bindDecisionHubControls() {
     syncPlatformBuildUrl();
     renderDecisionHub();
   }));
-  $("[data-copy-recipe]")?.addEventListener("click", () => copyTextToClipboard($("launchRecipeContent")?.textContent || "", $("[data-copy-recipe]")));
-  $("[data-download-recipe]")?.addEventListener("click", () => {
+  document.querySelector("[data-copy-recipe]")?.addEventListener("click", (event) => copyTextToClipboard($("launchRecipeContent")?.textContent || "", event.currentTarget));
+  document.querySelector("[data-download-recipe]")?.addEventListener("click", () => {
     const runtime = $("launchRuntime")?.value || "ollama";
     const platform = $("launchPlatform")?.value || "windows";
     const recipe = generateLaunchRecipe({ runtime, platform });

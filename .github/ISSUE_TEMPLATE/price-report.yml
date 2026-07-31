@@ -1,0 +1,61 @@
+name: Korean price report
+description: GPU의 국내 신품·중고 가격과 확인 출처를 제보합니다.
+title: "[PRICE] "
+labels: ["data", "price"]
+body:
+  - type: checkboxes
+    id: duplicate_check
+    attributes:
+      label: 중복 확인
+      description: 같은 GPU의 최근 가격 제보가 이미 있는지 기존 이슈를 확인해 주세요.
+      options:
+        - label: 동일한 날짜·판매처의 중복 제보가 없음을 확인했습니다.
+          required: true
+  - type: input
+    id: gpu_name
+    attributes:
+      label: GPU 이름
+      placeholder: GeForce RTX 5090 32GB
+    validations:
+      required: true
+  - type: input
+    id: price_krw
+    attributes:
+      label: 확인 가격 (원)
+      placeholder: 3,990,000
+    validations:
+      required: true
+  - type: dropdown
+    id: condition
+    attributes:
+      label: 상품 상태
+      options: [신품, 중고, 리퍼비시, 공급사 견적]
+    validations:
+      required: true
+  - type: input
+    id: seller
+    attributes:
+      label: 판매처·공급사
+      placeholder: 판매처 이름
+    validations:
+      required: true
+  - type: input
+    id: checked_at
+    attributes:
+      label: 가격 확인일
+      placeholder: YYYY-MM-DD
+    validations:
+      required: true
+  - type: input
+    id: source_url
+    attributes:
+      label: 공개 출처 URL
+      description: 로그인 없이 가격을 확인할 수 있는 HTTPS 주소를 적어 주세요. 개인 연락처는 올리지 마세요.
+      placeholder: https://...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 조건·비고
+      description: 배송비, 부가세 포함 여부, 보증 기간, 수량 조건 등을 적어 주세요.

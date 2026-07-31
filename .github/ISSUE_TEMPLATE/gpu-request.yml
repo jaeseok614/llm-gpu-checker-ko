@@ -3,6 +3,14 @@ description: GPU 프리셋 추가를 요청합니다.
 title: "[GPU] "
 labels: ["data", "gpu"]
 body:
+  - type: checkboxes
+    id: duplicate_check
+    attributes:
+      label: 중복 확인
+      description: 사이트 검색과 기존 이슈 검색에서 같은 GPU·별칭이 없는지 확인해 주세요.
+      options:
+        - label: 같은 GPU 또는 진행 중인 요청이 없음을 확인했습니다.
+          required: true
   - type: input
     id: gpu_name
     attributes:

@@ -44,6 +44,7 @@
       })();
     </script>
     <link rel="stylesheet" href="./styles.css?v=__CACHE_VERSION__" />
+    <link rel="stylesheet" href="./styles/v6-guided.css?v=__CACHE_VERSION__" />
   </head>
   <body>
     <a class="skip-link" href="#mainContent">본문 바로가기</a>
@@ -131,7 +132,7 @@
             <span><b>1</b> 이름 중복 확인</span><span><b>2</b> 공식 출처 확인</span><span><b>3</b> 데이터 검토</span><span><b>4</b> 다음 릴리스 반영</span>
           </div>
           <p>요청 전에 검색창에서 별칭까지 확인합니다. 새 항목은 공식 제품·모델 링크가 있으면 더 빠르게 검토할 수 있습니다.</p>
-          <nav><a data-catalog-request="gpu" target="_blank" rel="noopener noreferrer">GPU 추가 요청</a><a data-catalog-request="model" target="_blank" rel="noopener noreferrer">모델 추가 요청</a><a data-catalog-request="price" target="_blank" rel="noopener noreferrer">국내 가격 제보</a></nav>
+          <nav><a data-catalog-request="gpu" target="_blank" rel="noopener noreferrer">GPU 추가 요청</a><a data-catalog-request="model" target="_blank" rel="noopener noreferrer">모델 추가 요청</a><a data-catalog-request="price" target="_blank" rel="noopener noreferrer">국내 가격 제보</a><a data-catalog-status="open" target="_blank" rel="noopener noreferrer">처리 중 요청 보기</a><a data-catalog-status="completed" target="_blank" rel="noopener noreferrer">반영 완료 보기</a></nav>
         </details>
       </section>
 
@@ -153,6 +154,7 @@
             <div class="gpu-not-found-actions" id="onboardingGpuNotFound" hidden>
               <strong>찾는 GPU가 아직 목록에 없나요?</strong>
               <span>직접 사양을 입력해 바로 계산하거나, 이름을 채운 상태로 추가 요청을 보낼 수 있습니다.</span>
+              <div class="gpu-search-suggestions" id="onboardingGpuSuggestions" aria-live="polite"></div>
               <div>
                 <button type="button" class="ghost-button" data-use-custom-gpu>직접 사양 입력</button>
                 <a class="primary-button" data-request-gpu target="_blank" rel="noreferrer">GPU 추가 요청</a>
@@ -961,6 +963,8 @@
     <script src="./features/guided-experience.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/decision-guidance.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/catalog-requests.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./features/catalog-search.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./features/evidence-policy.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/pricing-policy.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/infrastructure-sizing.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/runtime-localization.js?v=__CACHE_VERSION__" defer></script>

@@ -14,11 +14,39 @@
 
   function issueUrl(kind, name = "") {
     const title = kind === "model" ? `[Model request] ${name}` : kind === "price" ? `[Price report] ${name}` : `[GPU request] ${name}`;
+    const template = kind === "model" ? "model-request.yml" : kind === "price" ? "price-report.yml" : "gpu-request.yml";
     const body = kind === "price"
       ? `GPU: ${name}\nPrice (KRW): \nCondition: new / used\nSource URL: \nChecked date: `
       : `Requested item: ${name}\nOfficial source URL: \nReason / use case: `;
-    const params = new URLSearchParams({ title, body });
+    const params = new URLSearchParams({ template, title });
+    if (kind === "price") params.set("body", body);
     return `https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?${params}`;
+  }
+
+  function statusUrl(status = "open") {
+    const query = status === "completed"
+      ? "repo:jaeseok614/llm-gpu-checker-ko is:issue is:closed label:data"
+      : "repo:jaeseok614/llm-gpu-checker-ko is:issue is:open label:data";
+    return `https://github.com/jaeseok614/llm-gpu-checker-ko/issues?q=${encodeURIComponent(query)}`;
+  }
+
+  function duplicateSummary(query, gpus = [], models = []) {
+    const gpu = findDuplicate(query, gpus);
+    const model = findDuplicate(query, models);
+    return {
+      duplicate: gpu || model || null,
+      kind: gpu ? "gpu" : model ? "model" : "",
+      query: String(query || "").trim(),
+    };
+  }
+
+  function workflow() {
+    return [
+      { id: "submitted", ko: "접수", en: "Submitted" },
+      { id: "source-check", ko: "출처 확인", en: "Source review" },
+      { id: "data-review", ko: "데이터 검토", en: "Data review" },
+      { id: "completed", ko: "릴리스 반영", en: "Released" },
+    ];
   }
 
   function coverage(gpus = [], marketRows = []) {
@@ -30,5 +58,13 @@
     };
   }
 
-  window.AIHardwareCatalogRequests = { normalize, findDuplicate, issueUrl, coverage };
+  window.AIHardwareCatalogRequests = {
+    normalize,
+    findDuplicate,
+    duplicateSummary,
+    issueUrl,
+    statusUrl,
+    workflow,
+    coverage,
+  };
 })();

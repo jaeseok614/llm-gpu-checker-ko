@@ -35,6 +35,8 @@ const DATA_FILES = [
   "features/guided-experience.js",
   "features/decision-guidance.js",
   "features/catalog-requests.js",
+  "features/catalog-search.js",
+  "features/evidence-policy.js",
   "features/pricing-policy.js",
   "features/infrastructure-sizing.js",
   "features/runtime-localization.js",
