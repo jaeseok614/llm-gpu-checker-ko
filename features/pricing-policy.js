@@ -3,9 +3,18 @@
   const locale = (language) => language === "en" ? "en-US" : "ko-KR";
   const toUsd = (value, currency = "USD") => Number(value || 0) / (currency === "KRW" ? KRW_PER_USD : 1);
   const toKrw = (value, currency = "KRW") => Number(value || 0) * (currency === "USD" ? KRW_PER_USD : 1);
+  const currencyForLanguage = (language = "ko") => language === "en" ? "USD" : "KRW";
   const formatMoney = (value, currency = "KRW", language = "ko") => currency === "KRW"
     ? `${Math.round(value).toLocaleString(locale(language))}${language === "en" ? " KRW" : "원"}`
     : `$${Math.round(value).toLocaleString("en-US")}`;
+  const formatFromKrw = (value, language = "ko") => {
+    const currency = currencyForLanguage(language);
+    return formatMoney(currency === "KRW" ? value : toUsd(value, "KRW"), currency, language);
+  };
+  const formatFromUsd = (value, language = "ko") => {
+    const currency = currencyForLanguage(language);
+    return formatMoney(currency === "USD" ? value : toKrw(value, "USD"), currency, language);
+  };
 
   function classify({ marketPriceKrw = 0, marketSourceUrl = "", updatedAt = "", launchPriceUsd = 0, quoteKrw = 0 } = {}) {
     if (quoteKrw > 0) return { kind: "supplier-quote", valueKrw: quoteKrw, updatedAt, sourceUrl: marketSourceUrl };
@@ -25,5 +34,15 @@
     }[kind] || (en ? "Needs review" : "검토 필요");
   }
 
-  window.AIHardwarePricing = { KRW_PER_USD, toUsd, toKrw, formatMoney, classify, labels };
+  window.AIHardwarePricing = {
+    KRW_PER_USD,
+    toUsd,
+    toKrw,
+    currencyForLanguage,
+    formatMoney,
+    formatFromKrw,
+    formatFromUsd,
+    classify,
+    labels,
+  };
 })();

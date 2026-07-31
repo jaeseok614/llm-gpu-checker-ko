@@ -333,6 +333,30 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   assert.match(app.document.querySelector('[data-si-input-mode="expert"]').textContent, /Detailed estimate/);
   assert.match(app.document.getElementById("siIndustry").value, /Manufacturing/);
   assert.match(app.document.querySelector("#siQps").closest("label").querySelector(".term-help").dataset.tooltip, /queries per second/i);
+  assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "USD");
+  assert.match(app.document.getElementById("siElectricityKrw").closest("label").textContent, /USD\/kWh/);
+  assert.equal(app.eval("studioMoney(1400000)"), "$1,000");
+
+  app.document.querySelector('[data-platform-tab="purchase"]').click();
+  assert.equal(app.document.getElementById("purchaseCurrency").value, "USD");
+  assert.match(app.document.getElementById("purchaseNewPrice").closest("label").textContent, /USD/);
+  const purchasePriceUsd = Number(app.document.getElementById("purchaseNewPrice").value);
+
+  app.eval('setUiLanguage("ko"); setCoreTaskMode("infra");');
+  app.document.querySelector('[data-studio-tab="consulting"]').click();
+  app.document.querySelector('[data-si-input-mode="expert"]').click();
+  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /실행할 모델을 알아요/);
+  assert.match(app.document.querySelector(".core-task-intro").textContent, /지금 알고 있는 것 하나만 고르세요/);
+  assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /I know which|Choose the one/);
+  assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "KRW");
+  assert.match(app.document.getElementById("siElectricityKrw").closest("label").textContent, /원\/kWh/);
+  assert.equal(Number(app.document.getElementById("siElectricityKrw").value), 150);
+  assert.equal(app.eval("studioMoney(1400000)"), "1,400,000원");
+
+  app.document.querySelector('[data-platform-tab="purchase"]').click();
+  assert.equal(app.document.getElementById("purchaseCurrency").value, "KRW");
+  assert.match(app.document.getElementById("purchaseNewPrice").closest("label").textContent, /KRW/);
+  assert.ok(Math.abs(Number(app.document.getElementById("purchaseNewPrice").value) - purchasePriceUsd * 1400) < 10);
 });
 
 test("accessibility and responsive contracts are present", () => {

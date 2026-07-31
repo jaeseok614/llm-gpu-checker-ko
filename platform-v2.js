@@ -74,7 +74,7 @@ const PLATFORM_V2_COPY = {
     psuCapacity: "파워 용량",
     caseClearance: "케이스 GPU 장착 길이",
     gpuLength: "GPU 길이",
-    componentPrices: "부품 가격 (USD)",
+    componentPrices: "부품 가격",
     gpuPrice: "GPU",
     cpuPrice: "CPU",
     motherboardPrice: "메인보드",
@@ -176,7 +176,7 @@ const PLATFORM_V2_COPY = {
     psuCapacity: "PSU capacity",
     caseClearance: "Case GPU clearance",
     gpuLength: "GPU length",
-    componentPrices: "Component prices (USD)",
+    componentPrices: "Component prices",
     gpuPrice: "GPU",
     cpuPrice: "CPU",
     motherboardPrice: "Motherboard",
@@ -346,6 +346,20 @@ function formatPlatformMoney(value, currency, rate) {
     currency,
     maximumFractionDigits: currency === "KRW" ? 0 : 2,
   }).format(converted);
+}
+
+function platformCurrencyForLanguage() {
+  return uiLanguage === "en" ? "USD" : "KRW";
+}
+
+function platformDisplayFromUsd(value, currency = platformCurrencyForLanguage(), rate = platformPurchaseState.rate) {
+  const amount = Number(value) || 0;
+  return currency === "KRW" ? Math.round(amount * Math.max(1, Number(rate) || 1400)) : Number(amount.toFixed(2));
+}
+
+function platformUsdFromDisplay(value, currency = platformCurrencyForLanguage(), rate = platformPurchaseState.rate) {
+  const amount = Number(value) || 0;
+  return currency === "KRW" ? amount / Math.max(1, Number(rate) || 1400) : amount;
 }
 
 function calculateUpgradeTco({
@@ -591,7 +605,7 @@ function renderPurchaseHub() {
   const currentEstimate = estimateAnyModelForHardware(model, currentHardware);
   const targetEstimate = estimateAnyModelForHardware(model, buildHardwareForPreset(targetGpu));
   const values = {
-    currency: platformPurchaseState.currency,
+    currency: platformCurrencyForLanguage(),
     rate: clampNumber(platformPurchaseState.rate, 100, 10000, 1400),
     newPrice: clampNumber(platformPurchaseState.newPrice, 0, 1000000, 0) || (koreanMarket?.newKrw ? koreanMarket.newKrw / clampNumber(platformPurchaseState.rate, 100, 10000, 1400) : market.priceUsd),
     usedPrice: clampNumber(platformPurchaseState.usedPrice, 0, 1000000, 0),
@@ -599,6 +613,12 @@ function renderPurchaseHub() {
     years: clampNumber(platformPurchaseState.years, 1, 10, 3),
     hours: clampNumber(platformPurchaseState.hours, 1, 744, 120),
     electricity: clampNumber(platformPurchaseState.electricity, 0, 10, 0.15),
+  };
+  const displayed = {
+    newPrice: platformDisplayFromUsd(values.newPrice, values.currency, values.rate),
+    usedPrice: platformDisplayFromUsd(values.usedPrice, values.currency, values.rate),
+    resale: platformDisplayFromUsd(values.resale, values.currency, values.rate),
+    electricity: platformDisplayFromUsd(values.electricity, values.currency, values.rate),
   };
   const result = calculateUpgradeTco({
     newPriceUsd: values.newPrice,
@@ -618,14 +638,14 @@ function renderPurchaseHub() {
     ${koreanMarket ? `<p class="market-source-note">${uiLanguage === "en" ? "Korean market snapshot" : "국내 시세 스냅샷"} · ${platformEscape(koreanMarket.updatedAt)} · <a href="${platformEscape(koreanMarket.sourceUrl)}" target="_blank" rel="noopener noreferrer">${platformEscape(koreanMarket.sourceName)}</a></p>` : ""}
     <div class="purchase-controls">
       <label><span>${platformText("upgradeCandidate")}</span><select id="purchaseTargetGpu">${GPU_PRESETS.filter((item) => item.id !== "custom").map((item) => `<option value="${platformEscape(item.id)}" ${item.id === targetGpu.id ? "selected" : ""}>${platformEscape(shortGpuName(item.name))}</option>`).join("")}</select></label>
-      <label><span>${platformText("currency")}</span><select id="purchaseCurrency"><option value="KRW" ${values.currency === "KRW" ? "selected" : ""}>KRW ₩</option><option value="USD" ${values.currency === "USD" ? "selected" : ""}>USD $</option></select></label>
+      <label><span>${platformText("currency")}</span><select id="purchaseCurrency" disabled aria-disabled="true"><option value="${values.currency}" selected>${values.currency === "KRW" ? "KRW ₩" : "USD $"}</option></select></label>
       <label><span>${platformText("exchangeRate")}</span><input id="purchaseExchangeRate" type="number" value="${values.rate}" min="100" step="10"></label>
-      <label><span>${platformText("newPrice")} (USD)</span><input id="purchaseNewPrice" type="number" value="${values.newPrice}" min="0"></label>
-      <label><span>${platformText("usedPrice")} (USD)</span><input id="purchaseUsedPrice" type="number" value="${values.usedPrice}" min="0"></label>
-      <label><span>${platformText("currentResale")} (USD)</span><input id="purchaseCurrentResale" type="number" value="${values.resale}" min="0"></label>
+      <label><span>${platformText("newPrice")} (${values.currency})</span><input id="purchaseNewPrice" type="number" value="${displayed.newPrice}" min="0" step="${values.currency === "KRW" ? 10000 : 10}"></label>
+      <label><span>${platformText("usedPrice")} (${values.currency})</span><input id="purchaseUsedPrice" type="number" value="${displayed.usedPrice}" min="0" step="${values.currency === "KRW" ? 10000 : 10}"></label>
+      <label><span>${platformText("currentResale")} (${values.currency})</span><input id="purchaseCurrentResale" type="number" value="${displayed.resale}" min="0" step="${values.currency === "KRW" ? 10000 : 10}"></label>
       <label><span>${platformText("years")}</span><input id="purchaseYears" type="number" value="${values.years}" min="1" max="10"></label>
       <label><span>${platformText("hours")}</span><input id="purchaseHours" type="number" value="${values.hours}" min="1" max="744"></label>
-      <label><span>${platformText("electricity")} (USD)</span><input id="purchaseElectricity" type="number" value="${values.electricity}" min="0" step="0.01"></label>
+      <label><span>${platformText("electricity")} (${values.currency})</span><input id="purchaseElectricity" type="number" value="${displayed.electricity}" min="0" step="${values.currency === "KRW" ? 1 : 0.01}"></label>
     </div>
     <div class="tco-summary">
       <article><span>${platformText("acquisition")}</span><strong>${formatPlatformMoney(result.acquisition, values.currency, values.rate)}</strong></article>
@@ -681,7 +701,7 @@ function renderBuildHub() {
     cpu: "priorityCpu",
     none: "priorityNone",
   };
-  const currency = platformPurchaseState.currency;
+  const currency = platformCurrencyForLanguage();
   const rate = platformPurchaseState.rate;
   return `
     <p>${platformText("buildIntro")}</p>
@@ -695,7 +715,7 @@ function renderBuildHub() {
       <label><span>${platformText("gpuLength")} (mm)</span><input id="buildGpuLength" type="number" min="0" max="1000" step="1" value="${buildValues.gpuLengthMm}"></label>
     </div>
     <fieldset class="build-price-fieldset">
-      <legend>${platformText("componentPrices")}</legend>
+      <legend>${platformText("componentPrices")} (${currency})</legend>
       <div class="build-price-grid">
         ${[
           ["buildGpuPrice", "gpuPrice", prices.gpu],
@@ -706,7 +726,7 @@ function renderBuildHub() {
           ["buildCasePrice", "casePrice", prices.case],
           ["buildStoragePrice", "storagePrice", prices.storage],
           ["buildOtherPrice", "otherPrice", prices.other],
-        ].map(([id, key, value]) => `<label><span>${platformText(key)}</span><input id="${id}" type="number" min="0" max="1000000" step="10" value="${value}"></label>`).join("")}
+        ].map(([id, key, value]) => `<label><span>${platformText(key)}</span><input id="${id}" type="number" min="0" max="${currency === "KRW" ? 1400000000 : 1000000}" step="${currency === "KRW" ? 10000 : 10}" value="${platformDisplayFromUsd(value, currency, rate)}"></label>`).join("")}
       </div>
       <small>${platformText("referencePriceNote")}</small>
     </fieldset>
@@ -715,7 +735,7 @@ function renderBuildHub() {
       <div><span>VRAM</span><strong>${formatGb(result.requiredGb)} / ${formatGb(gpu.gpuUsableMemoryGb || gpu.vram)}</strong><small>${result.offloadGb > 0 ? `CPU offload ${formatGb(result.offloadGb)}` : platformText("runnable")}</small></div>
       <div><span>${platformText("recommendedRam")}</span><strong>${result.recommendedRamGb} GB</strong><small>${buildValues.ramGb} GB ${result.ramFits ? "✓" : "!"}</small></div>
       <div><span>${platformText("recommendedPsu")}</span><strong>${result.recommendedPsuW} W</strong><small>${buildValues.psuW} W ${result.psuFits ? "✓" : "!"}</small></div>
-      <div><span>${platformText("totalPrice")}</span><strong>${formatPlatformMoney(result.totalPriceUsd, currency, rate)}</strong><small>$${result.totalPriceUsd.toLocaleString("en-US")}</small></div>
+      <div><span>${platformText("totalPrice")}</span><strong>${formatPlatformMoney(result.totalPriceUsd, currency, rate)}</strong></div>
     </div>
     <div class="build-priority">
       <h3>${platformText("upgradePriority")}</h3>
@@ -749,6 +769,7 @@ function renderLaunchHub() {
 }
 
 function renderDecisionHub() {
+  platformPurchaseState.currency = platformCurrencyForLanguage();
   const panel = ensureDecisionHub();
   $("decisionHubTitle").textContent = platformText("hub");
   $("decisionHubNote").textContent = platformText("hubNote");
@@ -817,7 +838,6 @@ function bindDecisionHubControls() {
     button.textContent = platformText("copied");
   }));
   const purchaseFields = {
-    purchaseCurrency: ["currency", String],
     purchaseTargetGpu: ["targetGpuId", String],
     purchaseExchangeRate: ["rate", Number],
     purchaseNewPrice: ["newPrice", Number],
@@ -828,7 +848,10 @@ function bindDecisionHubControls() {
     purchaseElectricity: ["electricity", Number],
   };
   Object.entries(purchaseFields).forEach(([id, [key, convert]]) => $(id)?.addEventListener("change", (event) => {
-    platformPurchaseState[key] = convert(event.target.value);
+    const raw = convert(event.target.value);
+    platformPurchaseState[key] = ["purchaseNewPrice", "purchaseUsedPrice", "purchaseCurrentResale", "purchaseElectricity"].includes(id)
+      ? platformUsdFromDisplay(raw)
+      : raw;
     renderDecisionHub();
   }));
   $("launchRuntime")?.addEventListener("change", (event) => {
@@ -857,7 +880,8 @@ function bindDecisionHubControls() {
     buildOtherPrice: ["otherPrice", Number],
   };
   Object.entries(buildFields).forEach(([id, [key, convert]]) => $(id)?.addEventListener("change", (event) => {
-    platformBuildState[key] = convert(event.target.value);
+    const raw = convert(event.target.value);
+    platformBuildState[key] = id.endsWith("Price") ? platformUsdFromDisplay(raw) : raw;
     syncPlatformBuildUrl();
     renderDecisionHub();
   }));
@@ -922,6 +946,7 @@ function initPlatformV2() {
   applyPlatformDeepLink();
   renderDecisionHub();
   window.addEventListener("languagechange", renderDecisionHub);
+  document.addEventListener("ai-hardware-languagechange", renderDecisionHub);
   document.querySelector("[data-language-toggle]")?.addEventListener("click", () => queueMicrotask(renderDecisionHub));
   ["gpuPreset", "advisorModel", "contextSize", "gpuCount"].forEach((id) => $(id)?.addEventListener("change", renderDecisionHub));
 }

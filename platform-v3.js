@@ -201,9 +201,40 @@ function studioMarket(gpuId) {
   };
 }
 
+function studioExchangeRate() {
+  return Math.max(1, Number(studioState.siExchangeRate) || Number(window.AIHardwarePricing?.KRW_PER_USD) || 1400);
+}
+
+function studioDisplayFromKrw(value) {
+  const amount = Number(value) || 0;
+  return uiLanguage === "en" ? Number((amount / studioExchangeRate()).toFixed(2)) : Math.round(amount);
+}
+
+function studioKrwFromDisplay(value) {
+  const amount = Number(value) || 0;
+  return uiLanguage === "en" ? Math.round(amount * studioExchangeRate()) : Math.round(amount);
+}
+
+function studioDisplayFromUsd(value) {
+  const amount = Number(value) || 0;
+  return uiLanguage === "en" ? Number(amount.toFixed(2)) : Math.round(amount * studioExchangeRate());
+}
+
+function studioUsdFromDisplay(value) {
+  const amount = Number(value) || 0;
+  return uiLanguage === "en" ? amount : amount / studioExchangeRate();
+}
+
 function studioMoney(value) {
-  const amount = Math.round(Number(value) || 0).toLocaleString(uiLanguage === "en" ? "en-US" : "ko-KR");
-  return uiLanguage === "en" ? `KRW ${amount}` : `${amount}원`;
+  const amountKrw = Number(value) || 0;
+  if (uiLanguage === "en") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(amountKrw / studioExchangeRate());
+  }
+  return `${Math.round(amountKrw).toLocaleString("ko-KR")}원`;
 }
 
 function studioWorkloadModels() {
@@ -295,7 +326,7 @@ function renderStudioRecommend() {
       </select></label>
       <label class="studio-wide"><span>${en ? "Model to run" : "실행할 모델"}</span><select id="studioModel">${models.map((item) => `<option value="${platformEscape(modelKey(item))}" ${modelKey(item) === modelKey(model) ? "selected" : ""}>${platformEscape(item.name)}</option>`).join("")}</select></label>
       <label><span>${en ? "Target speed" : "목표 속도"}</span><input id="studioTargetSpeed" type="number" min="0" value="${studioState.targetSpeed}"></label>
-      <label><span>${en ? "Maximum budget (KRW)" : "최대 예산 (원)"}</span><input id="studioBudget" type="number" min="0" step="10000" value="${studioState.budgetKrw}"></label>
+      <label><span>${en ? "Maximum budget (USD)" : "최대 예산 (원)"}</span><input id="studioBudget" type="number" min="0" step="${en ? 100 : 10000}" value="${studioDisplayFromKrw(studioState.budgetKrw)}"></label>
       <label><span>${en ? "Purchase condition" : "구매 조건"}</span><select id="studioCondition"><option value="either" ${studioState.condition === "either" ? "selected" : ""}>${en ? "New or used" : "신품·중고 모두"}</option><option value="new" ${studioState.condition === "new" ? "selected" : ""}>${en ? "New" : "신품"}</option><option value="used" ${studioState.condition === "used" ? "selected" : ""}>${en ? "Used reference" : "중고 참고가"}</option></select></label>
       <label><span>${en ? "System" : "형태"}</span><select id="studioFormFactor"><option value="all" ${studioState.formFactor === "all" ? "selected" : ""}>${en ? "All" : "전체"}</option><option value="desktop" ${studioState.formFactor === "desktop" ? "selected" : ""}>${en ? "Desktop" : "데스크톱"}</option><option value="laptop" ${studioState.formFactor === "laptop" ? "selected" : ""}>${en ? "Laptop" : "노트북"}</option></select></label>
       <label><span>${en ? "Power limit (W)" : "전력 제한 (W)"}</span><input id="studioPower" type="number" min="0" value="${studioState.powerLimitW}"></label>
@@ -347,8 +378,8 @@ function renderStudioMarket() {
       <td>${studioMoney(market.newKrw)}<small>${studioMoney(market.lowestKrw)}</small></td>
       <td>${studioMoney(market.usedKrw)}<small>${platformEscape(market.usedPriceMethod)}</small></td>
       <td>${market.updatedAt}${ageDays >= 90 ? `<span class="studio-stale">${en ? `${ageDays}+ days old` : `${ageDays}일 이상 경과`}</span>` : ageDays > 30 ? `<span class="studio-aging">${en ? `Checked ${ageDays} days ago` : `${ageDays}일 전 확인`}</span>` : `<span class="studio-fresh">${ageDays === 0 ? (en ? "Checked today" : "오늘 확인") : (en ? `Checked ${ageDays} days ago` : `${ageDays}일 전 확인`)}</span>`}</td>
-      <td>#${valueOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${score.speed ? `${(score.speed / market.lowestKrw * 1000000).toFixed(1)} / ₩1M` : "—"}</small></td>
-      <td>#${vramOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${((gpu.vram || 0) / market.lowestKrw * 1000000).toFixed(1)} GB / ₩1M</small></td>
+      <td>#${valueOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${score.speed ? (en ? `${(score.speed / (market.lowestKrw / studioExchangeRate()) * 1000).toFixed(1)} / $1K` : `${(score.speed / market.lowestKrw * 1000000).toFixed(1)} / ₩1M`) : "—"}</small></td>
+      <td>#${vramOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${en ? `${((gpu.vram || 0) / (market.lowestKrw / studioExchangeRate()) * 1000).toFixed(1)} GB / $1K` : `${((gpu.vram || 0) / market.lowestKrw * 1000000).toFixed(1)} GB / ₩1M`}</small></td>
       <td>${market.sourceUrl ? `<a href="${platformEscape(market.sourceUrl)}" target="_blank" rel="noopener noreferrer">${platformEscape(market.sourceName)}</a>` : platformEscape(market.sourceName)}</td>
     </tr>`).join("")}</tbody></table></div>`;
 }
@@ -618,7 +649,7 @@ const SI_FIELD_GUIDES = {
   siMonitoring: { ko: "GPU 상태, 지연시간, 오류와 감사 기록을 관찰하는 수준입니다.", en: "The level of GPU, latency, error, and audit monitoring.", baseKo: "일반 운영은 GPU / latency / error", baseEn: "GPU / latency / error for general production" },
   siCooling: { ko: "서버 열을 처리하는 방식입니다. 고밀도 GPU 서버는 수랭 검토가 필요할 수 있습니다.", en: "How server heat is removed; dense GPU servers may require liquid-cooling review.", baseKo: "1~4 GPU는 공랭부터 검토", baseEn: "Start with air cooling for 1–4 GPUs." },
   siUpsMinutes: { ko: "정전 후 안전 종료나 발전기 전환까지 UPS가 버틸 시간입니다.", en: "How long the UPS must sustain the system for shutdown or generator transfer.", baseKo: "일반 서버 15분", baseEn: "15 minutes for a general server" },
-  siElectricityKrw: { ko: "전력비 계산에 사용할 1kWh당 원화 단가입니다.", en: "The KRW price per kWh used for energy-cost calculations.", baseKo: "초기 계산 150원/kWh, 실제 고지서로 교체", baseEn: "Start at KRW 150/kWh, then replace with the actual bill rate." },
+  siElectricityKrw: { ko: "전력비 계산에 사용할 1kWh당 원화 단가입니다.", en: "The USD price per kWh used for energy-cost calculations.", baseKo: "초기 계산 150원/kWh, 실제 고지서로 교체", baseEn: "Start at about $0.11/kWh, then replace with the actual bill rate." },
   siMaintenancePct: { ko: "장비 구매가 대비 매년 예상하는 유지보수·지원 비용 비율입니다.", en: "Annual maintenance and support cost as a percentage of purchase price.", baseKo: "초기 계산 8~10%", baseEn: "8–10% for an initial estimate" },
 };
 
@@ -1111,7 +1142,7 @@ function renderEditableSiBom(plan) {
   return `<section class="si-editable-bom">
     <div class="si-version-head"><div><span class="section-kicker">${en ? "EDITABLE BOM" : "편집용 부품 견적"}</span><h3>${en ? "Select components and quantities" : "CPU·RAM·전원 등을 직접 선택하세요"}</h3><p>${en ? "Reference prices are planning assumptions and can be adjusted with an extra-cost line." : "표시 가격은 계획용 참고값이며 설치·라이선스 등 추가 비용을 별도로 더할 수 있습니다."}</p></div><button type="button" class="ghost-button" data-si-bom-auto>${en ? "Reset to auto selection" : "자동 추천으로 초기화"}</button></div>
     <div class="si-bom-editor">${bom.rows.map((row) => `<label><span>${en ? row.label : ({ Storage: "스토리지", Network: "네트워크", Power: "파워", "Server / case": "서버·케이스" }[row.label] || row.label)}</span><select id="${row.idKey}">${SYSTEM_PART_CATALOG[row.type].map((item) => `<option value="${item.id}" ${item.id === row.item.id ? "selected" : ""}>${platformEscape(item.name)} · ${studioMoney(item.priceKrw)}</option>`).join("")}</select><span class="si-bom-qty"><input id="${row.qtyKey}" type="number" min="1" max="128" value="${row.quantity}" aria-label="${platformEscape(row.label)} ${en ? "quantity" : "수량"}"><b>× ${row.quantity} = ${studioMoney(row.subtotal)}</b></span></label>`).join("")}
-      <label class="si-bom-extra"><span>${en ? "Installation · license · support" : "설치·라이선스·지원 추가 비용"}</span><input id="siBomExtraKrw" type="number" min="0" step="10000" value="${bom.extra}"><small>${en ? "Enter a negotiated or separately quoted amount." : "협의 금액이나 별도 견적 금액을 입력하세요."}</small></label>
+      <label class="si-bom-extra"><span>${en ? "Installation · license · support (USD)" : "설치·라이선스·지원 추가 비용 (원)"}</span><input id="siBomExtraKrw" type="number" min="0" step="${en ? 100 : 10000}" value="${studioDisplayFromKrw(bom.extra)}"><small>${en ? "Enter a negotiated or separately quoted amount." : "협의 금액이나 별도 견적 금액을 입력하세요."}</small></label>
     </div>
     <div class="si-bom-summary">
       <span>${en ? "Selected parts" : "선택 부품"}<strong>${studioMoney(bom.partsTotal)}</strong></span>
@@ -1304,7 +1335,7 @@ function renderSimpleSizingWizard(model, plans) {
       return `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}"><span>${badge}</span><b>${en ? row.en : row.ko}</b><small>${note}</small></button>`;
     }).join("")}</div></div>
     <div class="si-wizard-step" data-si-step-panel="2"><strong>2. ${en ? "How many people will use it?" : "몇 명이 사용하나요?"}</strong><small class="si-step-hint">${en ? "Enter everyone who may use the service. Peak concurrency is calculated automatically." : "서비스를 사용할 전체 인원을 입력하세요. 피크 동시 요청은 자동 계산합니다."}</small><div class="si-choice-grid si-user-choice-grid">${[10,50,100,300].map((value) => `<button type="button" data-si-users="${value}" class="${Number(studioState.siUserPreset) === value ? "is-active" : ""}">${value}${en ? " users" : "명"}</button>`).join("")}<label class="si-custom-users"><span>${en ? "Custom" : "직접 입력"}</span><span><input id="siCustomUsers" type="number" min="1" max="100000" step="1" value="${studioState.siUserPreset}" aria-label="${en ? "Custom number of users" : "사용자 수 직접 입력"}">${en ? "users" : "명"}</span></label></div></div>
-    <div class="si-wizard-step" data-si-step-panel="3"><strong>3. ${en ? "Set a budget or quality priority" : "예산 또는 품질 우선순위를 정하세요"}</strong><small class="si-step-hint">${en ? "A budget is optional. Choose the most important trade-off." : "예산은 선택 사항입니다. 가장 중요한 기준 하나를 고르세요."}</small><div class="si-simple-budget"><label><span>${en ? "Maximum hardware budget (KRW, optional)" : "최대 하드웨어 예산 (원, 선택)"}</span><input id="siBudgetKrw" type="number" min="0" step="1000000" value="${studioState.siBudgetKrw}" placeholder="${en ? "0 = no budget limit" : "0 = 예산 제한 없음"}"></label><div class="si-choice-grid">${quality.map(([id,title,note]) => `<button type="button" data-si-quality="${id}" class="${studioState.siQualityPreset === id ? "is-active" : ""}"><b>${title}</b><small>${note}</small></button>`).join("")}</div></div></div>
+    <div class="si-wizard-step" data-si-step-panel="3"><strong>3. ${en ? "Set a budget or quality priority" : "예산 또는 품질 우선순위를 정하세요"}</strong><small class="si-step-hint">${en ? "A budget is optional. Choose the most important trade-off." : "예산은 선택 사항입니다. 가장 중요한 기준 하나를 고르세요."}</small><div class="si-simple-budget"><label><span>${en ? "Maximum hardware budget (USD, optional)" : "최대 하드웨어 예산 (원, 선택)"}</span><input id="siBudgetKrw" type="number" min="0" step="${en ? 100 : 1000000}" value="${studioDisplayFromKrw(studioState.siBudgetKrw)}" placeholder="${en ? "0 = no budget limit" : "0 = 예산 제한 없음"}"></label><div class="si-choice-grid">${quality.map(([id,title,note]) => `<button type="button" data-si-quality="${id}" class="${studioState.siQualityPreset === id ? "is-active" : ""}"><b>${title}</b><small>${note}</small></button>`).join("")}</div></div></div>
     <div class="si-wizard-result" data-si-step-panel="4">
       <div class="simple-verdict ${selectedFit.valid ? "is-fit" : "is-review"}"><span>${selectedFit.valid ? (en ? "RECOMMENDED" : "추천 가능") : (en ? "REVIEW NEEDED" : "조건 검토 필요")}</span><strong>${studioMoney(selectedPrice)}</strong><small>${en ? "Estimated total · not a binding supplier quote" : "총 예상 가격 · 공급사 확정 견적 아님"}</small></div>
       <div class="si-auto-result"><div><span>${en ? "Automatically selected model and option" : "자동 선택 모델·구성안"}</span><strong>${platformEscape(model.name)} · ${planLabel(recommended, en)}</strong><small>${budget > 0 && !budgetMatches.length ? (en ? "No option fits the budget exactly; showing the lowest-cost option." : "예산 안에 들어오는 구성이 없어 최저비용안을 표시합니다.") : (en ? "You can change every assumption in detailed settings." : "상세 설정에서 모든 가정을 수정할 수 있습니다.")}</small></div><div class="si-auto-parts"><span><b>GPU</b>${platformEscape(shortGpuName(recommended.gpu.name))} × ${recommended.gpuCount}</span><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server / power" : "서버·전원"}</b>${parts.server} · ${parts.power}</span></div><p>${en ? "Why: the selected model memory, expected concurrency, failover, growth reserve, and optional budget determine the parts automatically." : "선정 이유: 모델 메모리, 예상 동시 사용자, 장애 대비, 성장 여유와 선택 예산을 기준으로 부품을 자동 선택했습니다."}</p></div>
@@ -1375,7 +1406,7 @@ function calculateRealtimeSla(plan) {
 function calculateTcoComparison(plan) {
   const utilization = Math.max(0.01, Math.min(1, studioState.siUtilizationPct / 100));
   const monthlyOnprem = plan.annualEnergyKrw / 12 + studioState.siFacilityKrwMonth + plan.purchaseKrw * (studioState.siMaintenancePct + studioState.siSupportPct) / 1200;
-  const monthlyCloud = studioState.siCloudHourlyUsd * 1400 * plan.gpuCount * Math.min(730, studioState.siOperatingHours * 30) * utilization;
+  const monthlyCloud = studioState.siCloudHourlyUsd * studioExchangeRate() * plan.gpuCount * Math.min(730, studioState.siOperatingHours * 30) * utilization;
   const totals = (years, mode) => {
     if (mode === "onprem") return Math.round(plan.purchaseKrw + monthlyOnprem * 12 * years);
     if (mode === "cloud") return Math.round(monthlyCloud * 12 * years);
@@ -1485,7 +1516,7 @@ function renderV38V42Modules(model, plans) {
       <p class="si-poc-verdict">${studioState.siBenchmarkSamples ? `${en ? "Calibration factor" : "보정계수"} ${(studioState.siMeasuredSpeed / Math.max(1, recommended.speed)).toFixed(2)} · ${studioState.siMeasuredTtft <= studioState.siTtftP95 && studioState.siMeasuredErrorRate <= 1 ? (en ? "PoC passed" : "PoC 합격") : (en ? "Adjustment required" : "조정 필요")}` : (en ? "Run performance and load tests separately, then upload the result JSON." : "성능 테스트와 부하 테스트를 분리 실행한 뒤 결과 JSON을 업로드하세요.")}</p>
     </section>
     <section class="si-version-section"><div class="si-version-head"><div><span class="section-kicker">v4.2</span><h3>${en ? "On-premises vs cloud" : "온프레미스·클라우드 비교"}</h3></div><span>${en ? "Break-even" : "손익분기"} ${tco.breakEvenMonths ? `${tco.breakEvenMonths.toFixed(1)} ${en ? "months" : "개월"}` : (en ? "not reached" : "미도달")}</span></div>
-      <div class="studio-question-grid si-compact-grid"><label><span>${en ? "Utilization (%)" : "사용률 (%)"}</span><input id="siUtilizationPct" type="number" min="1" max="100" value="${studioState.siUtilizationPct}"></label><label><span>${en ? "Cloud GPU (USD/hour)" : "클라우드 GPU (USD/시간)"}</span><input id="siCloudHourlyUsd" type="number" min="0" step="0.1" value="${studioState.siCloudHourlyUsd}"></label><label><span>${en ? "Facility (KRW/month)" : "상면비 (원/월)"}</span><input id="siFacilityKrwMonth" type="number" min="0" value="${studioState.siFacilityKrwMonth}"></label><label><span>${en ? "Support (%)" : "지원 비용 (%)"}</span><input id="siSupportPct" type="number" min="0" value="${studioState.siSupportPct}"></label></div>
+      <div class="studio-question-grid si-compact-grid"><label><span>${en ? "Utilization (%)" : "사용률 (%)"}</span><input id="siUtilizationPct" type="number" min="1" max="100" value="${studioState.siUtilizationPct}"></label><label><span>${en ? "Cloud GPU (USD/hour)" : "클라우드 GPU (원/시간)"}</span><input id="siCloudHourlyUsd" type="number" min="0" step="${en ? 0.1 : 100}" value="${studioDisplayFromUsd(studioState.siCloudHourlyUsd)}"></label><label><span>${en ? "Facility (USD/month)" : "상면비 (원/월)"}</span><input id="siFacilityKrwMonth" type="number" min="0" step="${en ? 10 : 10000}" value="${studioDisplayFromKrw(studioState.siFacilityKrwMonth)}"></label><label><span>${en ? "Support (%)" : "지원 비용 (%)"}</span><input id="siSupportPct" type="number" min="0" value="${studioState.siSupportPct}"></label></div>
       <div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>${en ? "Option" : "구성"}</th><th>1${en ? "y" : "년"}</th><th>3${en ? "y" : "년"}</th><th>5${en ? "y" : "년"}</th></tr></thead><tbody>${[["온프레미스", tco.onprem], ["클라우드", tco.cloud], ["혼합", tco.hybrid]].map(([name, values]) => `<tr><td>${en ? ({ 온프레미스: "On-premises", 클라우드: "Cloud", 혼합: "Hybrid" }[name]) : name}</td>${values.map((v) => `<td>${studioMoney(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
     </section>
     <section class="si-version-section si-evidence-panel"><div class="si-version-head"><div><span class="section-kicker">DATA CONFIDENCE</span><h3>${en ? "Evidence traceability" : "데이터 근거 추적"}</h3></div></div><div class="si-confidence-list"><span>${en ? "GPU specification" : "GPU 사양"}<strong>${platformEscape(evidence)}</strong><small>${recommended.gpu.sourceUrl ? (en ? "Source linked" : "출처 연결") : (en ? "Source contribution needed" : "출처 보강 필요")}</small></span><span>${en ? "Benchmark" : "벤치마크"}<strong>${recommended.sampleCount ? (en ? "External/community measured" : "외부·커뮤니티 실측") : (en ? "Calculated estimate" : "계산 추정")}</strong><small>n=${recommended.sampleCount}</small></span><span>${en ? "Estimated error" : "예상 오차"}<strong>±${recommended.sampleCount >= 3 ? 15 : recommended.sampleCount ? 25 : 40}%</strong><small>${en ? "Validate with PoC" : "PoC로 검증 필요"}</small></span><span>${en ? "Last verified" : "마지막 검증일"}<strong>${recommended.gpu.verifiedAt || DATA_UPDATED_AT}</strong><small>${en ? "Model and runtime changes require recheck" : "모델·런타임 변경 시 재검증"}</small></span></div></section>`;
@@ -1548,7 +1579,7 @@ function renderStudioConsulting() {
       <label><span>${en ? "Monitoring" : "모니터링"}</span><select id="siMonitoring"><option value="standard" ${studioState.siMonitoring === "standard" ? "selected" : ""}>GPU / latency / error</option><option value="enterprise" ${studioState.siMonitoring === "enterprise" ? "selected" : ""}>${en ? "Enterprise + audit" : "통합 관제·감사"}</option></select></label>
       <label><span>${en ? "Cooling" : "냉각"}</span><select id="siCooling"><option value="air" ${studioState.siCooling === "air" ? "selected" : ""}>${en ? "Air cooling" : "공랭"}</option><option value="liquid" ${studioState.siCooling === "liquid" ? "selected" : ""}>${en ? "Liquid cooling review" : "수랭 검토"}</option></select></label>
       <label><span>UPS (${en ? "minutes" : "분"})</span><input id="siUpsMinutes" type="number" min="0" value="${studioState.siUpsMinutes}"></label>
-      <label><span>${en ? "Electricity (KRW/kWh)" : "전력 단가 (원/kWh)"}</span><input id="siElectricityKrw" type="number" min="0" value="${studioState.siElectricityKrw}"></label>
+      <label><span>${en ? "Electricity (USD/kWh)" : "전력 단가 (원/kWh)"}</span><input id="siElectricityKrw" type="number" min="0" step="${en ? 0.01 : 1}" value="${studioDisplayFromKrw(studioState.siElectricityKrw)}"></label>
       <label><span>${en ? "Annual maintenance (%)" : "연 유지보수율 (%)"}</span><input id="siMaintenancePct" type="number" min="0" max="100" value="${studioState.siMaintenancePct}"></label>
     </div></details>
     ${studioState.siInputMode === "expert" ? `${renderEditableSiBom(plans.find((plan) => plan.id === studioState.siSelectedPlan) || plans[1] || plans[0])}${renderV44V48Modules(model, plans)}` : ""}
@@ -1844,7 +1875,14 @@ function bindDecisionStudio() {
     siRackCapacityU: ["siRackCapacityU", Number], siPduCircuitKw: ["siPduCircuitKw", Number],
     siCoolingPue: ["siCoolingPue", Number],
   };
-  Object.entries(fields).forEach(([id, [key, cast]]) => $(id)?.addEventListener("change", (event) => updateStudio(key, cast(event.target.value))));
+  const krwDisplayFields = new Set(["studioBudget", "siBudgetKrw", "siElectricityKrw", "siFacilityKrwMonth", "siBomExtraKrw"]);
+  const usdDisplayFields = new Set(["siCloudHourlyUsd"]);
+  Object.entries(fields).forEach(([id, [key, cast]]) => $(id)?.addEventListener("change", (event) => {
+    let value = cast(event.target.value);
+    if (krwDisplayFields.has(id)) value = studioKrwFromDisplay(value);
+    if (usdDisplayFields.has(id)) value = studioUsdFromDisplay(value);
+    updateStudio(key, value);
+  }));
   $("customVision")?.addEventListener("change", (event) => updateStudio("customVision", event.target.checked));
   $("siDevProd")?.addEventListener("change", (event) => updateStudio("siDevProd", event.target.checked));
   $("siStreaming")?.addEventListener("change", (event) => updateStudio("siStreaming", event.target.checked));
@@ -2192,6 +2230,7 @@ function initDecisionStudio() {
     document.getElementById("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   });
   window.addEventListener("languagechange", renderDecisionStudio);
+  document.addEventListener("ai-hardware-languagechange", renderDecisionStudio);
   document.querySelector("[data-language-toggle]")?.addEventListener("click", () => queueMicrotask(renderDecisionStudio));
 }
 

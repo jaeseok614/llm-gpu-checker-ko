@@ -60,7 +60,7 @@ const UI_COPY_V15 = {
   "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
   "benchmark.dashboard": { ko: "벤치마크 데이터 현황", en: "Benchmark coverage dashboard" },
   "benchmark.submit": { ko: "측정값 제보", en: "Submit a measurement" },
-  "advisor.currentPrice": { ko: "현재 GPU 시세 (USD)", en: "Current GPU market price (USD)" },
+  "advisor.currentPrice": { ko: "현재 GPU 시세 (원)", en: "Current GPU market price (USD)" },
 };
 function uiText(key) {
   return UI_COPY_V15[key]?.[uiLanguage === "en" ? "en" : "ko"] || key;
@@ -1087,6 +1087,24 @@ const ENGLISH_UI_REPLACEMENTS = [
 // "Model을"), which reads as broken text rather than a simple missing
 // translation.
 const HANGUL_RANGE = "\\uAC00-\\uD7A3\\u3131-\\u318E";
+const STATIC_TEXT_SOURCES = new WeakMap();
+const STATIC_ATTRIBUTE_SOURCES = new WeakMap();
+
+function captureStaticTranslationSources(root = document.body) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (!node.parentElement?.closest("script,style")) STATIC_TEXT_SOURCES.set(node, node.nodeValue);
+  }
+  root.querySelectorAll("[placeholder],[aria-label],[title]").forEach((node) => {
+    const sources = {};
+    ["placeholder", "aria-label", "title"].forEach((attribute) => {
+      if (node.hasAttribute(attribute)) sources[attribute] = node.getAttribute(attribute);
+    });
+    STATIC_ATTRIBUTE_SOURCES.set(node, sources);
+  });
+}
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -1231,11 +1249,12 @@ function translateDynamicUi(language = "en") {
   while (walker.nextNode()) textNodes.push(walker.currentNode);
   textNodes.forEach((node) => {
     if (node.parentElement?.closest("script,style")) return;
-    node.nodeValue = replaceText(node.nodeValue);
+    node.nodeValue = replaceText(STATIC_TEXT_SOURCES.get(node) ?? node.nodeValue);
   });
   document.querySelectorAll("[placeholder],[aria-label],[title]").forEach((node) => {
+    const sources = STATIC_ATTRIBUTE_SOURCES.get(node) || {};
     ["placeholder", "aria-label", "title"].forEach((attribute) => {
-      if (node.hasAttribute(attribute)) node.setAttribute(attribute, replaceText(node.getAttribute(attribute)));
+      if (node.hasAttribute(attribute)) node.setAttribute(attribute, replaceText(sources[attribute] ?? node.getAttribute(attribute)));
     });
   });
 }
@@ -1425,7 +1444,7 @@ function setUiLanguage(language) {
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
     const source = node.dataset.i18nSource || node.textContent.trim();
     node.dataset.i18nSource = source;
-    if (dictionary[source]) node.textContent = dictionary[source];
+    node.textContent = uiLanguage === "en" ? (dictionary[source] || source) : source;
   });
   const toggle = document.querySelector("[data-language-toggle]");
   if (toggle) {
@@ -1460,6 +1479,11 @@ function setUiLanguage(language) {
   else if (!$("gpuPlacementPlanCompare")?.hidden) comparePlacementPlans();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
+  // The generic sweep intentionally starts from the captured Korean source
+  // so a second language switch is reversible. Re-apply keyed copy afterward
+  // because these entries (for example "START IN 30 SECONDS") are complete
+  // sentence replacements rather than dictionary fragments.
+  applyV15Translations();
   // Purpose choices are workload-specific and should not pass through the
   // generic text replacement sweep. Rebuild them in the selected language.
   refreshSimplePurposeOptions();
@@ -1589,6 +1613,7 @@ function init() {
   ensureGpuAdvisorPanel();
   populateSelects();
   applyUrlState();
+  captureStaticTranslationSources();
   restoreUiLanguage();
   bindEvents();
   refreshCoreTaskUi();
@@ -7238,14 +7263,16 @@ function renderGpuAdvisor() {
           <dl>
             <div><dt>${en ? "Estimated speed" : "예상 속도"}</dt><dd>${escapeHtml(formatThroughput(item.speed, item.estimate?.unitLabel || "tok/s"))}</dd></div>
             <div><dt>${en ? "Reference price" : "참고 가격"}</dt><dd class="price-state is-${escapeAttr(item.priceState.kind)}">${item.koreanMarket?.lowestKrw
-              ? `${Math.round(item.koreanMarket.lowestKrw).toLocaleString(en ? "en-US" : "ko-KR")}${en ? " KRW" : "원"}`
+              ? (pricing?.formatFromKrw(item.koreanMarket.lowestKrw, uiLanguage) || `${Math.round(item.koreanMarket.lowestKrw).toLocaleString("ko-KR")}원`)
               : item.priceState.kind === "launch"
-                ? `$${item.market.priceUsd.toLocaleString("en-US")}`
+                ? (pricing?.formatFromUsd(item.market.priceUsd, uiLanguage) || `$${item.market.priceUsd.toLocaleString("en-US")}`)
                 : item.priceState.label}<small>${escapeHtml(item.priceState.label)}${item.priceState.note ? ` · ${escapeHtml(item.priceState.note)}` : ""}</small></dd></div>
             <div><dt>${en ? "Monthly energy" : "월 전력비"}</dt><dd>${pricing ? pricing.formatMoney(advisorCurrency === "KRW" ? pricing.toKrw(item.monthlyEnergy, "USD") : item.monthlyEnergy, advisorCurrency, uiLanguage) : `$${item.monthlyEnergy.toFixed(2)}`}</dd></div>
             <div><dt>${en ? "Evidence" : "근거"}</dt><dd>${escapeHtml(gpuEvidenceLabel(item.preset, en))}</dd></div>
             <div><dt>${en ? "vs current GPU" : "현재 GPU 대비"}</dt><dd>${currentSpeed ? `${(item.speed / currentSpeed).toFixed(2)}×` : "—"}</dd></div>
-            <div><dt>${en ? "Speed / $1K" : "가격 대비 속도"}</dt><dd>${(item.speed / Math.max(0.2, (item.market.priceUsd || currentPrice || budget) / 1000)).toFixed(1)}</dd></div>
+            <div><dt>${en ? "Speed / $1K" : "속도 / 100만원"}</dt><dd>${(item.speed / Math.max(0.2, en
+              ? (item.market.priceUsd || currentPrice || budget) / 1000
+              : (pricing?.toKrw(item.market.priceUsd || currentPrice || budget, "USD") || 0) / 1000000)).toFixed(1)}</dd></div>
           </dl>
           <button type="button" class="ghost-button" data-advisor-select-gpu="${escapeAttr(item.preset.id)}">${en ? "Use this GPU" : "이 GPU 선택"}</button>
         </article>
