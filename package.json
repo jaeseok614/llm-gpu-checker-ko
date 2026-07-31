@@ -1,6 +1,6 @@
 {
   "name": "ai-hardware-fit",
-  "version": "6.6.0",
+  "version": "7.0.0",
   "private": false,
   "description": "Open-source AI infrastructure sizing assistant for LLM, RAG, VLM, media, voice, and avatar workloads with SLA, BOM, TCO, and proposal exports.",
   "type": "module",
@@ -8,8 +8,11 @@
     "ai-hardware-fit": "./scripts/benchmark-cli.mjs"
   },
   "scripts": {
-    "check": "node --check ui-foundation.js && node --check feature-loader.js && node --check app.js && node --check platform-v2.js && node --check platform-v3.js && node --check data/decision-data.js && node --check data/model-capabilities.js && node --check features/workspace-controller.js && node --check features/guided-experience.js && node --check features/decision-guidance.js && node --check features/catalog-requests.js && node --check features/catalog-search.js && node --check features/evidence-policy.js && node --check features/pricing-policy.js && node --check features/infrastructure-sizing.js && node --check features/runtime-localization.js && node --check features/quick-recommendation.js && node --check features/community-feedback.js && node --check scripts/benchmark-cli.mjs && node --check scripts/gpu-request-tools.mjs && node --check scripts/model-request-tools.mjs && node --check scripts/benchmark-request-tools.mjs && node --check scripts/ui-regression.mjs && node scripts/validate-data.mjs && node scripts/data-audit.mjs && node scripts/build-static.mjs && node --test --test-force-exit tests/pipelines.test.mjs && npm run test:smoke",
+    "check": "node --check ui-foundation.js && node --check feature-loader.js && node --check app.js && node --check platform-v2.js && node --check platform-v3.js && node --check data/decision-data.js && node --check data/model-capabilities.js && node --check features/workspace-controller.js && node --check features/guided-experience.js && node --check features/decision-guidance.js && node --check features/catalog-requests.js && node --check features/catalog-search.js && node --check features/evidence-policy.js && node --check features/pricing-policy.js && node --check features/infrastructure-sizing.js && node --check features/locale-context.js && node --check features/data-trust.js && node --check features/runtime-localization.js && node --check features/promotion-kit.js && node --check features/quick-recommendation.js && node --check features/community-feedback.js && node --check scripts/benchmark-cli.mjs && node --check scripts/gpu-request-tools.mjs && node --check scripts/model-request-tools.mjs && node --check scripts/benchmark-request-tools.mjs && node --check scripts/ui-regression.mjs && node scripts/check-size-budget.mjs && node scripts/validate-data.mjs && node scripts/data-audit.mjs && node scripts/build-static.mjs && node --test --test-force-exit tests/pipelines.test.mjs && npm run test:smoke",
     "test": "node scripts/run-tests.mjs",
+    "test:batch1": "node scripts/run-tests.mjs --batch=1",
+    "test:batch2": "node scripts/run-tests.mjs --batch=2",
+    "test:batch3": "node scripts/run-tests.mjs --batch=3",
     "test:smoke": "node --test --test-force-exit tests/smoke.test.mjs",
     "test:visual": "node scripts/ui-regression.mjs",
     "test:full": "node scripts/run-tests.mjs",

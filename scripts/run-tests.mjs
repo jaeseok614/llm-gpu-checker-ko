@@ -35,7 +35,18 @@ const groups = [
   ],
 ];
 
-for (const [index, names] of groups.entries()) {
+const batchArg = process.argv.find((arg) => arg.startsWith("--batch="));
+const requestedBatch = batchArg ? Number(batchArg.split("=")[1]) : null;
+if (requestedBatch !== null && (!Number.isInteger(requestedBatch) || requestedBatch < 1 || requestedBatch > groups.length)) {
+  console.error(`--batch must be an integer from 1 to ${groups.length}.`);
+  process.exit(2);
+}
+
+const selectedGroups = requestedBatch === null
+  ? groups.map((names, index) => ({ names, index }))
+  : [{ names: groups[requestedBatch - 1], index: requestedBatch - 1 }];
+
+for (const { names, index } of selectedGroups) {
   const pattern = names.join("|");
   console.log(`\n[test batch ${index + 1}/${groups.length}] ${pattern}`);
   const result = spawnSync(process.execPath, [
@@ -52,4 +63,6 @@ for (const [index, names] of groups.entries()) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-console.log("\nAll test batches passed.");
+console.log(requestedBatch === null
+  ? "\nAll test batches passed."
+  : `\nTest batch ${requestedBatch} passed.`);

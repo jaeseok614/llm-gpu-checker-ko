@@ -39,7 +39,10 @@ const DATA_FILES = [
   "features/evidence-policy.js",
   "features/pricing-policy.js",
   "features/infrastructure-sizing.js",
+  "features/locale-context.js",
+  "features/data-trust.js",
   "features/runtime-localization.js",
+  "features/promotion-kit.js",
 ];
 
 // Loads the app into a fresh jsdom window and returns that window. Each

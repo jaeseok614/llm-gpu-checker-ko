@@ -31,7 +31,10 @@ const dataFiles = [
   "features/evidence-policy.js",
   "features/pricing-policy.js",
   "features/infrastructure-sizing.js",
+  "features/locale-context.js",
+  "features/data-trust.js",
   "features/runtime-localization.js",
+  "features/promotion-kit.js",
 ];
 
 let dom;
@@ -64,6 +67,23 @@ test("first screen presents three beginner choices and one advanced placement to
   assert.ok(app.document.querySelector('[data-demo-model]'));
   assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 3);
   assert.ok(app.document.getElementById("workspaceJourney"));
+  assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60초/);
+  assert.match(app.document.querySelector("[data-showcase-feedback]").href, /product-feedback\.yml/);
+});
+
+test("locale helpers and price data trust remain deterministic", () => {
+  assert.equal(app.AIHardwareLocale.confidence("낮음", "en"), "Low");
+  assert.equal(app.AIHardwareLocale.confidence("Low", "ko"), "낮음");
+  assert.match(app.AIHardwareLocale.usedPriceMethod("신품 최저가의 75% 계산 참고값", "en"), /75%/);
+  const coverage = app.AIHardwareDataTrust.priceCoverage(
+    app.LLM_GPU_CHECKER_DATA.gpus.filter((gpu) => gpu.id !== "custom"),
+    app.LLM_GPU_CHECKER_DATA.koreanGpuMarket,
+    new Date("2026-07-31T00:00:00Z"),
+  );
+  assert.equal(coverage.sourced, 3);
+  assert.equal(coverage.fresh, 3);
+  assert.equal(coverage.missing, coverage.total - 3);
+  assert.equal(app.AIHardwareDataTrust.validateMarketRows(app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).length, 0);
 });
 
 test("guided workspace collapses the chooser and can return to it", () => {
@@ -235,6 +255,8 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.equal(app.document.querySelectorAll(".si-readiness-checks > button").length, 8);
   assert.equal(app.document.querySelectorAll(".si-plan-fit").length, 3);
   assert.equal(app.document.querySelectorAll(".si-plan-tradeoffs > span").length, 4);
+  assert.equal(app.document.querySelectorAll(".si-plan-card .si-decision-metrics > span").length, 18);
+  assert.match(app.document.querySelector(".si-plan-detail").textContent, /이럴 때는 피하세요/);
   const planSnapshot = app.eval(`calculateSiSizing().plans.map((plan) => ({
     id: plan.id,
     price: plan.purchaseKrw,
@@ -302,10 +324,10 @@ test("customer proposal links exclude internal sales fields and render read-only
   app.eval('updateStudio("siReadOnly", false);');
 });
 
-test("v6.6 snapshots and share links keep a versioned infrastructure state", () => {
+test("v7.0 snapshots and share links keep a versioned infrastructure state", () => {
   app.eval("syncStudioUrl(); window.__smokeSizingSnapshot = sizingSnapshot(); window.__smokeShareState = shareableStudioState();");
   assert.equal(app.__smokeSizingSnapshot.schemaVersion, 3);
-  assert.equal(app.__smokeSizingSnapshot.appVersion, "6.6.0");
+  assert.equal(app.__smokeSizingSnapshot.appVersion, "7.0.0");
   assert.equal(app.__smokeSizingSnapshot.readiness.total, 8);
   assert.equal(new URL(app.location.href).searchParams.get("schema"), "3");
   assert.ok(Object.keys(app.__smokeShareState).every((key) => key === "tab" || key === "modelKey" || key.startsWith("si")));
@@ -329,6 +351,8 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   assert.match(app.document.querySelector("[data-demo-infra]").textContent, /30-user internal RAG estimate/);
   assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /[가-힣]/);
   assert.match(app.document.querySelector(".si-simple-wizard").textContent, /three steps/i);
+  assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60-second/);
+  assert.match(app.document.querySelector("[data-showcase-feedback]").textContent, /Send workflow feedback/);
   app.document.querySelector('[data-si-input-mode="expert"]').click();
   assert.match(app.document.querySelector('[data-si-input-mode="expert"]').textContent, /Detailed estimate/);
   assert.match(app.document.getElementById("siIndustry").value, /Manufacturing/);
@@ -336,6 +360,14 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "USD");
   assert.match(app.document.getElementById("siElectricityKrw").closest("label").textContent, /USD\/kWh/);
   assert.equal(app.eval("studioMoney(1400000)"), "$1,000");
+  assert.match(app.document.querySelector(".si-plan-card .si-decision-metrics").textContent, /High|Medium|Low/);
+  app.eval('updateStudio("siReadOnly", true);');
+  assert.match(app.document.querySelector(".customer-proposal").textContent, /Confidence/);
+  assert.doesNotMatch(app.document.querySelector(".customer-proposal").textContent, /높음|중간|낮음/);
+  app.eval('updateStudio("siReadOnly", false);');
+  app.document.querySelector('[data-studio-tab="market"]').click();
+  assert.match(app.document.getElementById("decisionStudioBody").textContent, /Planning reference: 75%/);
+  app.document.querySelector('[data-studio-tab="consulting"]').click();
 
   app.document.querySelector('[data-platform-tab="purchase"]').click();
   assert.equal(app.document.getElementById("purchaseCurrency").value, "USD");
@@ -346,6 +378,7 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.document.querySelector('[data-studio-tab="consulting"]').click();
   app.document.querySelector('[data-si-input-mode="expert"]').click();
   assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /실행할 모델을 알아요/);
+  assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60초/);
   assert.match(app.document.querySelector(".core-task-intro").textContent, /지금 알고 있는 것 하나만 고르세요/);
   assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /I know which|Choose the one/);
   assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "KRW");

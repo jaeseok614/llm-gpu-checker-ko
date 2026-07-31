@@ -164,7 +164,7 @@ let studioState = {
   siDiscountPct: 0,
   siMarginPct: 12,
   siVatPct: 10,
-  siExchangeRate: 1400,
+  siExchangeRate: Number(window.LLM_GPU_CHECKER_DATA?.priceDataMeta?.exchangeRateKrwPerUsd || 1400),
   siQuoteValidDays: 30,
   siQuoteStatus: "draft",
   siReviewer: "",
@@ -186,7 +186,8 @@ function studioMarket(gpuId) {
   const gpu = GPU_PRESETS.find((item) => item.id === gpuId);
   if (!gpu) return null;
   const reference = gpuMarketReference(gpu);
-  const newKrw = Math.round(reference.priceUsd * 1400 / 10000) * 10000;
+  const planningRate = Number(window.LLM_GPU_CHECKER_DATA?.priceDataMeta?.exchangeRateKrwPerUsd || 1400);
+  const newKrw = Math.round(reference.priceUsd * planningRate / 10000) * 10000;
   return {
     gpuId,
     newKrw,
@@ -376,7 +377,7 @@ function renderStudioMarket() {
     </tr></thead><tbody>${rows.map(({ market, gpu, ageDays, score }) => `<tr>
       <td><strong>${platformEscape(shortGpuName(gpu.name))}</strong></td>
       <td>${studioMoney(market.newKrw)}<small>${studioMoney(market.lowestKrw)}</small></td>
-      <td>${studioMoney(market.usedKrw)}<small>${platformEscape(market.usedPriceMethod)}</small></td>
+      <td>${studioMoney(market.usedKrw)}<small>${platformEscape(window.AIHardwareLocale?.usedPriceMethod(market.usedPriceMethod, en ? "en" : "ko") || market.usedPriceMethod)}</small></td>
       <td>${market.updatedAt}${ageDays >= 90 ? `<span class="studio-stale">${en ? `${ageDays}+ days old` : `${ageDays}일 이상 경과`}</span>` : ageDays > 30 ? `<span class="studio-aging">${en ? `Checked ${ageDays} days ago` : `${ageDays}일 전 확인`}</span>` : `<span class="studio-fresh">${ageDays === 0 ? (en ? "Checked today" : "오늘 확인") : (en ? `Checked ${ageDays} days ago` : `${ageDays}일 전 확인`)}</span>`}</td>
       <td>#${valueOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${score.speed ? (en ? `${(score.speed / (market.lowestKrw / studioExchangeRate()) * 1000).toFixed(1)} / $1K` : `${(score.speed / market.lowestKrw * 1000000).toFixed(1)} / ₩1M`) : "—"}</small></td>
       <td>#${vramOrder.findIndex((row) => row.market.gpuId === market.gpuId) + 1}<small>${en ? `${((gpu.vram || 0) / (market.lowestKrw / studioExchangeRate()) * 1000).toFixed(1)} GB / $1K` : `${((gpu.vram || 0) / market.lowestKrw * 1000000).toFixed(1)} GB / ₩1M`}</small></td>
@@ -1063,7 +1064,13 @@ function renderSelectedPlanDetail(model, plans) {
         <li>${en ? `${plan.nodes} server(s), ${plan.gpuPerServer} GPU/server, estimated capacity ${plan.capacity}.` : `${plan.nodes}대 서버, 서버당 GPU ${plan.gpuPerServer}개, 예상 동시 응답 ${plan.capacity}명입니다.`}</li>
         <li>${en ? `Failover capacity is ${plan.failoverCapacity}; PoC verification is required.` : `장애 시 잔여 처리량은 ${plan.failoverCapacity}이며 최종 확정 전 PoC가 필요합니다.`}</li>
       </ul></article>
+      <article><h4>${en ? "When to avoid it" : "이럴 때는 피하세요"}</h4><ul>
+        <li>${plan.id === "economy" ? (en ? "Avoid when failover is mandatory or traffic growth is uncertain." : "무중단 장애 대응이 필수이거나 트래픽 증가폭을 모르면 피하세요.") : plan.id === "scalable" ? (en ? "Avoid when near-term utilization is low and the budget is fixed." : "단기 사용률이 낮고 예산 상한이 확실하면 과투자가 될 수 있습니다.") : (en ? "Review a smaller option when the budget is a hard cap and waiting is acceptable." : "예산 상한이 절대적이고 일부 대기가 가능하면 경제형도 검토하세요.")}</li>
+        <li>${en ? `Next action: validate ${plan.batchSize || 1} batch and ${Number(plan.requestedRps || studioState.siQps).toFixed(2)} RPS with a representative PoC.` : `다음 행동: 대표 PoC에서 배치 ${plan.batchSize || 1}와 ${Number(plan.requestedRps || studioState.siQps).toFixed(2)} RPS를 검증하세요.`}</li>
+        <li>${en ? "Savings lever: reduce model size, context length, or reserve capacity before removing availability safeguards." : "비용 절감은 가용성 안전장치보다 모델 크기·컨텍스트·증설 여유를 먼저 낮추세요."}</li>
+      </ul></article>
       <article><h4>${en ? "Automatically selected infrastructure" : "자동 선택 인프라"}</h4><dl><div><dt>CPU</dt><dd>${parts.cpu} · ${plan.cpuCores}${en ? " cores+" : "코어+"}</dd></div><div><dt>RAM</dt><dd>${parts.memory}</dd></div><div><dt>${en ? "Storage" : "스토리지"}</dt><dd>${parts.storage}</dd></div><div><dt>${en ? "Network" : "네트워크"}</dt><dd>${parts.nic}</dd></div><div><dt>${en ? "Server / power" : "서버·전원"}</dt><dd>${parts.server} · ${parts.power}</dd></div></dl></article>
+      <article><h4>${en ? "Operating assumptions" : "상세 운영 가정"}</h4><dl><div><dt>${en ? "Production / reserve / non-prod" : "운영 / 예비 / 비운영"}</dt><dd>${plan.productionGpuCount ?? plan.gpuCount} / ${plan.reserveGpuCount ?? 0} / ${plan.nonProdGpuCount ?? 0}</dd></div><div><dt>${en ? "Demand / safe capacity" : "요청률 / 안전 처리량"}</dt><dd>${Number(plan.requestedRps || studioState.siQps).toFixed(2)} / ${Number(plan.capacityRps || 0).toFixed(2)} RPS</dd></div><div><dt>${en ? "Batch / queue" : "배치 / 대기열"}</dt><dd>${plan.batchSize || 1} · ${en ? (plan.queueState || "healthy") : ({ healthy: "안정", watch: "주의", critical: "위험" }[plan.queueState] || "안정")}</dd></div><div><dt>${en ? "Expected throughput" : "예상 처리 속도"}</dt><dd>${plan.speedLow.toFixed(0)}–${plan.speedHigh.toFixed(0)} tok/s · ±${plan.expectedErrorPct}%</dd></div></dl></article>
       <article><h4>${en ? "Cost and evidence basis" : "비용·근거 산정 기준"}</h4><dl><div><dt>${en ? "GPU specification source" : "GPU 사양 출처"}</dt><dd><span class="evidence-status is-${platformEscape(evidenceState.id)}">${platformEscape(en ? evidenceState.en : evidenceState.ko)}</span></dd></div><div><dt>${en ? "GPU price status" : "GPU 가격 상태"}</dt><dd class="price-state is-${platformEscape(priceState.kind)}">${platformEscape(priceState.label)}<small>${platformEscape(priceState.note || "")}</small></dd></div><div><dt>${en ? "Planning unit assumption" : "계산용 GPU 단가 가정"}</dt><dd>${unitKrw ? studioMoney(unitKrw) : (en ? "Quote required" : "견적 문의 필요")}</dd></div><div><dt>${en ? "GPU subtotal" : "GPU 소계"}</dt><dd>${studioMoney(gpuSubtotal)}</dd></div><div><dt>${en ? "Server/base infrastructure" : "서버·기반 인프라 가정"}</dt><dd>${studioMoney(baseInfra)}</dd></div><div><dt>${en ? "Annual energy" : "연 전력비"}</dt><dd>${studioMoney(plan.annualEnergyKrw)}</dd></div></dl><p>${en ? "A manually entered supplier quote should override this planning assumption." : "사용자가 입력한 공급사 견적이 있으면 이 계획 가정보다 우선 적용해야 합니다."}</p></article>
     </div>
     <div class="si-source-links"><strong>${en ? "Verify prices and evidence" : "가격·근거 확인"}</strong>${sourceLinks.map(([name,url]) => `<a href="${platformEscape(url)}" target="_blank" rel="noopener noreferrer">${platformEscape(name)} ↗</a>`).join("")}</div>
@@ -1317,7 +1324,10 @@ function renderSimpleSizingWizard(model, plans) {
     "voice-agent": [en ? "Realtime STT, conversation, and TTS" : "실시간 음성 인식·대화·합성", "Voice"],
     "avatar-chat": [en ? "Voice conversation with a lip-synced avatar" : "음성 대화와 립싱크 아바타", "Avatar"],
   };
-  const priceCoverage = window.AIHardwareCatalogRequests?.coverage(GPU_PRESETS, KOREAN_GPU_MARKET);
+  const priceCoverage = window.AIHardwareDataTrust?.priceCoverage(
+    GPU_PRESETS.filter((gpu) => gpu.id !== "custom"),
+    KOREAN_GPU_MARKET,
+  );
   const evidenceCoverage = window.AIHardwareEvidence?.audit(GPU_PRESETS, KOREAN_GPU_MARKET);
   const nextEvidence = evidenceCoverage?.priority.find((row) => row.source.id !== "official");
   const selectedFit = siPlanFit(recommended);
@@ -1339,7 +1349,7 @@ function renderSimpleSizingWizard(model, plans) {
     <div class="si-wizard-result" data-si-step-panel="4">
       <div class="simple-verdict ${selectedFit.valid ? "is-fit" : "is-review"}"><span>${selectedFit.valid ? (en ? "RECOMMENDED" : "추천 가능") : (en ? "REVIEW NEEDED" : "조건 검토 필요")}</span><strong>${studioMoney(selectedPrice)}</strong><small>${en ? "Estimated total · not a binding supplier quote" : "총 예상 가격 · 공급사 확정 견적 아님"}</small></div>
       <div class="si-auto-result"><div><span>${en ? "Automatically selected model and option" : "자동 선택 모델·구성안"}</span><strong>${platformEscape(model.name)} · ${planLabel(recommended, en)}</strong><small>${budget > 0 && !budgetMatches.length ? (en ? "No option fits the budget exactly; showing the lowest-cost option." : "예산 안에 들어오는 구성이 없어 최저비용안을 표시합니다.") : (en ? "You can change every assumption in detailed settings." : "상세 설정에서 모든 가정을 수정할 수 있습니다.")}</small></div><div class="si-auto-parts"><span><b>GPU</b>${platformEscape(shortGpuName(recommended.gpu.name))} × ${recommended.gpuCount}</span><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server / power" : "서버·전원"}</b>${parts.server} · ${parts.power}</span></div><p>${en ? "Why: the selected model memory, expected concurrency, failover, growth reserve, and optional budget determine the parts automatically." : "선정 이유: 모델 메모리, 예상 동시 사용자, 장애 대비, 성장 여유와 선택 예산을 기준으로 부품을 자동 선택했습니다."}</p></div>
-      ${priceCoverage ? `<aside class="price-coverage-note"><div><span class="section-kicker">v6.3 PRICE DATA</span><strong>${en ? `${priceCoverage.verified} of ${priceCoverage.total} GPUs have dated Korean market sources` : `GPU ${priceCoverage.total}개 중 ${priceCoverage.verified}개에 날짜·출처가 있는 국내 시세`}</strong><small>${en ? "Missing prices are shown as supplier quote or direct-input values, never as live market prices." : "시세가 없는 장비는 실시간 가격처럼 표시하지 않고 공급사 견적·직접 입력 대상으로 구분합니다."}</small></div><a class="ghost-button" href="${platformEscape(window.AIHardwareCatalogRequests.issueUrl("price", recommended.gpu.name))}" target="_blank" rel="noopener noreferrer">${en ? "Report a price" : "가격 제보"}</a></aside>` : ""}
+      ${priceCoverage ? `<aside class="price-coverage-note"><div><span class="section-kicker">v6.7 PRICE DATA</span><strong>${en ? `${priceCoverage.sourced} of ${priceCoverage.total} GPUs have dated Korean market sources` : `GPU ${priceCoverage.total}개 중 ${priceCoverage.sourced}개에 날짜·출처가 있는 국내 시세`}</strong><small>${en ? `Fresh ${priceCoverage.fresh} · aging ${priceCoverage.aging} · stale ${priceCoverage.stale}. Missing prices require a supplier quote or direct input. USD conversion uses an editable planning rate of ₩${studioExchangeRate().toLocaleString()}/USD, not a live FX quote.` : `최근 30일 ${priceCoverage.fresh}개 · 31~90일 ${priceCoverage.aging}개 · 90일 초과 ${priceCoverage.stale}개. 없는 가격은 공급사 견적·직접 입력 대상으로 구분합니다. 달러 환산은 실시간 환율이 아닌 편집 가능한 계획값 ${studioExchangeRate().toLocaleString()}원/USD를 사용합니다.`}</small></div><a class="ghost-button" href="${platformEscape(window.AIHardwareCatalogRequests.issueUrl("price", recommended.gpu.name))}" target="_blank" rel="noopener noreferrer">${en ? "Report a price" : "가격 제보"}</a></aside>` : ""}
       ${evidenceCoverage ? `<aside class="evidence-coverage-note ${nextEvidence ? "is-review" : ""}"><div><span class="section-kicker">v6.3 SOURCE TRUST</span><strong>${en ? `${evidenceCoverage.official} model-specific official sources · ${evidenceCoverage.family} family sources` : `모델별 공식 출처 ${evidenceCoverage.official}개 · 제품군 출처 ${evidenceCoverage.family}개`}</strong><small>${nextEvidence ? (en ? `Next priority: ${nextEvidence.gpu.name}. Family-level and missing sources are clearly marked.` : `다음 우선 검증: ${nextEvidence.gpu.name}. 제품군·누락 출처는 공식 모델 출처와 구분합니다.`) : (en ? "All priority GPUs have model-specific official sources." : "우선 검증 GPU의 모델별 공식 출처가 모두 연결되었습니다.")}</small></div>${nextEvidence ? `<a class="ghost-button" href="${platformEscape(window.AIHardwareEvidence.issueUrl(nextEvidence.gpu))}" target="_blank" rel="noopener noreferrer">${en ? "Improve source" : "출처 보강"}</a>` : ""}</aside>` : ""}
       <div class="simple-result-actions"><a class="primary-button" href="#siPlans">${en ? "Compare the three options" : "경제형·권장형·확장형 비교"}</a><button type="button" class="ghost-button" data-si-proposal>${en ? "Open customer summary" : "고객 공유 요약 열기"}</button><button type="button" class="ghost-button" data-si-input-mode="expert">${en ? "Edit detailed assumptions" : "상세 가정 수정"}</button></div>
     </div>
@@ -1370,7 +1380,7 @@ function renderCustomerProposal(model, plans) {
   return `<article class="customer-proposal" aria-labelledby="customerProposalTitle">
     <header><div><span class="section-kicker">v5.7 READ-ONLY RESULT</span><h3 id="customerProposalTitle">${platformEscape(studioState.siProjectName || (en ? "AI infrastructure estimate" : "AI 인프라 견적"))}</h3><p>${platformEscape(studioState.siPurpose)}</p></div><span class="proposal-readonly-badge">${en ? "Customer view · read only" : "고객 공유용 · 읽기 전용"}</span></header>
     <section class="proposal-hero"><div><small>${en ? "Selected option" : "선택 구성"}</small><strong>${en ? selected.en : selected.ko}</strong><h4>${platformEscape(shortGpuName(selected.gpu.name))} × ${selected.gpuCount}</h4></div><div><small>${en ? "Estimated total" : "총 예상 가격"}</small><strong>${studioMoney(commercial.finalPrice)}</strong><span>${en ? "Planning estimate, not a binding quote" : "계획용 추정치 · 확정 견적 아님"}</span></div></section>
-    <div class="proposal-summary-grid"><span><small>${en ? "Model" : "모델"}</small><strong>${platformEscape(model.name)}</strong></span><span><small>${en ? "Concurrent capacity" : "예상 동시 처리"}</small><strong>${selected.capacity}${en ? "" : "명"}</strong></span><span><small>VRAM</small><strong>${selected.requiredGb.toFixed(1)}GB ${en ? "required" : "필요"}</strong></span><span><small>${en ? "Facility power" : "설비 전력"}</small><strong>${selected.powerW.toLocaleString()}W+</strong></span><span><small>${en ? "Confidence" : "신뢰도"}</small><strong>${selected.confidence}</strong></span><span><small>${en ? "Expected range" : "예상 속도 범위"}</small><strong>${selected.speedLow.toFixed(0)}–${selected.speedHigh.toFixed(0)} tok/s</strong></span></div>
+    <div class="proposal-summary-grid"><span><small>${en ? "Model" : "모델"}</small><strong>${platformEscape(model.name)}</strong></span><span><small>${en ? "Concurrent capacity" : "예상 동시 처리"}</small><strong>${selected.capacity}${en ? "" : "명"}</strong></span><span><small>VRAM</small><strong>${selected.requiredGb.toFixed(1)}GB ${en ? "required" : "필요"}</strong></span><span><small>${en ? "Facility power" : "설비 전력"}</small><strong>${selected.powerW.toLocaleString()}W+</strong></span><span><small>${en ? "Confidence" : "신뢰도"}</small><strong>${platformEscape(window.AIHardwareLocale?.confidence(selected.confidence, en ? "en" : "ko") || selected.confidence)}</strong></span><span><small>${en ? "Expected range" : "예상 속도 범위"}</small><strong>${selected.speedLow.toFixed(0)}–${selected.speedHigh.toFixed(0)} tok/s</strong></span></div>
     <section><h4>${en ? "Automatically selected infrastructure" : "자동 선택 인프라"}</h4><div class="proposal-part-grid"><span><b>CPU</b>${parts.cpu}</span><span><b>RAM</b>${parts.memory}</span><span><b>Storage</b>${parts.storage}</span><span><b>Network</b>${parts.nic}</span><span><b>${en ? "Server" : "서버"}</b>${parts.server}</span><span><b>${en ? "Power" : "전원"}</b>${parts.power}</span></div></section>
     <section><h4>${en ? "Why this option" : "이 구성을 선택한 이유"}</h4><p>${en ? "The model memory, concurrent demand, failover requirement, and growth reserve are balanced against the estimated cost." : "모델 메모리, 동시 요청, 장애 대비, 성장 여유를 예상 비용과 균형 있게 반영했습니다."}</p><p class="proposal-caution">${en ? "Validate throughput, latency, networking, and final supplier pricing with a representative PoC." : "처리량·지연·네트워크·최종 공급 가격은 대표 워크로드 PoC와 공급사 검토로 확정해야 합니다."}</p></section>
     <footer><button type="button" class="primary-button" data-si-print>${en ? "Print / save PDF" : "인쇄·PDF 저장"}</button><button type="button" class="ghost-button" data-si-edit-proposal>${en ? "Open editable estimate" : "편집 화면 열기"}</button></footer>
@@ -1427,7 +1437,7 @@ function sizingSnapshot() {
   const readiness = siReadinessChecks(model, plans);
   return {
     schemaVersion: 3,
-    appVersion: "6.6.0",
+    appVersion: "7.0.0",
     savedAt: new Date().toISOString(),
     state: { ...studioState },
     model: model.name,
@@ -1588,7 +1598,7 @@ function renderStudioConsulting() {
       const physicalVram = Number(plan.gpu.gpuUsableMemoryGb || plan.gpu.vram || 0) * plan.gpuCount;
       const headroomGb = Math.max(0, physicalVram - plan.requiredGb);
       const fit = siPlanFit(plan);
-      const confidenceLabel = en ? ({ 높음: "High", 중간: "Medium", 낮음: "Low" }[plan.confidence]) : plan.confidence;
+      const confidenceLabel = window.AIHardwareLocale?.confidence(plan.confidence, en ? "en" : "ko") || plan.confidence;
       const reason = plan.id === "economy"
         ? (en ? "Lowest initial cost with a smaller operating reserve." : "운영 여유를 줄여 초기 도입비를 낮춘 구성입니다.")
         : plan.id === "scalable"
@@ -1600,10 +1610,7 @@ function renderStudioConsulting() {
         <div class="si-decision-metrics">
           <span><small>${en ? "Estimated proposal" : "총 예상 가격"}</small><strong>${studioMoney(pricing.finalPrice)}</strong></span>
           <span><small>GPU</small><strong>${platformEscape(shortGpuName(plan.gpu.name))} × ${plan.gpuCount}</strong></span>
-          <span><small>${en ? "Production / reserve / non-prod" : "운영 / 예비 / 비운영"}</small><strong>${plan.productionGpuCount ?? plan.gpuCount} / ${plan.reserveGpuCount ?? 0} / ${plan.nonProdGpuCount ?? 0}</strong></span>
           <span><small>${en ? "Concurrent users" : "예상 동시 사용자"}</small><strong>${plan.capacity}${en ? "" : "명"}</strong></span>
-          <span><small>${en ? "Demand / safe capacity" : "요청률 / 안전 처리량"}</small><strong>${Number(plan.requestedRps || studioState.siQps).toFixed(2)} / ${Number(plan.capacityRps || 0).toFixed(2)} RPS</strong></span>
-          <span><small>${en ? "Batch / queue" : "배치 / 대기열"}</small><strong>${plan.batchSize || 1} · ${plan.queueState === "healthy" ? (en ? "healthy" : "안정") : plan.queueState === "watch" ? (en ? "watch" : "주의") : (en ? "critical" : "위험")}</strong></span>
           <span><small>${en ? "VRAM headroom" : "VRAM 여유"}</small><strong>${headroomGb.toFixed(1)}GB</strong></span>
           <span><small>${en ? "Facility power" : "소비전력"}</small><strong>${plan.powerW.toLocaleString()}W+</strong></span>
           <span><small>${en ? "Evidence" : "신뢰도"}</small><strong>${plan.evidenceKind === "estimate" ? (en ? "Calculated estimate" : "계산 추정") : (en ? "External reference" : "외부 공개 참고값")} · ${confidenceLabel}</strong></span>

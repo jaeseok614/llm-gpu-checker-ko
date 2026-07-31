@@ -7629,6 +7629,32 @@ body.infra-task-active #benchmarkDashboard {
   font-weight: 800;
 }
 
+.showcase-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+}
+
+.showcase-copy strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.showcase-copy small {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.showcase-feedback {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .getting-started-panel {
   padding: 16px;
   border: 1px solid var(--blue);
@@ -8532,10 +8558,15 @@ body.infra-task-active #benchmarkDashboard {
   }
 
   .demo-chip,
+  .showcase-feedback,
   .advanced-entry,
   .advanced-entry > summary {
     width: 100%;
     margin-left: 0;
+  }
+
+  .showcase-copy {
+    width: 100%;
   }
 
   .advanced-entry[open] > button {

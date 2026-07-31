@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -20,7 +20,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npm run test:full
+
+  calculations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run calculation test batch ${{ matrix.batch }}
+        run: node scripts/run-tests.mjs --batch=${{ matrix.batch }}
 
   visual:
     runs-on: ubuntu-latest

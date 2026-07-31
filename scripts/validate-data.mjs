@@ -19,6 +19,7 @@ for (const file of [
   "data/model-metadata.js",
   "data/model-capabilities.js",
   "data/licenses.js",
+  "data/decision-data.js",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   vm.runInContext(source, context, { filename: file });
@@ -51,6 +52,10 @@ if (!data.useCaseDefinitions || typeof data.useCaseDefinitions !== "object" || A
 if (!data.licensePolicies || typeof data.licensePolicies !== "object" || Array.isArray(data.licensePolicies)) {
   throw new Error("licensePolicies must be an object");
 }
+assertArray(data.koreanGpuMarket, "koreanGpuMarket");
+if (!data.priceDataMeta || data.priceDataMeta.currency !== "KRW") {
+  throw new Error("priceDataMeta must define the KRW planning currency");
+}
 
 const gpuIds = new Set();
 for (const gpu of data.gpus) {
@@ -65,6 +70,21 @@ for (const gpu of data.gpus) {
   if (!["dedicated", "unified"].includes(gpu.memoryType)) throw new Error(`GPU ${gpu.id} has invalid memoryType`);
   if (gpu.formFactor === "laptop" && (!gpu.tgpMinW || !gpu.tgpMaxW || gpu.tgpMinW > gpu.tgpMaxW)) {
     throw new Error(`Laptop GPU ${gpu.id} needs a valid TGP range`);
+  }
+}
+
+const marketGpuIds = new Set();
+for (const row of data.koreanGpuMarket) {
+  requireFields(row, ["gpuId", "newKrw", "usedKrw", "lowestKrw", "updatedAt", "sourceName", "sourceUrl", "usedPriceMethod"], "Korean GPU market row");
+  if (!gpuIds.has(row.gpuId)) throw new Error(`market row references unknown GPU: ${row.gpuId}`);
+  if (marketGpuIds.has(row.gpuId)) throw new Error(`duplicate market GPU id: ${row.gpuId}`);
+  marketGpuIds.add(row.gpuId);
+  if (!/^https:\/\//.test(row.sourceUrl)) throw new Error(`market row ${row.gpuId} needs an HTTPS sourceUrl`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(row.updatedAt) || !Number.isFinite(Date.parse(row.updatedAt))) {
+    throw new Error(`market row ${row.gpuId} has invalid updatedAt`);
+  }
+  for (const field of ["newKrw", "usedKrw", "lowestKrw"]) {
+    if (!Number.isFinite(row[field]) || row[field] <= 0) throw new Error(`market row ${row.gpuId}.${field} must be positive`);
   }
 }
 

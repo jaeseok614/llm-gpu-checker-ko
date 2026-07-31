@@ -31,6 +31,15 @@ const KOREAN_GPU_MARKET = [
   },
 ];
 
+const PRICE_DATA_META = {
+  currency: "KRW",
+  checkedAt: "2026-07-31",
+  exchangeRateKrwPerUsd: 1400,
+  exchangeRateKind: "planning-assumption",
+  noteKo: "환율과 가격은 실시간 시세가 아닌 편집 가능한 계획 가정입니다.",
+  noteEn: "Exchange rates and prices are editable planning assumptions, not live quotes.",
+};
+
 const SYSTEM_PART_CATALOG = {
   cpu: [
     { id: "r5-7600", name: "AMD Ryzen 5 7600", cores: 6, score: 52, tdpW: 88, socket: "AM5", priceKrw: 245000 },
@@ -115,5 +124,6 @@ const GPU_PHYSICAL_REFERENCE = {
 
 window.LLM_GPU_CHECKER_DATA = window.LLM_GPU_CHECKER_DATA || {};
 window.LLM_GPU_CHECKER_DATA.koreanGpuMarket = KOREAN_GPU_MARKET;
+window.LLM_GPU_CHECKER_DATA.priceDataMeta = PRICE_DATA_META;
 window.LLM_GPU_CHECKER_DATA.systemPartCatalog = SYSTEM_PART_CATALOG;
 window.LLM_GPU_CHECKER_DATA.gpuPhysicalReference = GPU_PHYSICAL_REFERENCE;

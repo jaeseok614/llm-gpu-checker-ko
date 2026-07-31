@@ -138,10 +138,15 @@ test("catalog requests prevent duplicates and expose a structured price report",
 
 test("run feedback and visual regression workflows are public and repeatable", () => {
   const feedback = fs.readFileSync(".github/ISSUE_TEMPLATE/run-feedback.yml", "utf8");
+  const productFeedback = fs.readFileSync(".github/ISSUE_TEMPLATE/product-feedback.yml", "utf8");
   const workflow = fs.readFileSync(".github/workflows/ci.yml", "utf8");
   const visual = fs.readFileSync("scripts/ui-regression.mjs", "utf8");
   assert.match(feedback, /실행 결과/);
   assert.match(feedback, /민감한 정보/);
+  assert.match(productFeedback, /What was confusing or missing/);
+  assert.match(productFeedback, /confidential pricing/);
+  assert.match(workflow, /batch: \[1, 2, 3\]/);
+  assert.match(workflow, /run-tests\.mjs --batch=/);
   assert.match(workflow, /test:visual/);
   assert.match(workflow, /ui-regression-screenshots/);
   assert.match(visual, /1920, 1080/);

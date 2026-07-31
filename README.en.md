@@ -23,6 +23,10 @@
 
 ![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
 
+### Original dark UI preview
+
+![AI Hardware Fit dark UI demo](./docs/demo.gif)
+
 ### v4.8 Preview
 
 ![AI Hardware Fit v4.8 demo](./docs/demo-v4.8.gif)
@@ -49,6 +53,11 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v7.0** — Completes a zero-input 60-second tour, workflow feedback form, price freshness states, and decision guidance after selecting an option.
+- **v6.9** — Splits long calculation tests into three parallel CI jobs, enforces static size budgets, and removes duplicate validation from Pages deployment.
+- **v6.8** — Reduces plan cards to price, GPU, users, VRAM, power, confidence, and rationale while moving operating assumptions and avoid-when guidance into details.
+- **v6.7** — Validates Korean price sources, dates, freshness, and missing coverage while labeling exchange rates as editable planning assumptions.
+- **v6.6.1** — Localizes remaining confidence and used-price-method labels and centralizes Korean KRW versus English USD display rules.
 - **v6.6** — Splits guidance, catalog search, evidence policy, and v6 styles into focused modules covered by the static build and smoke tests.
 - **v6.5** — Adds duplicate checks to GPU, model, and price reports, plus direct views for open and completed catalog requests.
 - **v6.4** — Adds typo-, alias-, and intent-aware search for queries such as `RTX 509O`, `24GB laptop`, and `speech synthesis`.
@@ -181,6 +190,8 @@ npm run test:visual
 - [v2.0 decision platform](./docs/v2.0-decision-platform.md)
 - [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
 - [v3.0 purchase decision studio methodology](./docs/v3.0-decision-studio.md)
+- [v7.0 release notes](./docs/releases/v7.0.0.md)
+- [v7.0 60-second demo and launch copy](./docs/promotion/v7.0-launch-kit.md)
 - [v5.0 release notes](./docs/releases/v5.0.0.md)
 - [v4.9 release notes](./docs/releases/v4.9.0.md)
 - [v4.8 release notes](./docs/releases/v4.8.0.md)

@@ -35,14 +35,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install test dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Validate data
-        run: npm run check
-
       - name: Build cache-stamped static site
-        run: npm run build:static
+        run: node scripts/build-static.mjs
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

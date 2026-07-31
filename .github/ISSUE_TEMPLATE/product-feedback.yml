@@ -1,0 +1,35 @@
+name: Product workflow feedback
+description: Tell us which path was confusing or useful after trying a sample.
+title: "[Workflow feedback] "
+labels: ["feedback", "ux"]
+body:
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow tried
+      options:
+        - Find models for an owned GPU
+        - Find a GPU for a selected model
+        - AI infrastructure estimate
+        - Multi-model placement
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What were you trying to decide?
+      placeholder: For example, whether an RTX 3060 can run my model.
+    validations:
+      required: true
+  - type: textarea
+    id: confusing
+    attributes:
+      label: What was confusing or missing?
+      description: Do not include customer names, private prompts, or confidential pricing.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Optional environment
+      placeholder: Device, screen size, language, and browser
