@@ -37,8 +37,18 @@ jobs:
         with:
           args: --no-progress --max-retries 2 --timeout 20 README.md README.en.md data/*.js
           fail: true
+      - name: Check priority manufacturer specifications
+        id: official
+        continue-on-error: true
+        run: node scripts/official-source-audit.mjs --remote > official-source-health.json
+      - name: Upload official source report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: official-source-health
+          path: official-source-health.json
       - name: Open or update a maintenance issue
-        if: steps.audit.outcome == 'failure' || steps.links.outcome == 'failure'
+        if: steps.audit.outcome == 'failure' || steps.links.outcome == 'failure' || steps.official.outcome == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
@@ -48,6 +58,7 @@ jobs:
               "",
               `- Data audit: **${{ steps.audit.outcome }}**`,
               `- Link audit: **${{ steps.links.outcome }}**`,
+              `- Priority official specs: **${{ steps.official.outcome }}**`,
               "",
               `Workflow: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             ].join("\n");
@@ -61,5 +72,5 @@ jobs:
               await github.rest.issues.create({ ...context.repo, title, body });
             }
       - name: Fail after reporting
-        if: steps.audit.outcome == 'failure' || steps.links.outcome == 'failure'
+        if: steps.audit.outcome == 'failure' || steps.links.outcome == 'failure' || steps.official.outcome == 'failure'
         run: exit 1

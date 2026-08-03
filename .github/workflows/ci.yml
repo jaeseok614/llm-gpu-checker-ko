@@ -40,7 +40,7 @@ jobs:
 
   visual:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -51,12 +51,21 @@ jobs:
       - run: npm run build:static
       - name: Install browser test runtime
         run: |
-          npm install --no-save --package-lock=false playwright@1.61.1
+          npm install --no-save --package-lock=false playwright@1.61.1 axe-core@4.10.3 @lhci/cli@0.15.1
           npx playwright install chromium
+          echo "CHROME_PATH=$(node -e \"console.log(require('playwright').chromium.executablePath())\")" >> "$GITHUB_ENV"
       - run: npm run test:visual
+      - name: Lighthouse budgets
+        run: npx lhci autorun
       - name: Upload responsive screenshots
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: ui-regression-screenshots
           path: outputs/ui-regression
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lighthouse-reports
+          path: outputs/lighthouse

@@ -1437,7 +1437,7 @@ function sizingSnapshot() {
   const readiness = siReadinessChecks(model, plans);
   return {
     schemaVersion: 3,
-    appVersion: "7.0.0",
+    appVersion: "7.5.0",
     savedAt: new Date().toISOString(),
     state: { ...studioState },
     model: model.name,

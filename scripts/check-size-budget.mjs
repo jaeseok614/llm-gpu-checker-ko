@@ -3,7 +3,11 @@
 import fs from "node:fs";
 
 const budgets = [
-  ["app.js", 525 * 1024],
+  ["app.js", 350 * 1024],
+  ["features/i18n-runtime.js", 60 * 1024],
+  ["features/gpu-advisor.js", 32 * 1024],
+  ["features/model-placement.js", 115 * 1024],
+  ["features/benchmark-workspace.js", 40 * 1024],
   ["platform-v2.js", 60 * 1024],
   ["platform-v3.js", 210 * 1024],
   ["styles.css", 170 * 1024],

@@ -1,0 +1,133 @@
+/* v7.1 shared visual primitives: cards, controls, badges, and statuses. */
+:root {
+  --ui-radius-card: 18px;
+  --ui-radius-control: 8px;
+  --ui-control-min-height: 44px;
+  --ui-border: var(--border, #cbd5e1);
+  --ui-surface: var(--panel, #ffffff);
+  --ui-surface-muted: var(--panel-soft, #f6f8fb);
+  --ui-accent: var(--accent, #14658a);
+}
+
+:where(.core-task-switcher, .hardware-panel, .results-panel, .gpu-advisor-panel,
+  .gpu-insights-panel, .gpu-placement-panel, .benchmark-panel, .studio-shell,
+  .ui-card) {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-card);
+  background: var(--ui-surface);
+}
+
+:where(button, .primary-button, .ghost-button, .toggle-button, .icon-button,
+  .ui-button, select, input[type="text"], input[type="search"], input[type="number"]) {
+  min-height: var(--ui-control-min-height);
+  border-radius: var(--ui-radius-control);
+}
+
+:where(.grade-pill, .evidence-status, .price-state, .advisor-rank,
+  .studio-stale, .studio-aging, .studio-fresh, .ui-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  max-width: 100%;
+  border-radius: 999px;
+  line-height: 1.25;
+}
+
+.data-completeness.is-high strong { color: var(--success, #18794e); }
+.data-completeness.is-medium strong { color: var(--warning, #9a6700); }
+.data-completeness.is-low strong { color: var(--danger, #b42318); }
+
+.local-funnel-panel {
+  width: 100%;
+  margin-top: 1rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+}
+.local-funnel-panel p { margin: .6rem 0; color: var(--muted, #64748b); }
+.local-funnel-summary { display: flex; flex-wrap: wrap; gap: .5rem; }
+.local-funnel-summary span { padding: .35rem .55rem; border-radius: 999px; background: var(--ui-surface-muted); }
+.local-funnel-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+.mobile-decision-summary { display: none; }
+
+.community-measurement-panel {
+  width: min(calc(100% - 2rem), 1400px);
+  margin: 1.25rem auto;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+.community-measurement-panel > div:first-child p { color: var(--muted, #64748b); }
+.community-measurement-panel textarea {
+  width: 100%;
+  min-height: 9rem;
+  margin-top: 1rem;
+  padding: .8rem;
+  resize: vertical;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  color: inherit;
+  font: 500 .85rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.community-measurement-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin: .75rem 0; }
+.community-measurement-panel pre {
+  min-height: 4.5rem;
+  max-width: 100%;
+  overflow: auto;
+  padding: .8rem;
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.community-reference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+.community-reference-grid article { padding: .9rem; border: 1px solid var(--ui-border); border-radius: var(--ui-radius-control); }
+.community-reference-grid h3 { margin-top: 0; }
+
+@media (max-width: 700px) {
+  .community-reference-grid { grid-template-columns: 1fr; }
+}
+
+html:not([data-theme="dark"]) :where(.core-task-button small, .simple-pick-specs > span) {
+  color: #475569;
+}
+html:not([data-theme="dark"]) .theme-toggle button[data-theme="dark"] {
+  color: #334155;
+}
+html:not([data-theme="dark"]) .evidence-badge.is-estimate {
+  color: #7c2d12;
+  background: #ffedd5;
+}
+html:not([data-theme="dark"]) .simple-pick-copy[role="button"] {
+  color: #164e63;
+}
+html:not([data-theme="dark"]) .data-kind.is-reference {
+  color: #1e3a8a;
+  background: #dbeafe;
+}
+html:not([data-theme="dark"]) :where(.app-footer, .app-footer strong, .local-funnel-panel > summary) {
+  color: #334155;
+}
+
+@media (max-width: 520px) {
+  :where(button, .primary-button, .ghost-button, .toggle-button, .icon-button) {
+    min-height: 44px;
+  }
+
+  .mobile-decision-summary {
+    position: sticky;
+    z-index: 30;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    border-top: 1px solid var(--ui-border);
+    background: color-mix(in srgb, var(--ui-surface) 94%, transparent);
+    backdrop-filter: blur(12px);
+  }
+}
+
+@media print {
+  :where(.app-header, .core-task-switcher, .app-toast, .mobile-decision-summary) { display: none !important; }
+  :where(.gpu-advisor-card, .studio-plan-card, .detail-section) { break-inside: avoid; }
+}

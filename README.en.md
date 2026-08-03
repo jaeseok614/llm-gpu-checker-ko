@@ -53,6 +53,11 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v7.5** — Adds privacy-scrubbed measurement intake, same-condition comparison, contributor visibility, and priority measurement targets.
+- **v7.4** — Adds Lighthouse, axe, keyboard, six-viewport, long-name, empty-state, and print-PDF checks to CI.
+- **v7.3** — Adds a private local funnel summary that stores only predefined event counts and transmits no input values.
+- **v7.2** — Adds official sources for 30 priority GPUs, 30/90-day price warnings, completeness scores, and scheduled source checks.
+- **v7.1** — Splits translations and feature modules, lazy-loads benchmarks, and reduces app.js below the 350 KB budget.
 - **v7.0** — Completes a zero-input 60-second tour, workflow feedback form, price freshness states, and decision guidance after selecting an option.
 - **v6.9** — Splits long calculation tests into five parallel CI jobs, enforces static size budgets, and removes duplicate validation from Pages deployment.
 - **v6.8** — Reduces plan cards to price, GPU, users, VRAM, power, confidence, and rationale while moving operating assumptions and avoid-when guidance into details.
@@ -191,6 +196,7 @@ npm run test:visual
 - [v2.2 user build calculator](./docs/v2.2-build-calculator.md)
 - [v3.0 purchase decision studio methodology](./docs/v3.0-decision-studio.md)
 - [v7.0 release notes](./docs/releases/v7.0.0.md)
+- [v7.5 release notes](./docs/releases/v7.5.0.md)
 - [v7.0 60-second demo and launch copy](./docs/promotion/v7.0-launch-kit.md)
 - [v5.0 release notes](./docs/releases/v5.0.0.md)
 - [v4.9 release notes](./docs/releases/v4.9.0.md)

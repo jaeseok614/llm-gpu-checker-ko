@@ -23,6 +23,7 @@ const dataFiles = [
   "data/decision-data.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
+  "features/privacy-analytics.js",
   "features/workspace-controller.js",
   "features/guided-experience.js",
   "features/decision-guidance.js",
@@ -49,12 +50,57 @@ before(() => {
   const source = [
     ...dataFiles.map(read),
     read("ui-foundation.js"),
+    read("features/i18n-catalog.js"),
     read("app.js"),
+    read("features/i18n-runtime.js"),
+    read("features/gpu-advisor.js"),
+    read("features/model-placement.js"),
+    read("features/benchmark-workspace.js"),
     read("platform-v2.js"),
     read("platform-v3.js"),
     "init(); initPlatformV2(); initDecisionStudio();",
   ].join("\n;\n");
   app.eval(source);
+});
+
+test("v7.1 key catalog survives Korean-English-Korean round trips", () => {
+  app.setUiLanguage("ko");
+  const korean = app.document.querySelector(".core-task-intro strong").textContent;
+  app.setUiLanguage("en");
+  assert.equal(app.document.querySelector(".core-task-intro strong").textContent, "Choose the one thing you already know");
+  app.setUiLanguage("ko");
+  assert.equal(app.document.querySelector(".core-task-intro strong").textContent, korean);
+  assert.ok(app.AIHardwareI18n.audit().keyedNodes >= 20);
+  assert.deepEqual(Array.from(app.AIHardwareI18n.audit().missing), []);
+});
+
+test("v7.2 priority sources and completeness are deterministic", () => {
+  assert.equal(app.AIHardwareEvidence.PRIORITY_GPU_IDS.length, 30);
+  const priority = app.AIHardwareEvidence.audit(app.LLM_GPU_CHECKER_DATA.gpus, app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).priority;
+  assert.equal(priority.length, 30);
+  assert.ok(priority.every((row) => row.source.level >= 2));
+  const gpu = app.LLM_GPU_CHECKER_DATA.gpus.find((row) => row.id === "rtx5090-32");
+  assert.ok(app.AIHardwareDataTrust.scoreGpu(gpu).score >= 80);
+  assert.equal(app.AIHardwareDataTrust.freshness("2026-07-20", new Date("2026-08-03T00:00:00Z")).id, "fresh");
+  assert.equal(app.AIHardwareDataTrust.freshness("2026-04-01", new Date("2026-08-03T00:00:00Z")).id, "stale");
+});
+
+test("v7.3 local behavior counters never retain payload values", () => {
+  app.AIHardwareLocalAnalytics.clear();
+  assert.equal(app.AIHardwareLocalAnalytics.track("share", { customer: "secret" }), true);
+  assert.equal(app.AIHardwareLocalAnalytics.track("unknown_event"), false);
+  const summary = app.AIHardwareLocalAnalytics.exportSummary();
+  assert.match(summary, /"share": 1/);
+  assert.doesNotMatch(summary, /secret|customer/);
+});
+
+test("v7.5 terminal results are sanitized before submission", () => {
+  const parsed = app.AIHardwareCommunityFeedback.parseTerminalResult(JSON.stringify({
+    model: "Qwen3 8B", gpu: "RTX 3060", tokensPerSecond: 42, prompt: "private", apiKey: "secret",
+  }));
+  assert.deepEqual(Array.from(Object.keys(parsed)).sort(), ["gpu", "model", "tokensPerSecond"]);
+  assert.doesNotMatch(app.AIHardwareCommunityFeedback.measurementIssueUrl(parsed), /private|secret/);
+  assert.equal(app.AIHardwareCommunityFeedback.neededCombinations().length, 10);
 });
 
 after(() => dom?.window.close());
@@ -324,10 +370,10 @@ test("customer proposal links exclude internal sales fields and render read-only
   app.eval('updateStudio("siReadOnly", false);');
 });
 
-test("v7.0 snapshots and share links keep a versioned infrastructure state", () => {
+test("v7.5 snapshots and share links keep a versioned infrastructure state", () => {
   app.eval("syncStudioUrl(); window.__smokeSizingSnapshot = sizingSnapshot(); window.__smokeShareState = shareableStudioState();");
   assert.equal(app.__smokeSizingSnapshot.schemaVersion, 3);
-  assert.equal(app.__smokeSizingSnapshot.appVersion, "7.0.0");
+  assert.equal(app.__smokeSizingSnapshot.appVersion, "7.5.0");
   assert.equal(app.__smokeSizingSnapshot.readiness.total, 8);
   assert.equal(new URL(app.location.href).searchParams.get("schema"), "3");
   assert.ok(Object.keys(app.__smokeShareState).every((key) => key === "tab" || key === "modelKey" || key.startsWith("si")));

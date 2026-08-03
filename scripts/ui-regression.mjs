@@ -22,6 +22,16 @@ function loadPlaywright() {
   }
 }
 
+function resolveOptionalModule(modulePath) {
+  try {
+    return createRequire(import.meta.url).resolve(modulePath);
+  } catch {
+    const moduleDir = process.env.PLAYWRIGHT_MODULE_DIR;
+    if (!moduleDir) return "";
+    try { return createRequire(path.join(moduleDir, "package.json")).resolve(modulePath); } catch { return ""; }
+  }
+}
+
 function contentType(file) {
   return {
     ".html": "text/html; charset=utf-8",
@@ -72,7 +82,8 @@ const viewports = [
   [430, 932],
   [390, 844],
 ];
-const report = { generatedAt: new Date().toISOString(), viewports: [], flows: {} };
+const report = { generatedAt: new Date().toISOString(), viewports: [], flows: {}, accessibility: {} };
+const axePath = resolveOptionalModule("axe-core/axe.min.js");
 
 function check(condition, message) {
   if (!condition) throw new Error(message);
@@ -100,6 +111,16 @@ try {
     check(state.cardTypes.length > 0 && state.cardTypes.every((type) => type === "audio-tts"), `${width}x${height}: recommendation crossed workload boundaries`);
     check(state.taskButtons === 3, `${width}x${height}: beginner task count changed`);
 
+    if (width === 1280 && axePath) {
+      await page.addScriptTag({ path: axePath });
+      const axeResult = await page.evaluate(async () => window.axe.run(document, {
+        runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa"] },
+      }));
+      const blocking = axeResult.violations.filter((violation) => ["critical", "serious"].includes(violation.impact));
+      check(blocking.length === 0, `axe found blocking issues: ${blocking.map((item) => `${item.id} [${item.nodes.slice(0, 3).map((node) => node.target.join(" ")).join(" | ")}]`).join(", ")}`);
+      report.accessibility.ko = { violations: axeResult.violations.length, passes: axeResult.passes.length };
+    }
+
     await page.screenshot({
       path: path.join(outputDir, `finder-tts-${width}x${height}.png`),
       fullPage: true,
@@ -125,6 +146,13 @@ try {
   await page.locator('[data-language-toggle] [data-lang="en"]').click();
   const englishOptions = await page.locator("#simplePurpose option").allTextContents();
   check(englishOptions.every((label) => !/[가-힣]/.test(label)), "Korean text remained in English purpose options");
+  if (axePath) {
+    await page.addScriptTag({ path: axePath });
+    const englishAxe = await page.evaluate(async () => window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa"] } }));
+    const blocking = englishAxe.violations.filter((violation) => ["critical", "serious"].includes(violation.impact));
+    check(blocking.length === 0, `English axe audit found: ${blocking.map((item) => `${item.id} [${item.nodes.slice(0, 3).map((node) => node.target.join(" ")).join(" | ")}]`).join(", ")}`);
+    report.accessibility.en = { violations: englishAxe.violations.length, passes: englishAxe.passes.length };
+  }
   await page.locator('[data-language-toggle] [data-lang="ko"]').click();
   const koreanCard = await page.locator(".simple-pick-card").first().innerText();
   check(!/Calculated estimate|Copy run command|Approx\./.test(koreanCard), "English fragments remained after returning to Korean");
@@ -133,7 +161,42 @@ try {
   check(staticResponse.ok(), "XTTS-v2 static model page is missing");
   const sitemapResponse = await page.request.get(`${baseUrl}/sitemap.xml`);
   check(sitemapResponse.ok() && (await sitemapResponse.text()).includes("/model/xtts-v2/"), "sitemap.xml does not include model pages");
-  report.flows = { voiceCloningModels: names, feedbackLinks: feedbackLinks.length, languageRoundTrip: true, staticSeo: true };
+  const changePath = page.locator("[data-change-path]");
+  if (await changePath.count() && await changePath.isVisible()) await changePath.click();
+  await page.locator('[data-core-task="modelFinder"]').first().click();
+  await page.locator("#advisorModelSearch").fill("model-that-does-not-exist-xyz");
+  await page.locator("#advisorModelSearch").dispatchEvent("input");
+  check(await page.locator("[data-advisor-reset]").count() === 1, "Advisor empty state has no reset button");
+
+  const longNameOverflow = await page.evaluate(() => {
+    const node = document.querySelector(".simple-pick-head strong");
+    if (!node) return 0;
+    node.textContent = "Very-Long-Model-Identifier-With-Architecture-And-Quantization-That-Must-Wrap-Without-Overflow-1234567890";
+    return document.documentElement.scrollWidth - document.documentElement.clientWidth;
+  });
+  check(longNameOverflow <= 0, `Long model names overflow by ${longNameOverflow}px`);
+
+  await page.emulateMedia({ media: "print" });
+  const printOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  check(printOverflow <= 0, `Print layout overflows by ${printOverflow}px`);
+  await page.pdf({ path: path.join(outputDir, "print-layout.pdf"), format: "A4", printBackground: true });
+
+  await page.emulateMedia({ media: "screen" });
+  await page.goto(`${baseUrl}/?gpu=rtx3060-12&lang=ko`, { waitUntil: "networkidle" });
+  await page.keyboard.press("Tab");
+  const firstFocus = await page.evaluate(() => ({ tag: document.activeElement?.tagName, href: document.activeElement?.getAttribute("href") }));
+  check(firstFocus.tag === "A" && firstFocus.href === "#mainContent", "Keyboard flow does not start at the skip link");
+
+  report.flows = {
+    voiceCloningModels: names,
+    feedbackLinks: feedbackLinks.length,
+    languageRoundTrip: true,
+    staticSeo: true,
+    emptyStateReset: true,
+    longNameOverflow: true,
+    keyboardSkipLink: true,
+    printLayout: true,
+  };
   await context.close();
 } finally {
   await browser.close();

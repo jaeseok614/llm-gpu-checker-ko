@@ -31,6 +31,7 @@ const DATA_FILES = [
   "data/decision-data.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
+  "features/privacy-analytics.js",
   "features/workspace-controller.js",
   "features/guided-experience.js",
   "features/decision-guidance.js",
@@ -70,7 +71,12 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { pe
   if (persistent) persistentTestWindows.add(window);
   Object.entries(storage).forEach(([key, value]) => window.localStorage.setItem(key, value));
   let combined = DATA_FILES.map(read).join("\n;\n");
+  combined += "\n;\n" + read("features/i18n-catalog.js");
   combined += "\n;\n" + read("app.js");
+  combined += "\n;\n" + read("features/i18n-runtime.js");
+  combined += "\n;\n" + read("features/gpu-advisor.js");
+  combined += "\n;\n" + read("features/model-placement.js");
+  combined += "\n;\n" + read("features/benchmark-workspace.js");
   if (platformV2) combined += "\n;\n" + read("platform-v2.js") + "\n;\n" + read("platform-v3.js");
   combined += "\n;\ninit();\n";
   if (platformV2) combined += "\n;\ninitPlatformV2();\ninitDecisionStudio();\n";
