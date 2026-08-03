@@ -1339,7 +1339,7 @@ function renderSimpleSizingWizard(model, plans) {
       [2, en ? "Users" : "사용자"],
       [3, en ? "Priority" : "우선순위"],
       [4, en ? "Result" : "결과"],
-    ].map(([index, label]) => `<li class="${index === step ? "is-current" : index < step ? "is-done" : ""}" ${index === step ? 'aria-current="step"' : ""}><b>${index < 4 ? index : "✓"}</b>${label}</li>`).join("")}</ol>
+    ].map(([index, label]) => `<li class="${index === step ? "is-current" : index < step ? "is-done" : ""}" ${index === step ? 'aria-current="step"' : ""}><b>${index < 4 ? index : "✓"}</b><span>${label}</span></li>`).join("")}</ol>
     <div class="si-wizard-step" data-si-step-panel="1"><strong>1. ${en ? "What are you building?" : "무엇을 만드나요?"}</strong><small class="si-step-hint">${en ? "Choose the closest example. You can fine-tune it later." : "가장 비슷한 예시를 고르세요. 나중에 상세 조정할 수 있습니다."}</small><div class="si-choice-grid si-scenario-grid">${Object.entries(SI_SCENARIOS).map(([id,row]) => {
       const [note, badge] = scenarioNotes[id];
       return `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}"><span>${badge}</span><b>${en ? row.en : row.ko}</b><small>${note}</small></button>`;

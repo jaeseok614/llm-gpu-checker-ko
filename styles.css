@@ -7819,6 +7819,7 @@ body.infra-task-active #benchmarkDashboard {
 .si-wizard-progress {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   margin: 16px 0 20px;
   padding: 0;
   list-style: none;
@@ -7826,9 +7827,12 @@ body.infra-task-active #benchmarkDashboard {
 
 .si-wizard-progress li {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: 28px auto;
   align-items: center;
-  gap: 7px;
+  min-width: 0;
+  row-gap: 6px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -7837,8 +7841,10 @@ body.infra-task-active #benchmarkDashboard {
 .si-wizard-progress li:not(:last-child)::after {
   content: "";
   position: absolute;
-  right: 8px;
-  left: 44px;
+  z-index: 0;
+  top: 14px;
+  right: -4px;
+  left: 36px;
   height: 1px;
   background: var(--line);
 }
@@ -7846,12 +7852,22 @@ body.infra-task-active #benchmarkDashboard {
 .si-wizard-progress b {
   display: inline-grid;
   z-index: 1;
+  grid-column: 1;
+  grid-row: 1;
   place-items: center;
   width: 28px;
   height: 28px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--panel-raised);
+}
+
+.si-wizard-progress li > span {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .si-wizard-progress .is-current {
@@ -7862,6 +7878,58 @@ body.infra-task-active #benchmarkDashboard {
   border-color: var(--blue);
   background: var(--blue);
   color: var(--on-blue);
+}
+
+.si-wizard-result {
+  min-width: 0;
+}
+
+.simple-verdict {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--panel-raised);
+}
+
+.simple-verdict > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.simple-verdict.is-fit > span {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+}
+
+.simple-verdict.is-review > span {
+  color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 14%, transparent);
+}
+
+.simple-verdict > strong {
+  min-width: 0;
+  font-size: 1.08rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.simple-verdict > small {
+  min-width: 0;
+  color: var(--muted);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .si-step-hint {
@@ -8155,12 +8223,25 @@ body.infra-task-active #benchmarkDashboard {
   }
 
   .si-wizard-progress li {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-rows: 24px auto;
+  }
+
+  .si-wizard-progress b {
+    width: 24px;
+    height: 24px;
   }
 
   .si-wizard-progress li:not(:last-child)::after {
     display: none;
+  }
+
+  .simple-verdict {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .simple-verdict > small {
+    grid-column: 1 / -1;
   }
 
   .customer-proposal {

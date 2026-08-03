@@ -187,6 +187,37 @@ try {
   const firstFocus = await page.evaluate(() => ({ tag: document.activeElement?.tagName, href: document.activeElement?.getAttribute("href") }));
   check(firstFocus.tag === "A" && firstFocus.href === "#mainContent", "Keyboard flow does not start at the skip link");
 
+  await page.goto(`${baseUrl}/?mode=infra&studio=consulting&lang=ko`, { waitUntil: "networkidle" });
+  await page.locator(".si-simple-wizard").waitFor();
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const step = Number(await page.locator(".si-simple-wizard").getAttribute("data-step"));
+    if (step >= 4) break;
+    await page.locator("[data-si-wizard-next]").click();
+  }
+  check(await page.locator('.si-simple-wizard[data-step="4"]').count() === 1, "Infrastructure wizard did not reach its result");
+  const infrastructureLayout = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".simple-verdict > span, .simple-verdict > strong, .simple-verdict > small")];
+    const rects = nodes.map((node) => node.getBoundingClientRect());
+    const overlaps = rects.some((rect, index) => rects.slice(index + 1).some((other) => (
+      rect.left < other.right && rect.right > other.left && rect.top < other.bottom && rect.bottom > other.top
+    )));
+    const lineCrossesLabel = [...document.querySelectorAll(".si-wizard-progress li:not(:last-child)")].some((item) => {
+      const label = item.querySelector("span")?.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      const lineTop = itemRect.top + Number.parseFloat(getComputedStyle(item, "::after").top || "0");
+      return label && lineTop >= label.top && lineTop <= label.bottom;
+    });
+    return {
+      overlaps,
+      lineCrossesLabel,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+  check(!infrastructureLayout.overlaps, "Infrastructure verdict labels overlap");
+  check(!infrastructureLayout.lineCrossesLabel, "Infrastructure progress line crosses a step label");
+  check(infrastructureLayout.overflow <= 0, `Infrastructure result overflows by ${infrastructureLayout.overflow}px`);
+  await page.screenshot({ path: path.join(outputDir, "infra-result-1280x900.png"), fullPage: true });
+
   report.flows = {
     voiceCloningModels: names,
     feedbackLinks: feedbackLinks.length,
@@ -196,6 +227,7 @@ try {
     longNameOverflow: true,
     keyboardSkipLink: true,
     printLayout: true,
+    infrastructureResultLayout: true,
   };
   await context.close();
 } finally {
