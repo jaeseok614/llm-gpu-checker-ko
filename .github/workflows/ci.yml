@@ -52,8 +52,11 @@ jobs:
       - name: Install browser test runtime
         run: |
           npm install --no-save --package-lock=false playwright@1.61.1 axe-core@4.10.3 @lhci/cli@0.15.1
-          npx playwright install chromium
-          echo "CHROME_PATH=$(node -e \"console.log(require('playwright').chromium.executablePath())\")" >> "$GITHUB_ENV"
+          browser_path="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$browser_path"
+          "$browser_path" --version
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$browser_path" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$browser_path" >> "$GITHUB_ENV"
       - run: npm run test:visual
       - name: Lighthouse budgets
         run: npx lhci autorun
