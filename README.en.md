@@ -21,15 +21,13 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">Request a GPU</a>
 </p>
 
-![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
+<p align="center">
+  <img src="./docs/social-preview-v3.1.png" alt="AI Hardware Fit turns workload requirements into economy, recommended, and scalable infrastructure plans" />
+</p>
 
-### Original dark UI preview
-
-![AI Hardware Fit dark UI demo](./docs/demo.gif)
-
-### v4.8 Preview
-
-![AI Hardware Fit v4.8 demo](./docs/demo-v4.8.gif)
+<p align="center">
+  <sub>Enter workload requirements → compare economy, recommended, and scalable options → produce an infrastructure plan</sub>
+</p>
 
 ## Open a sample scenario
 

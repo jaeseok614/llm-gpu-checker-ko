@@ -21,15 +21,13 @@
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">GPU 추가 요청</a>
 </p>
 
-![AI Infra Sizing Assistant](./docs/social-preview-v3.1.png)
+<p align="center">
+  <img src="./docs/social-preview-v3.1.png" alt="요구사항을 경제형·권장형·확장형 AI 인프라 구성으로 변환하는 AI Hardware Fit" />
+</p>
 
-### 기존 다크 UI 미리보기
-
-![AI Hardware Fit 다크 UI 데모](./docs/demo.gif)
-
-### v4.8 동작 미리보기
-
-![AI Hardware Fit v4.8 데모](./docs/demo-v4.8.gif)
+<p align="center">
+  <sub>워크로드 요구사항 입력 → 경제형·권장형·확장형 비교 → 인프라 구성안 산출</sub>
+</p>
 
 ## 대표 사례 바로 열기
 
