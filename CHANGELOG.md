@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- "처음 사용 가이드" 팝업(`getting-started-panel`)이 여전히 3가지 시작점(보유 GPU 확인·새 GPU 구매·서비스 견적)만 안내하고 있어, 이번 세션에서 새로 추가한 4번째 "커뮤니티 데이터" 모드가 빠져 있던 문제 수정 — index.html의 정적 목록과 guided-experience.js의 언어 전환용 `panelSteps` 배열 양쪽에 4번째 항목("실측 결과 제보·데이터 확인")을 추가
+
 - 커뮤니티 데이터를 4번째 작업 모드로 분리한 뒤 CI(`npm run check`)가 계속 실패하던 문제 수정. `tests/smoke.test.mjs`·`tests/calculations.test.mjs`·`scripts/ui-regression.mjs`에 "첫 화면 시작 버튼은 정확히 3개"라는 하드코딩된 회귀 검사가 남아 있어, 의도적으로 늘린 4번째 버튼과 충돌하고 있었음 — 세 곳 모두 기대값을 3에서 4로 갱신
 
 - "실행할 모델을 알아요"(modelFinder) 모드에서 GPU 어드바이저 결과 밑에 관련 없는 "의사결정 허브"(실측 신뢰도·벤치마크 2.0·구매 Advisor 등) 패널이 그대로 노출되던 문제 수정. `#decisionHub`는 `platform-v2.js`가 coreTaskMode와 무관하게 `#benchmarkSheet` 형제로 무조건 삽입하는데, infra·placement·community 3개 모드는 이미 숨기고 있었지만 modelFinder만 숨김 목록에서 빠져 있었음 — 같은 목록에 추가
