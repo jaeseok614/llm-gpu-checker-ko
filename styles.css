@@ -6966,7 +6966,13 @@ body.placement-task-active #gpuAdvisorPanel,
 body.placement-task-active #decisionHub,
 body.placement-task-active #benchmarkSheet,
 body.placement-task-active #benchmarkDashboard,
-body.placement-task-active #communityMeasurementPanel {
+body.placement-task-active #communityMeasurementPanel,
+/* #decisionHub(의사결정 허브)는 coreTaskMode와 무관하게 platform-v2.js가
+   #benchmarkSheet 형제로 무조건 삽입한다. infra/placement/community 모드는
+   이미 숨기고 있었는데 "실행할 모델을 알아요"(modelFinder) 모드만 빠져 있어,
+   GPU 어드바이저 결과 밑에 관련 없는 의사결정 허브가 그대로 노출되고
+   있었다 — 같은 목록에 추가해 숨긴다. */
+body.model-finder-task-active #decisionHub {
   display: none !important;
 }
 

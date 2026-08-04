@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- "실행할 모델을 알아요"(modelFinder) 모드에서 GPU 어드바이저 결과 밑에 관련 없는 "의사결정 허브"(실측 신뢰도·벤치마크 2.0·구매 Advisor 등) 패널이 그대로 노출되던 문제 수정. `#decisionHub`는 `platform-v2.js`가 coreTaskMode와 무관하게 `#benchmarkSheet` 형제로 무조건 삽입하는데, infra·placement·community 3개 모드는 이미 숨기고 있었지만 modelFinder만 숨김 목록에서 빠져 있었음 — 같은 목록에 추가
 - GPU 어드바이저 결과 카드의 "참고 가격"이 "306,600원"처럼 짧은 금액에서도 "306,6"/"00원"으로 숫자 중간이 잘려 두 줄로 깨져 보이던 문제 수정. `styles/components.css`의 공통 알약형 배지 스타일(`.grade-pill, .evidence-status, ...`)에 `.price-state`가 함께 묶여 있어 `display: inline-flex`를 상속했는데, 가격 숫자와 그 아래 안내문(`<small>`, `display: block`)을 한 줄짜리 배지처럼 가로로 욱여넣으려다 폭이 모자라면 숫자 자체가 잘렸음 — `.price-state`는 애초에 알약형 배지가 아니라 "숫자 위, 안내문 아래" 2단 구조라 해당 공통 규칙 목록에서 제외
 - 벤치마크 데이터 현황과 실측 결과 제보(`#benchmarkDashboard`, `#communityMeasurementPanel`)가 `coreTaskMode`와 무관하게 항상 벤치마크 표 밑에 붙어 있어, 이번 세션에서 고친 폭 불일치·인스펙터 겹침 버그 두 건이 모두 "모드 시스템 밖에 있는 패널"이라는 같은 구조적 원인에서 나온 것을 확인 — 아예 "커뮤니티 데이터"라는 4번째 작업 모드로 분리해 다른 3개 모드(GPU 보유/모델 확인/서비스 구축)에서는 기본적으로 숨기고, 해당 모드를 선택하거나 모델 상세의 "결과 JSON 붙여넣기" 버튼을 누를 때만 보이도록 변경. 기존 3개 모드가 쓰던 `body.<mode>-task-active` 숨김 패턴을 그대로 재사용
 - 간편 추천 카드의 "상세 보기"(1순위 등)를 눌러 오른쪽 인스펙터가 열렸을 때, `.app-shell`·벤치마크 패널·푸터는 인스펙터 폭만큼 줄어드는데 "실측 결과를 안전하게 제보하세요" 패널만 원래 폭을 유지해 인스펙터 뒤로 훨씬 길게 삐져나가 보이던 문제 수정 — `body.simple-inspector-active` 폭 축소 목록에 해당 패널(과 같은 방식으로 삽입되는 의사결정 허브)을 추가
