@@ -180,6 +180,14 @@
   display: none;
 }
 
+/* 위에서 6개 지표 중 3개(동시 사용자·소비전력·신뢰도)를 숨겨 3개만 남기지만,
+   .si-decision-metrics는 2열 그리드라서 남은 3개(총 예상 가격/GPU/VRAM 여유)가
+   2열에 걸쳐 배치되며 마지막 칸이 빈 회색 상자로 남는다. 간편 견적에서는
+   1열로 쌓아 빈 칸이 생기지 않게 한다. */
+.decision-studio.is-simple-sizing .si-decision-metrics {
+  grid-template-columns: 1fr;
+}
+
 .decision-studio.is-simple-sizing .si-plan-detail-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
