@@ -6970,6 +6970,30 @@ body.placement-task-active #communityMeasurementPanel {
   display: none !important;
 }
 
+/* #benchmarkDashboard·#communityMeasurementPanel는 community-feedback.js와
+   platform-v2.js가 coreTaskMode와 무관하게 #benchmarkSheet의 형제로 무조건
+   삽입한다. 4번째 "커뮤니티 데이터" 모드를 분리 신설하면서, 이 두 패널은
+   community 모드에서만 보이고 나머지 3개 모드(finder/model-finder/infra)에서는
+   기본적으로 숨긴다. */
+#benchmarkDashboard,
+#communityMeasurementPanel {
+  display: none;
+}
+
+body.community-task-active #benchmarkDashboard,
+body.community-task-active #communityMeasurementPanel {
+  display: block;
+}
+
+body.community-task-active .onboarding-screen,
+body.community-task-active #hardwarePanel,
+body.community-task-active #resultsPanel,
+body.community-task-active #gpuAdvisorPanel,
+body.community-task-active #decisionHub,
+body.community-task-active #benchmarkSheet {
+  display: none !important;
+}
+
 .decision-studio.is-infra-workspace {
   margin-top: 18px;
 }
@@ -8339,7 +8363,7 @@ body.placement-task-active #communityMeasurementPanel {
 }
 
 .core-task-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
 }
 

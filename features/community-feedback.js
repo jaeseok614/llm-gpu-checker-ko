@@ -141,6 +141,9 @@
     document.addEventListener("click", (event) => {
       const opener = event.target.closest("[data-community-open]");
       if (!opener) return;
+      // 이 패널은 community 모드가 아니면 CSS로 숨겨져 있으므로(styles.css의
+      // body.community-task-active 참고), 스크롤하기 전에 먼저 모드를 전환한다.
+      window.AIHardwareCore?.setCoreTaskMode?.("community");
       // 모델 상세에서 "이 실행 결과 제보"로 들어온 경우, 지금 보고 있던
       // 모델·GPU·런타임을 텍스트영역에 미리 채워 넣는다 — 비어 있는
       // 예시(Qwen3 8B 등)만 보이는 것보다 지금 조건과 연결돼 있다는 게

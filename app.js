@@ -375,10 +375,12 @@ function refreshCoreTaskUi() {
   const placementActive = coreTaskMode === "placement";
   const modelFinderActive = coreTaskMode === "modelFinder";
   const infraActive = coreTaskMode === "infra";
+  const communityActive = coreTaskMode === "community";
   document.body.classList.toggle("placement-task-active", placementActive);
   document.body.classList.toggle("finder-task-active", coreTaskMode === "finder");
   document.body.classList.toggle("model-finder-task-active", modelFinderActive);
   document.body.classList.toggle("infra-task-active", infraActive);
+  document.body.classList.toggle("community-task-active", communityActive);
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
     button.classList.toggle("is-active", active);
@@ -406,6 +408,12 @@ function refreshCoreTaskUi() {
     if (placementButton) {
       placementButton.querySelector("span").textContent = uiText("core.placement.title");
       placementButton.querySelector("small").textContent = uiText("core.placement.note");
+    }
+    const communityButton = document.querySelector('[data-core-task="community"]');
+    if (communityButton) {
+      communityButton.querySelector("span").textContent = uiText("core.community.title");
+      communityButton.querySelector("small").textContent = uiText("core.community.note");
+      communityButton.querySelector("em").textContent = uiText("core.community.time");
     }
   const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
   const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
@@ -470,13 +478,20 @@ function setCoreTaskMode(mode) {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
     return;
   }
-  coreTaskMode = mode === "modelFinder" || mode === "infra" ? mode : "finder";
+  coreTaskMode = mode === "modelFinder" || mode === "infra" || mode === "community" ? mode : "finder";
   refreshCoreTaskUi();
   render();
   if (coreTaskMode === "infra" && typeof renderDecisionStudio === "function") renderDecisionStudio();
   if (coreTaskMode === "modelFinder") $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "infra") $("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  if (coreTaskMode === "community") $("benchmarkDashboard")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
+
+// 커뮤니티 제보 패널이 다른 모드에서는 숨겨져 있어(styles.css
+// body.community-task-active 참고), 모델 상세의 "결과 JSON 붙여넣기" 같은
+// 버튼(features/community-feedback.js)이 이 패널로 스크롤하기 전에 먼저
+// community 모드로 전환할 수 있도록 별도 모듈에서 호출 가능한 진입점을 둔다.
+window.AIHardwareCore = { setCoreTaskMode };
 
 function setUiLanguage(language) {
   uiLanguage = language === "en" ? "en" : "ko";
