@@ -23,7 +23,7 @@
   border-radius: var(--ui-radius-control);
 }
 
-:where(.grade-pill, .evidence-status, .price-state, .advisor-rank,
+:where(.grade-pill, .evidence-status, .evidence-badge, .price-state, .advisor-rank,
   .studio-stale, .studio-aging, .studio-fresh, .ui-badge) {
   display: inline-flex;
   align-items: center;
