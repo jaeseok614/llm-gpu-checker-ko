@@ -139,7 +139,22 @@
       submit.hidden = Object.keys(safe).length === 0;
     });
     document.addEventListener("click", (event) => {
-      if (!event.target.closest("[data-community-open]")) return;
+      const opener = event.target.closest("[data-community-open]");
+      if (!opener) return;
+      // 모델 상세에서 "이 실행 결과 제보"로 들어온 경우, 지금 보고 있던
+      // 모델·GPU·런타임을 텍스트영역에 미리 채워 넣는다 — 비어 있는
+      // 예시(Qwen3 8B 등)만 보이는 것보다 지금 조건과 연결돼 있다는 게
+      // 바로 보이게 하기 위함. 사용자가 이미 뭔가 입력해 둔 상태라면
+      // 덮어쓰지 않는다.
+      if (!input.value.trim() && (opener.dataset.communityModel || opener.dataset.communityGpu)) {
+        const lines = ["{"];
+        if (opener.dataset.communityModel) lines.push(`  "model": ${JSON.stringify(opener.dataset.communityModel)},`);
+        if (opener.dataset.communityGpu) lines.push(`  "gpu": ${JSON.stringify(opener.dataset.communityGpu)},`);
+        if (opener.dataset.communityRuntime) lines.push(`  "runtime": ${JSON.stringify(opener.dataset.communityRuntime)},`);
+        lines.push(`  "tokensPerSecond": `);
+        lines.push("}");
+        input.value = lines.join("\n");
+      }
       section.scrollIntoView({ behavior: "smooth", block: "start" });
       input.focus({ preventScroll: true });
     });

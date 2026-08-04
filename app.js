@@ -4469,20 +4469,30 @@ function applyRunFeedbackLinks(container, model, estimate, hardware) {
     "audio-stt": "Transformers / PyTorch",
     "audio-tts": "PyTorch",
   };
+  const runtime = model.type === "generative"
+    ? (getWorkloadSettings()?.runtime || $("runtimeMode")?.value || "")
+    : (workloadRuntime[model.type] || "PyTorch");
+  const gpuName = formatHardwareName(hardware);
   container.querySelectorAll("[data-run-feedback]").forEach((link) => {
     link.href = feedback.feedbackUrl({
       outcome: link.dataset.runFeedback,
       model: model.name,
-      gpu: formatHardwareName(hardware),
+      gpu: gpuName,
       workload: WORKLOAD_META[activeWorkload]?.label || activeWorkload,
       purpose: $("simplePurpose")?.selectedOptions?.[0]?.textContent || "",
-      runtime: model.type === "generative"
-        ? (getWorkloadSettings()?.runtime || $("runtimeMode")?.value || "")
-        : (workloadRuntime[model.type] || "PyTorch"),
+      runtime,
       setting: estimate.settingLabel || estimate.quant?.label || estimate.precision?.label || "",
       requiredGb: formatGb(estimate.requiredGb),
       estimatedSpeed: formatSpeedRange(estimate, getEstimateConfidence(model, estimate, hardware)),
     });
+  });
+  // "결과 JSON 붙여넣기" 버튼도 이 모델/GPU/런타임을 알고 있어야, 클릭했을 때
+  // community-feedback.js가 빈 예시("Qwen3 8B" 등) 대신 지금 보고 있는 조합으로
+  // 텍스트영역을 미리 채울 수 있다.
+  container.querySelectorAll("[data-community-open]").forEach((el) => {
+    el.dataset.communityModel = model.name;
+    el.dataset.communityGpu = gpuName;
+    el.dataset.communityRuntime = runtime;
   });
 }
 
