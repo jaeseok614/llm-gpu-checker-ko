@@ -5506,9 +5506,20 @@ button:focus-visible {
 }
 
 @media (min-width: 1280px) {
+  /* #communityMeasurementPanel(실측 결과 제보)과 #decisionHub(의사결정
+     허브)는 app.js/community-feedback.js/platform-v2.js에서
+     #benchmarkSheet 옆에 형제 요소로 끼워 넣지만, 이 폭 목록에는 빠져
+     있었다. 그래서 "1순위" 카드를 눌러 오른쪽 상세 패널(간편 인스펙터)이
+     열리면 .app-shell·.benchmark-panel·.app-footer는 인스펙터 폭만큼
+     줄어드는데, 이 두 패널만 원래 폭(min(1540px, calc(100vw - 48px)))을
+     그대로 유지해서 인스펙터 뒤로 훨씬 길게 삐져나가 보였다(사용자 보고:
+     "어느 창들은 옆으로 가지는데 어느 창들은 그대로 길게 있어"). 같은
+     목록에 추가해 동일하게 줄어들도록 한다. */
   body.simple-inspector-active .app-shell,
   body.simple-inspector-active .benchmark-panel,
-  body.simple-inspector-active .app-footer {
+  body.simple-inspector-active .app-footer,
+  body.simple-inspector-active #communityMeasurementPanel,
+  body.simple-inspector-active #decisionHub {
     width: min(
       calc(100vw - var(--simple-inspector-width) - 72px),
       calc(1540px - var(--simple-inspector-width) - 24px)
