@@ -4937,7 +4937,7 @@ function renderModelRow(estimate) {
       <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[6])}">${formatGb(estimate.requiredGb)}</span>
       <span class="model-cell numeric-cell estimate-speed-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[7])}">
         <strong>${escapeHtml(formatSpeedRange(estimate, confidence))}</strong>
-        <small>추정 · ${escapeHtml(confidence.label)}</small>
+        <small>${uiLanguage === "en" ? "Estimated" : "추정"} · ${escapeHtml(confidence.label)}</small>
       </span>
       <span class="model-cell numeric-cell" data-label="${escapeAttr(WORKLOAD_META[activeWorkload].listHeaders[8])}">${escapeHtml(estimate.limitLabel)}</span>
       <span class="row-chevron" aria-hidden="true">›</span>

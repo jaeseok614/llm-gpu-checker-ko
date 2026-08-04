@@ -840,6 +840,17 @@ function translateDynamicUi(language = "en") {
     let text = value;
     if (language === "en") {
       text = text
+        // Full-sentence exact match, run before the generic "AI 모델" → "AI models"
+        // rule further down. Without this, that generic rule fires first (templates
+        // always run before the dictionary sweep — see comment above), mutating "AI
+        // 모델" mid-sentence so the dictionary's full-sentence entry for this exact
+        // string no longer matches verbatim. The leftover then gets picked apart by
+        // shorter dictionary entries ("실행 가능한" → "runnable") while "예상 속도를"
+        // is correctly left alone by the Hangul boundary guard (it doesn't cover the
+        // attached "를" particle) — producing a broken half-Korean, half-English
+        // sentence: "VRAM과 대역폭을 기준으로 runnable AI models과 예상 속도를 바로
+        // 계산합니다." Matching the whole sentence here, first, avoids that entirely.
+        .replace(/VRAM과 대역폭을 기준으로 실행 가능한 AI 모델과 예상 속도를 바로 계산합니다\./g, "See runnable AI models and estimated speed based on your VRAM and bandwidth.")
         .replace(/가용 VRAM\s+([\d.]+)\s*GB/g, "Available VRAM $1 GB")
         .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
         .replace(/GPU\s+(\d+)개/g, "GPUs: $1")
@@ -888,6 +899,11 @@ function translateDynamicUi(language = "en") {
         .replace(/ · (\d+)개(?![가-힣])/g, " · $1");
     } else {
       text = text
+        // 영어 방향 수정과 대칭되는 역방향 규칙. 위 language === "en" 체인에서
+        // 이 전체 문장을 TEMPLATE 단계 맨 앞에 매칭시킨 것과 동일한 이유로,
+        // 여기서도 맨 앞에서 전체 문장을 먼저 치환해야 짧은 사전 항목들이
+        // 부분적으로 끼어들어 문장을 깨뜨리는 일을 막을 수 있다.
+        .replace(/See runnable AI models and estimated speed based on your VRAM and bandwidth\./g, "VRAM과 대역폭을 기준으로 실행 가능한 AI 모델과 예상 속도를 바로 계산합니다.")
         .replace(/Available VRAM\s+([\d.]+)\s*GB/g, "가용 VRAM $1 GB")
         .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
         .replace(/GPUs:\s*(\d+)/g, "GPU $1개")
