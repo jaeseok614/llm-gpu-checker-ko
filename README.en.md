@@ -51,6 +51,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v7.6** — Splits measurement submission and benchmark coverage into a fourth task mode, redesigns the getting-started guide with situational copy, time estimates, click-through navigation, and a Q&A wizard, and fixes several UI bugs including price digit wrapping, stray decision-hub panels, and mobile horizontal scroll.
 - **v7.5** — Adds privacy-scrubbed measurement intake, same-condition comparison, contributor visibility, and priority measurement targets.
 - **v7.4** — Adds Lighthouse, axe, keyboard, six-viewport, long-name, empty-state, and print-PDF checks to CI.
 - **v7.3** — Adds a private local funnel summary that stores only predefined event counts and transmits no input values.
