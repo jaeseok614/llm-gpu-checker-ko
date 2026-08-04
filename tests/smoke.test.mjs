@@ -105,13 +105,13 @@ test("v7.5 terminal results are sanitized before submission", () => {
 
 after(() => dom?.window.close());
 
-test("first screen presents three beginner choices and one advanced placement tool", () => {
-  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 3);
+test("first screen presents four beginner choices and one advanced placement tool", () => {
+  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
   assert.ok(app.document.querySelector('.advanced-entry [data-core-task="placement"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
-  assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 3);
+  assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 4);
   assert.ok(app.document.getElementById("workspaceJourney"));
   assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60초/);
   assert.match(app.document.querySelector("[data-showcase-feedback]").href, /product-feedback\.yml/);

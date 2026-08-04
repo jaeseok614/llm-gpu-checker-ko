@@ -1149,7 +1149,7 @@ describe("v2.2 user build calculator", () => {
 describe("v3.7 infrastructure sizing and multimodal stack", () => {
   test("opens infrastructure sizing as a separate beginner-first workspace", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
-    assert.equal(platform.document.querySelectorAll(".core-task-actions [data-core-task]").length, 3);
+    assert.equal(platform.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
     assert.ok(platform.document.querySelector(".advanced-entry [data-core-task='placement']"));
     assert.equal(platform.document.querySelector("#gpuAdvisorPanel").hidden, true);
     assert.equal(platform.document.querySelector("#resultsPanel").previousElementSibling.id, "hardwarePanel");
