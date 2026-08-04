@@ -6865,9 +6865,19 @@ button:focus-visible {
     display: none;
   }
 
+  /* 아래 트랙 폭들은 --inspector-width가 clamp(360px, 28vw, 520px)의
+     상한(520px)에 가깝게 붙는 매우 넓은 화면(대략 1857px+, 이 폭부터는
+     .app-shell도 1540px 상한에 걸려 더 커지지 않으므로 목록에 남는
+     여유 폭이 더 이상 늘지 않고 고정됨)을 기준으로 다시 계산한 값이다.
+     기존 값(82 270 116 132 92 126 68 18 + gap 10×7)은 그 폭에서 실제
+     가용 공간보다 약 44px 넓어서, 그리드 내용이 상세 패널 쪽으로
+     삐져나가 CTX 값과 화살표가 겹쳐 보이는 문제가 있었다(사용자 보고).
+     각 열을 6~15% 정도씩만 줄여 여유를 만들었다 — 특히 모델명 열은
+     270→230px로 줄었지만 기존에도 최소폭보다 여유가 있어 실제 표시에는
+     영향이 없는 것을 확인함. */
   body.model-workbench-active .model-list-head,
   body.model-workbench-active .model-row {
-    grid-template-columns: 82px minmax(270px, 1fr) 116px 132px 92px 126px 68px 18px;
+    grid-template-columns: 82px minmax(230px, 1fr) 108px 124px 84px 118px 68px 18px;
   }
 }
 
