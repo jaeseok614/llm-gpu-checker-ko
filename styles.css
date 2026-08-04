@@ -278,6 +278,14 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .app-shell {
   display: grid;
+  /* 명시적 트랙을 선언하지 않으면 그리드의 암묵적 auto 트랙이 내부
+     콘텐츠의 max-content(줄바꿈을 전혀 하지 않았을 때의 너비)로 계산돼,
+     위의 width 제약을 무시하고 옆으로 넘쳐버리는 "그리드 블로우아웃"이
+     생긴다. 실제로 영어 모드 모바일(390px 폭)에서 "I already have a
+     GPU" 같은 긴 카드 문구 때문에 app-shell이 453px까지 넓어지며 화면
+     전체가 가로 스크롤되는 문제가 있었다. 트랙을 minmax(0, 1fr)로 명시해
+     항상 컨테이너 폭 안으로 줄어들 수 있게 한다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   width: min(1540px, calc(100vw - 48px));
   margin: 18px auto;
@@ -8609,7 +8617,14 @@ body.placement-task-active #communityMeasurementPanel {
 
 @media (max-width: 900px) {
   .core-task-actions {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr)이 아닌 단순 1fr을 쓰면, 그리드 트랙의 auto 최소
+       크기가 내부 .core-task-button(자체가 30px 1fr 그리드)의 min-content가
+       아니라 사실상 콘텐츠가 줄바꿈되지 않은 것으로 간주해 계산되면서
+       트랙이 강제로 넓어지는 "그리드 블로우아웃" 현상이 생긴다. 실제로
+       390px 폭 모바일에서 영어 모드일 때 "I already have a GPU" 카드가
+       423px로 넘쳐 본문 전체가 가로 스크롤되는 문제가 있었다. 최소
+       트랙 크기를 0으로 명시해 컨테이너 폭에 맞춰 줄어들 수 있게 한다. */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .core-task-button {
