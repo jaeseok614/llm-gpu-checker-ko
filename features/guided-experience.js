@@ -164,7 +164,7 @@
     if (listView) listView.hidden = isWizard;
     if (wizardView) wizardView.hidden = !isWizard;
     if (toggle) {
-      toggle.textContent = isWizard ? copy.guideViewToggle.list : copy.guideViewToggle.wizard;
+      toggle.textContent = isWizard ? copy.guideViewToggle.wizard : copy.guideViewToggle.list;
       toggle.setAttribute("aria-pressed", String(isWizard));
     }
     if (isWizard) renderGuideWizard();
