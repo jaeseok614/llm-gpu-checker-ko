@@ -6930,7 +6930,14 @@ body.infra-task-active #resultsPanel,
 body.infra-task-active #gpuAdvisorPanel,
 body.infra-task-active #decisionHub,
 body.infra-task-active #benchmarkSheet,
-body.infra-task-active #benchmarkDashboard {
+body.infra-task-active #benchmarkDashboard,
+body.infra-task-active #communityMeasurementPanel,
+body.placement-task-active #resultsPanel,
+body.placement-task-active #gpuAdvisorPanel,
+body.placement-task-active #decisionHub,
+body.placement-task-active #benchmarkSheet,
+body.placement-task-active #benchmarkDashboard,
+body.placement-task-active #communityMeasurementPanel {
   display: none !important;
 }
 
