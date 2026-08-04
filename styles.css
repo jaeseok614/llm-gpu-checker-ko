@@ -7738,9 +7738,15 @@ body.community-task-active #benchmarkSheet {
   justify-content: space-between;
 }
 
+.guide-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .getting-started-panel ol {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 12px 0;
   padding: 0;
@@ -7748,14 +7754,32 @@ body.community-task-active #benchmarkSheet {
 }
 
 .getting-started-panel li {
+  padding: 0;
+}
+
+.guide-step-button {
+  display: block;
+  width: 100%;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-raised);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+.guide-step-button:hover,
+.guide-step-button:focus-visible {
+  border-color: var(--blue);
+  transform: translateY(-1px);
 }
 
 .getting-started-panel li b,
-.getting-started-panel li span {
+.getting-started-panel li span,
+.getting-started-panel li em {
   display: block;
 }
 
@@ -7765,6 +7789,59 @@ body.community-task-active #benchmarkSheet {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.getting-started-panel li em {
+  margin-top: 8px;
+  color: var(--blue);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.guide-wizard-view[hidden],
+.guide-list-view[hidden] {
+  display: none;
+}
+
+.guide-wizard-view {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-raised);
+}
+
+.guide-wizard-back {
+  margin-bottom: 10px;
+}
+
+.guide-wizard-question {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.guide-wizard-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-wizard-option {
+  width: 100%;
+  text-align: left;
+}
+
+@keyframes guideHighlightPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  25% { box-shadow: 0 0 0 4px rgba(37, 99, 235, .35); }
+  50% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  75% { box-shadow: 0 0 0 4px rgba(37, 99, 235, .35); }
+}
+
+.is-guide-highlight {
+  animation: guideHighlightPulse 1.1s ease;
 }
 
 .catalog-request-center {
