@@ -51,7 +51,14 @@
 .mobile-decision-summary { display: none; }
 
 .community-measurement-panel {
-  width: min(calc(100% - 2rem), 1400px);
+  /* 이 패널은 community-feedback.js에서 #benchmarkSheet 바로 뒤에
+     형제 요소로 삽입된다. 그런데 여기서만 독자적인 width 공식
+     (min(calc(100% - 2rem), 1400px))을 쓰고 있어서, 같은 부모(.app-shell)
+     안의 다른 패널들이 쓰는 공식(min(1540px, calc(100vw - 48px)), 아래
+     .benchmark-panel과 동일)과 상한선(1400px vs 1540px)이 달라 화면
+     중앙에서 양옆이 다른 패널보다 좁게 안쪽으로 들어간 것처럼 보였다.
+     같은 공식으로 맞춰 폭을 통일한다. */
+  width: min(1540px, calc(100vw - 48px));
   margin: 1.25rem auto;
   padding: clamp(1rem, 2vw, 1.5rem);
 }
