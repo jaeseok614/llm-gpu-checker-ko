@@ -218,10 +218,13 @@
 
   function toggleGuide(force) {
     const panel = document.getElementById("gettingStartedPanel");
+    const backdrop = document.getElementById("guideModalBackdrop");
     const trigger = document.querySelector("[data-open-start-guide]");
     if (!panel || !trigger) return;
     const shouldOpen = typeof force === "boolean" ? force : panel.hidden;
     panel.hidden = !shouldOpen;
+    if (backdrop) backdrop.hidden = !shouldOpen;
+    document.body.classList.toggle("guide-modal-open", shouldOpen);
     trigger.setAttribute("aria-expanded", String(shouldOpen));
     if (shouldOpen) {
       guideView = "list";
@@ -237,6 +240,12 @@
     renderGuideList();
     document.querySelector("[data-open-start-guide]")?.addEventListener("click", () => toggleGuide());
     document.querySelector("[data-close-start-guide]")?.addEventListener("click", () => toggleGuide(false));
+    document.getElementById("guideModalBackdrop")?.addEventListener("click", () => toggleGuide(false));
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const panel = document.getElementById("gettingStartedPanel");
+      if (panel && !panel.hidden) toggleGuide(false);
+    });
     document.querySelector("[data-guide-view-toggle]")?.addEventListener("click", () => {
       guideView = guideView === "list" ? "wizard" : "list";
       wizardNode = "start";
