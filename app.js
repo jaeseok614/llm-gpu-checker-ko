@@ -424,7 +424,10 @@ function refreshCoreTaskUi() {
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
   if ($("decisionStudio")) $("decisionStudio").hidden = !infraActive;
   window.AIHardwareWorkspace?.apply(coreTaskMode);
-  window.AIHardwareGuide?.render(coreTaskMode, coreTaskMode === "finder" && hasPrimaryGpuSelection ? 1 : 0);
+  window.AIHardwareGuide?.render(
+    coreTaskMode,
+    coreTaskMode === "finder" && hasPrimaryGpuSelection ? (appMode === "expert" ? 2 : 1) : 0,
+  );
 }
 
 function seedPlacementInventoryFromCurrentHardware() {
