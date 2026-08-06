@@ -8028,6 +8028,19 @@ body.guide-modal-open {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.si-wizard-progress li:hover,
+.si-wizard-progress li:focus-visible {
+  color: var(--blue);
+  outline: none;
+}
+
+.si-wizard-progress li:hover b,
+.si-wizard-progress li:focus-visible b {
+  border-color: var(--blue);
 }
 
 .si-wizard-progress li:not(:last-child)::after {

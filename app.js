@@ -3730,6 +3730,15 @@ function render(options = {}) {
     if (typeof renderDecisionStudio === "function") renderDecisionStudio();
     else window.loadInfrastructureStudio?.().then(() => renderDecisionStudio?.());
     if (syncUrl) syncUrlState();
+    // Also run the full dictionary sweep here (not just the smaller
+    // AIHardwareLocalization pass) — these three early-return branches
+    // (infra / placement / modelFinder) render their own dynamic content
+    // (e.g. renderGpuInventory()'s aria-labels, GRADE_META/WORKLOAD_META
+    // labels) with Korean-only strings baked into their templates, and
+    // previously only reached AIHardwareLocalization's much smaller
+    // replacement list, so that Korean text could resurface here even in
+    // English mode after any re-render.
+    translateDynamicUi(uiLanguage);
     window.AIHardwareLocalization?.apply(uiLanguage);
     return;
   }
@@ -3739,12 +3748,30 @@ function render(options = {}) {
     renderPlacementSelectedChips();
     renderPlacementPrimarySelect();
     if (syncUrl) syncUrlState();
+    // Also run the full dictionary sweep here (not just the smaller
+    // AIHardwareLocalization pass) — these three early-return branches
+    // (infra / placement / modelFinder) render their own dynamic content
+    // (e.g. renderGpuInventory()'s aria-labels, GRADE_META/WORKLOAD_META
+    // labels) with Korean-only strings baked into their templates, and
+    // previously only reached AIHardwareLocalization's much smaller
+    // replacement list, so that Korean text could resurface here even in
+    // English mode after any re-render.
+    translateDynamicUi(uiLanguage);
     window.AIHardwareLocalization?.apply(uiLanguage);
     return;
   }
   if (modelFinderActive) {
     renderGpuAdvisor();
     if (syncUrl) syncUrlState();
+    // Also run the full dictionary sweep here (not just the smaller
+    // AIHardwareLocalization pass) — these three early-return branches
+    // (infra / placement / modelFinder) render their own dynamic content
+    // (e.g. renderGpuInventory()'s aria-labels, GRADE_META/WORKLOAD_META
+    // labels) with Korean-only strings baked into their templates, and
+    // previously only reached AIHardwareLocalization's much smaller
+    // replacement list, so that Korean text could resurface here even in
+    // English mode after any re-render.
+    translateDynamicUi(uiLanguage);
     window.AIHardwareLocalization?.apply(uiLanguage);
     return;
   }

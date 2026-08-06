@@ -728,88 +728,41 @@ function siSelectedModel() {
 }
 
 function siSizingPlan(gpu, model, profile) {
+  // Note: window.AIHardwareInfraSizing (features/infrastructure-sizing.js) is always loaded
+  // unconditionally in index.html, so this always takes the AIHardwareInfraSizing-backed path.
   const estimate = estimateAnyModelForHardware(model, buildHardwareForPreset(gpu));
-  if (window.AIHardwareInfraSizing) {
-    const base = window.AIHardwareInfraSizing.sizeCandidate({
-      gpu,
-      model,
-      estimate,
-      state: studioState,
-      profile,
-      market: gpuMarketReference(gpu),
-    });
-    const sampleRows = BENCHMARKS.filter((row) =>
-      (row.gpuId === gpu.id || row.gpu === gpu.name)
-      && String(row.modelName || "").toLowerCase() === String(model.name || "").toLowerCase());
-    const sampleCount = sampleRows.length;
-    const expectedErrorPct = sampleCount >= 3 ? 15 : sampleCount ? 25 : 40;
-    const confidence = sampleCount >= 3 ? "높음" : sampleCount ? "중간" : "낮음";
-    const capacity = Math.max(1, Math.floor(base.capacityRps * Math.max(1, Number(studioState.siTargetSeconds || 8))));
-    const failoverCapacity = Math.max(0, Math.floor(base.failoverRps * Math.max(1, Number(studioState.siTargetSeconds || 8))));
-    return {
-      ...profile,
-      ...base,
-      speed: base.singleStreamSpeed,
-      targetTokS: base.tokenDemand,
-      capacity,
-      failoverCapacity,
-      sampleCount,
-      confidence,
-      expectedErrorPct,
-      evidenceKind: sampleCount ? "external" : "estimate",
-      confidenceReason: sampleCount
-        ? `동일 GPU·모델의 출처 연결 외부 참고값 ${sampleCount}건을 사용했습니다.`
-        : "동일 GPU·모델·런타임 실측 자료가 없어 VRAM과 메모리 대역폭으로 계산했습니다.",
-      speedLow: base.singleStreamSpeed * (1 - expectedErrorPct / 100),
-      speedHigh: base.singleStreamSpeed * (1 + expectedErrorPct / 100),
-      placement: `${model.name} · ${profile.id === "economy" ? "tensor parallel" : "replica + tensor parallel"}`,
-    };
-  }
-  const requiredGb = Math.max(1, Number(estimate?.requiredGb || 1));
-  const fallbackSpeed = Math.max(20, Number(gpu.bandwidth || 500) / requiredGb * 2);
-  const speed = Math.max(fallbackSpeed, Number(estimate?.speed || estimate?.throughput || 0));
-  const vram = Number(gpu.gpuUsableMemoryGb || gpu.vram || 1);
-  const targetTokS = Math.max(1, studioState.siConcurrency * studioState.siOutputTokens / Math.max(1, studioState.siTargetSeconds));
-  const growth = 1 + studioState.siGrowthPct / 100;
-  const memoryCount = Math.ceil(requiredGb * profile.memoryMargin / (vram * 0.92));
-  const throughputCount = Math.ceil(targetTokS * growth * profile.capacityMargin / speed);
-  let gpuCount = Math.max(1, memoryCount, throughputCount);
-  if (studioState.siAvailability === "ha") gpuCount = Math.max(2, gpuCount * 2);
-  if (studioState.siAvailability === "nplus1") gpuCount += 1;
-  if (studioState.siDevProd) gpuCount += Math.max(1, Math.ceil(gpuCount * 0.25));
-  const gpuPerNode = vram >= 80 ? 8 : 4;
-  const nodes = Math.ceil(gpuCount / gpuPerNode);
-  const gpuPerServer = Math.ceil(gpuCount / nodes);
-  const cpuCores = Math.max(24, gpuCount * (profile.id === "economy" ? 8 : 12));
-  const cpuSockets = cpuCores > 96 ? 2 : 1;
-  const ramGb = Math.ceil(Math.max(256, requiredGb * gpuCount * 1.5, gpuCount * 128) / 64) * 64;
-  const storageTb = Math.max(2, Math.ceil((requiredGb * 3 + studioState.siVectorDataGb + studioState.siLogGbDay * studioState.siRetentionDays) / 1024));
-  const network = nodes > 1 ? (gpuCount > 8 ? "400GbE / InfiniBand" : "200GbE / InfiniBand") : (gpuCount > 2 ? "100GbE" : "25GbE");
-  const powerW = Math.ceil((gpuMarketReference(gpu).powerW * gpuCount + cpuCores * 18 + 700 * nodes) / 500) * 500;
+  const base = window.AIHardwareInfraSizing.sizeCandidate({
+    gpu,
+    model,
+    estimate,
+    state: studioState,
+    profile,
+    market: gpuMarketReference(gpu),
+  });
   const sampleRows = BENCHMARKS.filter((row) =>
     (row.gpuId === gpu.id || row.gpu === gpu.name)
     && String(row.modelName || "").toLowerCase() === String(model.name || "").toLowerCase());
   const sampleCount = sampleRows.length;
-  const confidence = sampleCount >= 3 ? "높음" : sampleCount ? "중간" : "낮음";
   const expectedErrorPct = sampleCount >= 3 ? 15 : sampleCount ? 25 : 40;
-  const evidenceKind = sampleCount ? "external" : "estimate";
-  const confidenceReason = sampleCount
-    ? `동일 GPU·모델의 출처 연결 외부 참고값 ${sampleCount}건을 사용했습니다.`
-    : "동일 GPU·모델·런타임 실측 자료가 없어 VRAM과 메모리 대역폭으로 계산했습니다.";
-  const normalCapacity = Math.max(1, Math.floor(speed * gpuCount / Math.max(1, studioState.siOutputTokens / studioState.siTargetSeconds)));
-  const failedGpuCount = studioState.siAvailability === "single" ? Math.max(0, gpuCount - 1) : Math.max(1, gpuCount - gpuPerServer);
-  const failoverCapacity = Math.max(0, Math.floor(speed * failedGpuCount / Math.max(1, studioState.siOutputTokens / studioState.siTargetSeconds)));
-  const gpuPriceUsd = Math.max(2500, gpuMarketReference(gpu).priceUsd || (vram * 180));
-  const purchaseKrw = Math.round((gpuPriceUsd * gpuCount + nodes * 18000 + storageTb * 600 + nodes * 3500) * 1400);
-  const annualEnergyKrw = Math.round(powerW / 1000 * Math.min(8760, studioState.siOperatingHours * 365) * studioState.siElectricityKrw);
-  const threeYearTcoKrw = Math.round(purchaseKrw + annualEnergyKrw * 3 + purchaseKrw * studioState.siMaintenancePct / 100 * 3);
+  const confidence = sampleCount >= 3 ? "높음" : sampleCount ? "중간" : "낮음";
+  const capacity = Math.max(1, Math.floor(base.capacityRps * Math.max(1, Number(studioState.siTargetSeconds || 8))));
+  const failoverCapacity = Math.max(0, Math.floor(base.failoverRps * Math.max(1, Number(studioState.siTargetSeconds || 8))));
   return {
-    ...profile, gpu, estimate, requiredGb, speed, targetTokS, gpuCount, nodes, cpuCores, ramGb,
-    gpuPerServer, cpuSockets, storageTb, network, powerW, sampleCount, confidence,
-    expectedErrorPct, evidenceKind, confidenceReason,
-    speedLow: speed * (1 - expectedErrorPct / 100),
-    speedHigh: speed * (1 + expectedErrorPct / 100),
-    capacity: normalCapacity, failoverCapacity, purchaseKrw, annualEnergyKrw, threeYearTcoKrw,
+    ...profile,
+    ...base,
+    speed: base.singleStreamSpeed,
+    targetTokS: base.tokenDemand,
+    capacity,
+    failoverCapacity,
+    sampleCount,
+    confidence,
+    expectedErrorPct,
+    evidenceKind: sampleCount ? "external" : "estimate",
+    confidenceReason: sampleCount
+      ? `동일 GPU·모델의 출처 연결 외부 참고값 ${sampleCount}건을 사용했습니다.`
+      : "동일 GPU·모델·런타임 실측 자료가 없어 VRAM과 메모리 대역폭으로 계산했습니다.",
+    speedLow: base.singleStreamSpeed * (1 - expectedErrorPct / 100),
+    speedHigh: base.singleStreamSpeed * (1 + expectedErrorPct / 100),
     placement: `${model.name} · ${profile.id === "economy" ? "tensor parallel" : "replica + tensor parallel"}`,
   };
 }
@@ -823,9 +776,7 @@ function calculateSiSizing() {
     { id: "scalable", ko: "확장형", en: "Scalable", memoryMargin: 1.4, capacityMargin: 1.45, gpuIndex: 4 },
   ];
   const baseCandidates = gpus.map((gpu) => siSizingPlan(gpu, model, profiles[1]));
-  const plans = window.AIHardwareInfraSizing
-    ? window.AIHardwareInfraSizing.choosePlans(baseCandidates, profiles)
-    : profiles.map((profile) => siSizingPlan(gpus[Math.min(profile.gpuIndex, gpus.length - 1)], model, profile));
+  const plans = window.AIHardwareInfraSizing.choosePlans(baseCandidates, profiles);
   return { model, plans };
 }
 
@@ -1339,7 +1290,7 @@ function renderSimpleSizingWizard(model, plans) {
       [2, en ? "Users" : "사용자"],
       [3, en ? "Priority" : "우선순위"],
       [4, en ? "Result" : "결과"],
-    ].map(([index, label]) => `<li class="${index === step ? "is-current" : index < step ? "is-done" : ""}" ${index === step ? 'aria-current="step"' : ""}><b>${index < 4 ? index : "✓"}</b><span>${label}</span></li>`).join("")}</ol>
+    ].map(([index, label]) => `<li class="${index === step ? "is-current" : index < step ? "is-done" : ""}" ${index === step ? 'aria-current="step"' : ""} data-si-wizard-goto="${index}" role="button" tabindex="0" aria-label="${label}"><b>${index < 4 ? index : "✓"}</b><span>${label}</span></li>`).join("")}</ol>
     <div class="si-wizard-step" data-si-step-panel="1"><strong>1. ${en ? "What are you building?" : "무엇을 만드나요?"}</strong><small class="si-step-hint">${en ? "Choose the closest example. You can fine-tune it later." : "가장 비슷한 예시를 고르세요. 나중에 상세 조정할 수 있습니다."}</small><div class="si-choice-grid si-scenario-grid">${Object.entries(SI_SCENARIOS).map(([id,row]) => {
       const [note, badge] = scenarioNotes[id];
       return `<button type="button" data-si-preset="${id}" class="${studioState.siScenario === id ? "is-active" : ""}"><span>${badge}</span><b>${en ? row.en : row.ko}</b><small>${note}</small></button>`;
@@ -1911,6 +1862,19 @@ function bindDecisionStudio() {
     studioState.siWizardStep = 1;
     syncStudioUrl();
     renderDecisionStudio();
+  });
+  document.querySelectorAll("[data-si-wizard-goto]").forEach((el) => {
+    const goToStep = () => {
+      studioState.siWizardStep = Math.max(1, Math.min(4, Number(el.dataset.siWizardGoto) || 1));
+      syncStudioUrl();
+      renderDecisionStudio();
+    };
+    el.addEventListener("click", goToStep);
+    el.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      goToStep();
+    });
   });
   document.querySelectorAll("[data-si-jump]").forEach((button) => button.addEventListener("click", () => {
     const targetId = button.dataset.siJump;
