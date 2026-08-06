@@ -1531,7 +1531,7 @@ function renderStudioConsulting() {
       <label><span>${en ? "Vector data (GB)" : "벡터 데이터 (GB)"}</span><input id="siVectorDataGb" type="number" min="0" value="${studioState.siVectorDataGb}"></label>
       <label><span>${en ? "Logs per day (GB)" : "일 로그 (GB)"}</span><input id="siLogGbDay" type="number" min="0" value="${studioState.siLogGbDay}"></label>
       <label><span>${en ? "Retention days" : "보관 일수"}</span><input id="siRetentionDays" type="number" min="1" value="${studioState.siRetentionDays}"></label>
-      <label class="studio-check"><span class="studio-check-label"><input id="siDevProd" type="checkbox" ${studioState.siDevProd ? "checked" : ""}> ${en ? "Separate dev and production" : "개발계·운영계 분리"}</span></label>
+      <label class="studio-check"><input id="siDevProd" type="checkbox" ${studioState.siDevProd ? "checked" : ""}><span>${en ? "Separate dev and production" : "개발계·운영계 분리"}</span></label>
     </div></details>
     <details class="si-advanced"><summary>${en ? "Infrastructure and operating assumptions" : "인프라·운영 조건 상세"}</summary><div class="studio-question-grid">
       <label><span>PCIe</span><select id="siPcieGen"><option value="gen4" ${studioState.siPcieGen === "gen4" ? "selected" : ""}>Gen 4</option><option value="gen5" ${studioState.siPcieGen === "gen5" ? "selected" : ""}>Gen 5</option></select></label>

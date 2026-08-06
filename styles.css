@@ -617,13 +617,11 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin-top: 20px;
 }
 
-/* Plain "<label class=studio-check><input type=checkbox><span>...</span></label>"
-   checkboxes (separate-network, streaming, autoscale, vision toggles) had no
-   sizing rule of their own, so the browser's native checkbox rendered at an
-   oversized default with no defined gap from its label — the box and its
-   text looked unrelated. Match the sizing already used for the
-   .studio-check-label variant so every checkbox in this grid looks and
-   behaves the same. */
+/* "<label class=studio-check><input type=checkbox><span>...</span></label>"
+   checkboxes (separate-network, streaming, autoscale, vision, dev/prod
+   toggles) had no sizing rule of their own, so the browser's native checkbox
+   rendered at an oversized default with no defined gap from its label — the
+   box and its text looked unrelated. */
 .studio-question-grid .studio-check > input[type="checkbox"] {
   flex: 0 0 18px;
   width: 18px;
@@ -7319,32 +7317,6 @@ body.community-task-active #benchmarkSheet {
   border: 1px solid var(--line);
   border-radius: 9px;
   background: var(--panel);
-}
-
-.studio-check-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  /* Was width: 100%, which relies on flex-basis:auto deferring to the width
-     property. That resolution was collapsing to 0 width for this label in
-     practice, and with no defined min-width the label's Korean text (which
-     can line-break between almost any two characters, unlike space-separated
-     Latin text) folded into a single vertical column of one character per
-     line ("개발계·운영계 분리" reading top to bottom). flex: 1 forces this
-     item to actually claim the row's available width instead of shrinking
-     toward its own min-content. */
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.studio-check-label input[type="checkbox"] {
-  flex: 0 0 18px;
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
-  min-height: 18px;
-  margin: 0;
-  padding: 0;
 }
 
 .si-field-baseline {
