@@ -612,8 +612,27 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .studio-question-grid .studio-check {
   display: flex;
   align-items: center;
+  gap: 8px;
   min-height: 42px;
   margin-top: 20px;
+}
+
+/* Plain "<label class=studio-check><input type=checkbox><span>...</span></label>"
+   checkboxes (separate-network, streaming, autoscale, vision toggles) had no
+   sizing rule of their own, so the browser's native checkbox rendered at an
+   oversized default with no defined gap from its label — the box and its
+   text looked unrelated. Match the sizing already used for the
+   .studio-check-label variant so every checkbox in this grid looks and
+   behaves the same. */
+.studio-question-grid .studio-check > input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--blue);
 }
 
 .studio-question-grid input,
@@ -7277,7 +7296,19 @@ body.community-task-active #benchmarkSheet {
 }
 
 .studio-question-grid .studio-check {
-  flex-wrap: wrap;
+  /* Was flex-wrap: wrap, which — at this grid's ~130px column width — wrapped
+     the checkbox and its label onto separate flex lines instead of just
+     letting the label's own text wrap normally. That made the checkbox look
+     unrelated to any label ("스트리밍 응답"/"자동 확장" floating below an
+     unlabeled box). Keeping them on one flex line and letting long labels
+     (e.g. "서비스·스토리지·관리망 분리") wrap their own text instead keeps
+     the checkbox visually attached to its label at any width. */
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.studio-question-grid .studio-check > input[type="checkbox"] {
+  margin-top: 2px;
 }
 
 .si-expert-form .studio-question-grid .studio-check {
