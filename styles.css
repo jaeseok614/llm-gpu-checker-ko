@@ -1015,7 +1015,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
   padding: 11px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: var(--surface);
+  background: var(--surface-tint);
 }
 
 .si-validation-grid article.is-ok {
@@ -1051,7 +1051,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
   border: 1px solid var(--line);
   border-radius: 9px;
   color: var(--muted);
-  background: var(--surface);
+  background: var(--surface-tint);
 }
 
 .si-commercial-flow > b {
@@ -1081,7 +1081,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
   border: 1px solid var(--line);
   border-radius: 9px;
   color: var(--muted);
-  background: var(--surface);
+  background: var(--surface-tint);
 }
 
 .si-topology-metrics strong {
@@ -1369,8 +1369,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .studio-stale {
-  background: var(--amber-soft);
-  color: var(--amber);
+  background: var(--yellow-soft);
+  color: var(--yellow);
 }
 
 .studio-fresh {
@@ -1453,8 +1453,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .parts-check-list article.is-warning {
-  background: var(--amber-soft);
-  color: var(--amber);
+  background: var(--yellow-soft);
+  color: var(--yellow);
 }
 
 .parts-total {
@@ -1487,7 +1487,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .runtime-warning {
   display: block;
-  color: var(--amber);
+  color: var(--yellow);
 }
 
 .community-row-list {
@@ -1508,7 +1508,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .community-row-list article.is-outlier {
-  border-color: var(--amber);
+  border-color: var(--yellow);
 }
 
 .community-row-list article div span,
@@ -1683,11 +1683,11 @@ html[lang="en"] .simple-mode-head > div:first-child {
   justify-content: space-between;
   gap: 12px;
   margin-top: 16px;
-  border: 1px solid var(--amber);
+  border: 1px solid var(--yellow);
   border-radius: 11px;
   padding: 10px 12px;
-  background: var(--amber-soft);
-  color: var(--amber);
+  background: var(--yellow-soft);
+  color: var(--yellow);
   font-size: 0.84rem;
   font-weight: 800;
 }
@@ -1701,8 +1701,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .advisor-difference span {
   border-radius: 999px;
   padding: 3px 7px;
-  background: var(--amber-soft);
-  color: var(--amber);
+  background: var(--yellow-soft);
+  color: var(--yellow);
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -1954,14 +1954,14 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: transparent;
-  color: var(--text);
+  color: var(--ink);
   font-weight: 700;
 }
 
 .decision-hub-tabs button.is-active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
 }
 
 .decision-hub-body {
@@ -1982,7 +1982,7 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
 }
 
 .hub-metric-grid span,
@@ -2012,7 +2012,7 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
 .benchmark-v2-list article {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
 }
 
 .reliability-card {
@@ -2020,8 +2020,8 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   border-left: 4px solid var(--muted);
 }
 
-.reliability-card.confidence-high { border-left-color: var(--success); }
-.reliability-card.confidence-medium { border-left-color: var(--accent); }
+.reliability-card.confidence-high { border-left-color: var(--green); }
+.reliability-card.confidence-medium { border-left-color: var(--blue); }
 
 .reliability-card > div:first-child,
 .benchmark-v2-list article > div:first-child {
@@ -2120,7 +2120,7 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
 .evidence-pill {
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--accent-soft);
+  background: var(--blue-soft);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -2140,7 +2140,7 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
 }
 
 .deep-link-grid h3 {
@@ -2164,11 +2164,11 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
 }
 
-.upgrade-verdict.is-worth { border-color: var(--success); }
-.upgrade-verdict.is-skip { border-color: var(--warning); }
+.upgrade-verdict.is-worth { border-color: var(--green); }
+.upgrade-verdict.is-skip { border-color: var(--yellow); }
 
 .build-selector-grid,
 .build-price-grid {
@@ -2213,13 +2213,13 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--warning);
+  border-left: 4px solid var(--yellow);
   border-radius: 14px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
 }
 
-.build-verdict.is-runnable { border-left-color: var(--success); }
-.build-verdict.is-blocked { border-left-color: var(--danger, #b94a48); }
+.build-verdict.is-runnable { border-left-color: var(--green); }
+.build-verdict.is-blocked { border-left-color: var(--red); }
 
 .build-verdict > div {
   display: grid;
@@ -2256,13 +2256,13 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
   counter-increment: build-priority;
 }
 
 .build-priority li strong::before {
   content: counter(build-priority) ". ";
-  color: var(--accent);
+  color: var(--blue);
 }
 
 .build-priority li span {
@@ -2286,7 +2286,7 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 14px;
-  background: var(--panel-strong);
+  background: var(--panel-raised);
 }
 
 .launch-output pre {
@@ -6923,7 +6923,7 @@ button:focus-visible {
 .si-version-section {
   margin-top: 18px;
   padding: 18px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface-soft);
 }
@@ -6933,17 +6933,17 @@ button:focus-visible {
 .si-version-head .is-risk { color: #ef8f70; }
 .si-compact-grid { grid-template-columns: repeat(5, minmax(130px, 1fr)); margin-bottom: 14px; }
 .si-metric-grid { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); gap: 8px; }
-.si-metric-grid span { display: grid; gap: 5px; padding: 12px; color: var(--muted); border-radius: 10px; background: var(--surface); }
-.si-metric-grid strong { color: var(--text); font-size: 1rem; }
-.si-avatar-latency, .si-architecture { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 12px; overflow-x: auto; border: 1px dashed var(--border-strong); border-radius: 10px; }
-.si-avatar-latency span, .si-architecture span { flex: 0 0 auto; padding: 9px 11px; border-radius: 8px; background: var(--surface); }
+.si-metric-grid span { display: grid; gap: 5px; padding: 12px; color: var(--muted); border-radius: 10px; background: var(--surface-tint); }
+.si-metric-grid strong { color: var(--ink); font-size: 1rem; }
+.si-avatar-latency, .si-architecture { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 12px; overflow-x: auto; border: 1px dashed var(--line-strong); border-radius: 10px; }
+.si-avatar-latency span, .si-architecture span { flex: 0 0 auto; padding: 9px 11px; border-radius: 8px; background: var(--surface-tint); }
 .si-avatar-latency strong { margin-left: auto; white-space: nowrap; }
 .si-project-actions, .si-mode-switch { display: flex; flex-wrap: wrap; gap: 8px; }
 .si-project-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
-.si-project-list button { display: grid; gap: 4px; min-width: 0; padding: 11px; text-align: left; color: var(--text); border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
+.si-project-list button { display: grid; gap: 4px; min-width: 0; padding: 11px; text-align: left; color: var(--ink); border: 1px solid var(--line); border-radius: 9px; background: var(--surface-tint); }
 .si-project-list span, .si-change-summary, .si-confidence-list small { color: var(--muted); }
-.si-mode-switch button { padding: 8px 10px; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; background: transparent; }
-.si-mode-switch button.is-active { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.si-mode-switch button { padding: 8px 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; background: transparent; }
+.si-mode-switch button.is-active { color: var(--ink); border-color: var(--blue); background: var(--blue-soft); }
 .si-command { max-width: 100%; padding: 13px; overflow: auto; color: #d6f0ff; border-radius: 10px; background: #111820; }
 .si-evidence-panel .si-confidence-list span { grid-template-columns: minmax(140px, .8fr) minmax(170px, 1fr); }
 @media (max-width: 720px) {
@@ -7026,9 +7026,9 @@ body.community-task-active #benchmarkSheet {
   min-height: 40px;
   padding: 0 18px;
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 9px;
-  background: var(--surface);
+  background: var(--surface-tint);
 }
 
 .si-input-mode-switch button.is-active {
@@ -7077,10 +7077,10 @@ body.community-task-active #benchmarkSheet {
   min-height: 54px;
   padding: 10px;
   text-align: left;
-  color: var(--text);
+  color: var(--ink);
   border: 2px solid var(--line);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--surface-tint);
 }
 
 .si-choice-grid button:hover {
@@ -7108,7 +7108,7 @@ body.community-task-active #benchmarkSheet {
   padding: 8px 10px;
   border: 2px solid var(--line);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--surface-tint);
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 800;
@@ -7188,7 +7188,7 @@ body.community-task-active #benchmarkSheet {
 
 .si-expert-form {
   margin-top: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 12px;
 }
 
@@ -7460,7 +7460,7 @@ body.community-task-active #benchmarkSheet {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--surface-tint);
   font-weight: 900;
 }
 
@@ -8632,7 +8632,7 @@ body.guide-modal-open {
   padding: 0 12px;
   border: 1px solid var(--line-strong);
   border-radius: 9px;
-  background: var(--surface);
+  background: var(--surface-tint);
   color: var(--ink);
 }
 
@@ -8705,9 +8705,10 @@ body.guide-modal-open {
   display: inline-grid;
   position: relative;
   place-items: center;
-  width: 22px;
-  min-width: 22px;
-  height: 22px;
+  vertical-align: middle;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
   margin-left: 3px;
   padding: 0;
   border: 1px solid var(--line-strong);
@@ -8715,8 +8716,9 @@ body.guide-modal-open {
   background: var(--surface-soft);
   color: var(--blue);
   cursor: help;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
+  line-height: 1;
 }
 
 .term-help::after {

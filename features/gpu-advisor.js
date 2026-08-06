@@ -315,7 +315,14 @@ function renderGpuAdvisor() {
   panel.querySelectorAll("[data-advisor-select-gpu]").forEach((button) => {
     button.addEventListener("click", () => {
       selectPrimaryGpu(button.dataset.advisorSelectGpu, { persist: true });
-      render();
+      // render()'s modelFinder branch keeps hardwarePanel/resultsPanel
+      // hidden no matter what hasPrimaryGpuSelection is (see render() in
+      // app.js), so calling plain render() here updated state but left the
+      // advisor screen looking untouched — the click appeared to do
+      // nothing. Selecting a GPU here means "show me what this GPU can
+      // run," which is the GPU finder screen, so switch there.
+      if (window.AIHardwareCore?.setCoreTaskMode) window.AIHardwareCore.setCoreTaskMode("finder");
+      else render();
       $("hardwarePanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     });
   });
