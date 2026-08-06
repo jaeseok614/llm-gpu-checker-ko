@@ -447,7 +447,12 @@ test("accessibility and responsive contracts are present", () => {
   assert.match(css, /min-height:\s*44px/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /\.si-expert-form \.studio-question-grid \.studio-check\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/s);
-  assert.match(css, /\.studio-check-label input\[type="checkbox"\]\s*\{[^}]*width:\s*18px;[^}]*height:\s*18px;/s);
+  // .studio-check-label was the old wrapper markup used only by the
+  // "개발계·운영계 분리" checkbox; it caused a vertical single-character text
+  // wrap bug and was removed so that checkbox now shares the same flat
+  // <label class="studio-check"> markup (and CSS) as every other checkbox.
+  assert.match(css, /\.studio-question-grid \.studio-check > input\[type="checkbox"\]\s*\{[^}]*width:\s*18px;[^}]*height:\s*18px;/s);
+  assert.doesNotMatch(css, /\.studio-check-label/);
   assert.match(css, /\.term-help::after\s*\{[^}]*width:\s*var\(--term-tip-width,\s*min\(360px,\s*calc\(100vw - 32px\)\)\)/s);
   assert.match(read("platform-v3.js"), /const tooltipWidth = Math\.min\(360,[\s\S]*--term-tip-offset-x[\s\S]*button\.classList\.add\("is-tip-left"\)/);
 });

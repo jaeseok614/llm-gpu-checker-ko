@@ -3,10 +3,20 @@
   --ui-radius-card: 18px;
   --ui-radius-control: 8px;
   --ui-control-min-height: 44px;
-  --ui-border: var(--border, #cbd5e1);
+  /* --border, --accent, and --panel-soft were never real design tokens (the
+     actual token names are --line, --blue, and --surface-soft), so these
+     always fell back to their fixed light-mode default no matter which
+     theme was active. That mostly went unnoticed because the light-mode
+     fallback happened to look close enough - but in dark mode it left every
+     card that uses --ui-border (core-task-switcher, hardware-panel,
+     results-panel, gpu-advisor-panel, gpu-insights-panel,
+     gpu-placement-panel, benchmark-panel, studio-shell, ui-card, plus the
+     local-funnel/community-measurement panels) with a light gray border
+     floating on a dark background instead of blending in. */
+  --ui-border: var(--line, #cbd5e1);
   --ui-surface: var(--panel, #ffffff);
-  --ui-surface-muted: var(--panel-soft, #f6f8fb);
-  --ui-accent: var(--accent, #14658a);
+  --ui-surface-muted: var(--surface-soft, #f6f8fb);
+  --ui-accent: var(--blue, #14658a);
 }
 
 :where(.core-task-switcher, .hardware-panel, .results-panel, .gpu-advisor-panel,
@@ -40,9 +50,12 @@
   line-height: 1.25;
 }
 
-.data-completeness.is-high strong { color: var(--success, #18794e); }
-.data-completeness.is-medium strong { color: var(--warning, #9a6700); }
-.data-completeness.is-low strong { color: var(--danger, #b42318); }
+/* Same issue as --ui-border above: --success/--warning/--danger aren't real
+   tokens (the real names are --green/--yellow/--red), so these badge colors
+   were stuck at their light-mode fallback in dark mode too. */
+.data-completeness.is-high strong { color: var(--green, #18794e); }
+.data-completeness.is-medium strong { color: var(--yellow, #9a6700); }
+.data-completeness.is-low strong { color: var(--red, #b42318); }
 
 .local-funnel-panel {
   width: 100%;
