@@ -7310,6 +7310,15 @@ body.community-task-active #benchmarkSheet {
 }
 
 .si-expert-form .studio-question-grid .studio-check {
+  /* This checkbox variant can carry a third child - a full-width
+     .si-field-baseline hint appended by decorateSiDetailedFields() - on top
+     of the checkbox and its label. The general nowrap rule above kept that
+     hint on the same flex line, where its flex-basis:100% left almost no
+     room for the label text and squeezed it down to a couple of characters
+     wide, wrapping it vertically. This card always spans the full form width
+     (grid-column: 1 / -1), so allowing wrap here just sends the hint to its
+     own line without ever splitting the checkbox from its label text. */
+  flex-wrap: wrap;
   grid-column: 1 / -1;
   min-height: 0;
   margin-top: 0;
