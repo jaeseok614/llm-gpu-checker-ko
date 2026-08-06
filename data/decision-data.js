@@ -42,6 +42,8 @@ const PRICE_DATA_META = {
 
 const SYSTEM_PART_CATALOG = {
   cpu: [
+    { id: "r5-5600", name: "AMD Ryzen 5 5600 (구형·AM4)", cores: 6, score: 42, tdpW: 65, socket: "AM4", priceKrw: 139000 },
+    { id: "i5-12400", name: "Intel Core i5-12400 (구형·저가형)", cores: 6, score: 48, tdpW: 65, socket: "LGA1700", priceKrw: 189000 },
     { id: "r5-8500g", name: "AMD Ryzen 5 8500G", cores: 6, score: 46, tdpW: 65, socket: "AM5", priceKrw: 195000 },
     { id: "r5-7600", name: "AMD Ryzen 5 7600", cores: 6, score: 52, tdpW: 88, socket: "AM5", priceKrw: 245000 },
     { id: "r7-9700x", name: "AMD Ryzen 7 9700X", cores: 8, score: 76, tdpW: 105, socket: "AM5", priceKrw: 485000 },
@@ -58,6 +60,7 @@ const SYSTEM_PART_CATALOG = {
     { id: "xeon-6980p", name: "Intel Xeon 6980P", cores: 128, score: 730, tdpW: 500, socket: "LGA4710", priceKrw: 23800000 },
   ],
   motherboard: [
+    { id: "b550-atx", name: "B550 ATX · AM4 (구형)", socket: "AM4", form: "ATX", priceKrw: 129000 },
     { id: "b650-atx", name: "B650 ATX · AM5", socket: "AM5", form: "ATX", priceKrw: 220000 },
     { id: "x870-atx", name: "X870 ATX · AM5", socket: "AM5", form: "ATX", priceKrw: 390000 },
     { id: "z790-atx", name: "Z790 ATX · LGA1700", socket: "LGA1700", form: "ATX", priceKrw: 330000 },
