@@ -218,6 +218,26 @@ window.LLM_GPU_CHECKER_DATA.licensePolicies = {
     },
     "https://huggingface.co/ai21labs/AI21-Jamba-1.5-Mini/blob/main/LICENSE.txt",
   ),
+  "Kimi K3 License": licensePolicy(
+    "review",
+    "약관 확인 필요",
+    "공개 가중치",
+    {
+      ko: "Kimi K2와는 다른 자체 라이선스 문서로, 상업적 복제·수정·재배포·판매를 폭넓게 허용하지만 별도의 매출·사용자 규모 기준이 있어 해당 모델의 LICENSE를 직접 확인해야 합니다.",
+      en: "A separate license document from Kimi K2's; it broadly allows commercial copying, modification, redistribution, and resale, but has its own revenue/user-scale thresholds, so check that model's LICENSE directly.",
+    },
+    "https://huggingface.co/moonshotai/Kimi-K3/blob/main/LICENSE",
+  ),
+  "OpenMDW-1.1": licensePolicy(
+    "allowed",
+    "상업 이용 가능",
+    "오픈소스",
+    {
+      ko: "MIT와 유사한 permissive 라이선스로 상업 이용, 파인튜닝, 재배포가 허용됩니다.",
+      en: "An MIT-like permissive license allowing commercial use, fine-tuning, and redistribution.",
+    },
+    "https://huggingface.co/poolsideai/Laguna-XS-2.1",
+  ),
   "NVIDIA Open": licensePolicy(
     "conditional",
     "조건부 상업 이용",

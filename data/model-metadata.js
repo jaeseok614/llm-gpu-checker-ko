@@ -1242,6 +1242,26 @@ mergeModelMetadata({
     sourceUrl: "https://platform.kimi.ai/blog/posts/Kimi_API_Newsletter",
     qualityBenchmark: quality("MMLU-Pro 84.6", "MMLU-Pro (no tools)", 84.6, "https://huggingface.co/moonshotai/Kimi-K2-Thinking", "공식 카드"),
   },
+  "Kimi K2.7 Code": {
+    releaseDate: "2026-06-12",
+    sourceUrl: "https://huggingface.co/moonshotai/Kimi-K2.7-Code",
+    qualityBenchmark: quality("SWE-bench Verified 60.4", "SWE-bench Verified (벤더 자체 발표)", 60.4, "https://huggingface.co/moonshotai/Kimi-K2.7-Code", "공식 발표"),
+  },
+  "Kimi K3": {
+    releaseDate: "2026-07-26",
+    sourceUrl: "https://huggingface.co/moonshotai/Kimi-K3",
+    qualityBenchmark: quality("MMLU-Pro 78.5", "MMLU-Pro", 78.5, "https://huggingface.co/moonshotai/Kimi-K3", "공개 평가"),
+  },
+  "Nemotron 3 Super 120B A12B": {
+    releaseDate: "2026-03-11",
+    sourceUrl: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
+    qualityBenchmark: quality("MMLU-Pro 83.7", "MMLU-Pro", 83.7, "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16", "공개 평가"),
+  },
+  "Laguna XS 2.1 33B A3B": {
+    releaseDate: "2026-07-02",
+    sourceUrl: "https://poolside.ai/blog/introducing-laguna-xs-2-1",
+    qualityBenchmark: quality("SWE-bench Verified 70.9", "SWE-bench Verified", 70.9, "https://poolside.ai/blog/introducing-laguna-xs-2-1", "공식 발표"),
+  },
   "GLM-5.2": {
     releaseDate: "2026-06-16",
     sourceUrl: "https://docs.bigmodel.cn/cn/update/new-releases",

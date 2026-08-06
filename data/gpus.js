@@ -140,6 +140,7 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "titanrtx-24", name: "Titan RTX 24GB", vram: 24, ram: 64, bandwidth: 672 },
 
   { id: "dgxspark-gb10-128", name: "NVIDIA GB10 / DGX Spark 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 273 },
+  { id: "b300-288", name: "NVIDIA B300 (Blackwell Ultra) 288GB", vram: 288, ram: 768, bandwidth: 8000, vendor: "NVIDIA", architecture: "Blackwell Ultra", formFactor: "datacenter", tbpW: 1400, sourceUrl: "https://www.nvidia.com/en-us/data-center/dgx-b300/" },
   { id: "b200-192", name: "NVIDIA B200 192GB", vram: 192, ram: 512, bandwidth: 8000 },
   { id: "b100-192", name: "NVIDIA B100 192GB", vram: 192, ram: 512, bandwidth: 8000 },
   { id: "h200-141", name: "NVIDIA H200 SXM 141GB", vram: 141, ram: 384, bandwidth: 4800 },
@@ -159,6 +160,8 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "v100-32", name: "NVIDIA V100 32GB", vram: 32, ram: 128, bandwidth: 900 },
   { id: "p100-16", name: "NVIDIA P100 16GB", vram: 16, ram: 64, bandwidth: 732 },
 
+  { id: "mi355x-288", name: "AMD Instinct MI355X 288GB", vram: 288, ram: 768, bandwidth: 8000, vendor: "AMD", architecture: "CDNA 4", tbpW: 1400, sourceUrl: "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi355x-gpu-brochure.pdf" },
+  { id: "mi350x-288", name: "AMD Instinct MI350X 288GB", vram: 288, ram: 768, bandwidth: 8000, vendor: "AMD", architecture: "CDNA 4", tbpW: 1000, sourceUrl: "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi350x-gpu-brochure.pdf" },
   { id: "mi325x-256", name: "AMD Instinct MI325X 256GB", vram: 256, ram: 512, bandwidth: 6000 },
   { id: "mi300x-192", name: "AMD Instinct MI300X 192GB", vram: 192, ram: 512, bandwidth: 5300 },
   { id: "mi250x-128", name: "AMD Instinct MI250X 128GB", vram: 128, ram: 384, bandwidth: 3277 },
