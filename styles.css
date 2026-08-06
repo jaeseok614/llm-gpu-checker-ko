@@ -1158,6 +1158,11 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .si-advanced .studio-question-grid {
+  /* The base .studio-question-grid rule carries no padding of its own (it's
+     meant to sit inside an already-padded parent), so this section's fields
+     ("PCIe" etc.) were flush against the border-top separator with no
+     breathing room. */
+  padding: 16px;
   border: 0;
   border-top: 1px solid var(--line);
   border-radius: 0;
@@ -7216,7 +7221,10 @@ body.community-task-active #benchmarkSheet {
 }
 
 .si-expert-form .si-question-grid {
-  padding: 0 16px 16px;
+  /* Was "0 16px 16px" (no top padding), which put the first row of fields
+     ("제안 회사" etc.) flush against the card's top border right under the
+     summary toggle. Restored top breathing room to match the other sides. */
+  padding: 16px;
 }
 
 .si-baseline-guide {
