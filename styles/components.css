@@ -17,8 +17,15 @@
   background: var(--ui-surface);
 }
 
-:where(button, .primary-button, .ghost-button, .toggle-button, .icon-button,
-  .ui-button, select, input[type="text"], input[type="search"], input[type="number"]) {
+/* button:not(.term-help) - this sitewide minimum-control-height rule was the
+   real, viewport-independent cause of the "?" help icons rendering as tall
+   ovals (and, by pushing that flex row taller, making the checkbox next to
+   it look vertically misaligned): it applies at every width, so the earlier
+   mobile-only (max-width: 680px) exclusions never touched it. .term-help is
+   a small circular annotation, not a tap target that needs 44px. */
+:where(button:not(.term-help), .primary-button, .ghost-button, .toggle-button,
+  .icon-button, .ui-button, select, input[type="text"], input[type="search"],
+  input[type="number"]) {
   min-height: var(--ui-control-min-height);
   border-radius: var(--ui-radius-control);
 }
@@ -116,7 +123,7 @@ html:not([data-theme="dark"]) :where(.app-footer, .app-footer strong, .local-fun
 }
 
 @media (max-width: 520px) {
-  :where(button, .primary-button, .ghost-button, .toggle-button, .icon-button) {
+  :where(button:not(.term-help), .primary-button, .ghost-button, .toggle-button, .icon-button) {
     min-height: 44px;
   }
 
