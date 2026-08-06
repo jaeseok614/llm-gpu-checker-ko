@@ -7794,9 +7794,9 @@ body.guide-modal-open {
 }
 
 .getting-started-panel ol {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 12px 0;
   padding: 0;
   list-style: none;
@@ -7807,9 +7807,12 @@ body.guide-modal-open {
 }
 
 .guide-step-button {
-  display: block;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
   width: 100%;
-  padding: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-raised);
@@ -7820,32 +7823,59 @@ body.guide-modal-open {
   transition: border-color .15s ease, transform .15s ease;
 }
 
+.guide-step-button::before {
+  content: counter(guide-step);
+  counter-increment: guide-step;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-tint);
+  color: var(--blue);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.getting-started-panel ol {
+  counter-reset: guide-step;
+}
+
 .guide-step-button:hover,
 .guide-step-button:focus-visible {
   border-color: var(--blue);
   transform: translateY(-1px);
 }
 
-.getting-started-panel li b,
-.getting-started-panel li span,
-.getting-started-panel li em {
-  display: block;
+.getting-started-panel li b {
+  font-size: 13px;
 }
 
 .getting-started-panel li span,
 .getting-started-panel > p {
-  margin-top: 5px;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .getting-started-panel li em {
-  margin-top: 8px;
+  justify-self: end;
   color: var(--blue);
   font-size: 11px;
   font-style: normal;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .guide-step-button {
+    grid-template-columns: 26px 1fr;
+  }
+
+  .guide-step-button em {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 
 .guide-wizard-view[hidden],
@@ -8376,7 +8406,6 @@ body.guide-modal-open {
 }
 
 @media (max-width: 900px) {
-  .getting-started-panel ol,
   .catalog-request-center > div,
   .si-choice-grid.si-scenario-grid,
   .proposal-summary-grid,
@@ -8413,7 +8442,6 @@ body.guide-modal-open {
   }
 
   .core-task-actions,
-  .getting-started-panel ol,
   .catalog-request-center > div,
   .si-choice-grid.si-scenario-grid,
   .decision-reason-list,

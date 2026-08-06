@@ -170,15 +170,43 @@
     if (isWizard) renderGuideWizard();
   }
 
-  function highlightCoreTaskButton(mode) {
-    const button = document.querySelector(`.core-task-actions [data-core-task="${mode}"]`);
-    if (!button) return;
-    button.classList.remove("is-guide-highlight");
+  function pulseHighlight(el) {
+    if (!el) return;
+    el.classList.remove("is-guide-highlight");
     // Force a reflow so re-adding the class restarts the highlight animation
-    // even if the same button was just highlighted a moment ago.
-    void button.offsetWidth;
-    button.classList.add("is-guide-highlight");
-    button.addEventListener("animationend", () => button.classList.remove("is-guide-highlight"), { once: true });
+    // even if the same element was just highlighted a moment ago.
+    void el.offsetWidth;
+    el.classList.add("is-guide-highlight");
+    el.addEventListener("animationend", () => el.classList.remove("is-guide-highlight"), { once: true });
+  }
+
+  function highlightCoreTaskButton(mode) {
+    pulseHighlight(document.querySelector(`.core-task-actions [data-core-task="${mode}"]`));
+  }
+
+  // Where the guide should point the person after they choose a path — the
+  // actual field they need to fill in next, not just the top mode switcher.
+  // Inputs on this page are spread across several panels, so a plain mode
+  // switch alone can leave someone unsure where to look next.
+  function firstInputSelector(mode) {
+    if (mode === "finder") return document.getElementById("onboardingScreen")?.hidden ? "#gpuPreset" : "#onboardingQuickpicks";
+    if (mode === "modelFinder") return "#advisorModelSearch";
+    if (mode === "infra") return "#siServiceType";
+    return null;
+  }
+
+  function highlightFirstInput(mode) {
+    const selector = firstInputSelector(mode);
+    const target = selector && document.querySelector(selector);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    pulseHighlight(target);
+    // Give the smooth scroll a moment to land before moving focus, so the
+    // browser does not jump the page a second time to reveal the focused
+    // element.
+    window.setTimeout(() => {
+      if (typeof target.focus === "function") { try { target.focus({ preventScroll: true }); } catch {} }
+    }, 350);
   }
 
   function selectGuideMode(mode) {
@@ -186,8 +214,11 @@
     if (!button) return;
     button.click();
     highlightCoreTaskButton(mode);
-    wizardNode = "start";
     toggleGuide(false);
+    // Wait for the modal-close/scroll from setCoreTaskMode to settle, then
+    // point at the specific field to fill in next.
+    window.setTimeout(() => highlightFirstInput(mode), 250);
+    wizardNode = "start";
   }
 
   function setLanguage(nextLanguage) {
