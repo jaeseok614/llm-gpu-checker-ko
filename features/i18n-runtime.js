@@ -777,6 +777,36 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["예: RTX 4070, A100, M3 Max", "e.g. RTX 4070, A100, M3 Max"],
   ["시작하기", "Get started"],
   ["모델명, GPU, 지표로 검색", "Search by model, GPU, or metric"],
+  // These entries exist because several short fragment rules above (e.g.
+  // "선택" → "selected", "배치" → "batch", "모델" → "Model", "검색" →
+  // "Search") are also used inside longer static aria-labels baked into
+  // index.html and other one-time-Korean-source template strings. Those
+  // labels are captured once at page load (captureStaticTranslationSources)
+  // and re-translated from that captured Korean source on every sweep, so
+  // without a longer, more specific whole-phrase match here, the fragment
+  // rule fires on a sub-string and mangles the label into a mixed Korean/
+  // English mess (e.g. "테마 선택" → "테마 selected" instead of "Theme").
+  // The array is sorted by source length before compiling, so listing the
+  // full phrase anywhere in this array makes it win over the shorter
+  // fragment rule automatically.
+  ["테마 선택", "Theme"],
+  ["현재 작업 진행 단계", "Current task progress"],
+  ["주요 작업 선택", "Choose a primary task"],
+  ["주요 작업", "Primary tasks"],
+  ["가이드 닫기", "Close guide"],
+  ["60초 샘플 체험", "60-second sample tour"],
+  ["배치 플래너 진행 단계", "Placement planner progress"],
+  ["배치할 모델 검색", "Search models to place"],
+  ["지표로 비교 모델 선택", "Compare models by metric"],
+  ["지표로 비교할 모델 선택", "Compare models by metric"],
+  // Footer "local usage summary" panel (features/privacy-analytics.js) —
+  // built once from document.documentElement.lang at DOMContentLoaded, so a
+  // later language toggle only fixes it via this generic sweep, not by
+  // re-running that panel's own render.
+  ["개인정보 없는 로컬 사용 요약", "Private local usage summary"],
+  ["정해진 행동의 횟수만 이 브라우저에 저장하며 어떤 값도 자동 전송하지 않습니다.", "Only anonymous event counts are kept in this browser. Nothing is transmitted automatically."],
+  ["요약 JSON 복사", "Copy summary JSON"],
+  ["로컬 요약 삭제", "Clear local summary"],
 ];
 
 // Hangul syllable + jamo range, used to guard dictionary substring matches
