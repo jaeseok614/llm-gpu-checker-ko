@@ -50,12 +50,19 @@
   line-height: 1.25;
 }
 
-/* Same issue as --ui-border above: --success/--warning/--danger aren't real
-   tokens (the real names are --green/--yellow/--red), so these badge colors
-   were stuck at their light-mode fallback in dark mode too. */
-.data-completeness.is-high strong { color: var(--green, #18794e); }
-.data-completeness.is-medium strong { color: var(--yellow, #9a6700); }
-.data-completeness.is-low strong { color: var(--red, #b42318); }
+/* --success/--warning/--danger aren't real tokens either (real names are
+   --green/--yellow/--red), so these were always stuck at their fallback
+   color regardless of theme - same class of bug as --ui-border above.
+   Switching to var(--green/--yellow/--red) directly failed the CI
+   accessibility check (axe: color-contrast on .data-completeness > strong),
+   because this text has no paired background the way badge/pill text does,
+   so it needs a color that stays readable on the plain panel background in
+   both themes. Kept the fixed colors (which do pass contrast) rather than
+   the theme-linked tokens; revisit with a contrast-checked per-theme pair
+   if this ever needs real dark-mode tuning. */
+.data-completeness.is-high strong { color: #18794e; }
+.data-completeness.is-medium strong { color: #9a6700; }
+.data-completeness.is-low strong { color: #b42318; }
 
 .local-funnel-panel {
   width: 100%;

@@ -111,9 +111,12 @@
   gap: 14px;
   margin-top: 12px;
   padding: 13px;
+  /* var(--soft, ...) - same class of bug as the components.css --ui-border
+     issue: --soft isn't a real token (--surface-soft is), so this note's
+     background was stuck at the light-mode fallback color in dark mode. */
   border: 1px solid var(--line, #ccd6dd);
   border-radius: 11px;
-  background: var(--soft, #f4f7f9);
+  background: var(--surface-soft, #f4f7f9);
 }
 
 .price-coverage-note strong,
@@ -137,15 +140,20 @@
   font-weight: 800;
 }
 
+/* These badges used fixed light-mode hex colors (no dark-theme override
+   anywhere), so in dark mode the pale green/amber background tints barely
+   showed up against the dark panel and the dark-on-light text colors lost
+   contrast. Switched to the same --green/--yellow soft-background tokens
+   used by grade pills elsewhere, which already have dark-mode variants. */
 .evidence-status.is-official {
-  background: #16835720;
-  color: #0c6a43;
+  background: var(--green-soft);
+  color: var(--green);
 }
 
 .evidence-status.is-family,
 .evidence-status.is-missing {
-  background: #b86a1320;
-  color: #9b5508;
+  background: var(--yellow-soft);
+  color: var(--yellow);
 }
 
 .decision-studio.is-simple-sizing .decision-studio-tabs,
