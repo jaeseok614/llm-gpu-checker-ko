@@ -1061,7 +1061,14 @@ function siBomAutoSelection(plan) {
   const storage = SYSTEM_PART_CATALOG.storage.find((item) => item.capacityTb >= plan.storageTb) || SYSTEM_PART_CATALOG.storage.at(-1);
   const targetNic = Number.parseInt(plan.network, 10) || 25;
   const nic = SYSTEM_PART_CATALOG.nic.find((item) => item.speedGbps >= targetNic) || SYSTEM_PART_CATALOG.nic.at(-1);
-  const psu = SYSTEM_PART_CATALOG.psu.find((item) => item.watts >= perNodePower) || SYSTEM_PART_CATALOG.psu.at(-1);
+  // validateSiBom() requires psu.watts*qty >= plan.powerW * 1.15 (15% headroom) and
+  // ups.capacityVa*qty >= plan.powerW * 1.2 (20% headroom). The item lookup and the
+  // quantity formula below both need to target those same padded numbers -- picking
+  // (or sizing) to the raw perNodePower left the PSU check red even after "auto-fix",
+  // because a single 3200W unit covers a 3000W node but not the 3450W (3000*1.15)
+  // the validator actually requires.
+  const perNodePsuTarget = perNodePower * 1.15;
+  const psu = SYSTEM_PART_CATALOG.psu.find((item) => item.watts >= perNodePsuTarget) || SYSTEM_PART_CATALOG.psu.at(-1);
   const ups = SYSTEM_PART_CATALOG.ups.find((item) => item.capacityVa >= perNodePower * 1.2) || SYSTEM_PART_CATALOG.ups.at(-1);
   const chassis = SYSTEM_PART_CATALOG.case.find((item) => plan.gpuPerServer <= 4 ? item.id === "rack-4u-4gpu" : item.id === "rack-8gpu") || SYSTEM_PART_CATALOG.case.at(-1);
   return {
@@ -1070,7 +1077,7 @@ function siBomAutoSelection(plan) {
     siBomMemoryId: memory.id, siBomMemoryQty: Math.max(1, plan.nodes),
     siBomStorageId: storage.id, siBomStorageQty: Math.max(1, Math.ceil(plan.storageTb / storage.capacityTb)),
     siBomNicId: nic.id, siBomNicQty: Math.max(1, plan.nodes),
-    siBomPsuId: psu.id, siBomPsuQty: Math.max(1, plan.nodes * Math.ceil(perNodePower / psu.watts)),
+    siBomPsuId: psu.id, siBomPsuQty: Math.max(1, plan.nodes * Math.ceil(perNodePsuTarget / psu.watts)),
     siBomUpsId: ups.id, siBomUpsQty: Math.max(1, Math.ceil(plan.powerW * 1.2 / ups.capacityVa)),
     siBomCaseId: chassis.id, siBomCaseQty: Math.max(1, plan.nodes),
   };
