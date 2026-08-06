@@ -7325,7 +7325,16 @@ body.community-task-active #benchmarkSheet {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
+  /* Was width: 100%, which relies on flex-basis:auto deferring to the width
+     property. That resolution was collapsing to 0 width for this label in
+     practice, and with no defined min-width the label's Korean text (which
+     can line-break between almost any two characters, unlike space-separated
+     Latin text) folded into a single vertical column of one character per
+     line ("개발계·운영계 분리" reading top to bottom). flex: 1 forces this
+     item to actually claim the row's available width instead of shrinking
+     toward its own min-content. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .studio-check-label input[type="checkbox"] {
@@ -8946,9 +8955,12 @@ body.guide-modal-open {
   }
 }
 
-/* Final v5.4 mobile touch-target override. */
+/* Final v5.4 mobile touch-target override. Excludes .term-help: it's a small
+   inline "?" annotation next to a field label, not a primary tap target, and
+   forcing it to 44px tall while its width stays 18px turned the circular
+   badge into a tall oval. */
 @media (max-width: 680px) {
-  button,
+  button:not(.term-help),
   .ghost-button,
   .primary-button,
   [data-language-toggle] button,
