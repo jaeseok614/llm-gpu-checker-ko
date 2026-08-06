@@ -7154,6 +7154,23 @@ body.community-task-active #benchmarkSheet {
   font-size: 18px;
 }
 
+.link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover,
+.link-button:focus-visible {
+  opacity: 0.8;
+}
+
 .si-auto-parts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
