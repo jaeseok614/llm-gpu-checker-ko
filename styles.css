@@ -2968,6 +2968,7 @@ button:focus-visible {
   display: grid;
   gap: 4px;
   flex: 1 1 190px;
+  max-width: 260px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 12px 14px;
