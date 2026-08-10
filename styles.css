@@ -5634,6 +5634,22 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+.community-nudge {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.community-nudge-empty {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--yellow-soft);
+  color: var(--yellow);
+  font-weight: 600;
+}
+
 .detail-title .detail-description {
   margin-top: 10px;
   color: var(--muted);

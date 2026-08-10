@@ -3033,6 +3033,16 @@ function renderSimpleRecommendationPanel(hardware) {
   const command = model.type === "generative"
     ? buildOllamaCommand(model, estimate.quant, hardware)
     : buildNonGenerativeCommand(model, estimate);
+  const comboBenchmarks = getGpuBenchmarkRows(hardware.preset).filter(
+    (row) => row.model === model.name || row.modelName === model.name,
+  );
+  const comboReportNudge = comboBenchmarks.length
+    ? (en
+        ? `Reported by the community ${comboBenchmarks.length} time(s) already`
+        : `이 조합은 실측 ${comboBenchmarks.length}건이 이미 등록돼 있어요`)
+    : (en
+        ? "No real-world measurement for this exact GPU + model yet — yours would be the first"
+        : "이 GPU·모델 조합은 아직 실측 데이터가 없어요 · 첫 제보자가 되어주시면 다른 사용자에게 큰 도움이 돼요");
   const memoryParts = [
     { key: "weights", label: en ? "Weights" : "가중치", value: estimate.weightsGb || 0 },
     { key: "kv", label: "KV cache", value: estimate.kvGb || estimate.decoderKvGb || 0 },
@@ -3077,6 +3087,7 @@ function renderSimpleRecommendationPanel(hardware) {
         <h3>${en ? "Run command" : "실행 명령어"}</h3>
         <pre class="command-block"><code>${escapeHtml(command)}</code></pre>
         <button type="button" class="ghost-button" data-copy-command="${escapeAttr(command)}">${en ? "Copy command" : "명령어 복사"}</button>
+        <p class="community-nudge ${comboBenchmarks.length ? "" : "community-nudge-empty"}">${escapeHtml(comboReportNudge)}</p>
         <button type="button" class="ghost-button" data-community-open>${en ? "Submit this result" : "이 실행 결과 제보"}</button>
       </section>
       <section class="simple-inspector-section">
