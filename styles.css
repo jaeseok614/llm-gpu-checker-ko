@@ -5644,8 +5644,8 @@ button:focus-visible {
 .community-nudge-empty {
   display: inline-block;
   padding: 5px 10px;
+  border: 1px solid var(--yellow);
   border-radius: var(--radius-sm);
-  background: var(--yellow-soft);
   color: var(--yellow);
   font-weight: 600;
 }
