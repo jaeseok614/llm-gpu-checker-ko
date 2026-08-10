@@ -2959,8 +2959,8 @@ button:focus-visible {
 }
 
 .onboarding-quickpicks {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 6px;
 }
@@ -2968,6 +2968,7 @@ button:focus-visible {
 .onboarding-gpu-card {
   display: grid;
   gap: 4px;
+  flex: 1 1 190px;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 12px 14px;
