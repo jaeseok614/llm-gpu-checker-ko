@@ -2943,7 +2943,6 @@ button:focus-visible {
 .onboarding-inner {
   display: grid;
   gap: 14px;
-  max-width: 720px;
   padding: 36px 32px 34px;
 }
 
