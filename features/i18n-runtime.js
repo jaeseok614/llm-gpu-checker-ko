@@ -810,6 +810,15 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["정해진 행동의 횟수만 이 브라우저에 저장하며 어떤 값도 자동 전송하지 않습니다.", "Only anonymous event counts are kept in this browser. Nothing is transmitted automatically."],
   ["요약 JSON 복사", "Copy summary JSON"],
   ["로컬 요약 삭제", "Clear local summary"],
+  // Korean-market price source citations (data/decision-data.js `sourceName`,
+  // e.g. "다나와 · GIGABYTE 지포스 RTX 4070 ...") are rendered verbatim and
+  // swept by this generic dictionary rather than being hand-translated per
+  // row. "다나와" (Danawa, the retailer) is left as-is, same as citing
+  // "Amazon" in English copy — only the brand words below are normalized so
+  // English-mode readers see "GeForce"/"Radeon" instead of the Korean
+  // transliteration.
+  ["지포스", "GeForce"],
+  ["라데온", "Radeon"],
 ];
 
 // Hangul syllable + jamo range, used to guard dictionary substring matches

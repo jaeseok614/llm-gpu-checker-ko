@@ -194,7 +194,9 @@ function studioMarket(gpuId) {
     usedKrw: Math.round(newKrw * 0.68 / 10000) * 10000,
     lowestKrw: newKrw,
     updatedAt: gpu.verifiedAt || DATA_UPDATED_AT,
-    sourceName: reference.priceKind === "launch-reference" ? "출시가·MSRP 환산 참고" : "VRAM·등급 기반 계산 참고",
+    sourceName: uiLanguage === "en"
+      ? (reference.priceKind === "launch-reference" ? "Launch price / MSRP conversion (reference)" : "VRAM-tier based calculation (reference)")
+      : (reference.priceKind === "launch-reference" ? "출시가·MSRP 환산 참고" : "VRAM·등급 기반 계산 참고"),
     sourceUrl: gpu.sourceUrl || "",
     usedPriceMethod: "계산 신품 참고가의 68% 적용",
     priceKind: reference.priceKind,
