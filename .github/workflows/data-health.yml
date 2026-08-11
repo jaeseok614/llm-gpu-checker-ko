@@ -36,14 +36,18 @@ jobs:
       # excluded because they've been manually verified reachable (Intel Arc
       # Pro spec pages, OpenAI's gpt-oss post) or intentionally gated
       # (private Hugging Face repos return 401 to anonymous requests) or
-      # rate-limit aggressively (gnu.org). This list should stay narrow and
+      # rate-limit aggressively (gnu.org). amd.com was added after two
+      # consecutive manual runs each flagged a *different* AMD product page
+      # with a 403 that fetched fine manually -- a whack-a-mole pattern
+      # pointing at WAF/rate-limiting rather than genuinely dead links, not
+      # one specific URL worth chasing. This list should stay narrow and
       # each entry should be re-verified before being added.
       - name: Check source links
         id: links
         continue-on-error: true
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --max-retries 5 --retry-wait-time 5 --max-concurrency 16 --timeout 30 --exclude 'https?://(search|prod)\.danawa\.com' --exclude 'https?://(www\.)?intel\.com' --exclude 'https?://(www\.)?openai\.com' --exclude 'https?://huggingface\.co' --exclude 'https?://(www\.)?gnu\.org' README.md README.en.md data/*.js
+          args: --no-progress --max-retries 5 --retry-wait-time 5 --max-concurrency 16 --timeout 30 --exclude 'https?://(search|prod)\.danawa\.com' --exclude 'https?://(www\.)?intel\.com' --exclude 'https?://(www\.)?openai\.com' --exclude 'https?://huggingface\.co' --exclude 'https?://(www\.)?gnu\.org' --exclude 'https?://(www\.)?amd\.com' README.md README.en.md data/*.js
           fail: true
       - name: Check priority manufacturer specifications
         id: official
