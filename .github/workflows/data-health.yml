@@ -71,6 +71,24 @@ jobs:
             } else {
               await github.rest.issues.create({ ...context.repo, title, body });
             }
+      - name: Close maintenance issue once health is restored
+        if: steps.audit.outcome == 'success' && steps.links.outcome == 'success' && steps.official.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Automated data health audit needs attention";
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo, state: "open", per_page: 100,
+            });
+            const existing = open.find(issue => issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: existing.number,
+                body: `Data audit, link audit, and priority official specs all passed on this run. Closing.\n\nWorkflow: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              });
+              await github.rest.issues.update({ ...context.repo, issue_number: existing.number, state: "closed" });
+            }
       - name: Fail after reporting
         if: steps.audit.outcome == 'failure' || steps.links.outcome == 'failure' || steps.official.outcome == 'failure'
         run: exit 1
