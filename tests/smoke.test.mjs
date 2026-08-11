@@ -127,9 +127,9 @@ test("locale helpers and price data trust remain deterministic", () => {
     app.LLM_GPU_CHECKER_DATA.koreanGpuMarket,
     new Date("2026-08-11T00:00:00Z"),
   );
-  assert.equal(coverage.sourced, 10);
-  assert.equal(coverage.fresh, 10);
-  assert.equal(coverage.missing, coverage.total - 10);
+  assert.equal(coverage.sourced, 15);
+  assert.equal(coverage.fresh, 15);
+  assert.equal(coverage.missing, coverage.total - 15);
   assert.equal(app.AIHardwareDataTrust.validateMarketRows(app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).length, 0);
 });
 
