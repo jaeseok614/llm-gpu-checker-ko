@@ -122,14 +122,20 @@ test("locale helpers and price data trust remain deterministic", () => {
   assert.equal(app.AIHardwareLocale.confidence("낮음", "en"), "Low");
   assert.equal(app.AIHardwareLocale.confidence("Low", "ko"), "낮음");
   assert.match(app.AIHardwareLocale.usedPriceMethod("신품 최저가의 75% 계산 참고값", "en"), /75%/);
+  // Coverage counts are derived from the actual KOREAN_GPU_MARKET row count
+  // rather than a hardcoded number, so this test doesn't need a manual edit
+  // every time price-data coverage grows (only the >= floor guards against
+  // an accidental regression that silently drops rows).
   const coverage = app.AIHardwareDataTrust.priceCoverage(
     app.LLM_GPU_CHECKER_DATA.gpus.filter((gpu) => gpu.id !== "custom"),
     app.LLM_GPU_CHECKER_DATA.koreanGpuMarket,
     new Date("2026-08-11T00:00:00Z"),
   );
-  assert.equal(coverage.sourced, 29);
-  assert.equal(coverage.fresh, 29);
-  assert.equal(coverage.missing, coverage.total - 29);
+  const pricedCount = app.LLM_GPU_CHECKER_DATA.koreanGpuMarket.length;
+  assert.equal(coverage.sourced, pricedCount);
+  assert.equal(coverage.fresh, pricedCount, "every KOREAN_GPU_MARKET row is dated on/before the fixed reference date above, so all of them should count as fresh");
+  assert.equal(coverage.missing, coverage.total - pricedCount);
+  assert.ok(pricedCount >= 29, `price coverage regressed below the last known floor (29 GPUs), got ${pricedCount}`);
   assert.equal(app.AIHardwareDataTrust.validateMarketRows(app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).length, 0);
 });
 
