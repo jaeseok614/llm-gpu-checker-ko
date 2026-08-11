@@ -324,7 +324,35 @@ window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) =>
         : memoryType === "unified" ? "integrated" : "desktop",
     ...gpu,
     sourceUrl: gpu.sourceUrl || familySourceUrl,
-    sourceScope: gpu.sourceUrl ? "model" : familySourceUrl ? "family" : "missing",
-    specStatus: gpu.sourceUrl ? "sourced" : familySourceUrl ? "family" : "estimated",
+  };
+}).map((entry) => {
+  // A model-specific sourceUrl only counts as "official" (sourceScope:
+  // "model"/specStatus: "sourced" — shown to users as an "Official" badge)
+  // when it actually points at the manufacturer's own domain. Older/legacy
+  // GPUs the vendor no longer hosts a current spec page for may instead cite
+  // a reputable third-party database (e.g. TechPowerUp); those are detected
+  // here by hostname rather than trusting a manually-set flag, so a future
+  // non-manufacturer sourceUrl can never silently get mislabeled "official"
+  // just because someone forgot to flag it.
+  const isOfficialDomain = !entry.sourceUrl
+    ? false
+    : /^https?:\/\/(?:www\.)?(nvidia\.com|amd\.com|intel\.com|apple\.com|support\.apple\.com)\//i.test(entry.sourceUrl);
+  const hasModelSpecificUrl = Boolean(entry.sourceUrl) && entry.sourceUrl !== officialGpuFamilySource(entry.vendor, `${entry.id} ${entry.name}`.toLowerCase());
+  return {
+    ...entry,
+    sourceScope: !entry.sourceUrl
+      ? "missing"
+      : !hasModelSpecificUrl
+        ? "family"
+        : isOfficialDomain
+          ? "model"
+          : "reference",
+    specStatus: !entry.sourceUrl
+      ? "estimated"
+      : !hasModelSpecificUrl
+        ? "family"
+        : isOfficialDomain
+          ? "sourced"
+          : "reference",
   };
 });

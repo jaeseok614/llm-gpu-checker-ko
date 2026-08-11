@@ -120,6 +120,7 @@ function gpuMarketReference(gpu) {
 
 function gpuEvidenceLabel(gpu, en = uiLanguage === "en") {
   if (gpu.sourceUrl && gpu.specStatus === "sourced") return en ? "Official/source-linked spec" : "공식·출처 연결 사양";
+  if (gpu.sourceUrl && (gpu.specStatus === "reference" || gpu.sourceScope === "reference")) return en ? "Third-party reference spec (not the manufacturer)" : "3rd-party 참고 사양(제조사 공식 아님)";
   if (gpu.sourceUrl && (gpu.specStatus === "family" || gpu.sourceScope === "family")) return en ? "Official product-family source · model details need review" : "제조사 공식 제품군 출처·개별 사양 검토 필요";
   if (gpu.sourceUrl) return en ? "Catalog source · review date recorded" : "카탈로그 출처·검증일 기록";
   if (gpu.verifiedAt) return en ? `Catalog estimate · checked ${gpu.verifiedAt}` : `카탈로그 추정·${gpu.verifiedAt} 확인`;

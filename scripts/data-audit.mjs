@@ -81,6 +81,7 @@ Object.entries(data.systemPartCatalog || {}).forEach(([type, rows]) => {
 });
 const missingGpuSources = (data.gpus || []).filter((gpu) => gpu.id !== "custom" && !gpu.sourceUrl).length;
 const familyGpuSources = (data.gpus || []).filter((gpu) => gpu.id !== "custom" && gpu.sourceScope === "family").length;
+const referenceGpuSources = (data.gpus || []).filter((gpu) => gpu.id !== "custom" && gpu.sourceScope === "reference").length;
 const missingModelSources = models.filter((model) => {
   const metadata = data.modelMetadata?.[`${model.type || "generative"}:${model.name}`]
     || data.modelMetadata?.[model.name]
@@ -89,6 +90,7 @@ const missingModelSources = models.filter((model) => {
 }).length;
 if (missingGpuSources) warnings.push(`${missingGpuSources} GPU records rely on catalog-level sources`);
 if (familyGpuSources) warnings.push(`${familyGpuSources} GPU records use an official product-family source and still need a model-specific specification link`);
+if (referenceGpuSources) warnings.push(`${referenceGpuSources} GPU records use a third-party reference source (not the manufacturer) and still need an official model-specific link`);
 if (missingModelSources) warnings.push(`${missingModelSources} model records rely on metadata or catalog-level sources`);
 
 const platformSource = fs.readFileSync(path.join(root, "platform-v2.js"), "utf8");
