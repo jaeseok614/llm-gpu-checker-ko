@@ -125,11 +125,11 @@ test("locale helpers and price data trust remain deterministic", () => {
   const coverage = app.AIHardwareDataTrust.priceCoverage(
     app.LLM_GPU_CHECKER_DATA.gpus.filter((gpu) => gpu.id !== "custom"),
     app.LLM_GPU_CHECKER_DATA.koreanGpuMarket,
-    new Date("2026-07-31T00:00:00Z"),
+    new Date("2026-08-11T00:00:00Z"),
   );
-  assert.equal(coverage.sourced, 3);
-  assert.equal(coverage.fresh, 3);
-  assert.equal(coverage.missing, coverage.total - 3);
+  assert.equal(coverage.sourced, 10);
+  assert.equal(coverage.fresh, 10);
+  assert.equal(coverage.missing, coverage.total - 10);
   assert.equal(app.AIHardwareDataTrust.validateMarketRows(app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).length, 0);
 });
 
