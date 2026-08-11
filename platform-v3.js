@@ -968,7 +968,10 @@ function renderSelectedPlanDetail(model, plans) {
   if (!plan) return "";
   const market = studioMarket(plan.gpu.id);
   const unitKrw = Number(market?.lowestKrw || 0);
-  const gpuSubtotal = unitKrw * plan.gpuCount;
+  // Laptop GPUs aren't sold as bare cards -- a recorded market price for one
+  // is a full laptop's retail price. Never scale that by gpuCount: doing so
+  // would silently price N laptops as if they were N GPU cards.
+  const gpuSubtotal = unitKrw * (plan.gpu.formFactor === "laptop" ? 1 : plan.gpuCount);
   const baseInfra = Math.max(0, plan.purchaseKrw - gpuSubtotal);
   const parts = autoComponentRecommendation(plan);
   const label = en ? plan.en : plan.ko;
@@ -1098,7 +1101,7 @@ function siEditableBom(plan) {
   });
   const partsTotal = rows.reduce((sum, row) => sum + row.subtotal, 0);
   const gpuUnitKrw = Number(studioMarket(plan.gpu.id)?.lowestKrw || 0);
-  const gpuTotal = gpuUnitKrw * plan.gpuCount;
+  const gpuTotal = gpuUnitKrw * (plan.gpu.formFactor === "laptop" ? 1 : plan.gpuCount);
   const extra = Math.max(0, Number(studioState.siBomExtraKrw) || 0);
   return { rows, partsTotal, gpuUnitKrw, gpuTotal, extra, total: partsTotal + gpuTotal + extra };
 }
@@ -1188,7 +1191,7 @@ function autoSiBomEstimate(plan) {
   });
   const partsTotal = rows.reduce((sum, row) => sum + row.subtotal, 0);
   const gpuUnitKrw = Number(studioMarket(plan.gpu.id)?.lowestKrw || 0);
-  const gpuTotal = gpuUnitKrw * plan.gpuCount;
+  const gpuTotal = gpuUnitKrw * (plan.gpu.formFactor === "laptop" ? 1 : plan.gpuCount);
   return { rows, partsTotal, gpuUnitKrw, gpuTotal, extra: 0, total: partsTotal + gpuTotal };
 }
 
