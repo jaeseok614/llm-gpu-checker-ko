@@ -51,6 +51,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v7.7** — Auto-classifies GPU sources into official/family/third-party-reference tiers and flags 32 datacenter-class GPUs as having no normal consumer retail channel, excluding them from the price-coverage percentage. Expands Korean GPU market pricing from 15 to 46 GPUs (RTX 30/40-series, laptops, and workstation-class cards), and adds automatic stale-price warnings plus a 9x reduction in shared-quote URL length (2253 → 253 characters).
 - **v7.6** — Splits measurement submission and benchmark coverage into a fourth task mode, redesigns the getting-started guide with situational copy, time estimates, click-through navigation, and a Q&A wizard, and fixes several UI bugs including price digit wrapping, stray decision-hub panels, and mobile horizontal scroll.
 - **v7.5** — Adds privacy-scrubbed measurement intake, same-condition comparison, contributor visibility, and priority measurement targets.
 - **v7.4** — Adds Lighthouse, axe, keyboard, six-viewport, long-name, empty-state, and print-PDF checks to CI.
