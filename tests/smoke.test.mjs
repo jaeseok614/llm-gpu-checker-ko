@@ -396,6 +396,65 @@ test("price and evidence states avoid presenting estimates as live market prices
   assert.match(read("app.js"), /예상 오차/);
 });
 
+test("enterprise-only GPUs and studio pick-card prices disclose their basis in the actual DOM", () => {
+  // Data-layer assertions elsewhere confirm the *counts* are right (missing +
+  // enterpriseOnly + sourced === total). This test instead renders the real
+  // views and checks that a person looking at the screen -- not just the
+  // underlying JSON -- can see why a GPU has no Korean price, and that a
+  // studio pick-card price is disclosed as an estimate rather than presented
+  // as a real market price.
+  app.eval(`
+    setCoreTaskMode("infra");
+    window.dispatchEvent(new CustomEvent("ai-hardware-fit:infra-demo", {
+      detail: { scenario: "internal-rag", users: 30 },
+    }));
+  `);
+  const coverageNote = app.document.querySelector(".price-coverage-note").textContent;
+  assert.match(coverageNote, /기업용 전용 GPU/, "the price-coverage note should explain that some GPUs are excluded because they're enterprise-only");
+  assert.match(coverageNote, /H100.*A100.*MI300X/, "the note should name the kind of GPU it means (H100/A100/MI300X-class)");
+
+  app.document.querySelector('[data-studio-tab="recommend"]').click();
+  // Clear every recommend-tab filter so at least one GPU can actually match
+  // (the infra-demo dispatch above leaves budget/power/speed filters in a
+  // state tuned for the infra wizard, not this tab -- without resetting
+  // them every pick card silently renders "no GPU meets the conditions").
+  app.eval(`
+    updateStudio("powerLimitW", 0);
+    updateStudio("targetSpeed", 0);
+    updateStudio("formFactor", "all");
+    updateStudio("category", "all");
+    updateStudio("budgetKrw", 999999999);
+  `);
+  const pickCards = [...app.document.querySelectorAll(".studio-pick-card")];
+  assert.ok(pickCards.length > 0, "the recommend tab should render at least one pick card");
+  const priceNotes = pickCards
+    .map((card) => card.querySelector(".studio-price-note")?.textContent || "")
+    .filter(Boolean);
+  assert.ok(priceNotes.length > 0, "at least one pick card should show a price-basis disclosure note");
+  assert.ok(
+    priceNotes.every((note) => /계산|참고/.test(note)),
+    "every disclosure note present should describe a calculated/reference basis, matching what studioMarket() actually returns",
+  );
+
+  // usedKrw is always a calculated "75% of new" reference value in this
+  // dataset (no GPU has a directly-sourced secondhand price), so switching
+  // to the used-price condition should unconditionally trigger the
+  // disclosure note on every card, regardless of which specific GPUs are
+  // recommended.
+  app.eval('updateStudio("condition", "used");');
+  const usedPickCards = [...app.document.querySelectorAll(".studio-pick-card")];
+  const usedPriceNotes = usedPickCards
+    .map((card) => card.querySelector(".studio-price-note")?.textContent || "")
+    .filter(Boolean);
+  assert.ok(usedPickCards.length > 0);
+  assert.equal(
+    usedPriceNotes.length,
+    usedPickCards.length,
+    "every pick card should disclose a price-calculation method once condition is set to used",
+  );
+  app.eval('updateStudio("condition", "either");');
+});
+
 test("English mode updates the primary navigation and infrastructure wizard", () => {
   app.document.querySelector('[data-studio-tab="consulting"]').click();
   app.document.querySelector('[data-si-input-mode="simple"]').click();
