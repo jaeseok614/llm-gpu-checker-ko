@@ -134,8 +134,10 @@ test("locale helpers and price data trust remain deterministic", () => {
   const pricedCount = app.LLM_GPU_CHECKER_DATA.koreanGpuMarket.length;
   assert.equal(coverage.sourced, pricedCount);
   assert.equal(coverage.fresh, pricedCount, "every KOREAN_GPU_MARKET row is dated on/before the fixed reference date above, so all of them should count as fresh");
-  assert.equal(coverage.missing, coverage.total - pricedCount);
-  assert.ok(pricedCount >= 29, `price coverage regressed below the last known floor (29 GPUs), got ${pricedCount}`);
+  assert.equal(coverage.missing, coverage.total - coverage.enterpriseOnly - pricedCount);
+  assert.equal(coverage.missing + coverage.enterpriseOnly + coverage.sourced, coverage.total, "every GPU should land in exactly one of missing/enterpriseOnly/sourced");
+  assert.ok(coverage.enterpriseOnly > 0, "expected at least one GPU to be flagged as enterprise-only (no consumer retail channel)");
+  assert.ok(pricedCount >= 37, `price coverage regressed below the last known floor (37 GPUs), got ${pricedCount}`);
   assert.equal(app.AIHardwareDataTrust.validateMarketRows(app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).length, 0);
 });
 

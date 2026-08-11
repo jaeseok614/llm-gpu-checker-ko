@@ -9,12 +9,22 @@
 
   function priceCoverage(gpus = [], rows = [], asOf = new Date()) {
     const byGpu = new Map(rows.map((row) => [row.gpuId, row]));
-    const result = { total: gpus.length, sourced: 0, fresh: 0, aging: 0, stale: 0, missing: 0 };
+    // enterpriseOnly GPUs (datacenter accelerators like H100/A100/MI300X)
+    // have no normal consumer retail channel in Korea -- pricing them would
+    // mean picking one number out of wildly inconsistent import/hosting/RFQ
+    // listings and presenting it as if it were a real shelf price. They're
+    // tracked separately so "missing" only reflects GPUs a consumer could
+    // realistically buy but that we simply haven't priced yet, and
+    // coveragePct is measured against that addressable set.
+    const result = {
+      total: gpus.length, sourced: 0, fresh: 0, aging: 0, stale: 0, missing: 0, enterpriseOnly: 0,
+    };
     gpus.forEach((gpu) => {
       const row = byGpu.get(gpu.id);
       const age = row ? ageDays(row.updatedAt, asOf) : null;
       if (!row?.sourceUrl || age === null) {
-        result.missing += 1;
+        if (gpu.enterpriseOnly) result.enterpriseOnly += 1;
+        else result.missing += 1;
         return;
       }
       result.sourced += 1;
@@ -22,7 +32,9 @@
       else if (age <= 90) result.aging += 1;
       else result.stale += 1;
     });
-    result.coveragePct = result.total ? Math.round(result.sourced / result.total * 100) : 0;
+    const addressable = result.total - result.enterpriseOnly;
+    result.addressable = addressable;
+    result.coveragePct = addressable ? Math.round(result.sourced / addressable * 100) : 0;
     return result;
   }
 

@@ -93,6 +93,24 @@ if (familyGpuSources) warnings.push(`${familyGpuSources} GPU records use an offi
 if (referenceGpuSources) warnings.push(`${referenceGpuSources} GPU records use a third-party reference source (not the manufacturer) and still need an official model-specific link`);
 if (missingModelSources) warnings.push(`${missingModelSources} model records rely on metadata or catalog-level sources`);
 
+// Price data has no automatic refresh -- it's sourced by hand from Danawa
+// searches and gets stale the moment a promotion ends or stock runs out.
+// Without this check, an out-of-date price can sit unnoticed indefinitely
+// (this is exactly what happened before price-data work resumed this
+// session: nothing flagged that the data needed another pass). 180 days is
+// a deliberately generous threshold -- GPU prices move faster than that,
+// but the goal is to catch true neglect, not nag over minor drift.
+const STALE_PRICE_DAYS = 180;
+const now = Date.now();
+const stalePriceRows = (data.koreanGpuMarket || []).filter((row) => {
+  const timestamp = Date.parse(row.updatedAt);
+  if (!Number.isFinite(timestamp)) return false;
+  return (now - timestamp) / (24 * 60 * 60 * 1000) > STALE_PRICE_DAYS;
+});
+if (stalePriceRows.length) {
+  warnings.push(`${stalePriceRows.length} Korean market price row(s) are older than ${STALE_PRICE_DAYS} days and should be re-checked: ${stalePriceRows.map((row) => row.gpuId).join(", ")}`);
+}
+
 const platformSource = fs.readFileSync(path.join(root, "platform-v2.js"), "utf8");
 const copyBlock = platformSource.match(/const PLATFORM_V2_COPY = (\{[\s\S]*?\n\});/)?.[1];
 if (!copyBlock) {
@@ -114,6 +132,7 @@ const report = {
     models: models.length,
     benchmarks: (data.benchmarks || []).length,
     marketPrices: (data.koreanGpuMarket || []).length,
+    stalePriceRows: stalePriceRows.length,
   },
   errors,
   warnings,
