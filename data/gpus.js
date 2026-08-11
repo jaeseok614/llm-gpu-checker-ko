@@ -175,9 +175,9 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "t4-16", enterpriseOnly: true, name: "NVIDIA T4 16GB", vram: 16, ram: 64, bandwidth: 320 , sourceUrl: "https://www.nvidia.com/en-us/data-center/tesla-t4/" },
   { id: "v100-32", enterpriseOnly: true, name: "NVIDIA V100 32GB", vram: 32, ram: 128, bandwidth: 900 , sourceUrl: "https://www.nvidia.com/en-us/data-center/tesla-v100/" },
   { id: "p100-16", enterpriseOnly: true, name: "NVIDIA P100 16GB", vram: 16, ram: 64, bandwidth: 732 , sourceUrl: "https://www.nvidia.com/en-us/data-center/tesla-p100/" },
-  { id: "tesla-p40-24", enterpriseOnly: true, name: "NVIDIA Tesla P40 24GB (구형·저가형 추론용)", vram: 24, ram: 64, bandwidth: 346, vendor: "NVIDIA", architecture: "Pascal", formFactor: "datacenter", sourceUrl: "https://www.nvidia.com/en-us/data-center/tesla-p40/" },
+  { id: "tesla-p40-24", enterpriseOnly: true, name: "NVIDIA Tesla P40 24GB (구형·저가형 추론용)", vram: 24, ram: 64, bandwidth: 346, vendor: "NVIDIA", architecture: "Pascal", formFactor: "datacenter", sourceUrl: "https://images.nvidia.com/content/pdf/tesla/184427-Tesla-P40-Datasheet-NV-Final-Letter-Web.pdf" },
   { id: "tesla-m40-24", enterpriseOnly: true, name: "NVIDIA Tesla M40 24GB (구형·저가형 추론용)", vram: 24, ram: 64, bandwidth: 288, vendor: "NVIDIA", architecture: "Maxwell", formFactor: "datacenter", sourceUrl: "https://www.techpowerup.com/gpu-specs/tesla-m40-24-gb.c2758" },
-  { id: "tesla-p4-8", enterpriseOnly: true, name: "NVIDIA Tesla P4 8GB (구형·저전력 추론용)", vram: 8, ram: 32, bandwidth: 192, vendor: "NVIDIA", architecture: "Pascal", formFactor: "datacenter", sourceUrl: "https://www.nvidia.com/en-us/data-center/tesla-p4/" },
+  { id: "tesla-p4-8", enterpriseOnly: true, name: "NVIDIA Tesla P4 8GB (구형·저전력 추론용)", vram: 8, ram: 32, bandwidth: 192, vendor: "NVIDIA", architecture: "Pascal", formFactor: "datacenter", sourceUrl: "https://images.nvidia.com/content/pdf/tesla/184457-Tesla-P4-Datasheet-NV-Final-Letter-Web.pdf" },
 
   { id: "mi355x-288", enterpriseOnly: true, name: "AMD Instinct MI355X 288GB", vram: 288, ram: 768, bandwidth: 8000, vendor: "AMD", architecture: "CDNA 4", tbpW: 1400, sourceUrl: "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi355x-gpu-brochure.pdf" },
   { id: "mi350x-288", enterpriseOnly: true, name: "AMD Instinct MI350X 288GB", vram: 288, ram: 768, bandwidth: 8000, vendor: "AMD", architecture: "CDNA 4", tbpW: 1000, sourceUrl: "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi350x-gpu-brochure.pdf" },
@@ -194,8 +194,8 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "rx9070xt-16", name: "Radeon RX 9070 XT 16GB", vram: 16, ram: 64, bandwidth: 640 , sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070-xt.html" },
   { id: "rx9070-16", name: "Radeon RX 9070 16GB", vram: 16, ram: 64, bandwidth: 640, vendor: "AMD", architecture: "RDNA 4", memoryType: "dedicated", runtimes: ["ROCm", "Vulkan"], sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070.html" },
   { id: "rx9070gre-12", name: "Radeon RX 9070 GRE 12GB", vram: 12, ram: 32, bandwidth: 432, vendor: "AMD", architecture: "RDNA 4", tbpW: 220, sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070-gre.html" },
-  { id: "rx9060xt-16", name: "Radeon RX 9060 XT 16GB", vram: 16, ram: 32, bandwidth: 320, vendor: "AMD", architecture: "RDNA 4", tbpW: 160, sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9060-xt.html" },
-  { id: "rx9060xt-8", name: "Radeon RX 9060 XT 8GB", vram: 8, ram: 32, bandwidth: 320, vendor: "AMD", architecture: "RDNA 4", tbpW: 160, sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9060-xt.html" },
+  { id: "rx9060xt-16", name: "Radeon RX 9060 XT 16GB", vram: 16, ram: 32, bandwidth: 320, vendor: "AMD", architecture: "RDNA 4", tbpW: 160, sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9060xt.html" },
+  { id: "rx9060xt-8", name: "Radeon RX 9060 XT 8GB", vram: 8, ram: 32, bandwidth: 320, vendor: "AMD", architecture: "RDNA 4", tbpW: 160, sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9060xt-8gb.html" },
   { id: "rx7900xtx-24", name: "Radeon RX 7900 XTX 24GB", vram: 24, ram: 64, bandwidth: 960 , sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/7000-series/amd-radeon-rx-7900xtx.html" },
   { id: "rx7900xt-20", name: "Radeon RX 7900 XT 20GB", vram: 20, ram: 64, bandwidth: 800 , sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/7000-series/amd-radeon-rx-7900xt.html" },
   { id: "rx7900gre-16", name: "Radeon RX 7900 GRE 16GB", vram: 16, ram: 64, bandwidth: 576, sourceUrl: "https://www.amd.com/en/products/graphics/desktops/radeon/7000-series/amd-radeon-rx-7900-gre.html" },
@@ -336,7 +336,10 @@ window.LLM_GPU_CHECKER_DATA.gpus = window.LLM_GPU_CHECKER_DATA.gpus.map((gpu) =>
   // just because someone forgot to flag it.
   const isOfficialDomain = !entry.sourceUrl
     ? false
-    : /^https?:\/\/(?:www\.)?(nvidia\.com|amd\.com|intel\.com|apple\.com|support\.apple\.com)\//i.test(entry.sourceUrl);
+    // Allow any subdomain of the vendor's own domain (e.g. images.nvidia.com
+    // hosting a PDF datasheet) to still count as "official" -- what matters
+    // is that the content is first-party, not which subdomain served it.
+    : /^https?:\/\/(?:[a-z0-9-]+\.)*(nvidia\.com|amd\.com|intel\.com|apple\.com)(\/|$)/i.test(entry.sourceUrl);
   const hasModelSpecificUrl = Boolean(entry.sourceUrl) && entry.sourceUrl !== officialGpuFamilySource(entry.vendor, `${entry.id} ${entry.name}`.toLowerCase());
   return {
     ...entry,
