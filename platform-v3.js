@@ -176,6 +176,15 @@ let studioState = {
   siCoolingPue: 1.4,
 };
 
+// Snapshot of the defaults above, captured once at load. Used to delta-encode
+// shared/saved state: a URL or localStorage draft only needs to carry the
+// fields a user actually changed, not all ~80 studio fields every time. Most
+// real sessions only touch a handful (gpuId, siTotalUsers, siScenario, ...),
+// so this keeps share links from ballooning past 2000 characters even though
+// restoreStudioState() still merges whatever it finds back over these same
+// defaults (so full, pre-existing legacy URLs continue to work unchanged).
+const STUDIO_DEFAULT_STATE = Object.freeze({ ...studioState });
+
 function studioCopy(key) {
   return DECISION_STUDIO_COPY[uiLanguage === "en" ? "en" : "ko"][key] || key;
 }
@@ -1716,8 +1725,9 @@ function ensureDecisionStudio() {
 }
 
 function shareableStudioState() {
-  return Object.fromEntries(Object.entries(studioState).filter(([key]) =>
-    key === "tab" || key === "modelKey" || key.startsWith("si")));
+  return Object.fromEntries(Object.entries(studioState).filter(([key, value]) =>
+    (key === "tab" || key === "modelKey" || key.startsWith("si"))
+    && value !== STUDIO_DEFAULT_STATE[key]));
 }
 
 function syncStudioUrl() {
