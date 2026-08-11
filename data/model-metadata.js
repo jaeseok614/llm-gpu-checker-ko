@@ -5,6 +5,8 @@ const MODEL_METADATA_SOURCES = {
   qwen3: "https://qwenlm.github.io/blog/qwen3/",
   qwen3Report: "https://arxiv.org/abs/2505.09388",
   qwen25TechReport: "https://arxiv.org/abs/2412.15115",
+  llama2: "https://huggingface.co/meta-llama/Llama-2-70b-chat-hf",
+  llama3: "https://huggingface.co/meta-llama/Meta-Llama-3-70B-Instruct",
   llama31: "https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md",
   llama32: "https://github.com/meta-llama/llama-models/blob/main/models/llama3_2/MODEL_CARD.md",
   llama33: "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct",
@@ -143,6 +145,26 @@ window.LLM_GPU_CHECKER_DATA.modelMetadata = {
     "2024-10-24",
     MODEL_METADATA_SOURCES.llama32,
     quality("MMLU 63.4", "MMLU (5-shot)", 63.4, MODEL_METADATA_SOURCES.llama32),
+  ),
+  "Llama 3 8B Instruct": meta(
+    "2024-04-18",
+    "https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct",
+  ),
+  "Llama 3 70B Instruct": meta(
+    "2024-04-18",
+    MODEL_METADATA_SOURCES.llama3,
+  ),
+  "Llama 2 7B Chat": meta(
+    "2023-07-18",
+    "https://huggingface.co/meta-llama/Llama-2-7b-chat-hf",
+  ),
+  "Llama 2 13B Chat": meta(
+    "2023-07-18",
+    "https://huggingface.co/meta-llama/Llama-2-13b-chat-hf",
+  ),
+  "Llama 2 70B Chat": meta(
+    "2023-07-18",
+    MODEL_METADATA_SOURCES.llama2,
   ),
   "Llama 3.1 8B Instruct": meta(
     "2024-07-23",
@@ -1211,6 +1233,10 @@ mergeModelMetadata({
     releaseDate: "2024-08-15",
     sourceUrl: "https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B",
     qualityBenchmark: quality("MMLU-Pro 23.77", "Open LLM Leaderboard MMLU-Pro", 23.77, "https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-8B", "공개 평가"),
+  },
+  "Vicuna 13B v1.5": {
+    releaseDate: "2023-07-29",
+    sourceUrl: "https://huggingface.co/lmsys/vicuna-13b-v1.5",
   },
   "EXAONE Deep 7.8B": {
     releaseDate: "2025-02-06",
