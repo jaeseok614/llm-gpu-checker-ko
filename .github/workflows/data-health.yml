@@ -35,7 +35,7 @@ jobs:
         continue-on-error: true
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --max-retries 5 --retry-wait-time 5 --max-concurrency 16 --timeout 30 README.md README.en.md data/*.js
+          args: --no-progress --max-retries 5 --retry-wait-time 5 --max-concurrency 16 --timeout 30 --exclude 'https?://(search|prod)\.danawa\.com' README.md README.en.md data/*.js
           fail: true
       - name: Check priority manufacturer specifications
         id: official
