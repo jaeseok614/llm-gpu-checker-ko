@@ -155,7 +155,7 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "quadrortx6000-24", name: "Quadro RTX 6000 24GB", vram: 24, ram: 96, bandwidth: 672, sourceUrl: "https://www.nvidia.com/en-us/design-visualization/previous-quadro-desktop-gpus/" },
   { id: "titanrtx-24", name: "Titan RTX 24GB", vram: 24, ram: 64, bandwidth: 672 , sourceUrl: "https://www.nvidia.com/en-us/deep-learning-ai/products/titan-rtx/" },
 
-  { id: "dgxspark-gb10-128", name: "NVIDIA GB10 / DGX Spark 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 273 , sourceUrl: "https://www.nvidia.com/en-us/products/workstations/dgx-spark/" },
+  { id: "dgxspark-gb10-128", name: "NVIDIA GB10 / DGX Spark 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 273, vendor: "NVIDIA", architecture: "Grace Blackwell", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 96, runtimes: ["CUDA"], aliases: ["DGX Spark", "GB10", "Grace Blackwell Spark"], sourceUrl: "https://www.nvidia.com/en-us/products/workstations/dgx-spark/" },
   { id: "b300-288", enterpriseOnly: true, name: "NVIDIA B300 (Blackwell Ultra) 288GB", vram: 288, ram: 768, bandwidth: 8000, vendor: "NVIDIA", architecture: "Blackwell Ultra", formFactor: "datacenter", tbpW: 1400, sourceUrl: "https://www.nvidia.com/en-us/data-center/dgx-b300/" },
   { id: "b200-192", enterpriseOnly: true, name: "NVIDIA B200 192GB", vram: 192, ram: 512, bandwidth: 8000, sourceUrl: "https://www.nvidia.com/en-us/data-center/technologies/blackwell-architecture/" },
   { id: "b100-192", enterpriseOnly: true, name: "NVIDIA B100 192GB", vram: 192, ram: 512, bandwidth: 8000, sourceUrl: "https://www.nvidia.com/en-us/data-center/technologies/blackwell-architecture/" },
@@ -252,11 +252,11 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "arcprob60-24", name: "Intel Arc Pro B60 24GB", vram: 24, ram: 64, bandwidth: 456, vendor: "Intel", architecture: "Xe2 Battlemage", tbpW: 200, runtimes: ["OpenVINO", "oneAPI", "DirectML"], sourceUrl: "https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/arc/workstations/b-series/overview.html" },
   { id: "arcprob50-16", name: "Intel Arc Pro B50 16GB", vram: 16, ram: 64, bandwidth: 224, vendor: "Intel", architecture: "Xe2 Battlemage", tbpW: 70, runtimes: ["OpenVINO", "oneAPI", "DirectML"], sourceUrl: "https://www.intel.com/content/www/us/en/products/docs/discrete-gpus/arc/workstations/b-series/overview.html" },
 
-  { id: "m3ultra-512", name: "Apple M3 Ultra 512GB 통합메모리", vram: 512, ram: 512, bandwidth: 819, sourceUrl: "https://support.apple.com/en-us/122211" },
-  { id: "m2ultra-192", name: "Apple M2 Ultra 192GB 통합메모리", vram: 192, ram: 192, bandwidth: 800, sourceUrl: "https://support.apple.com/en-us/111835" },
-  { id: "m4max-128", name: "Apple M4 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 546, sourceUrl: "https://support.apple.com/en-us/122211" },
-  { id: "m3max-128", name: "Apple M3 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 400, sourceUrl: "https://support.apple.com/en-us/117736" },
-  { id: "m2max-96", name: "Apple M2 Max 96GB 통합메모리", vram: 96, ram: 96, bandwidth: 400, sourceUrl: "https://support.apple.com/en-us/111835" },
+  { id: "m3ultra-512", name: "Apple M3 Ultra 512GB 통합메모리", vram: 512, ram: 512, bandwidth: 819, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 384, runtimes: ["Metal"], aliases: ["M3 Ultra", "Mac Studio M3 Ultra"], sourceUrl: "https://support.apple.com/en-us/122211" },
+  { id: "m2ultra-192", name: "Apple M2 Ultra 192GB 통합메모리", vram: 192, ram: 192, bandwidth: 800, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 144, runtimes: ["Metal"], aliases: ["M2 Ultra", "Mac Studio M2 Ultra"], sourceUrl: "https://support.apple.com/en-us/111835" },
+  { id: "m4max-128", name: "Apple M4 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 546, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 96, runtimes: ["Metal"], aliases: ["M4 Max", "Mac Studio M4 Max"], sourceUrl: "https://support.apple.com/en-us/122211" },
+  { id: "m3max-128", name: "Apple M3 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 400, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 96, runtimes: ["Metal"], aliases: ["M3 Max", "MacBook Pro M3 Max"], sourceUrl: "https://support.apple.com/en-us/117736" },
+  { id: "m2max-96", name: "Apple M2 Max 96GB 통합메모리", vram: 96, ram: 96, bandwidth: 400, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 72, runtimes: ["Metal"], aliases: ["M2 Max", "MacBook Pro M2 Max"], sourceUrl: "https://support.apple.com/en-us/111835" },
 ];
 
 function officialGpuFamilySource(vendor, text) {
