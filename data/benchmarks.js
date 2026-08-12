@@ -1,7 +1,7 @@
 window.LLM_GPU_CHECKER_DATA = window.LLM_GPU_CHECKER_DATA || {};
 
 window.LLM_GPU_CHECKER_DATA.benchmarkMeta = {
-  updatedAt: "2026-07-24",
+  updatedAt: "2026-08-12",
   reportUrl: "https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=benchmark-report.yml",
   reportingPaused: false,
   reportingStatus: "GitHub Issue에서 신규 벤치마크 제보 접수 중",
@@ -19,4 +19,7 @@ window.LLM_GPU_CHECKER_DATA.benchmarks = [
   { evidenceType: "external", modelName: "Qwen3 32B", gpu: "RTX 5090 32GB", workload: "generative", runtime: "llama.cpp", quantization: "4-bit", context: 8192, tokensPerSecond: 69.45, sourceUrl: "https://llm-speed.com/m/qwen3-32b", note: "기여자 로컬 실행 기록·chat-short" },
   { evidenceType: "external", modelName: "Qwen3 32B", gpu: "RTX 5090 32GB", workload: "generative", runtime: "llama.cpp", quantization: "4-bit", context: 8192, tokensPerSecond: 62.3, sourceUrl: "https://llm-speed.com/m/qwen3-32b", note: "기여자 로컬 실행 기록·chat-long" },
   { evidenceType: "external", modelName: "Qwen3 32B", gpu: "RTX 5090 32GB", workload: "generative", runtime: "llama.cpp", quantization: "4-bit", context: 8192, tokensPerSecond: 66.64, sourceUrl: "https://llm-speed.com/m/qwen3-32b", note: "기여자 로컬 실행 기록·concurrent-decode" },
+  { evidenceType: "external", modelName: "GPT-OSS 20B", gpu: "DGX Spark 128GB", workload: "generative", runtime: "Ollama (llama.cpp)", quantization: "Q4_K_M", context: 2048, tokensPerSecond: 60.22, sourceUrl: "https://www.proxpc.com/blogs/nvidia-dgx-spark-gb10-performance-test-vs-5090-llm-image-and-video-generation", note: "ProX PC 실측 리뷰·짧은 프롬프트(Gen 1) 기준" },
+  { evidenceType: "external", modelName: "Qwen2.5 72B Instruct", gpu: "DGX Spark 128GB", workload: "generative", runtime: "Ollama (llama.cpp)", quantization: "Q4_K_M", context: 8192, tokensPerSecond: 4.62, sourceUrl: "https://www.proxpc.com/blogs/nvidia-dgx-spark-gb10-performance-test-vs-5090-llm-image-and-video-generation", note: "ProX PC 실측 리뷰·대용량 프롬프트(Gen 2/3) 안정 구간, 통합메모리 대역폭(273GB/s) 병목으로 저속" },
+  { evidenceType: "external", modelName: "Llama 3.2 90B Vision Instruct", gpu: "DGX Spark 128GB", workload: "generative", runtime: "Ollama (llama.cpp)", quantization: "Q4_K_M", context: 2048, tokensPerSecond: 4.4, sourceUrl: "https://www.proxpc.com/blogs/nvidia-dgx-spark-gb10-performance-test-vs-5090-llm-image-and-video-generation", note: "ProX PC 실측 리뷰·짧은 프롬프트(Gen 1) 기준, RTX 5090은 VRAM 부족으로 로드 불가했던 모델" },
 ];
