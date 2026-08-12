@@ -611,6 +611,26 @@ const KOREAN_GPU_MARKET = [
     sourceUrl: "https://search.danawa.com/dsearch.php?query=RTX%204000%20SFF%20Ada%2020GB",
     usedPriceMethod: "신품 최저가의 75% 계산 참고값",
   },
+  {
+    gpuId: "w6800-32",
+    newKrw: 1704990,
+    usedKrw: 1278740,
+    lowestKrw: 1704990,
+    updatedAt: "2026-08-12",
+    sourceName: "다나와 · 라데온 프로 W6800 디스플레이 카드 32G",
+    sourceUrl: "https://search.danawa.com/dsearch.php?query=Radeon%20PRO%20W6800",
+    usedPriceMethod: "신품 최저가의 75% 계산 참고값",
+  },
+  {
+    gpuId: "r9700-32",
+    newKrw: 2498990,
+    usedKrw: 1874240,
+    lowestKrw: 2498990,
+    updatedAt: "2026-08-12",
+    sourceName: "다나와 · GIGABYTE 라데온 AI PRO R9700 AI TOP D6 32GB (제이씨현)",
+    sourceUrl: "https://search.danawa.com/dsearch.php?query=Radeon%20AI%20PRO%20R9700",
+    usedPriceMethod: "신품 최저가의 75% 계산 참고값",
+  },
 ];
 
 const PRICE_DATA_META = {

@@ -187,7 +187,6 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "mi210-64", enterpriseOnly: true, name: "AMD Instinct MI210 64GB", vram: 64, ram: 256, bandwidth: 1638 , sourceUrl: "https://www.amd.com/en/products/accelerators/instinct/mi200/mi210.html" },
   { id: "r9700-32", name: "Radeon AI PRO R9700 32GB", vram: 32, ram: 96, bandwidth: 640 , sourceUrl: "https://www.amd.com/en/products/graphics/workstations/radeon-ai-pro/ai-9000-series/amd-radeon-ai-pro-r9700.html" },
   { id: "w7900-48", name: "Radeon PRO W7900 48GB", vram: 48, ram: 128, bandwidth: 864 , sourceUrl: "https://www.amd.com/en/products/graphics/workstations/radeon-pro/w7900-dual-slot.html" },
-  { id: "w7800-48", name: "Radeon PRO W7800 48GB", vram: 48, ram: 128, bandwidth: 864 , sourceUrl: "https://www.amd.com/en/products/graphics/workstations/radeon-pro/w7800.html" },
   { id: "w7800-32", name: "Radeon PRO W7800 32GB", vram: 32, ram: 96, bandwidth: 576 , sourceUrl: "https://www.amd.com/en/products/graphics/workstations/radeon-pro/w7800.html" },
   { id: "w7700-16", name: "Radeon PRO W7700 16GB", vram: 16, ram: 64, bandwidth: 576 , sourceUrl: "https://www.amd.com/en/products/graphics/workstations/radeon-pro/w7700.html" },
   { id: "w6800-32", name: "Radeon PRO W6800 32GB", vram: 32, ram: 96, bandwidth: 512 , sourceUrl: "https://www.amd.com/en/products/graphics/workstations/radeon-pro/w6800.html" },
