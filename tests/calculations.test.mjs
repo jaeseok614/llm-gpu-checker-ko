@@ -73,6 +73,7 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { pe
   let combined = DATA_FILES.map(read).join("\n;\n");
   combined += "\n;\n" + read("features/i18n-catalog.js");
   combined += "\n;\n" + read("features/estimation-engine.js");
+  combined += "\n;\n" + read("features/hf-import.js");
   combined += "\n;\n" + read("app.js");
   combined += "\n;\n" + read("features/i18n-runtime.js");
   combined += "\n;\n" + read("features/gpu-advisor.js");

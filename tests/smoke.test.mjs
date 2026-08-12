@@ -52,6 +52,7 @@ before(() => {
     read("ui-foundation.js"),
     read("features/i18n-catalog.js"),
     read("features/estimation-engine.js"),
+    read("features/hf-import.js"),
     read("app.js"),
     read("features/i18n-runtime.js"),
     read("features/gpu-advisor.js"),

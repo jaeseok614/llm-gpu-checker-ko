@@ -9,6 +9,7 @@ import fs from "node:fs";
 const budgets = [
   ["app.js", 350 * 1024],
   ["features/estimation-engine.js", 100 * 1024],
+  ["features/hf-import.js", 20 * 1024],
   ["features/i18n-runtime.js", 75 * 1024],
   ["features/gpu-advisor.js", 32 * 1024],
   ["features/model-placement.js", 130 * 1024],
