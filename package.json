@@ -28,7 +28,7 @@
     "build:static": "node scripts/build-static.mjs"
   },
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "jsdom": "^30.0.1"
   },
   "keywords": [
     "llm",
