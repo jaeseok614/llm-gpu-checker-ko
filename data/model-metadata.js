@@ -1388,6 +1388,10 @@ mergeModelMetadata({
     sourceUrl: "https://github.com/QwenLM/Qwen3.6/blob/main/README.md",
     qualityBenchmark: quality("MMLU-Pro 85.2", "MMLU-Pro", 85.2, "https://huggingface.co/Qwen/Qwen3.6-35B-A3B", "공식 카드"),
   },
+  "Qwen3.8 27B": {
+    releaseDate: "2026-08-14",
+    sourceUrl: "https://huggingface.co/Qwen/Qwen3.8-27B",
+  },
   "Mistral Small 4 119B A6B": {
     releaseDate: "2026-03-16",
     sourceUrl: "https://legal.mistral.ai/ai-governance/models",
