@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 모델 카탈로그에 Qwen3.8 27B(Alibaba, 2026-08-14 공개, Apache 2.0)를 새로 추가 — Gated DeltaNet 선형 어텐션과 게이트형 풀 어텐션을 3:1로 섞은 하이브리드 구조, 262K 토큰 네이티브 컨텍스트, 기본 활성화된 사고 모드가 특징. 사용자 요청으로 최신 LLM 모델 업데이트가 있는지 조사한 결과, DeepSeek V4-Pro/V4-Flash·Qwen3.6 계열·GLM-5.2 등 기존 카탈로그 항목은 이미 실제 공개 스펙(파라미터/컨텍스트/라이선스)과 일치함을 웹 검색으로 재확인해 그대로 유지. Qwen3.8-2.4T-A95B(Qwen3.8 Max의 오픈 MoE 변형)는 출시일 정보가 출처마다 8/2와 8/12로 엇갈리고 커스텀 라이선스 조건이 불명확해 이번엔 보류, "GLM-5.2 Turbo"로 불리는 변형도 기존 GLM-5.2와 구분되는 확정 스펙을 찾지 못해 추가하지 않음
 - 실측 벤치마크 3건 추가(GPT-OSS 20B, Qwen2.5 72B Instruct, Llama 3.2 90B Vision — 전부 NVIDIA DGX Spark, ProX PC 실측 리뷰 인용). 데스크톱 RTX 5050은 공개된 실측치가 아직 없어(노트북 변형 수치만 존재, 다른 제품이라 미사용) 비워둠. 실측 벤치마크 카운트 10 -> 13
 - DGX Spark·Apple Silicon 6종의 `gpuUsableMemoryGb`(통합 메모리 중 GPU가 실제 쓸 수 있는 양)를 지난 커밋에서 전부 75% 근사치로 채웠던 것을 플랫폼별 실제 공식 근거로 재확인 — Apple Silicon(Metal recommendedMaxWorkingSetSize)과 AMD Ryzen AI Max+ 395(Variable Graphics Memory/GTT 상한)는 75%가 실제로 맞아 그대로 유지, NVIDIA DGX Spark는 데스크톱 오버헤드가 적은 단일 목적 어플라이언스라 커뮤니티 안전 상한인 85%(96GB → 109GB)로 상향 수정. 근거를 데이터 파일 주석으로 명시
 - app.js(5,184줄)에서 Hugging Face 공개 모델 직접 불러오기 관련 함수 12개(259줄)를 완전히 독립적인 블록으로 확인해 `features/hf-import.js`로 분리(estimation-engine.js 분리 전례와 동일 방식, 동작 변화 없음). app.js는 350KB 예산의 64%(225KB)로 여유 확보
