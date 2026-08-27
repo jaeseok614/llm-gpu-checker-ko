@@ -40,7 +40,7 @@ body:
     id: runtime
     attributes:
       label: 런타임
-      placeholder: Ollama, llama.cpp, vLLM, Transformers
+      placeholder: Ollama, llama.cpp, vLLM, Transformers, MLX(mlx-lm)
     validations:
       required: false
   - type: input
