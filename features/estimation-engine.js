@@ -231,7 +231,35 @@ function estimateModel(model, quantId, hardware) {
 function getRuntimeFactor(runtime) {
   if (runtime === "vllm") return { base: 2.6, cap: 5.5, weightRatio: 0.1, requestOverhead: 0.12, concurrencyEfficiency: 0.78 };
   if (runtime === "transformers") return { base: 2.2, cap: 4.5, weightRatio: 0.09, requestOverhead: 0.18, concurrencyEfficiency: 0.38 };
+  // MLX (Apple-only, mlx-lm / mlx-community models): published cross-benchmark
+  // data (local-llm.net, M4 Max 64GB / M3 Pro 36GB, llama.cpp Q4_K_M vs MLX
+  // 4-bit, checked 2026-08) shows MLX uses roughly 5-10% less total memory for
+  // the same quant tier (e.g. Llama 3.1 8B: 5.2GB vs 4.8GB; Qwen2.5 14B: 9.1GB
+  // vs 8.5GB) — modeled here as a leaner runtime overhead than llama.cpp
+  // rather than changing weightsGb itself, since weightsGb is tied to the
+  // user-selected quant tier. concurrencyEfficiency is left conservative
+  // (below llama.cpp's) since MLX's concurrent-serving story (mlx_lm.server)
+  // is newer and less benchmarked than llama.cpp's for multi-request loads.
+  if (runtime === "mlx") return { base: 1.0, cap: 2.5, weightRatio: 0.05, requestOverhead: 0.08, concurrencyEfficiency: 0.5 };
   return { base: 1.2, cap: 3.0, weightRatio: 0.06, requestOverhead: 0.08, concurrencyEfficiency: 0.55 };
+}
+
+// MLX speed advantage vs llama.cpp/Metal, tiered by active-parameter count.
+// Calibrated from local-llm.net's llama.cpp-vs-MLX benchmark table (M4 Max
+// 64GB + M3 Pro 36GB, checked 2026-08): observed gains were ~3-8% for 3-8B
+// dense models, ~14-25% for 12-14B dense models. We deliberately use
+// conservative, rounded-down tiers rather than the high end of the observed
+// range, and cap the bonus for large (17B+) models since the same source's
+// FAQ notes the gap narrows for bigger, bandwidth-bound models — the 70B
+// case in that table is dominated by MLX avoiding an OOM outright (a fit/grade
+// question already handled elsewhere), not a pure speed multiplier, so it is
+// intentionally NOT used to inflate this tier.
+function mlxSpeedBonus(model) {
+  const activeParams = model.active || model.params || 0;
+  if (activeParams <= 4) return 1.05;
+  if (activeParams <= 8) return 1.08;
+  if (activeParams <= 16) return 1.15;
+  return 1.12;
 }
 
 function estimateKvCacheGb(model, hardware) {
@@ -877,7 +905,10 @@ function estimateSpeed(model, quant, hardware, grade) {
   if (grade === "F") return { perRequest: 0, total: 0 };
 
   const multiGpuPenalty = hardware.count > 1 ? (hardware.heterogeneous ? 0.64 : 0.76) : 1;
-  const runtimePenalty = hardware.runtime === "vllm" ? 1.1 : hardware.runtime === "transformers" ? 0.78 : 1;
+  const runtimePenalty = hardware.runtime === "vllm" ? 1.1
+    : hardware.runtime === "transformers" ? 0.78
+      : hardware.runtime === "mlx" ? mlxSpeedBonus(model)
+        : 1;
   const offloadPenalty = grade === "D" ? 0.22 : grade === "C" ? 0.55 : 1;
   const runtimeFactor = getRuntimeFactor(hardware.runtime);
   const activeBytes = Math.max(model.active * quant.bytesPerB, 1);

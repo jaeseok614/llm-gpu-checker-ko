@@ -52,6 +52,7 @@
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
 - **v7.10** — DGX Spark 실측 벤치마크 3건을 추가하고, 통합 메모리 GPU 6종의 GPU 사용 가능 메모리 비율을 플랫폼별 실제 근거(Metal 문서·AMD VGM/GTT 상한·커뮤니티 안전 상한)로 재검증했습니다. Hugging Face 직접 불러오기 로직을 `features/hf-import.js`로 분리해 app.js를 5,184줄에서 4,925줄로 줄였습니다.
+- **v7.12** — Apple Silicon 전용 MLX 실행 방식을 추가했습니다(4번째 런타임). 속도 배율은 local-llm.net의 공개 llama.cpp-vs-MLX 벤치마크표를 근거로 실측치보다 보수적으로 산정했고, llama.cpp 백엔드 GUI 앱(LM Studio·koboldcpp·text-generation-webui) 호환 안내도 함께 추가했습니다.
 - **v7.11** — 모델 카탈로그에 Qwen3.8 27B(Alibaba, 2026-08-14 공개)를 추가했습니다. 최신 LLM 모델 업데이트 조사 결과 기존 DeepSeek V4/Qwen3.6/GLM-5.2 항목은 이미 정확해 그대로 유지했고, 출처가 불명확한 Qwen3.8 Max 변형과 "GLM-5.2 Turbo"는 검증 부족으로 이번엔 보류했습니다.
 - **v7.9** — 국내 GPU 시세를 63종에서 67종(RTX 5050, DGX Spark, Ryzen AI Max+ 395 미니PC 포함)으로 확대했습니다. DGX Spark·Apple Silicon 6종에 통합 메모리 스키마(formFactor/gpuUsableMemoryGb)가 비어 있어 GPU 어드바이저 필터와 다중 GPU 견적 계산이 오작동할 수 있던 문제를 발견해 수정했습니다.
 - **v7.8** — data-health 링크 감사(issue #3)에서 실제로 깨진 GPU 출처 URL 6건을 3라운드에 걸쳐 수정하고, 반복적으로 봇 차단에 걸리던 5개 도메인을 링크 검사에서 제외해 워크플로를 완전히 초록불로 통과시켰습니다. 국내 GPU 시세를 46종에서 63종(RX 9000시리즈, Intel Arc B시리즈, RTX PRO Blackwell/Ada, Radeon PRO 워크스테이션급 포함)으로 확대하고, 스펙이 잘못 복제돼 있던 유령 GPU 레코드(w7800-48)를 발견해 삭제했습니다.

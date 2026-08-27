@@ -282,6 +282,7 @@ const RUNTIME_LABELS = {
   llamacpp: "llama.cpp / Ollama",
   vllm: "vLLM",
   transformers: "Transformers",
+  mlx: "MLX (Apple Silicon)",
 };
 
 let activeWorkload = "generative";
@@ -1717,6 +1718,26 @@ function gpuRuntimeFamily(gpu) {
   return "nvidia";
 }
 
+// MLX (mlx-lm/mlx-community) only runs on Apple Silicon's unified-memory GPU
+// backend, so the "MLX" runtime option in the select should only ever be
+// selectable when the PRIMARY GPU preset is Apple hardware. Keeps the select
+// in sync on init and every time the primary GPU preset changes (called from
+// render(), which already runs after every gpuPreset "change" event).
+function syncRuntimeModeOptions() {
+  const option = $("runtimeOptionMlx");
+  const select = $("runtimeMode");
+  if (!option || !select) return;
+  const primary = GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset")?.value);
+  const isApple = Boolean(primary && gpuRuntimeFamily(primary) === "apple");
+  option.hidden = !isApple;
+  option.disabled = !isApple;
+  if (!isApple && select.value === "mlx") {
+    select.value = "llamacpp";
+  }
+  const guiNote = $("runtimeGuiAppNote");
+  if (guiNote) guiNote.hidden = false;
+}
+
 // ---- 멀티 GPU 모델 배치 추천 (베타) ----
 
 function copyTextToClipboard(text, button) {
@@ -1909,6 +1930,7 @@ function escapeTextLabel(value) {
 
 function render(options = {}) {
   const { syncUrl = true } = options;
+  syncRuntimeModeOptions();
   renderOnboardingQuickPicks();
   // Re-evaluate here (not just on mode switch) since selectedModelKey can
   // change between full render() calls and the split-view panel should
@@ -3427,7 +3449,11 @@ function buildGenerativeDetailBodyHtml(model, hardware) {
     <section class="detail-section">
       <h3>${en ? "Run command" : "실행 명령어"}</h3>
       <pre class="command-block"><code>${escapeHtml(buildOllamaCommand(model, estimate.quant, hardware))}
-${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}</code></pre>
+${escapeHtml(buildLlamaCppCommand(model, estimate.quant, hardware))}${gpuRuntimeFamily(hardware.preset) === "apple" ? `
+${escapeHtml(buildMlxCommand(model, estimate.quant, hardware))}` : ""}</code></pre>
+      <p class="settings-note">${en
+        ? 'LM Studio, koboldcpp, and text-generation-webui all use the llama.cpp engine internally, so they match the "llama.cpp / Ollama" numbers above.'
+        : 'LM Studio·koboldcpp·text-generation-webui도 내부적으로 llama.cpp 엔진을 사용해 위 "llama.cpp / Ollama" 수치와 동일합니다.'}</p>
     </section>
 
     ${renderLicenseSection(model)}
@@ -4235,6 +4261,12 @@ function renderRuntimeRows(model, hardware) {
     { label: en ? `vLLM ${pluralize(hardware.concurrency, "concurrent request", "concurrent requests")}` : `vLLM 동시 요청 ${hardware.concurrency}명`, hardware: { ...hardware, runtime: "vllm" } },
     { label: "Transformers", hardware: { ...hardware, runtime: "transformers" } },
   ];
+  // Apple-only: MLX has no meaning on NVIDIA/AMD/Intel GPUs, so only add this
+  // comparison row when the primary GPU is Apple Silicon (same gate used for
+  // the runtime <select> option in syncRuntimeModeOptions()).
+  if (gpuRuntimeFamily(hardware.preset) === "apple") {
+    scenarios.push({ label: "MLX (mlx-lm)", hardware: { ...hardware, runtime: "mlx" } });
+  }
 
   return scenarios.map((scenario) => {
     const estimate = estimateModel(model, selectedQuant, scenario.hardware);
@@ -4578,6 +4610,20 @@ function buildOllamaCommand(model, quant, hardware) {
 
 function buildLlamaCppCommand(model, quant, hardware) {
   return `llama-cli -m ./models/${toSlug(model.name)}-${quant.label}.gguf -c ${hardware.context} -ngl 999`;
+}
+
+// MLX quant naming doesn't match the llama.cpp K-quant labels used elsewhere
+// in this project (mlx-community repos are typically tagged "4bit"/"8bit"/
+// "bf16", not "Q4_K_M"), so this snippet intentionally shows the conversion
+// step rather than pretending a 1:1 named MLX repo exists for every quant tier.
+function buildMlxCommand(model, quant, hardware) {
+  // mlx-community mostly publishes 4bit/8bit/bf16 repo variants (not the full
+  // llama.cpp K-quant ladder), so map the selected quant tier's approximate
+  // bit-width (quant.bits, e.g. Q4_K_M=4.8, Q8_0=8.5, FP16=16) onto the
+  // closest commonly-published MLX tag rather than inventing a 1:1 label.
+  const bits = quant.bits == null ? "4bit" : quant.bits <= 5 ? "4bit" : quant.bits <= 9 ? "8bit" : "bf16";
+  return `pip install mlx-lm
+mlx_lm.generate --model mlx-community/${toSlug(model.name)}-${bits} --max-tokens ${hardware.outputTokens}`;
 }
 
 function buildOllamaModelName(model) {

@@ -896,6 +896,7 @@ function translateDynamicUi(language = "en") {
         // sentence: "VRAM과 대역폭을 기준으로 runnable AI models과 예상 속도를 바로
         // 계산합니다." Matching the whole sentence here, first, avoids that entirely.
         .replace(/VRAM과 대역폭을 기준으로 실행 가능한 AI 모델과 예상 속도를 바로 계산합니다\./g, "See runnable AI models and estimated speed based on your VRAM and bandwidth.")
+        .replace(/LM Studio·koboldcpp·text\-generation\-webui도 내부적으로 llama\.cpp 엔진을 사용해 위 "llama\.cpp \/ Ollama" 수치와 동일합니다\./g, 'LM Studio, koboldcpp, and text-generation-webui all use the llama.cpp engine internally, so they match the "llama.cpp / Ollama" numbers above.')
         .replace(/가용 VRAM\s+([\d.]+)\s*GB/g, "Available VRAM $1 GB")
         .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
         .replace(/GPU\s+(\d+)개/g, "GPUs: $1")
@@ -949,6 +950,7 @@ function translateDynamicUi(language = "en") {
         // 여기서도 맨 앞에서 전체 문장을 먼저 치환해야 짧은 사전 항목들이
         // 부분적으로 끼어들어 문장을 깨뜨리는 일을 막을 수 있다.
         .replace(/See runnable AI models and estimated speed based on your VRAM and bandwidth\./g, "VRAM과 대역폭을 기준으로 실행 가능한 AI 모델과 예상 속도를 바로 계산합니다.")
+        .replace(/LM Studio, koboldcpp, and text\-generation\-webui all use the llama\.cpp engine internally, so they match the "llama\.cpp \/ Ollama" numbers above\./g, 'LM Studio·koboldcpp·text-generation-webui도 내부적으로 llama.cpp 엔진을 사용해 위 "llama.cpp / Ollama" 수치와 동일합니다.')
         .replace(/Available VRAM\s+([\d.]+)\s*GB/g, "가용 VRAM $1 GB")
         .replace(/RAM\s+([\d.]+)\s*GB/g, "RAM $1 GB")
         .replace(/GPUs:\s*(\d+)/g, "GPU $1개")
