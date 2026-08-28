@@ -240,6 +240,28 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
     sourceUrl: "https://www.amd.com/en/products/processors/laptop/ryzen/ai-300-series/amd-ryzen-ai-max-plus-395.html",
   },
 
+  // AMD Radeon 780M (RDNA3 iGPU in Ryzen 7040/8040 "Phoenix"/"Hawk Point" laptops/mini-PCs).
+  // No dedicated VRAM -- shares system RAM. Per cpu-monkey.com's official spec table: up to
+  // 4GB can be reserved as dedicated iGPU memory, and the iGPU can use up to 32GB of system
+  // memory overall (that ceiling is independent of how much RAM is actually installed).
+  // Bandwidth varies by RAM: DDR5-5600 dual-channel (by far the most common real-world config)
+  // measures ~80-85GB/s; LPDDR5X-7500 dual-channel is faster but rare in practice per the same
+  // source. Using the DDR5-5600 figure here as the representative/common case.
+  {
+    id: "radeon-780m-32",
+    name: "AMD Radeon 780M (Ryzen 7040/8040) 32GB 통합메모리",
+    vram: 32,
+    ram: 32,
+    bandwidth: 83,
+    vendor: "AMD",
+    architecture: "RDNA 3",
+    memoryType: "unified",
+    gpuUsableMemoryGb: 32,
+    runtimes: ["Vulkan", "DirectML", "ROCm 확인"],
+    aliases: ["Radeon 780M", "780M", "Ryzen 7840U", "Ryzen 7840HS", "Ryzen 8840HS", "Phoenix iGPU", "Hawk Point iGPU"],
+    sourceUrl: "https://www.cpu-monkey.com/en/igpu-amd_radeon_780m",
+  },
+
   { id: "intelmax1550-128", enterpriseOnly: true, name: "Intel Data Center GPU Max 1550 128GB", vram: 128, ram: 384, bandwidth: 3276.8 , sourceUrl: "https://www.intel.com/content/www/us/en/products/sku/232873/intel-data-center-gpu-max-1550/specifications.html" },
   { id: "intelmax1100-48", enterpriseOnly: true, name: "Intel Data Center GPU Max 1100 48GB", vram: 48, ram: 128, bandwidth: 1228.8 , sourceUrl: "https://www.intel.com/content/www/us/en/products/sku/232876/intel-data-center-gpu-max-1100/specifications.html" },
   { id: "intelflex170-16", enterpriseOnly: true, name: "Intel Data Center GPU Flex 170 16GB", vram: 16, ram: 64, bandwidth: 576 , sourceUrl: "https://www.intel.com/content/www/us/en/products/sku/230019/intel-data-center-gpu-flex-170/specifications.html" },

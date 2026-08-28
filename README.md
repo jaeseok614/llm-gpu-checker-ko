@@ -51,6 +51,7 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v7.13** — 커뮤니티 요청(r/LocalLLaMA)으로 AMD Radeon 780M 내장 GPU(라이젠 7040/8040 노트북·미니PC)를 GPU 카탈로그에 추가했습니다. 국내 판매가는 단품이 아닌 내장 칩이라 이번엔 비워뒀습니다.
 - **v7.12** — Apple Silicon 전용 MLX 실행 방식을 추가했습니다(4번째 런타임). 속도 배율은 local-llm.net의 공개 llama.cpp-vs-MLX 벤치마크표를 근거로 실측치보다 보수적으로 산정했고, llama.cpp 백엔드 GUI 앱(LM Studio·koboldcpp·text-generation-webui) 호환 안내도 함께 추가했습니다.
 - **v7.11** — 모델 카탈로그에 Qwen3.8 27B(Alibaba, 2026-08-14 공개)를 추가했습니다. 최신 LLM 모델 업데이트 조사 결과 기존 DeepSeek V4/Qwen3.6/GLM-5.2 항목은 이미 정확해 그대로 유지했고, 출처가 불명확한 Qwen3.8 Max 변형과 "GLM-5.2 Turbo"는 검증 부족으로 이번엔 보류했습니다.
 - **v7.10** — DGX Spark 실측 벤치마크 3건을 추가하고, 통합 메모리 GPU 6종의 GPU 사용 가능 메모리 비율을 플랫폼별 실제 근거(Metal 문서·AMD VGM/GTT 상한·커뮤니티 안전 상한)로 재검증했습니다. Hugging Face 직접 불러오기 로직을 `features/hf-import.js`로 분리해 app.js를 5,184줄에서 4,925줄로 줄였습니다.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- r/LocalLLaMA 커뮤니티 요청(u/Sudden-Guide)으로 AMD Radeon 780M(라이젠 7040/8040 "Phoenix"/"Hawk Point" 노트북·미니PC 내장 RDNA3 iGPU)을 GPU 카탈로그에 추가 — 전용 VRAM이 없어 시스템 RAM을 공유하는 구조라, cpu-monkey.com의 공식 스펙표(12 CU, iGPU 전용 최대 4GB 예약 가능, 통합 메모리 중 최대 32GB까지 사용 가능)를 근거로 32GB 통합메모리 구성으로 등록. 대역폭은 780M이 실제로 가장 흔히 쓰이는 DDR5-5600 듀얼채널 실측치(약 80-85GB/s)를 대표값으로 사용(같은 출처가 언급한 LPDDR5X-7500은 더 빠르지만 실제로는 드묾). 국내 판매가는 780M이 단품이 아니라 다양한 노트북/미니PC에 내장되는 칩이라 이번엔 채우지 못해 비워둠 — 추후 대표 기종을 확인해 채울 예정
+
 - MLX(mlx-lm, Apple Silicon 전용)를 4번째 실행 방식으로 추가하고, llama.cpp 백엔드 기반 GUI 앱(LM Studio·koboldcpp·text-generation-webui) 호환 안내를 실행 명령어 화면에 추가. MLX 속도 배율은 자체 벤치마크가 아니라 local-llm.net의 공개 비교표(M4 Max 64GB·M3 Pro 36GB, llama.cpp Q4_K_M vs MLX 4bit, 2026-08 확인)를 근거로, 실측 구간(3-8B 모델 +3-8%p, 12-14B 모델 +14-25%p)보다 보수적으로 반올림한 계단식 배율(3-8B +5%, 9-16B +15%, 17B+는 +12%로 재수렴)을 적용 — 첫 토큰 지연(TTFT) 배율은 해당 출처에 데이터가 없어 조작하지 않고 llama.cpp와 동일(중립)로 둠. Apple GPU(M2/M3/M4 Max/Ultra 5종)를 선택했을 때만 실행 방식 선택지·비교 카드·`mlx_lm.generate` 명령어가 나타나도록 게이팅하고, `data/gpus.js`의 해당 5개 항목 `runtimes` 필드에 "MLX"를 추가해 이미 다른 Apple GPU 정규화 로직이 쓰던 것과 동일한 표기로 통일
 - 모델 카탈로그에 Qwen3.8 27B(Alibaba, 2026-08-14 공개, Apache 2.0)를 새로 추가 — Gated DeltaNet 선형 어텐션과 게이트형 풀 어텐션을 3:1로 섞은 하이브리드 구조, 262K 토큰 네이티브 컨텍스트, 기본 활성화된 사고 모드가 특징. 사용자 요청으로 최신 LLM 모델 업데이트가 있는지 조사한 결과, DeepSeek V4-Pro/V4-Flash·Qwen3.6 계열·GLM-5.2 등 기존 카탈로그 항목은 이미 실제 공개 스펙(파라미터/컨텍스트/라이선스)과 일치함을 웹 검색으로 재확인해 그대로 유지. Qwen3.8-2.4T-A95B(Qwen3.8 Max의 오픈 MoE 변형)는 출시일 정보가 출처마다 8/2와 8/12로 엇갈리고 커스텀 라이선스 조건이 불명확해 이번엔 보류, "GLM-5.2 Turbo"로 불리는 변형도 기존 GLM-5.2와 구분되는 확정 스펙을 찾지 못해 추가하지 않음
 - 실측 벤치마크 3건 추가(GPT-OSS 20B, Qwen2.5 72B Instruct, Llama 3.2 90B Vision — 전부 NVIDIA DGX Spark, ProX PC 실측 리뷰 인용). 데스크톱 RTX 5050은 공개된 실측치가 아직 없어(노트북 변형 수치만 존재, 다른 제품이라 미사용) 비워둠. 실측 벤치마크 카운트 10 -> 13
