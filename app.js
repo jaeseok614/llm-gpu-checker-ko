@@ -539,6 +539,15 @@ function setUiLanguage(language) {
     const languageEstimates = getActiveModels().map((model) => estimateAnyModel(model, languageHardware));
     renderHardware(languageHardware, languageEstimates);
     renderSimpleMode(languageHardware, languageEstimates);
+    // renderGpuInsights() builds the GPU comparison detail panel (data
+    // completeness, specification evidence, verified date, etc.) using its
+    // own uiLanguage-conditional strings. It's normally triggered by the
+    // main render() pass or the compare-GPU selects, but a pure language
+    // toggle never calls it, so its last-rendered language stayed frozen
+    // and the generic dictionary sweep below has no entries for these
+    // longer phrases (by design -- see the sweep's own comments). Re-run
+    // it explicitly here so switching language actually re-translates it.
+    renderGpuInsights(languageHardware);
   }
   // Same reasoning for the multi-GPU placement result, its 3-plan comparison,
   // and the run-command/docker-compose export — all free-form sentences (and

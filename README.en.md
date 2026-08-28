@@ -51,7 +51,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
-- **v7.13** — Added AMD Radeon 780M integrated GPU (Ryzen 7040/8040 laptops/mini-PCs) to the GPU catalog per a community request on r/LocalLLaMA. Korean pricing left blank for now since it is not sold as a standalone part.
+- **v7.13** — Added AMD Radeon 780M integrated GPU (Ryzen 7040/8040 laptops/mini-PCs) to the GPU catalog per a community request on r/LocalLLaMA. Korean pricing left blank for now since it is not sold as a standalone part. Also fixed a bug where part of the GPU comparison detail panel stayed in Korean after switching to English mode.
 - **v7.12** — Added MLX as a 4th runtime option, gated to Apple Silicon GPUs. Speed multipliers are calibrated conservatively from local-llm.net's published llama.cpp-vs-MLX benchmark table (rather than an in-house benchmark), and added a compatibility note that LM Studio/koboldcpp/text-generation-webui share the llama.cpp backend.
 - **v7.11** — Added Qwen3.8 27B (Alibaba, released 2026-08-14) to the model catalog. Investigated whether newer LLM releases needed adding; confirmed existing DeepSeek V4/Qwen3.6/GLM-5.2 entries already matched real published specs and left them unchanged, and held off on an unverified Qwen3.8 Max variant and a "GLM-5.2 Turbo" whose specs couldn't be confidently confirmed.
 - **v7.10** — Added 3 real DGX Spark benchmark citations and re-verified GPU-usable-memory ratios for 6 unified-memory GPUs against each platform's actual documented ceiling (Metal docs, AMD VGM/GTT limits, community-safe limits). Extracted Hugging Face import logic into `features/hf-import.js`, trimming app.js from 5,184 to 4,925 lines.

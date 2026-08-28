@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 영어 모드로 전환할 때 GPU 비교 상세 패널(아키텍처/메모리/대역폭/런타임 옆의 "데이터 완성도"·"사양 근거"·"검증일" 등)이 계속 한글로 남아있던 버그 수정 — 원인은 `setUiLanguage()`가 언어만 바꿀 때 이 패널을 그리는 `renderGpuInsights()`를 호출하지 않고 있었던 것. 짧은 단어(아키텍처/대역폭/런타임)는 범용 사전 치환(`translateDynamicUi`)에 이미 등록돼 있어 우연히 바뀌어 보였지만, 더 긴 문구들은 사전에 없어 그대로 한글로 남았음. `setUiLanguage()`가 언어 전환 시 `renderGpuInsights()`도 함께 다시 그리도록 고치고, 해당 문구들을 사전에도 보강해 이중으로 방어. 재발 방지용 DOM 회귀 테스트도 추가(`tests/smoke.test.mjs`)
+
 - r/LocalLLaMA 커뮤니티 요청(u/Sudden-Guide)으로 AMD Radeon 780M(라이젠 7040/8040 "Phoenix"/"Hawk Point" 노트북·미니PC 내장 RDNA3 iGPU)을 GPU 카탈로그에 추가 — 전용 VRAM이 없어 시스템 RAM을 공유하는 구조라, cpu-monkey.com의 공식 스펙표(12 CU, iGPU 전용 최대 4GB 예약 가능, 통합 메모리 중 최대 32GB까지 사용 가능)를 근거로 32GB 통합메모리 구성으로 등록. 대역폭은 780M이 실제로 가장 흔히 쓰이는 DDR5-5600 듀얼채널 실측치(약 80-85GB/s)를 대표값으로 사용(같은 출처가 언급한 LPDDR5X-7500은 더 빠르지만 실제로는 드묾). 국내 판매가는 780M이 단품이 아니라 다양한 노트북/미니PC에 내장되는 칩이라 이번엔 채우지 못해 비워둠 — 추후 대표 기종을 확인해 채울 예정
 
 - MLX(mlx-lm, Apple Silicon 전용)를 4번째 실행 방식으로 추가하고, llama.cpp 백엔드 기반 GUI 앱(LM Studio·koboldcpp·text-generation-webui) 호환 안내를 실행 명령어 화면에 추가. MLX 속도 배율은 자체 벤치마크가 아니라 local-llm.net의 공개 비교표(M4 Max 64GB·M3 Pro 36GB, llama.cpp Q4_K_M vs MLX 4bit, 2026-08 확인)를 근거로, 실측 구간(3-8B 모델 +3-8%p, 12-14B 모델 +14-25%p)보다 보수적으로 반올림한 계단식 배율(3-8B +5%, 9-16B +15%, 17B+는 +12%로 재수렴)을 적용 — 첫 토큰 지연(TTFT) 배율은 해당 출처에 데이터가 없어 조작하지 않고 llama.cpp와 동일(중립)로 둠. Apple GPU(M2/M3/M4 Max/Ultra 5종)를 선택했을 때만 실행 방식 선택지·비교 카드·`mlx_lm.generate` 명령어가 나타나도록 게이팅하고, `data/gpus.js`의 해당 5개 항목 `runtimes` 필드에 "MLX"를 추가해 이미 다른 Apple GPU 정규화 로직이 쓰던 것과 동일한 표기로 통일

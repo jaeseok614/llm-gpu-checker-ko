@@ -507,6 +507,37 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   assert.ok(Math.abs(Number(app.document.getElementById("purchaseNewPrice").value) - purchasePriceUsd * 1400) < 10);
 });
 
+test("switching to English re-translates the GPU comparison detail panel", () => {
+  // Regression test: renderGpuInsights() (the "Architecture/Memory/Bandwidth/
+  // Runtime" + "Data completeness"/"Specification evidence" detail panel)
+  // used to only get rebuilt by the main render() pass or the compare-GPU
+  // selects -- setUiLanguage() never called it directly. A pure language
+  // toggle while the panel was already visible left its longer phrases
+  // ("데이터 완성도", "보강 항목", "사양 근거", "검증일") stuck in Korean even
+  // though the short single-word labels ("아키텍처", "대역폭", "런타임") got
+  // patched by the generic dictionary sweep, since those happened to already
+  // have dictionary entries and these longer phrases didn't.
+  // Use the real setCoreTaskMode()/selectPrimaryGpu() functions (not bare
+  // "coreTaskMode = ..." assignment) -- each app.eval() call is a separate
+  // top-level script, and top-level `let` bindings from the original
+  // app.js load aren't visible for plain reassignment from a later eval;
+  // a bare assignment silently creates an unrelated global instead of
+  // updating the real state the render functions close over.
+  app.eval('selectPrimaryGpu("rtx4090-24"); setCoreTaskMode("finder"); setUiLanguage("ko");');
+  const detailKo = app.document.getElementById("gpuDetailSummary").textContent;
+  assert.match(detailKo, /아키텍처/);
+  assert.match(detailKo, /데이터 완성도/);
+
+  app.eval('setUiLanguage("en");');
+  const detailEn = app.document.getElementById("gpuDetailSummary").textContent;
+  assert.match(detailEn, /Architecture/);
+  assert.match(detailEn, /Data completeness/);
+  assert.match(detailEn, /Specification evidence/);
+  assert.doesNotMatch(detailEn, /[가-힣]/, "no Korean text should remain in the detail panel after switching to English");
+
+  app.eval('setUiLanguage("ko");');
+});
+
 test("accessibility and responsive contracts are present", () => {
   assert.ok(app.document.querySelector(".skip-link"));
   assert.equal(app.document.getElementById("simpleRecommendationPanel").getAttribute("aria-modal"), "true");
