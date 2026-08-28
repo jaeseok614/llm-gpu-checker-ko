@@ -25,6 +25,7 @@ const UI_COPY_V15 = {
   "core.demo.label": { ko: "입력 없이 체험:", en: "Try without typing:" },
   "core.demo.model": { ko: "Qwen 32B용 GPU 찾기", en: "Find a GPU for Qwen 32B" },
   "core.demo.infra": { ko: "사내 RAG 30명 견적", en: "30-user internal RAG estimate" },
+  "core.demo.placement": { ko: "Llama 70B+임베딩 2장 배치", en: "Llama 70B + embedding on 2 GPUs" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
   "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
   "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
@@ -1009,12 +1010,32 @@ function translateDynamicUi(language = "en") {
     if (language === "en") text = text.replace(/([A-Za-z])\s(\d+)개(?![가-힣])/g, "$1 $2");
     return text;
   };
+  // Raw catalog model names (e.g. "Qwen/Qwen3-Embedding-4B") are technical
+  // identifiers, not natural-language UI copy -- they must never be run
+  // through the word-level dictionary above. The boundary guard in
+  // compileBoundarySafeReplacements() only stops a short entry from eating
+  // into a longer contiguous Latin word (see its own comment about "Text
+  // Embeddings Inference"); it does NOT stop a short entry from matching a
+  // token that's merely hyphen/slash-delimited, which is exactly how HF
+  // model IDs are built. Concretely: ["임베딩", "Embedding"] reversed for
+  // ko-mode matches the standalone "Embedding" inside "Qwen3-Embedding-4B"
+  // (bounded by "-" on both sides, which isn't a Latin letter, so the guard
+  // allows it), silently corrupting it to "Qwen3-임베딩-4B" on every render
+  // of the GPU placement planner / model finder / infra studio (all three
+  // call translateDynamicUi() unconditionally, even while already in
+  // Korean). Skip any text node whose content is *exactly* a real catalog
+  // model name so it always renders verbatim regardless of language.
+  const catalogModelNames = typeof getAllModels === "function"
+    ? new Set(getAllModels().map((model) => model.name))
+    : new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const textNodes = [];
   while (walker.nextNode()) textNodes.push(walker.currentNode);
   textNodes.forEach((node) => {
     if (node.parentElement?.closest("script,style")) return;
-    node.nodeValue = replaceText(STATIC_TEXT_SOURCES.get(node) ?? node.nodeValue);
+    const source = STATIC_TEXT_SOURCES.get(node) ?? node.nodeValue;
+    if (catalogModelNames.has(source.trim())) return;
+    node.nodeValue = replaceText(source);
   });
   document.querySelectorAll("[placeholder],[aria-label],[title]").forEach((node) => {
     const sources = STATIC_ATTRIBUTE_SOURCES.get(node) || {};

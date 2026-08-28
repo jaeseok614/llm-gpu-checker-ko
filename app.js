@@ -968,6 +968,26 @@ function bindEvents() {
     });
   });
 
+  document.querySelectorAll("[data-demo-placement]").forEach((button) => {
+    button.addEventListener("click", () => {
+      // Standalone demo: don't depend on the user having already picked a primary
+      // GPU (unlike openPlacementFromHardware below), so seed the inventory
+      // directly with two 24GB cards -- enough to show a 70B model split across
+      // GPUs alongside a small embedding model, matching the "여러 모델 함께 배치"
+      // pitch (LLM + RAG embedding model on 2 GPUs at once).
+      gpuInventoryRows = [{ id: "gpu-row-1", presetId: "rtx4090-24", count: 2 }];
+      gpuInventoryIdCounter = gpuInventoryRows.length;
+      placementInventorySeeded = true;
+      openPlacementPlanner(["llama-3-1-70b-instruct", "embedding-qwen-qwen3-embedding-4b"], {
+        showBuilder: true,
+        seedHardware: false,
+      });
+      window.AIHardwareUI?.announce(uiLanguage === "en"
+        ? "Loaded the multi-model placement example: Llama 3.1 70B + an embedding model across 2x RTX 4090."
+        : "멀티 모델 배치 예시를 불러왔습니다: Llama 3.1 70B와 임베딩 모델을 RTX 4090 2장에 배치합니다.");
+    });
+  });
+
   $("openPlacementFromHardware")?.addEventListener("click", () => {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
   });

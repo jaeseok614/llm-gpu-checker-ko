@@ -113,6 +113,7 @@ test("first screen presents four beginner choices and one advanced placement too
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
+  assert.ok(app.document.querySelector('[data-demo-placement]'));
   assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 4);
   assert.ok(app.document.getElementById("workspaceJourney"));
   assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60초/);
@@ -287,6 +288,16 @@ test("advanced placement remains available but outside the beginner choices", ()
   app.eval('openPlacementPlanner([], { showBuilder: true, seedHardware: true });');
   assert.equal(app.document.body.classList.contains("placement-task-active"), true);
   assert.equal(app.document.getElementById("gpuPlacementPanel").hidden, false);
+});
+
+test("the multi-model placement demo chip seeds two GPUs and both models", () => {
+  app.document.querySelector("[data-demo-placement]").click();
+  assert.equal(app.document.getElementById("gpuPlacementPanel").hidden, false);
+  const selected = app.document.getElementById("placementModelSelected").textContent;
+  assert.match(selected, /Llama 3\.1 70B Instruct/);
+  assert.match(selected, /Qwen3-Embedding-4B/);
+  assert.equal(app.document.querySelectorAll("#gpuInventoryList .gpu-inventory-row").length, 1);
+  app.eval('placementSelectedKeys = new Set(); gpuInventoryRows = []; placementInventorySeeded = false;');
 });
 
 test("infrastructure sizing uses three steps and three decision cards", () => {
