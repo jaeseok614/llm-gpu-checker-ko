@@ -17,6 +17,7 @@
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko"><strong>웹에서 바로 사용</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&amp;lang=ko&amp;studio=consulting"><strong>AI 인프라 견적</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=ko">AI 스택 배치</a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=apiCost&amp;lang=ko">API 비용 계산기</a>
   · <a href="./README.en.md">English</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">GPU 추가 요청</a>
 </p>
@@ -159,6 +160,7 @@
 - GPU·모델·워크로드별 검색용 정적 페이지, canonical URL, JSON-LD, sitemap과 robots.txt 자동 생성
 - 오타·별칭·자연어 조건 검색과 모델별 공식 출처/제품군 출처 구분, 구조화된 GPU·모델·가격 제보 흐름
 - 여러 GPU에 LLM·VLM·이미지·영상·STT·TTS 모델을 함께 배치하는 AI 스택 플래너와 AI 아바타 채팅 프리셋
+- **API 비용 계산기**: GPU를 사지 않고 OpenAI·Anthropic·Google 호스팅 API를 그대로 쓸 때의 예상 월 비용을 각 제공사 공식 요금 기준(플래그십·균형형·저가형 9개 모델)으로 계산하고, "인프라 견적"에서는 같은 사용량 가정으로 자체 구축 비용과 나란히 비교합니다.
 - 한국어/영어 UI, 반응형 모바일 화면, 키보드 포커스와 모션 감소 지원
 - [홍보 전 UI 회귀 체크리스트](./docs/ui-regression-checklist.md): 6개 화면 폭과 8개 핵심 흐름의 smoke/수동 검증 기준
 

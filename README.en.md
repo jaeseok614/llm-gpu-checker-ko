@@ -17,6 +17,7 @@
   <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en"><strong>Open the app</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&amp;lang=en&amp;studio=consulting"><strong>AI infrastructure sizing</strong></a>
   · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=placement&amp;lang=en">AI Stack Placement</a>
+  · <a href="https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=apiCost&amp;lang=en">API Cost Calculator</a>
   · <a href="./README.md">한국어</a>
   · <a href="https://github.com/jaeseok614/llm-gpu-checker-ko/issues/new?template=gpu-request.yml">Request a GPU</a>
 </p>
@@ -158,6 +159,7 @@
 - Community run feedback with prefilled GPU, model, runtime, and calculated conditions
 - Search-ready static GPU, model, and workload pages with canonical URLs, JSON-LD, sitemap, and robots.txt
 - AI Stack Placement for assigning several models across several GPUs
+- **API cost calculator**: estimates the monthly cost of using OpenAI/Anthropic/Google's hosted APIs instead of buying a GPU, based on each provider's official pricing (9 models across flagship/balanced/economy tiers), with a "self-host vs API" comparison in the infra sizing results using the same usage assumptions.
 - Korean and English interfaces, responsive mobile layouts, keyboard focus, and reduced-motion support
 - [Pre-launch UI regression checklist](./docs/ui-regression-checklist.md) for six fixed viewport sizes and eight smoke-tested user flows
 
