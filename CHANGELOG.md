@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- "API 비용 계산기"를 5번째 핵심 기능으로 추가(고급 도구 메뉴에서 접근) — GPU를 사지 않고 OpenAI·Anthropic·Google의 호스팅 API를 그대로 쓸 때 예상 월 비용을 계산·비교. 각 제공사 공식 가격 페이지(openai.com/api/pricing, platform.claude.com/docs pricing, ai.google.dev/gemini-api/docs/pricing, 2026-08-28 확인)에서 가져온 실제 표준 요금(플래그십/균형형/저가형 각 1개씩, 총 9개 모델: GPT-5.6 Sol/Terra/Luna, Claude Opus 5/Sonnet 5/Haiku 4.5, Gemini 3.1 Pro Preview/3.7 Flash/3.5 Flash-Lite)만 사용하고, 프롬프트 캐싱·배치 할인·장문 컨텍스트 할증은 반영하지 않은 표준가 기준임을 명시. 로컬 GPU 카탈로그(data/models.js)와는 완전히 분리된 새 데이터 파일(data/api-models.js)로 관리해 VRAM 계산 로직에는 영향 없음
+- "인프라 견적"(자체 구축) 결과 화면에 같은 사용량 가정(동시 요청·입출력 토큰·운영시간)을 그대로 재사용해 "자체 구축 vs API" 월 비용 비교를 추가 — 추천 구성의 3년 TCO를 월 환산한 값과, 추적 중인 API 중 가장 저렴한 모델의 예상 월 비용을 나란히 보여주고 API 비용 계산기 전체 비교로 바로 이동하는 버튼 제공
+- 위 두 기능을 만드는 과정에서 `scripts/validate-data.mjs`/`scripts/data-audit.mjs`에 API 모델 스키마 검증과 90일 가격 노후화 경고(GPU 시세보다 훨씬 짧은 기준 — API 요금은 더 자주 바뀜)를 추가
 - "60초 체험" 데모 버튼을 4번째로 추가 — "여러 모델 함께 배치"(고급 도구 안의 배치 플래너)를 안내 없이 바로 체험할 수 있도록, RTX 4090 24GB 2장 + Llama 3.1 70B Instruct + Qwen3-Embedding-4B를 미리 채워서 보여줌(실제 GPU 프리셋·모델 카탈로그 항목만 사용, 가상 데이터 없음)
 
 - 이 데모 버튼을 만들다가 실제 프로덕션 버그를 하나 발견해서 함께 수정: GPU 배치 플래너(그리고 모델 파인더·인프라 스튜디오)에 임베딩 모델을 추가하면 "Qwen/Qwen3-Embedding-4B" 같은 모델명이 화면에 "Qwen/Qwen3-임베딩-4B"로 깨져서 나오던 문제. 원인은 `translateDynamicUi()`(영/한 단어 치환용 범용 사전)가 이 세 화면(배치/모델파인더/인프라)에서는 언어가 이미 한국어여도 매 렌더링마다 무조건 실행되는데, 사전에 있는 `["임베딩", "Embedding"]` 항목이 "Embedding"이 하이픈으로 구분된 독립 단어처럼 보이면 모델명 안이라도 그대로 갈아치웠기 때문(라틴 문자 경계 가드는 있었지만 하이픈/슬래시 경계는 막지 않음). 카탈로그의 실제 모델명과 텍스트가 정확히 일치하면 사전 치환을 건너뛰도록 고쳐, 앞으로 어떤 모델명에 "Embedding" 같은 사전 등재 단어가 들어가도 안전하게 방어. 회귀 테스트도 추가(`tests/smoke.test.mjs`)

@@ -17,6 +17,8 @@ const UI_COPY_V15 = {
   "core.community.title": { ko: "커뮤니티 데이터", en: "Community data" },
   "core.community.note": { ko: "실측 결과 제보 · 벤치마크 데이터 현황", en: "Submit measurements · benchmark coverage" },
   "core.community.time": { ko: "제보형 · 선택 사항", en: "Optional · community-submitted" },
+  "core.apiCost.title": { ko: "API 비용 계산기", en: "API cost calculator" },
+  "core.apiCost.note": { ko: "GPU 없이 API로 쓸 때 월 비용 비교(OpenAI·Anthropic·Google)", en: "Compare monthly cost of using hosted APIs instead of a GPU (OpenAI, Anthropic, Google)" },
   "core.advanced": { ko: "고급 도구", en: "Advanced tools" },
   "core.aria.section": { ko: "주요 작업 선택", en: "Choose a primary task" },
   "core.aria.tabs": { ko: "주요 작업", en: "Primary tasks" },

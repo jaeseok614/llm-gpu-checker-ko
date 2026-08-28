@@ -378,11 +378,13 @@ function refreshCoreTaskUi() {
   const modelFinderActive = coreTaskMode === "modelFinder";
   const infraActive = coreTaskMode === "infra";
   const communityActive = coreTaskMode === "community";
+  const apiCostActive = coreTaskMode === "apiCost";
   document.body.classList.toggle("placement-task-active", placementActive);
   document.body.classList.toggle("finder-task-active", coreTaskMode === "finder");
   document.body.classList.toggle("model-finder-task-active", modelFinderActive);
   document.body.classList.toggle("infra-task-active", infraActive);
   document.body.classList.toggle("community-task-active", communityActive);
+  document.body.classList.toggle("api-cost-task-active", apiCostActive);
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
     button.classList.toggle("is-active", active);
@@ -417,6 +419,11 @@ function refreshCoreTaskUi() {
       communityButton.querySelector("small").textContent = uiText("core.community.note");
       communityButton.querySelector("em").textContent = uiText("core.community.time");
     }
+    const apiCostButton = document.querySelector('[data-core-task="apiCost"]');
+    if (apiCostButton) {
+      apiCostButton.querySelector("span").textContent = uiText("core.apiCost.title");
+      apiCostButton.querySelector("small").textContent = uiText("core.apiCost.note");
+    }
   const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
   const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
   const avatarTab = document.querySelector('[data-workload-tab="avatarGeneration"]');
@@ -425,6 +432,7 @@ function refreshCoreTaskUi() {
   if (avatarTab) avatarTab.textContent = uiText("workload.avatarGeneration");
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
   if ($("decisionStudio")) $("decisionStudio").hidden = !infraActive;
+  if ($("apiCostPanel")) $("apiCostPanel").hidden = !apiCostActive;
   window.AIHardwareWorkspace?.apply(coreTaskMode);
   window.AIHardwareGuide?.render(
     coreTaskMode,
@@ -483,13 +491,15 @@ function setCoreTaskMode(mode) {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
     return;
   }
-  coreTaskMode = mode === "modelFinder" || mode === "infra" || mode === "community" ? mode : "finder";
+  coreTaskMode = mode === "modelFinder" || mode === "infra" || mode === "community" || mode === "apiCost" ? mode : "finder";
   refreshCoreTaskUi();
   render();
   if (coreTaskMode === "infra" && typeof renderDecisionStudio === "function") renderDecisionStudio();
+  if (coreTaskMode === "apiCost") window.AIHardwareApiCost?.renderApiCostEstimator();
   if (coreTaskMode === "modelFinder") $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "infra") $("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "community") $("benchmarkDashboard")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  if (coreTaskMode === "apiCost") $("apiCostPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
 // 커뮤니티 제보 패널이 다른 모드에서는 숨겨져 있어(styles.css
@@ -555,6 +565,13 @@ function setUiLanguage(language) {
   // render functions can translate correctly.
   if ($("gpuPlacementResult")?.innerHTML.trim() && placementSelectedKeys.size) runGpuPlacement();
   else if (!$("gpuPlacementPlanCompare")?.hidden) comparePlacementPlans();
+  // Same reasoning again: the API cost panel builds its whole table (labels,
+  // provider/tier names, cost figures) from uiLanguage-conditional strings
+  // inside renderApiCostEstimator() itself. A pure language toggle never
+  // reaches it otherwise, since it isn't part of the main render() pass
+  // while some other core-task mode is active, and setUiLanguage() is called
+  // directly from the language-toggle buttons rather than through render().
+  if (coreTaskMode === "apiCost") window.AIHardwareApiCost?.renderApiCostEstimator();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
   // The generic sweep intentionally starts from the captured Korean source
@@ -693,6 +710,7 @@ function init() {
   restoreUiTheme();
   restoreImportedHfModels();
   ensureGpuAdvisorPanel();
+  window.AIHardwareApiCost?.ensureApiCostPanel();
   populateSelects();
   applyUrlState();
   captureStaticTranslationSources();
@@ -1971,9 +1989,10 @@ function render(options = {}) {
   const placementActive = coreTaskMode === "placement";
   const modelFinderActive = coreTaskMode === "modelFinder";
   const infraActive = coreTaskMode === "infra";
-  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || infraActive || hasPrimaryGpuSelection;
-  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || infraActive || (!placementActive && !hasPrimaryGpuSelection);
-  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || infraActive || !hasPrimaryGpuSelection;
+  const apiCostActive = coreTaskMode === "apiCost";
+  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || infraActive || apiCostActive || hasPrimaryGpuSelection;
+  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || infraActive || apiCostActive || (!placementActive && !hasPrimaryGpuSelection);
+  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || infraActive || apiCostActive || !hasPrimaryGpuSelection;
   refreshCoreTaskUi();
   renderPlacementWorkspaceUi();
 
@@ -2022,6 +2041,17 @@ function render(options = {}) {
     // previously only reached AIHardwareLocalization's much smaller
     // replacement list, so that Korean text could resurface here even in
     // English mode after any re-render.
+    translateDynamicUi(uiLanguage);
+    window.AIHardwareLocalization?.apply(uiLanguage);
+    return;
+  }
+  if (apiCostActive) {
+    window.AIHardwareApiCost?.renderApiCostEstimator();
+    if (syncUrl) syncUrlState();
+    // Same reasoning as the infra/placement/modelFinder branches above: the
+    // panel renders its own dynamic content (provider/model table, cost
+    // figures) with language-conditional strings baked in at render time,
+    // so it needs the same dictionary-sweep safety net after rendering.
     translateDynamicUi(uiLanguage);
     window.AIHardwareLocalization?.apply(uiLanguage);
     return;
@@ -4698,7 +4728,7 @@ function syncUrlState() {
   const params = new URLSearchParams();
   params.set("ui", appMode);
   params.set("lang", uiLanguage);
-  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : coreTaskMode === "infra" ? "infra" : activeWorkload);
+  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : coreTaskMode === "infra" ? "infra" : coreTaskMode === "apiCost" ? "apiCost" : activeWorkload);
   if (coreTaskMode === "placement") params.set("workload", activeWorkload);
   const hardware = getHardware();
   if (hasPrimaryGpuSelection) {
@@ -4790,7 +4820,7 @@ function syncUrlState() {
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
   const modeParam = params.get("mode");
-  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : modeParam === "infra" ? "infra" : "finder";
+  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : modeParam === "infra" ? "infra" : modeParam === "apiCost" ? "apiCost" : "finder";
   const uiParam = params.get("ui");
   appMode = uiParam === "expert" || uiParam === "simple"
     ? uiParam

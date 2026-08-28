@@ -18,6 +18,7 @@ const dataFiles = [
   "data/benchmarks.js",
   "data/licenses.js",
   "data/decision-data.js",
+  "data/api-models.js",
 ];
 const context = { window: {} };
 context.window.LLM_GPU_CHECKER_DATA = {};
@@ -111,6 +112,23 @@ if (stalePriceRows.length) {
   warnings.push(`${stalePriceRows.length} Korean market price row(s) are older than ${STALE_PRICE_DAYS} days and should be re-checked: ${stalePriceRows.map((row) => row.gpuId).join(", ")}`);
 }
 
+// Hosted API pricing moves much faster than GPU hardware pricing (OpenAI cut
+// prices mid-year, Gemini has an already-announced Jan 2027 increase baked
+// into the notes) -- use a much shorter staleness window than GPU market
+// prices so a stale API rate gets flagged well before it's badly wrong.
+const STALE_API_PRICE_DAYS = 90;
+const staleApiModels = (data.apiModels || []).filter((row) => {
+  const timestamp = Date.parse(row.verifiedAt);
+  if (!Number.isFinite(timestamp)) return false;
+  return (now - timestamp) / (24 * 60 * 60 * 1000) > STALE_API_PRICE_DAYS;
+});
+if (staleApiModels.length) {
+  warnings.push(`${staleApiModels.length} API model price row(s) are older than ${STALE_API_PRICE_DAYS} days and should be re-checked against the provider's pricing page: ${staleApiModels.map((row) => row.id).join(", ")}`);
+}
+(data.apiModels || []).forEach((row) => {
+  if (!validHttps(row.sourceUrl)) errors.push(`API model source is not HTTPS: ${row.id}`);
+});
+
 const platformSource = fs.readFileSync(path.join(root, "platform-v2.js"), "utf8");
 const copyBlock = platformSource.match(/const PLATFORM_V2_COPY = (\{[\s\S]*?\n\});/)?.[1];
 if (!copyBlock) {
@@ -133,6 +151,8 @@ const report = {
     benchmarks: (data.benchmarks || []).length,
     marketPrices: (data.koreanGpuMarket || []).length,
     stalePriceRows: stalePriceRows.length,
+    apiModels: (data.apiModels || []).length,
+    staleApiModels: staleApiModels.length,
   },
   errors,
   warnings,
@@ -140,7 +160,7 @@ const report = {
 const output = JSON.stringify(report, null, 2);
 if (process.argv.includes("--json")) console.log(output);
 else {
-  console.log(`audited ${report.counts.gpus} GPUs, ${report.counts.models} models, ${report.counts.benchmarks} benchmarks`);
+  console.log(`audited ${report.counts.gpus} GPUs, ${report.counts.models} models, ${report.counts.benchmarks} benchmarks, ${report.counts.apiModels} API models`);
   warnings.slice(0, 20).forEach((warning) => console.warn(`warning: ${warning}`));
   if (warnings.length > 20) console.warn(`warning: ${warnings.length - 20} more warning(s)`);
   errors.forEach((error) => console.error(`error: ${error}`));

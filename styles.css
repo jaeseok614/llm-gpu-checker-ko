@@ -1380,6 +1380,31 @@ html[lang="en"] .simple-mode-head > div:first-child {
   white-space: normal;
 }
 
+/* API cost calculator: highlight the cheapest tracked hosted API model in
+   the results table, and style the infra-studio "build vs buy" callout that
+   links over to it. Reuses .si-poc-mode's box treatment rather than adding a
+   new one. */
+.studio-table tr.is-cheapest {
+  background: var(--blue-soft);
+}
+
+.si-api-cost-bridge {
+  min-width: 0;
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface-soft);
+}
+
+.si-api-cost-bridge h3 {
+  margin: 6px 0 8px;
+}
+
+.si-api-cost-verdict {
+  font-weight: 600;
+}
+
 .studio-stale,
 .studio-fresh {
   display: inline-block;

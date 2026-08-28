@@ -121,6 +121,10 @@
               <span>여러 모델 함께 배치</span>
               <small>LLM·RAG·VLM·음성 모델을 여러 GPU에 배치</small>
             </button>
+            <button type="button" data-core-task="apiCost">
+              <span>API 비용 계산기</span>
+              <small>GPU 없이 API로 쓸 때 월 비용 비교(OpenAI·Anthropic·Google)</small>
+            </button>
           </details>
         </div>
         <div class="guide-modal-backdrop" id="guideModalBackdrop" hidden></div>
@@ -977,6 +981,7 @@
     <script src="./data/model-capabilities.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/licenses.js?v=__CACHE_VERSION__" defer></script>
     <script src="./data/decision-data.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./data/api-models.js?v=__CACHE_VERSION__" defer></script>
     <script src="./ui-foundation.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/workspace-controller.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/guided-experience.js?v=__CACHE_VERSION__" defer></script>
@@ -1001,6 +1006,7 @@
     <script src="./features/i18n-runtime.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/gpu-advisor.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/model-placement.js?v=__CACHE_VERSION__" defer></script>
+    <script src="./features/api-cost-estimator.js?v=__CACHE_VERSION__" defer></script>
     <script src="./features/app-bootstrap.js?v=__CACHE_VERSION__" defer></script>
   </body>
 </html>

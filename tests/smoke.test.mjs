@@ -21,6 +21,7 @@ const dataFiles = [
   "data/benchmarks.js",
   "data/licenses.js",
   "data/decision-data.js",
+  "data/api-models.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
   "features/privacy-analytics.js",
@@ -57,6 +58,7 @@ before(() => {
     read("features/i18n-runtime.js"),
     read("features/gpu-advisor.js"),
     read("features/model-placement.js"),
+    read("features/api-cost-estimator.js"),
     read("features/benchmark-workspace.js"),
     read("platform-v2.js"),
     read("platform-v3.js"),
@@ -110,6 +112,7 @@ after(() => dom?.window.close());
 test("first screen presents four beginner choices and one advanced placement tool", () => {
   assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
   assert.ok(app.document.querySelector('.advanced-entry [data-core-task="placement"]'));
+  assert.ok(app.document.querySelector('.advanced-entry [data-core-task="apiCost"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
@@ -298,6 +301,56 @@ test("the multi-model placement demo chip seeds two GPUs and both models", () =>
   assert.match(selected, /Qwen3-Embedding-4B/);
   assert.equal(app.document.querySelectorAll("#gpuInventoryList .gpu-inventory-row").length, 1);
   app.eval('placementSelectedKeys = new Set(); gpuInventoryRows = []; placementInventorySeeded = false;');
+});
+
+test("the API cost calculator is a standalone mode separate from the GPU catalog", () => {
+  app.document.querySelector('[data-core-task="apiCost"]').click();
+  assert.equal(app.document.body.classList.contains("api-cost-task-active"), true);
+  assert.equal(app.document.getElementById("apiCostPanel").hidden, false);
+  const rows = app.document.querySelectorAll("#apiCostTable tbody tr");
+  // 3 providers (OpenAI, Anthropic, Google) x 3 tiers (flagship/balanced/economy) each.
+  assert.equal(rows.length, 9);
+  const cheapestRow = app.document.querySelector("#apiCostTable tbody tr.is-cheapest");
+  assert.ok(cheapestRow, "cheapest row should be flagged");
+  // Every row must be cheaper than or equal to every other row's cost -- i.e.
+  // the table is actually sorted ascending, not just labeled. Read the cost
+  // back out of the rendered "Monthly cost" cell's leading "$..." figure
+  // (index 5) -- naively stripping all non-digit characters from the whole
+  // cell would also swallow the parenthetical KRW figure next to it and
+  // produce a garbled, meaningless number.
+  const parsedCosts = [...rows].map((row) => Number(row.cells[5].textContent.match(/\$([\d,]+\.?\d*)/)[1].replace(/,/g, "")));
+  for (let i = 1; i < parsedCosts.length; i += 1) {
+    assert.ok(parsedCosts[i] >= parsedCosts[i - 1], `row ${i} (${parsedCosts[i]}) should not be cheaper than row ${i - 1} (${parsedCosts[i - 1]})`);
+  }
+
+  // Changing usage inputs should recompute the table (not just relabel it).
+  const before = app.document.getElementById("apiCostTable").textContent;
+  app.document.getElementById("apiCostMonthlyRequests").value = "1000000";
+  app.document.getElementById("apiCostMonthlyRequests").dispatchEvent(new app.Event("input"));
+  const after = app.document.getElementById("apiCostTable").textContent;
+  assert.notEqual(before, after, "raising monthly requests 10x should change the computed costs");
+
+  // English round trip: no Korean text should leak, and the KRW figures
+  // should still render (using the "₩" symbol, not the word "원", so they
+  // remain readable without themselves being flagged as untranslated copy).
+  app.eval('setUiLanguage("en");');
+  assert.doesNotMatch(app.document.getElementById("apiCostPanel").textContent, /[가-힣]/);
+  assert.match(app.document.getElementById("apiCostTable").textContent, /₩[\d,]+/);
+  assert.match(app.document.getElementById("apiCostPanel").textContent, /Cheapest/);
+  app.eval('setUiLanguage("ko");');
+});
+
+test("infra sizing shows a build-vs-buy API cost comparison using the same usage assumptions", () => {
+  app.eval('setCoreTaskMode("infra");');
+  const bridge = app.document.querySelector(".si-api-cost-bridge");
+  assert.ok(bridge, "the infra studio should surface a self-host-vs-API comparison");
+  assert.match(bridge.textContent, /TCO|월/);
+  const bridgeButton = bridge.querySelector('[data-core-task="apiCost"]');
+  assert.ok(bridgeButton);
+  bridgeButton.click();
+  assert.equal(app.document.getElementById("apiCostPanel").hidden, false);
+  assert.equal(app.document.getElementById("decisionStudio").hidden, true);
+  app.eval('setCoreTaskMode("finder");');
 });
 
 test("infrastructure sizing uses three steps and three decision cards", () => {

@@ -20,6 +20,7 @@ for (const file of [
   "data/model-capabilities.js",
   "data/licenses.js",
   "data/decision-data.js",
+  "data/api-models.js",
 ]) {
   const source = fs.readFileSync(file, "utf8");
   vm.runInContext(source, context, { filename: file });
@@ -55,6 +56,28 @@ if (!data.licensePolicies || typeof data.licensePolicies !== "object" || Array.i
 assertArray(data.koreanGpuMarket, "koreanGpuMarket");
 if (!data.priceDataMeta || data.priceDataMeta.currency !== "KRW") {
   throw new Error("priceDataMeta must define the KRW planning currency");
+}
+
+// apiModels is a deliberately different kind of catalog (see the comment at
+// the top of data/api-models.js): hosted API pricing, not local-GPU sizing
+// data, so it validates against its own schema rather than the local model
+// schema used above.
+assertArray(data.apiModels, "apiModels");
+const apiModelIds = new Set();
+for (const apiModel of data.apiModels) {
+  requireFields(apiModel, ["id", "provider", "name", "tier", "inputPerMTokUsd", "outputPerMTokUsd", "sourceUrl", "verifiedAt"], "api model");
+  if (apiModelIds.has(apiModel.id)) throw new Error(`duplicate apiModel id: ${apiModel.id}`);
+  apiModelIds.add(apiModel.id);
+  if (!["flagship", "balanced", "economy"].includes(apiModel.tier)) {
+    throw new Error(`apiModel ${apiModel.id} has an unknown tier: ${apiModel.tier}`);
+  }
+  if (!/^https:\/\//.test(apiModel.sourceUrl)) throw new Error(`apiModel ${apiModel.id} source is not HTTPS`);
+  if (!Number.isFinite(apiModel.inputPerMTokUsd) || !Number.isFinite(apiModel.outputPerMTokUsd)) {
+    throw new Error(`apiModel ${apiModel.id} has non-numeric pricing`);
+  }
+}
+if (!data.apiPricingMeta || !data.apiPricingMeta.verifiedAt) {
+  throw new Error("apiPricingMeta must define verifiedAt");
 }
 
 const gpuIds = new Set();

@@ -1511,6 +1511,41 @@ function renderV38V42Modules(model, plans) {
     <section class="si-version-section si-evidence-panel"><div class="si-version-head"><div><span class="section-kicker">DATA CONFIDENCE</span><h3>${en ? "Evidence traceability" : "데이터 근거 추적"}</h3></div></div><div class="si-confidence-list"><span>${en ? "GPU specification" : "GPU 사양"}<strong>${platformEscape(evidence)}</strong><small>${recommended.gpu.sourceUrl ? (en ? "Source linked" : "출처 연결") : (en ? "Source contribution needed" : "출처 보강 필요")}</small></span><span>${en ? "Benchmark" : "벤치마크"}<strong>${recommended.sampleCount ? (en ? "External/community measured" : "외부·커뮤니티 실측") : (en ? "Calculated estimate" : "계산 추정")}</strong><small>n=${recommended.sampleCount}</small></span><span>${en ? "Estimated error" : "예상 오차"}<strong>±${recommended.sampleCount >= 3 ? 15 : recommended.sampleCount ? 25 : 40}%</strong><small>${en ? "Validate with PoC" : "PoC로 검증 필요"}</small></span><span>${en ? "Last verified" : "마지막 검증일"}<strong>${recommended.gpu.verifiedAt || DATA_UPDATED_AT}</strong><small>${en ? "Model and runtime changes require recheck" : "모델·런타임 변경 시 재검증"}</small></span></div></section>`;
 }
 
+// Build-vs-buy bridge: reuses the exact same usage assumptions the sizing
+// wizard already collected (siQps, siOperatingHours, siInputTokens,
+// siOutputTokens) to answer a question this studio never used to address at
+// all -- "what would the equivalent hosted-API cost be instead of buying
+// this hardware?" Deliberately a compact callout, not a full second studio:
+// the full breakdown across all 9 tracked API models lives in the standalone
+// "API 비용 계산기" mode (features/api-cost-estimator.js), linked from here.
+function renderApiCostComparison(plans) {
+  if (typeof window.AIHardwareApiCost?.estimate !== "function") return "";
+  const en = uiLanguage === "en";
+  const recommended = plans.find((plan) => plan.id === "recommended") || plans[0];
+  if (!recommended) return "";
+  const monthlyHardwareKrw = recommended.threeYearTcoKrw / 36;
+  const monthlyRequests = Math.max(0, Number(studioState.siQps) || 0) * 3600 * Math.max(1, Number(studioState.siOperatingHours) || 24) * 30;
+  const rows = window.AIHardwareApiCost.estimate({
+    monthlyRequests,
+    inputTokensPerRequest: studioState.siInputTokens,
+    outputTokensPerRequest: studioState.siOutputTokens,
+  });
+  const cheapest = rows[0];
+  if (!cheapest) return "";
+  const cheaperThanHardware = cheapest.monthlyCostKrw < monthlyHardwareKrw;
+  return `
+    <div class="si-api-cost-bridge">
+      <div><span class="section-kicker">${en ? "BUILD VS BUY" : "자체 구축 vs API"}</span><h3>${en ? "Same usage, hosted-API cost" : "같은 사용량 기준 API 이용료"}</h3>
+      <p>${en ? `Recommended option's 3-year TCO works out to about ${studioMoney(monthlyHardwareKrw)}/month. At this usage level (~${Math.round(monthlyRequests).toLocaleString("en-US")} requests/month), the cheapest tracked hosted API (${cheapest.name}) would cost about ${studioMoney(cheapest.monthlyCostKrw)}/month.`
+        : `추천 구성의 3년 TCO를 월 환산하면 약 ${studioMoney(monthlyHardwareKrw)}입니다. 이 사용량(월 약 ${Math.round(monthlyRequests).toLocaleString("ko-KR")}건) 기준으로, 추적 중인 API 중 가장 저렴한 ${cheapest.name}는 월 약 ${studioMoney(cheapest.monthlyCostKrw)}로 예상됩니다.`}</p>
+      <p class="si-api-cost-verdict">${cheaperThanHardware
+        ? (en ? "At this usage level, the hosted API looks cheaper on a pure monthly-cost basis -- though self-hosting may still win on data control, latency, or very high sustained volume." : "이 사용량에서는 단순 월 비용만 보면 API가 더 저렴합니다 -- 다만 데이터 통제, 지연시간, 매우 높은 지속 사용량에서는 자체 구축이 더 유리할 수 있습니다.")
+        : (en ? "At this usage level, self-hosting looks cheaper on a pure monthly-cost basis over the 3-year horizon." : "이 사용량에서는 3년 기준으로 볼 때 자체 구축이 단순 월 비용 면에서 더 저렴합니다.")}</p>
+      <button type="button" class="ghost-button" data-core-task="apiCost">${en ? "Compare all tracked API models →" : "추적 중인 API 전체 비교하기 →"}</button>
+      </div>
+    </div>`;
+}
+
 function renderStudioConsulting() {
   const en = uiLanguage === "en";
   const { model, plans } = calculateSiSizing();
@@ -1599,6 +1634,7 @@ function renderStudioConsulting() {
         <span class="si-plan-open">${en ? "Open infrastructure, cost, and source details →" : "CPU·RAM·스토리지·가격 근거 상세 보기 →"}</span>
       </article>`;
     }).join("")}</div>
+    ${renderApiCostComparison(plans)}
     ${renderSelectedPlanDetail(model, plans)}
     ${window.AIHardwareDecisionGuidance?.render(plans, studioState, en ? "en" : "ko") || ""}
     <div id="siDeliverables" class="si-output-grid">
@@ -1807,6 +1843,15 @@ function updateStudio(key, value) {
 }
 
 function bindDecisionStudio() {
+  // renderApiCostComparison()'s bridge button lives inside decisionStudioBody,
+  // which is fully rebuilt (innerHTML) on every render -- so it can't rely on
+  // the one-time [data-core-task] binding that bindEvents() (app.js) set up
+  // at init for the buttons that existed in the DOM at that point. Scope this
+  // to #decisionStudioBody specifically so it doesn't double-bind the main
+  // nav's own [data-core-task] buttons, which already have their listener.
+  document.querySelectorAll("#decisionStudioBody [data-core-task]").forEach((button) => {
+    button.addEventListener("click", () => setCoreTaskMode(button.dataset.coreTask));
+  });
   const studioTabs = [...document.querySelectorAll("[data-studio-tab]")];
   studioTabs.forEach((button, index) => {
     button.addEventListener("click", () => updateStudio("tab", button.dataset.studioTab));
