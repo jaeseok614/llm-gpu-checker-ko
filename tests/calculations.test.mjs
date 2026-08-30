@@ -70,6 +70,13 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { pe
   openTestWindows.add(window);
   if (persistent) persistentTestWindows.add(window);
   Object.entries(storage).forEach(([key, value]) => window.localStorage.setItem(key, value));
+  // jsdom's navigator.language defaults to "en-US". The app now auto-detects the UI
+  // language from the browser on a first visit (no ?lang=, no saved preference) --
+  // pin the simulated browser to Korean so these tests keep exercising the app's
+  // existing Korean-default assumptions unless a test explicitly overrides language
+  // via the storage/url params (e.g. ?lang=en, which still wins over detection).
+  Object.defineProperty(window.navigator, "language", { value: "ko-KR", configurable: true });
+  Object.defineProperty(window.navigator, "languages", { value: ["ko-KR", "ko"], configurable: true });
   let combined = DATA_FILES.map(read).join("\n;\n");
   combined += "\n;\n" + read("features/i18n-catalog.js");
   combined += "\n;\n" + read("features/estimation-engine.js");

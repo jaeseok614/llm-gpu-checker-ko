@@ -48,6 +48,12 @@ before(() => {
     runScripts: "outside-only",
   });
   app = dom.window;
+  // jsdom's navigator.language defaults to "en-US". The app now auto-detects the UI
+  // language from the browser on a first visit (no ?lang=, no saved preference) --
+  // pin the simulated browser to Korean so this suite keeps exercising the app's
+  // existing Korean-default assumptions.
+  Object.defineProperty(app.navigator, "language", { value: "ko-KR", configurable: true });
+  Object.defineProperty(app.navigator, "languages", { value: ["ko-KR", "ko"], configurable: true });
   const source = [
     ...dataFiles.map(read),
     read("ui-foundation.js"),
