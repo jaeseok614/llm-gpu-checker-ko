@@ -515,6 +515,9 @@ function setUiLanguage(language) {
   url.searchParams.set("lang", uiLanguage);
   window.history.replaceState({}, "", url);
   document.documentElement.lang = uiLanguage;
+  document.title = uiLanguage === "en"
+    ? "AI Hardware Fit — Find AI models for your GPU"
+    : "AI Hardware Fit — 내 GPU에서 돌아가는 AI 모델 찾기";
   syncAdvisorCurrencyInputs();
   applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
@@ -619,12 +622,30 @@ function setUiLanguage(language) {
   document.dispatchEvent(new CustomEvent("ai-hardware-languagechange", { detail: { language: uiLanguage } }));
 }
 
+function detectBrowserLanguage() {
+  // Only ko/en are supported. If the browser's language list has no ko/en
+  // match at all, we keep the site's own default (ko) rather than guessing.
+  const languages = (Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language])
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+  const match = languages.find((value) => value.startsWith("ko") || value.startsWith("en"));
+  return match ? (match.startsWith("ko") ? "ko" : "en") : "ko";
+}
+
 function restoreUiLanguage() {
   const queryLanguage = new URLSearchParams(window.location.search).get("lang");
+  let storedLanguage = null;
+  try { storedLanguage = window.localStorage?.getItem("ai-hardware-fit-language"); } catch { storedLanguage = null; }
   if (queryLanguage === "en" || queryLanguage === "ko") {
+    // Explicit ?lang= always wins (shared links, saved comparisons, etc.).
     uiLanguage = queryLanguage;
+  } else if (storedLanguage === "en" || storedLanguage === "ko") {
+    // A returning visitor's own toggle choice always wins over browser language.
+    uiLanguage = storedLanguage;
   } else {
-    try { uiLanguage = window.localStorage?.getItem("ai-hardware-fit-language") === "en" ? "en" : "ko"; } catch { uiLanguage = "ko"; }
+    // First-ever visit with no saved preference: detect from the browser,
+    // falling back to Korean only when the browser reports neither ko nor en.
+    uiLanguage = detectBrowserLanguage();
   }
   setUiLanguage(uiLanguage);
 }
@@ -843,9 +864,18 @@ function refreshGpuNotFoundUi(rawValue) {
   if (!target) return;
   const raw = String(rawValue || "").trim();
   const normalized = normalizeGpuSearchText(raw);
-  const exact = GPU_PRESETS.some((gpu) => gpu.id !== "custom"
-    && [gpu.id, gpu.name, ...(gpu.aliases || [])].some((value) => normalizeGpuSearchText(value) === normalized));
-  const missing = raw.length >= 2 && !exact;
+  // Match the same relaxed logic findGpuPresetByName() uses to actually resolve a
+  // typed query (exact -> normalized-exact -> normalized-substring), not just strict
+  // equality. Otherwise a short query like "Max" (meant to find "Ryzen AI Max+ 395")
+  // gets flagged as "not found" here even though selecting it would work fine -
+  // normalizeGpuSearchText() strips "+" and spaces, so "max" only equals "aimax395"
+  // via substring, never via ===.
+  const known = GPU_PRESETS.some((gpu) => gpu.id !== "custom"
+    && [gpu.id, gpu.name, ...(gpu.aliases || [])].some((value) => {
+      const normalizedValue = normalizeGpuSearchText(value);
+      return normalizedValue === normalized || normalizedValue.includes(normalized);
+    }));
+  const missing = raw.length >= 2 && !known;
   target.hidden = !missing;
   const requestLink = target.querySelector("[data-request-gpu]");
   if (requestLink) requestLink.href = gpuRequestUrl(raw);

@@ -1278,6 +1278,11 @@ mergeModelMetadata({
     sourceUrl: "https://huggingface.co/moonshotai/Kimi-K3",
     qualityBenchmark: quality("MMLU-Pro 78.5", "MMLU-Pro", 78.5, "https://huggingface.co/moonshotai/Kimi-K3", "공개 평가"),
   },
+  "Ling 3.0 Flash": {
+    releaseDate: "2026-08-07",
+    sourceUrl: "https://huggingface.co/inclusionAI/Ling-3.0-flash",
+    qualityBenchmark: quality("SWE-Bench Multilingual 72.4", "SWE-Bench Multilingual (resolved %)", 72.4, "https://huggingface.co/inclusionAI/Ling-3.0-flash", "공식 카드"),
+  },
   "Nemotron 3 Super 120B A12B": {
     releaseDate: "2026-03-11",
     sourceUrl: "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16",
@@ -1434,6 +1439,21 @@ mergeModelMetadata({
     releaseDate: "2026-04-29",
     sourceUrl: "https://research.ibm.com/blog/granite-4-1-ai-foundation-models",
     qualityBenchmark: quality("MMLU 73.84", "MMLU (5-shot)", 73.84, "https://huggingface.co/ibm-granite/granite-4.1-8b", "공식 카드"),
+  },
+  "Granite 4.2 3B": {
+    releaseDate: "2026-08-25",
+    sourceUrl: "https://huggingface.co/ibm-granite/granite-4.2-3b",
+    qualityBenchmark: quality("MMLU-Pro 67.84", "MMLU-Pro", 67.84, "https://huggingface.co/ibm-granite/granite-4.2-8b", "공식 카드"),
+  },
+  "Granite 4.2 8B": {
+    releaseDate: "2026-08-25",
+    sourceUrl: "https://huggingface.co/ibm-granite/granite-4.2-8b",
+    qualityBenchmark: quality("MMLU-Pro 74.04", "MMLU-Pro", 74.04, "https://huggingface.co/ibm-granite/granite-4.2-8b", "공식 카드"),
+  },
+  "Granite 4.2 30B": {
+    releaseDate: "2026-08-25",
+    sourceUrl: "https://huggingface.co/ibm-granite/granite-4.2-30b",
+    qualityBenchmark: quality("MMLU-Pro 77.60", "MMLU-Pro", 77.60, "https://huggingface.co/ibm-granite/granite-4.2-8b", "공식 카드"),
   },
   "GLM-4.5 Air 106B A12B": {
     releaseDate: "2025-07-28",
