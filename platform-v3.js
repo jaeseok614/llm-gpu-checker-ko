@@ -1533,6 +1533,50 @@ function renderApiCostComparison(plans) {
   const cheapest = rows[0];
   if (!cheapest) return "";
   const cheaperThanHardware = cheapest.monthlyCostKrw < monthlyHardwareKrw;
+  // Self-hosted cost is a flat monthly TCO regardless of how many requests
+  // actually get served, while the hosted API's cost scales linearly with
+  // volume (no caching/batch/volume-discount tiers are modeled here -- see
+  // apiPricingMeta.basis). That means there is exactly one crossover point:
+  // the request volume where the API's linearly-scaling cost line crosses
+  // the hardware's flat line. Surfacing that point (rather than only a
+  // single-usage-level snapshot) is what actually answers "how sensitive is
+  // this to concurrency" -- the recurring feedback on this panel.
+  const costPerRequestKrw = monthlyRequests > 0 ? cheapest.monthlyCostKrw / monthlyRequests : 0;
+  const breakevenRequests = costPerRequestKrw > 0 ? monthlyHardwareKrw / costPerRequestKrw : null;
+  const breakevenMultiplier = breakevenRequests && monthlyRequests > 0 ? breakevenRequests / monthlyRequests : null;
+  const breakevenSentence = breakevenMultiplier
+    ? (cheaperThanHardware
+        ? (en
+            ? `If usage grew to about ${Math.round(breakevenRequests).toLocaleString("en-US")} requests/month (~${breakevenMultiplier.toFixed(1)}x today's level), self-hosting would flip to being the cheaper option.`
+            : `사용량이 월 약 ${Math.round(breakevenRequests).toLocaleString("ko-KR")}건(지금의 약 ${breakevenMultiplier.toFixed(1)}배)까지 늘어나면 그때부터는 자체 구축이 더 저렴해집니다.`)
+        : (en
+            ? `Only if usage fell to about ${Math.round(breakevenRequests).toLocaleString("en-US")} requests/month (~${Math.round(breakevenMultiplier * 100)}% of today's level) would the hosted API become the cheaper option instead.`
+            : `사용량이 월 약 ${Math.round(breakevenRequests).toLocaleString("ko-KR")}건(지금의 약 ${Math.round(breakevenMultiplier * 100)}%)까지 줄어들어야 API가 더 저렴해집니다.`))
+    : "";
+  // A compact scaling table (0.25x/1x/4x/16x today's usage) shows the two
+  // cost lines actually diverging, instead of leaving the sensitivity
+  // implicit in one sentence. Multiples are fixed powers of 4 rather than
+  // "the breakeven point itself" so the table reads the same regardless of
+  // which side of breakeven the current usage happens to sit on.
+  const scaleMultipliers = [0.25, 1, 4, 16];
+  const scaleRows = monthlyRequests > 0
+    ? scaleMultipliers.map((multiplier) => {
+        const requestsAtScale = monthlyRequests * multiplier;
+        const apiCostKrw = costPerRequestKrw * requestsAtScale;
+        return { multiplier, requestsAtScale, apiCostKrw, apiCheaper: apiCostKrw < monthlyHardwareKrw };
+      })
+    : [];
+  const scaleTable = scaleRows.length
+    ? `<div class="studio-table-wrap"><table class="studio-table si-api-cost-scale">
+        <thead><tr><th>${en ? "Usage" : "사용량"}</th><th>${en ? "Requests/month" : "월 요청 수"}</th><th>${cheapest.name} (API)</th><th>${en ? "Self-hosted (flat)" : "자체 구축 (고정)"}</th></tr></thead>
+        <tbody>${scaleRows.map((row) => `<tr class="${row.multiplier === 1 ? "is-current-usage" : ""}">
+          <td>${row.multiplier === 1 ? (en ? "Today (1x)" : "현재 (1배)") : `${row.multiplier < 1 ? row.multiplier : Math.round(row.multiplier)}x`}</td>
+          <td>${Math.round(row.requestsAtScale).toLocaleString(en ? "en-US" : "ko-KR")}</td>
+          <td class="${row.apiCheaper ? "is-cheapest" : ""}">${studioMoney(row.apiCostKrw)}</td>
+          <td class="${!row.apiCheaper ? "is-cheapest" : ""}">${studioMoney(monthlyHardwareKrw)}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>`
+    : "";
   return `
     <div class="si-api-cost-bridge">
       <div><span class="section-kicker">${en ? "BUILD VS BUY" : "자체 구축 vs API"}</span><h3>${en ? "Same usage, hosted-API cost" : "같은 사용량 기준 API 이용료"}</h3>
@@ -1541,6 +1585,8 @@ function renderApiCostComparison(plans) {
       <p class="si-api-cost-verdict">${cheaperThanHardware
         ? (en ? "At this usage level, the hosted API looks cheaper on a pure monthly-cost basis -- though self-hosting may still win on data control, latency, or very high sustained volume." : "이 사용량에서는 단순 월 비용만 보면 API가 더 저렴합니다 -- 다만 데이터 통제, 지연시간, 매우 높은 지속 사용량에서는 자체 구축이 더 유리할 수 있습니다.")
         : (en ? "At this usage level, self-hosting looks cheaper on a pure monthly-cost basis over the 3-year horizon." : "이 사용량에서는 3년 기준으로 볼 때 자체 구축이 단순 월 비용 면에서 더 저렴합니다.")}</p>
+      ${breakevenSentence ? `<p class="si-api-cost-breakeven">${breakevenSentence}</p>` : ""}
+      ${scaleTable}
       <button type="button" class="ghost-button" data-core-task="apiCost">${en ? "Compare all tracked API models →" : "추적 중인 API 전체 비교하기 →"}</button>
       </div>
     </div>`;

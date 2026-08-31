@@ -108,8 +108,43 @@
     return combinations;
   }
 
+  // Re-applies the panel's static (language-only) copy without touching the
+  // textarea the user may be mid-way through typing into, or the sanitized
+  // preview/comparison output already computed from it. renderWorkbench()
+  // itself only runs once (guarded by the existence check below), so without
+  // this the panel would otherwise freeze in whichever language was active
+  // at first paint -- the same class of bug fixed earlier for the GPU
+  // insights and API cost panels, which this one had been missing.
+  function relabelWorkbench() {
+    const section = document.getElementById("communityMeasurementPanel");
+    if (!section) return;
+    const en = document.documentElement.lang === "en";
+    const heading = section.querySelector("h2");
+    if (heading) heading.textContent = en ? "Contribute an actual run safely" : "실측 결과를 안전하게 제보하세요";
+    const intro = section.querySelector("h2 + p");
+    if (intro) intro.textContent = en
+      ? "Paste JSON or terminal output. Sensitive fields are removed before preview; nothing is sent until you open GitHub."
+      : "JSON이나 터미널 결과를 붙여넣으세요. 미리보기 전에 민감 항목을 제거하며 GitHub를 열기 전에는 전송하지 않습니다.";
+    const previewButton = section.querySelector("[data-community-preview]");
+    if (previewButton) previewButton.textContent = en ? "Remove private fields and preview" : "개인정보 제거 후 미리보기";
+    const submitLink = section.querySelector("[data-community-submit]");
+    if (submitLink) submitLink.textContent = en ? "Open GitHub submission" : "GitHub 제보 열기";
+    // The <pre> output only ever shows either the untouched placeholder
+    // sentence or real JSON the user generated -- only relabel it while it's
+    // still showing the placeholder, never overwrite a real preview result.
+    const output = section.querySelector("[data-community-preview-output]");
+    if (output && (output.textContent === "정리된 미리보기가 여기에 표시됩니다." || output.textContent === "The sanitized preview appears here.")) {
+      output.textContent = en ? "The sanitized preview appears here." : "정리된 미리보기가 여기에 표시됩니다.";
+    }
+    const headings = section.querySelectorAll(".community-reference-grid h3");
+    if (headings[0]) headings[0].textContent = en ? "Same-condition references" : "같은 조건의 기존 측정값";
+    if (headings[1]) headings[1].textContent = en ? "Contributors and public sources" : "반영된 기여자·공개 출처";
+    const summary = section.querySelector("details summary");
+    if (summary) summary.textContent = en ? "Top 10 measurements needed" : "가장 필요한 실측 조합 10개";
+  }
+
   function renderWorkbench() {
-    if (document.getElementById("communityMeasurementPanel")) return;
+    if (document.getElementById("communityMeasurementPanel")) { relabelWorkbench(); return; }
     const benchmark = document.getElementById("benchmarkSheet");
     if (!benchmark) return;
     const en = document.documentElement.lang === "en";
@@ -166,6 +201,6 @@
   document.addEventListener("DOMContentLoaded", renderWorkbench);
   window.AIHardwareCommunityFeedback = {
     buttons, feedbackUrl, sanitize, parseTerminalResult, measurementIssueUrl,
-    sameCondition, contributors, neededCombinations, renderWorkbench,
+    sameCondition, contributors, neededCombinations, renderWorkbench, relabelWorkbench,
   };
 })();

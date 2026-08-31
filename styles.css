@@ -118,6 +118,7 @@ select {
 
 button {
   color: inherit;
+  cursor: pointer;
 }
 
 h1,
@@ -149,6 +150,14 @@ p {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+
+.brand-block:hover h1 {
+  color: var(--blue);
 }
 
 .brand-mark {
@@ -1388,6 +1397,22 @@ html[lang="en"] .simple-mode-head > div:first-child {
   background: var(--blue-soft);
 }
 
+.studio-table th.is-sortable {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.studio-table th.is-sortable:hover {
+  color: var(--ink);
+}
+
+.api-cost-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 20px 10px;
+}
+
 .si-api-cost-bridge {
   min-width: 0;
   margin: 18px 0;
@@ -1403,6 +1428,20 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .si-api-cost-verdict {
   font-weight: 600;
+}
+
+.si-api-cost-breakeven {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.si-api-cost-scale td.is-cheapest {
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.si-api-cost-scale tr.is-current-usage td {
+  background: var(--panel-raised);
 }
 
 .studio-stale,

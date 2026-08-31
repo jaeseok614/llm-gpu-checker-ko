@@ -346,6 +346,61 @@ test("the API cost calculator is a standalone mode separate from the GPU catalog
   app.eval('setUiLanguage("ko");');
 });
 
+test("API cost calculator table supports provider/tier filtering and column sorting", () => {
+  app.document.querySelector('[data-core-task="apiCost"]').click();
+  const table = () => app.document.getElementById("apiCostTable");
+  const providerSelect = app.document.getElementById("apiCostProviderFilter");
+  const tierSelect = app.document.getElementById("apiCostTierFilter");
+  assert.ok(providerSelect, "a provider filter should exist");
+  assert.ok(tierSelect, "a tier filter should exist");
+  // "All providers"/"All tiers" plus one option per real value (3 providers,
+  // 3 tiers in the current catalog).
+  assert.equal(providerSelect.querySelectorAll("option").length, 4);
+  assert.equal(tierSelect.querySelectorAll("option").length, 4);
+
+  providerSelect.value = "Anthropic";
+  providerSelect.dispatchEvent(new app.Event("change"));
+  let rows = [...table().querySelectorAll("tbody tr")];
+  assert.equal(rows.length, 3, "filtering to one provider should leave exactly its 3 tracked models");
+  rows.forEach((row) => assert.equal(row.cells[0].textContent, "Anthropic"));
+
+  tierSelect.value = "flagship";
+  tierSelect.dispatchEvent(new app.Event("change"));
+  rows = [...table().querySelectorAll("tbody tr")];
+  assert.equal(rows.length, 1, "combining a provider and tier filter should narrow to the single matching model");
+  assert.match(rows[0].cells[1].textContent, /Opus/);
+
+  providerSelect.value = "all";
+  providerSelect.dispatchEvent(new app.Event("change"));
+  tierSelect.value = "all";
+  tierSelect.dispatchEvent(new app.Event("change"));
+  assert.equal(table().querySelectorAll("tbody tr").length, 9, "clearing both filters should restore all 9 tracked models");
+
+  // Clicking the "Provider" column header should sort alphabetically by
+  // provider instead of the default cost-ascending order. The header
+  // <th> is rebuilt (a fresh element replaces it) on every render, so
+  // re-query it after each click rather than reusing a stale reference.
+  table().querySelector('[data-sort-key="provider"]').click();
+  const providersAsc = [...table().querySelectorAll("tbody tr")].map((row) => row.cells[0].textContent);
+  const expectedAsc = [...providersAsc].sort((a, b) => a.localeCompare(b));
+  assert.deepEqual(providersAsc, expectedAsc);
+  assert.equal(table().querySelector('[data-sort-key="provider"]').getAttribute("aria-sort"), "ascending");
+
+  // Clicking the same header again should reverse the sort direction.
+  table().querySelector('[data-sort-key="provider"]').click();
+  const providersDesc = [...table().querySelectorAll("tbody tr")].map((row) => row.cells[0].textContent);
+  assert.deepEqual(providersDesc, [...expectedAsc].reverse());
+  assert.equal(table().querySelector('[data-sort-key="provider"]').getAttribute("aria-sort"), "descending");
+
+  // Restore the default cost-ascending sort so later tests (and any state
+  // this suite still reads from the API cost panel) see the original order.
+  table().querySelector('[data-sort-key="cost"]').click();
+  if (table().querySelector('[data-sort-key="cost"]').getAttribute("aria-sort") !== "ascending") {
+    table().querySelector('[data-sort-key="cost"]').click();
+  }
+  assert.equal(table().querySelector('[data-sort-key="cost"]').getAttribute("aria-sort"), "ascending");
+});
+
 test("infra sizing shows a build-vs-buy API cost comparison using the same usage assumptions", () => {
   app.eval('setCoreTaskMode("infra");');
   const bridge = app.document.querySelector(".si-api-cost-bridge");
@@ -356,6 +411,44 @@ test("infra sizing shows a build-vs-buy API cost comparison using the same usage
   bridgeButton.click();
   assert.equal(app.document.getElementById("apiCostPanel").hidden, false);
   assert.equal(app.document.getElementById("decisionStudio").hidden, true);
+  app.eval('setCoreTaskMode("finder");');
+});
+
+test("build-vs-buy comparison shows a breakeven point and a usage-scaling table", () => {
+  // Regression test for the "동접에 따라 전체 비용만 움직여서 잘 안 보인다"
+  // feedback: the bridge used to show only a single-usage-level snapshot,
+  // with no indication of how the comparison changes with volume. Now it
+  // also surfaces the breakeven request volume and a 0.25x/1x/4x/16x
+  // scaling table -- verify both appear and that the math is actually
+  // linear (API cost scales with requests, hardware cost stays flat).
+  app.eval('setCoreTaskMode("infra");');
+  const bridge = app.document.querySelector(".si-api-cost-bridge");
+  assert.ok(bridge);
+  const breakeven = bridge.querySelector(".si-api-cost-breakeven");
+  assert.ok(breakeven, "a breakeven sentence should be shown");
+  assert.match(breakeven.textContent, /배|%/);
+
+  const scaleTable = bridge.querySelector(".si-api-cost-scale");
+  assert.ok(scaleTable, "a usage-scaling table should be shown");
+  const rows = [...scaleTable.querySelectorAll("tbody tr")];
+  assert.equal(rows.length, 4);
+  const parseMoney = (text) => Number(text.replace(/[^0-9.]/g, ""));
+  const requestCounts = rows.map((row) => Number(row.cells[1].textContent.replace(/[^0-9]/g, "")));
+  // 0.25x, 1x, 4x, 16x -- each successive row's request count should scale
+  // by 4x, confirming the usage axis itself is set up correctly.
+  assert.ok(Math.abs(requestCounts[1] / requestCounts[0] - 4) < 0.05);
+  assert.ok(Math.abs(requestCounts[2] / requestCounts[1] - 4) < 0.05);
+  assert.ok(Math.abs(requestCounts[3] / requestCounts[2] - 4) < 0.05);
+  const apiCosts = rows.map((row) => parseMoney(row.cells[2].textContent));
+  // The hosted API has a flat per-request rate (no volume discounts
+  // modeled), so its cost must scale linearly with the request count.
+  assert.ok(Math.abs(apiCosts[1] / apiCosts[0] - 4) < 0.1);
+  assert.ok(Math.abs(apiCosts[2] / apiCosts[1] - 4) < 0.1);
+  const hardwareCosts = rows.map((row) => parseMoney(row.cells[3].textContent));
+  // Self-hosted cost is a flat monthly TCO -- it must not change across rows.
+  assert.equal(hardwareCosts[0], hardwareCosts[1]);
+  assert.equal(hardwareCosts[1], hardwareCosts[2]);
+  assert.equal(hardwareCosts[2], hardwareCosts[3]);
   app.eval('setCoreTaskMode("finder");');
 });
 
@@ -625,4 +718,92 @@ test("accessibility and responsive contracts are present", () => {
   assert.doesNotMatch(css, /\.studio-check-label/);
   assert.match(css, /\.term-help::after\s*\{[^}]*width:\s*var\(--term-tip-width,\s*min\(360px,\s*calc\(100vw - 32px\)\)\)/s);
   assert.match(read("platform-v3.js"), /const tooltipWidth = Math\.min\(360,[\s\S]*--term-tip-offset-x[\s\S]*button\.classList\.add\("is-tip-left"\)/);
+});
+
+test("community measurement panel re-translates on language switch without losing typed input", () => {
+  // Regression test: renderWorkbench() (features/community-feedback.js)
+  // builds the "실측 결과를 안전하게 제보하세요" panel exactly once, guarded by
+  // an existence check -- it was never wired into setUiLanguage(), so a
+  // pure language toggle left the whole panel frozen in whatever language
+  // was active at first paint (the same bug class already fixed for the
+  // GPU insights and API cost panels). In this test harness the panel's own
+  // DOMContentLoaded listener never fires (the document is already past
+  // "loading" by the time app.eval() runs), so call renderWorkbench()
+  // directly first to simulate the real page's first paint.
+  app.eval('window.AIHardwareCommunityFeedback.renderWorkbench(); setUiLanguage("ko");');
+  const panel = () => app.document.getElementById("communityMeasurementPanel");
+  assert.match(panel().textContent, /실측 결과를 안전하게 제보하세요/);
+  const input = panel().querySelector("[data-community-input]");
+  input.value = '{"model":"Qwen3 8B","gpu":"RTX 3060 12GB"}';
+
+  app.eval('setUiLanguage("en");');
+  assert.match(panel().textContent, /Contribute an actual run safely/);
+  assert.match(panel().textContent, /Same-condition references/);
+  assert.match(panel().textContent, /Top 10 measurements needed/);
+  assert.doesNotMatch(panel().textContent, /[가-힣]/, "no Korean text should remain in the community panel after switching to English");
+  assert.equal(input.value, '{"model":"Qwen3 8B","gpu":"RTX 3060 12GB"}', "the user's in-progress textarea input must survive a language toggle");
+
+  app.eval('setUiLanguage("ko");');
+  assert.match(panel().textContent, /실측 결과를 안전하게 제보하세요/);
+  assert.doesNotMatch(panel().textContent, /Contribute an actual run safely|Same-condition references|Top 10 measurements needed/, "no leftover English UI copy should remain after switching back to Korean");
+});
+
+test("getting-started and quick-recommendation dialog aria-labels translate as full phrases", () => {
+  // Regression test: the generic dictionary sweep matches "사용 가이드" and
+  // "빠른 추천" as bare substrings inside the longer aria-label values "처음
+  // 사용 가이드" and "빠른 추천 상세", translating only the matched fragment
+  // and leaving the rest ("처음", "상세") behind in the other language --
+  // e.g. "처음 Quick guide" and "Quick recommendations 상세". Longer,
+  // full-phrase dictionary entries were added so these translate cleanly.
+  app.eval('setUiLanguage("ko");');
+  assert.equal(app.document.getElementById("gettingStartedPanel").getAttribute("aria-label"), "처음 사용 가이드");
+  assert.equal(app.document.getElementById("simpleRecommendationPanel").getAttribute("aria-label"), "빠른 추천 상세");
+
+  app.eval('setUiLanguage("en");');
+  assert.equal(app.document.getElementById("gettingStartedPanel").getAttribute("aria-label"), "Getting started guide");
+  assert.equal(app.document.getElementById("simpleRecommendationPanel").getAttribute("aria-label"), "Quick recommendations detail");
+
+  app.eval('setUiLanguage("ko");');
+  assert.equal(app.document.getElementById("gettingStartedPanel").getAttribute("aria-label"), "처음 사용 가이드");
+  assert.equal(app.document.getElementById("simpleRecommendationPanel").getAttribute("aria-label"), "빠른 추천 상세");
+});
+
+test("benchmark-meta placeholder translates cleanly before the lazy benchmark workspace loads", () => {
+  // Regression test: in production, features/benchmark-workspace.js (which
+  // overwrites #benchmarkMeta with real bilingual text) is lazy-loaded on
+  // demand, not part of the eager bundle -- so on first paint, the static
+  // Korean placeholder "벤치마크 데이터 준비 중" from index.html is still in
+  // the DOM when translateDynamicUi() runs. Its generic dictionary only had
+  // a standalone "벤치마크" -> "Benchmarks" entry, so it produced the broken
+  // half-translation "Benchmarks 데이터 준비 중". This test harness loads
+  // benchmark-workspace.js eagerly, so restore the raw static placeholder
+  // first to simulate the real pre-load moment.
+  app.document.getElementById("benchmarkMeta").textContent = "벤치마크 데이터 준비 중";
+  app.eval('translateDynamicUi("en");');
+  assert.equal(app.document.getElementById("benchmarkMeta").textContent, "Benchmark data loading");
+  assert.doesNotMatch(app.document.getElementById("benchmarkMeta").textContent, /[가-힣]/);
+
+  app.document.getElementById("benchmarkMeta").textContent = "Benchmark data loading";
+  app.eval('translateDynamicUi("ko");');
+  assert.equal(app.document.getElementById("benchmarkMeta").textContent, "벤치마크 데이터 준비 중");
+});
+
+test("the header logo acts as a home link, resetting to the default beginner mode", () => {
+  // The header logo/title (.brand-block) is a <button data-reset-home> that
+  // should behave like the conventional "click the logo to go home" pattern
+  // most sites use: reset to the default beginner mode and re-show the task
+  // chooser, without wiping the user's GPU/model selections (those persist
+  // separately via URL state and localStorage).
+  app.eval('setCoreTaskMode("infra"); window.AIHardwareGuide.setStarted(true);');
+  assert.ok(app.document.body.classList.contains("infra-task-active"));
+  assert.ok(app.document.body.classList.contains("guided-workspace-started"));
+
+  const logo = app.document.querySelector("[data-reset-home]");
+  assert.ok(logo, "the header logo should be a clickable [data-reset-home] control");
+  assert.equal(logo.tagName, "BUTTON");
+  logo.click();
+
+  assert.ok(!app.document.body.classList.contains("infra-task-active"));
+  assert.ok(app.document.body.classList.contains("finder-task-active"));
+  assert.ok(!app.document.body.classList.contains("guided-workspace-started"), "the task chooser should be shown again after clicking the logo");
 });

@@ -575,6 +575,12 @@ function setUiLanguage(language) {
   // while some other core-task mode is active, and setUiLanguage() is called
   // directly from the language-toggle buttons rather than through render().
   if (coreTaskMode === "apiCost") window.AIHardwareApiCost?.renderApiCostEstimator();
+  // The community measurement-intake panel (features/community-feedback.js)
+  // is created once at DOMContentLoaded and never rebuilt by the main
+  // render() pass, so -- like the apiCost panel above -- a pure language
+  // toggle needs an explicit call here or it stays frozen in whatever
+  // language was active when the page first painted.
+  window.AIHardwareCommunityFeedback?.relabelWorkbench?.();
   translatePresetOptionLabels(uiLanguage);
   translateDynamicUi(uiLanguage);
   // The generic sweep intentionally starts from the captured Korean source
@@ -952,6 +958,17 @@ function refreshFilterOptions() {
 }
 
 function bindEvents() {
+  // The header logo/title acts as a "home" link, matching the conventional
+  // click-logo-to-go-home pattern most sites use: reset to the default
+  // beginner mode, re-show the task chooser, and scroll to the very top.
+  // It intentionally does not clear the user's GPU/model selections (those
+  // persist via URL state and localStorage regardless), so navigating back
+  // into a mode afterward still picks up where they left off.
+  document.querySelector("[data-reset-home]")?.addEventListener("click", () => {
+    setCoreTaskMode("finder");
+    window.AIHardwareGuide?.setStarted?.(false, true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.coreTask === "infra" && typeof window.loadInfrastructureStudio === "function") {

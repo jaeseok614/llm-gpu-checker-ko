@@ -20,6 +20,37 @@
     economy: { ko: "저가형", en: "Economy" },
   };
 
+  // Provider/tier filters and column sort are UI-only concerns -- they never
+  // touch estimate() itself, so platform-v3.js's build-vs-buy comparison
+  // (which calls estimate() directly, not through this panel) is unaffected.
+  const SORT_COLUMNS = {
+    provider: (row) => row.provider,
+    name: (row) => row.name,
+    tier: (row) => row.tier,
+    input: (row) => row.inputPerMTokUsd,
+    output: (row) => row.outputPerMTokUsd,
+    cost: (row) => row.monthlyCostUsd,
+  };
+  let tableFilter = { provider: "all", tier: "all", sortKey: "cost", sortDir: "asc" };
+
+  function providerOptions() {
+    return [...new Set(apiModels().map((model) => model.provider))].sort();
+  }
+
+  function applyTableFilterAndSort(rows) {
+    const filtered = rows.filter((row) =>
+      (tableFilter.provider === "all" || row.provider === tableFilter.provider)
+      && (tableFilter.tier === "all" || row.tier === tableFilter.tier));
+    const getValue = SORT_COLUMNS[tableFilter.sortKey] || SORT_COLUMNS.cost;
+    const direction = tableFilter.sortDir === "desc" ? -1 : 1;
+    return [...filtered].sort((a, b) => {
+      const left = getValue(a);
+      const right = getValue(b);
+      if (typeof left === "string") return left.localeCompare(right) * direction;
+      return (left - right) * direction;
+    });
+  }
+
   function apiExchangeRate() {
     return Math.max(1, Number(window.LLM_GPU_CHECKER_DATA?.priceDataMeta?.exchangeRateKrwPerUsd) || 1400);
   }
@@ -97,6 +128,10 @@
         <label class="field"><span id="apiCostInputTokensLabel"></span><input id="apiCostInputTokens" type="number" min="0" step="128" value="2000"></label>
         <label class="field"><span id="apiCostOutputTokensLabel"></span><input id="apiCostOutputTokens" type="number" min="0" step="32" value="500"></label>
       </div>
+      <div class="studio-question-grid api-cost-filter-row">
+        <label class="field"><span id="apiCostProviderFilterLabel"></span><select id="apiCostProviderFilter"><option value="all"></option></select></label>
+        <label class="field"><span id="apiCostTierFilterLabel"></span><select id="apiCostTierFilter"><option value="all"></option></select></label>
+      </div>
       <div class="studio-table-wrap">
         <table class="studio-table" id="apiCostTable"></table>
       </div>
@@ -106,6 +141,27 @@
     mount.appendChild(panel);
     ["apiCostMonthlyRequests", "apiCostInputTokens", "apiCostOutputTokens"].forEach((id) => {
       panel.querySelector(`#${id}`).addEventListener("input", () => renderApiCostEstimator());
+    });
+    panel.querySelector("#apiCostProviderFilter").addEventListener("change", (event) => {
+      tableFilter.provider = event.target.value;
+      renderApiCostEstimator();
+    });
+    panel.querySelector("#apiCostTierFilter").addEventListener("change", (event) => {
+      tableFilter.tier = event.target.value;
+      renderApiCostEstimator();
+    });
+    // Column headers are rebuilt on every render (their sort indicator
+    // depends on the current tableFilter state), so bind sort clicks once,
+    // delegated on the stable <table> element -- the same pattern used for
+    // #apiCostBridge below, for the same reason (a fresh <th> with no
+    // listener would otherwise replace the old one on each render).
+    panel.querySelector("#apiCostTable").addEventListener("click", (event) => {
+      const header = event.target.closest("[data-sort-key]");
+      if (!header) return;
+      const key = header.dataset.sortKey;
+      if (tableFilter.sortKey === key) tableFilter.sortDir = tableFilter.sortDir === "asc" ? "desc" : "asc";
+      else { tableFilter.sortKey = key; tableFilter.sortDir = "asc"; }
+      renderApiCostEstimator();
     });
     // The bridge link's innerHTML is rewritten on every render() call, but the
     // #apiCostBridge element itself is not -- attach one delegated listener
@@ -122,18 +178,31 @@
     return panel;
   }
 
-  function renderApiCostTableRows(rows, language) {
+  function sortIndicator(key) {
+    if (tableFilter.sortKey !== key) return "";
+    return tableFilter.sortDir === "asc" ? " \u25b2" : " \u25bc";
+  }
+
+  function renderApiCostTableRows(rows, language, allRows) {
     const en = language === "en";
-    const cheapestUsd = rows.length ? rows[0].monthlyCostUsd : 0;
-    const head = `<thead><tr>
-      <th>${en ? "Provider" : "제공사"}</th>
-      <th>${en ? "Model" : "모델"}</th>
-      <th>${en ? "Tier" : "등급"}</th>
-      <th>${en ? "Input $/1M" : "입력가($/1M)"}</th>
-      <th>${en ? "Output $/1M" : "출력가($/1M)"}</th>
-      <th>${en ? "Monthly cost" : "월 예상 비용"}</th>
-    </tr></thead>`;
-    const body = rows.map((row) => {
+    // The "cheapest" badge always reflects the globally cheapest tracked
+    // model (allRows, before any provider/tier filter is applied) -- not
+    // just the cheapest among whatever the current filter happens to show.
+    // Otherwise filtering down to one expensive provider would silently
+    // relabel its priciest model as "Cheapest", which would misrepresent it.
+    const cheapestUsd = (allRows?.length ? allRows : rows).reduce((min, row) => Math.min(min, row.monthlyCostUsd), Infinity);
+    const columns = [
+      ["provider", en ? "Provider" : "제공사"],
+      ["name", en ? "Model" : "모델"],
+      ["tier", en ? "Tier" : "등급"],
+      ["input", en ? "Input $/1M" : "입력가($/1M)"],
+      ["output", en ? "Output $/1M" : "출력가($/1M)"],
+      ["cost", en ? "Monthly cost" : "월 예상 비용"],
+    ];
+    const head = `<thead><tr>${columns.map(([key, label]) =>
+      `<th class="is-sortable" data-sort-key="${key}" aria-sort="${tableFilter.sortKey === key ? (tableFilter.sortDir === "asc" ? "ascending" : "descending") : "none"}">${escapeHtml(label)}${sortIndicator(key)}</th>`
+    ).join("")}</tr></thead>`;
+    const body = rows.length ? rows.map((row) => {
       const tierLabel = TIER_LABEL[row.tier]?.[en ? "en" : "ko"] || row.tier;
       const isCheapest = row.monthlyCostUsd === cheapestUsd;
       const note = row.note?.[en ? "en" : "ko"] || "";
@@ -145,7 +214,7 @@
         <td>${row.outputPerMTokUsd.toFixed(2)}</td>
         <td>${escapeHtml(formatUsd(row.monthlyCostUsd))} <small>(${escapeHtml(formatKrw(row.monthlyCostKrw))})</small></td>
       </tr>`;
-    }).join("");
+    }).join("") : `<tr><td colspan="6" class="api-cost-empty">${en ? "No tracked model matches this filter." : "이 조건에 맞는 모델이 없습니다."}</td></tr>`;
     return `${head}<tbody>${body}</tbody>`;
   }
 
@@ -161,12 +230,29 @@
     panel.querySelector("#apiCostRequestsLabel").textContent = en ? "Monthly requests" : "월간 요청 수";
     panel.querySelector("#apiCostInputTokensLabel").textContent = en ? "Average input tokens / request" : "요청당 평균 입력 토큰";
     panel.querySelector("#apiCostOutputTokensLabel").textContent = en ? "Average output tokens / request" : "요청당 평균 출력 토큰";
+    panel.querySelector("#apiCostProviderFilterLabel").textContent = en ? "Provider" : "제공사";
+    panel.querySelector("#apiCostTierFilterLabel").textContent = en ? "Tier" : "등급";
+
+    // Rebuild the filter <select> options every render (cheap -- 4-9 options)
+    // rather than only once at creation, so relabeling on a language switch
+    // doesn't need its own separate code path; the currently selected value
+    // is preserved either way since it's stored in tableFilter, not read
+    // back from the DOM.
+    const providerSelect = panel.querySelector("#apiCostProviderFilter");
+    providerSelect.innerHTML = `<option value="all">${en ? "All providers" : "전체 제공사"}</option>`
+      + providerOptions().map((provider) => `<option value="${escapeAttr(provider)}">${escapeHtml(provider)}</option>`).join("");
+    providerSelect.value = tableFilter.provider;
+    const tierSelect = panel.querySelector("#apiCostTierFilter");
+    tierSelect.innerHTML = `<option value="all">${en ? "All tiers" : "전체 등급"}</option>`
+      + Object.keys(TIER_LABEL).map((tier) => `<option value="${tier}">${escapeHtml(TIER_LABEL[tier][en ? "en" : "ko"])}</option>`).join("");
+    tierSelect.value = tableFilter.tier;
 
     const monthlyRequests = clampNumber(panel.querySelector("#apiCostMonthlyRequests").value, 0, 1_000_000_000, 100000);
     const inputTokensPerRequest = clampNumber(panel.querySelector("#apiCostInputTokens").value, 0, 2_000_000, 2000);
     const outputTokensPerRequest = clampNumber(panel.querySelector("#apiCostOutputTokens").value, 0, 2_000_000, 500);
-    const rows = estimate({ monthlyRequests, inputTokensPerRequest, outputTokensPerRequest });
-    panel.querySelector("#apiCostTable").innerHTML = renderApiCostTableRows(rows, uiLanguage);
+    const allRows = estimate({ monthlyRequests, inputTokensPerRequest, outputTokensPerRequest });
+    const rows = applyTableFilterAndSort(allRows);
+    panel.querySelector("#apiCostTable").innerHTML = renderApiCostTableRows(rows, uiLanguage, allRows);
 
     const meta = window.LLM_GPU_CHECKER_DATA?.apiPricingMeta;
     const caveat = meta?.basis?.[en ? "en" : "ko"] || "";
