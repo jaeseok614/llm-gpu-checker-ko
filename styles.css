@@ -9361,3 +9361,59 @@ body.guide-modal-open {
   font-weight: 700;
   color: var(--blue);
 }
+
+/* v7.19 — the plain-class .core-task-switcher/.core-task-actions/
+   .core-task-button tightening above (v7.18) still left two real problems
+   once actually rendered in a browser (jsdom's cascade check can't catch
+   real layout, only which declaration wins):
+   1. #coreTaskSwitcher is a grid item of .app-shell's single-column grid,
+      which defaults to justify-items: stretch, so the switcher's border/
+      background box always spans the full app-shell width even though its
+      buttons only need a fraction of that -- reading as a big lopsided
+      card with dead space on the right instead of a compact tab strip.
+   2. The plain .core-task-button rule apparently isn't reliably winning
+      against the much older, much taller v6-era .core-task-button rules
+      still sitting earlier in this same file (min-height: 132/112/72/60px
+      at various points) once real flexbox/line-wrap layout is involved --
+      not just cascade-order but real rendering disagreed with what the
+      cascade alone predicted. Rather than keep hunting for the exact
+      interaction, scope this with #coreTaskSwitcher so it wins on
+      specificity alone, regardless of source order. */
+#coreTaskSwitcher {
+  width: fit-content;
+  max-width: 100%;
+}
+
+#coreTaskSwitcher .core-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  width: auto;
+}
+
+#coreTaskSwitcher .core-task-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 0;
+  height: auto;
+  padding: 5px 12px;
+  line-height: 1.15;
+}
+
+#coreTaskSwitcher .core-task-button > span {
+  font-size: 12.5px;
+  line-height: 1.15;
+}
+
+#coreTaskSwitcher .core-task-button > small {
+  margin-top: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+#coreTaskSwitcher .core-task-more-toggle {
+  min-height: 0;
+  height: auto;
+}
