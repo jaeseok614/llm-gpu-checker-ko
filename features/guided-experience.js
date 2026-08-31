@@ -18,7 +18,7 @@
         ["여러 사람이 함께 쓸 AI 서비스를 만들 계획이라면", "챗봇, RAG, 이미지, 음성 등 서비스와 사용자 수만 입력합니다.", "3단계 · 약 1분", "infra"],
         ["직접 계산은 필요 없고 다른 사람이 측정한 데이터만 보고 싶다면", "실행 결과를 공유하거나 벤치마크 데이터 현황을 확인합니다.", "제보형 · 선택 사항", "community"],
       ],
-      panelNote: "모르는 전문 용어는 상세 설정을 열기 전에는 입력하지 않아도 됩니다.",
+      panelNote: "모르는 전문 용어는 고급 설정을 열기 전에는 입력하지 않아도 됩니다.",
       wizard: {
         start: {
           question: "지금 실행 환경이 어느 쪽에 가까운가요?",
@@ -67,7 +67,7 @@
         ["If you are planning a service multiple people will use", "Enter only the service type and number of users.", "3 steps · about 1 min", "infra"],
         ["If you just want to browse data others have measured", "Submit a run result or check benchmark coverage.", "Optional · community-submitted", "community"],
       ],
-      panelNote: "You do not need to enter unfamiliar technical terms unless you open detailed settings.",
+      panelNote: "You do not need to enter unfamiliar technical terms unless you open advanced settings.",
       wizard: {
         start: {
           question: "Which is closer to your current setup?",

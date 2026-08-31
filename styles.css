@@ -381,7 +381,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .hardware-topline {
   display: grid;
-  grid-template-columns: minmax(280px, 400px) minmax(260px, 1fr) auto;
+  grid-template-columns: minmax(260px, 1fr) auto;
   align-items: center;
   gap: 18px 24px;
   min-width: 0;
@@ -390,6 +390,20 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
 .primary-gpu-control {
   min-width: 0;
+}
+
+#gpuChangePanel {
+  padding: 0 22px 16px;
+  border-top: 1px solid var(--line);
+}
+
+#gpuChangePanel[hidden] {
+  display: none;
+}
+
+#gpuChangePanel .field {
+  max-width: 360px;
+  padding-top: 14px;
 }
 
 .primary-gpu-control .field {
@@ -2625,6 +2639,7 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
 .hardware-top-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 7px;
 }
 

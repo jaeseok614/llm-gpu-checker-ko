@@ -130,7 +130,7 @@
             </ol>
           </div>
           <div class="guide-wizard-view" data-guide-wizard-view hidden></div>
-          <p>모르는 전문 용어는 상세 설정을 열기 전에는 입력하지 않아도 됩니다.</p>
+          <p>모르는 전문 용어는 고급 설정을 열기 전에는 입력하지 않아도 됩니다.</p>
           <div class="guide-examples" aria-label="예시로 보기">
             <span class="guide-examples-title" data-guide-examples-title>예시로 보기</span>
             <button type="button" class="demo-chip" data-demo-gpu="rtx3060-12">RTX 3060 모델 추천</button>
@@ -171,18 +171,7 @@
 
       <section class="hardware-panel" id="hardwarePanel" aria-label="하드웨어 설정">
         <div class="hardware-topline">
-          <div class="primary-gpu-control">
-            <label class="field">
-              <span>내 GPU</span>
-              <div class="field-control-pair" id="gpuPresetPair">
-                <select id="gpuPreset" aria-label="기본 GPU"></select>
-                <input type="text" id="gpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="GPU 모델명 검색" hidden />
-              </div>
-            </label>
-            <datalist id="gpuFixedPresetOptions"></datalist>
-          </div>
           <div class="hardware-copy">
-            <span class="section-kicker">내 실행 환경</span>
             <strong id="hardwareHeadline">GPU를 선택해 주세요</strong>
             <p class="hardware-meta-line" id="hardwareMeta">GPU 프리셋을 선택하면 추천을 시작합니다.</p>
             <p id="hardwareSubline">선택 즉시 현재 환경에 맞는 모델을 계산합니다.</p>
@@ -190,9 +179,20 @@
             <div class="gpu-runtime-facts" id="gpuRuntimeFacts" hidden></div>
           </div>
           <div class="hardware-top-actions">
-            <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">상세 설정</button>
-            <button type="button" class="primary-button placement-entry-button" id="openPlacementFromHardware">AI 스택 배치</button>
+            <button type="button" class="ghost-button" id="changeGpuButton" aria-expanded="false" aria-controls="gpuChangePanel">GPU 변경</button>
+            <button type="button" class="ghost-button settings-toggle" id="settingsToggle" aria-expanded="false" aria-controls="settingsDrawer">고급 설정</button>
+            <button type="button" class="ghost-button placement-entry-button" id="openPlacementFromHardware">AI 스택 배치</button>
           </div>
+        </div>
+        <div class="primary-gpu-control" id="gpuChangePanel" hidden>
+          <label class="field">
+            <span>내 GPU</span>
+            <div class="field-control-pair" id="gpuPresetPair">
+              <select id="gpuPreset" aria-label="기본 GPU"></select>
+              <input type="text" id="gpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="GPU 모델명 검색" hidden />
+            </div>
+          </label>
+          <datalist id="gpuFixedPresetOptions"></datalist>
         </div>
         <section class="hardware-capability-summary" id="hardwareCapabilitySummary" aria-live="polite" hidden></section>
 

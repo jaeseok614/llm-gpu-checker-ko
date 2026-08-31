@@ -362,6 +362,27 @@ describe("first-visit GPU onboarding", () => {
     assert.equal(fresh.document.getElementById("gpuPresetSearch").hidden, false);
   });
 
+  test("hides the GPU picker behind a Change GPU toggle and collapses it after a real pick", () => {
+    const fresh = loadApp("https://example.com/?gpu=rtx4090-24");
+    const panel = fresh.document.getElementById("gpuChangePanel");
+    const button = fresh.document.getElementById("changeGpuButton");
+    assert.equal(panel.hidden, true);
+    assert.equal(button.getAttribute("aria-expanded"), "false");
+    assert.equal(button.textContent, "GPU 변경");
+
+    button.dispatchEvent(new fresh.MouseEvent("click", { bubbles: true }));
+    assert.equal(panel.hidden, false);
+    assert.equal(button.getAttribute("aria-expanded"), "true");
+    assert.equal(button.textContent, "GPU 변경 닫기");
+
+    const select = fresh.document.getElementById("gpuPreset");
+    select.value = "rtx3060-12";
+    select.dispatchEvent(new fresh.Event("change", { bubbles: true }));
+    assert.equal(panel.hidden, true);
+    assert.equal(button.getAttribute("aria-expanded"), "false");
+    assert.equal(fresh.document.getElementById("hardwareHeadline").textContent.includes("3060"), true);
+  });
+
   test("keeps hardware settings compact and moves placement out of advanced tools", () => {
     const fresh = loadApp();
     fresh.document.getElementById("settingsToggle")
@@ -697,10 +718,10 @@ describe("URL state save / restore", () => {
   test("lang query restores English UI and survives a GPU rerender", () => {
     const english = loadApp("https://example.com/?gpu=rtx4090-24&lang=en");
     assert.equal(english.document.documentElement.lang, "en");
-    assert.equal(english.document.getElementById("settingsToggle").textContent, "Detailed settings");
+    assert.equal(english.document.getElementById("settingsToggle").textContent, "Advanced settings");
     assert.equal(english.document.getElementById("providerFilter").options[0].textContent, "All providers");
     english.document.getElementById("gpuPreset").dispatchEvent(new english.Event("change", { bubbles: true }));
-    assert.equal(english.document.getElementById("settingsToggle").textContent, "Detailed settings");
+    assert.equal(english.document.getElementById("settingsToggle").textContent, "Advanced settings");
     assert.equal(new URLSearchParams(english.location.search).get("lang"), "en");
     assert.match(english.document.querySelector(".placement-advanced-conditions").textContent, /Minimum VRAM headroom/);
     assert.match(english.document.querySelector(".gpu-placement-policy-toggles").textContent, /automatic quantization\/precision changes/);
@@ -1053,7 +1074,7 @@ describe("v1.5 catalog, audio, and model-first experience", () => {
     assert.equal(fresh.document.getElementById("onboardingScreen").hidden, true);
     assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(fresh.document.getElementById("resultsPanel").hidden, true);
-    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /I know which model to run/);
+    assert.match(fresh.document.querySelector('[data-core-task="modelFinder"]').textContent, /GPU that fits my model/);
 
     const selected = loadApp("https://example.com/?gpu=rtx6000ada-48&lang=ko");
     assert.equal(selected.document.getElementById("simpleModePanel").hidden, false);

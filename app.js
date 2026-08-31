@@ -295,6 +295,7 @@ let selectedModelKey = "";
 let simpleExpandedKey = "";
 let viewMode = "list";
 let settingsExpanded = false;
+let gpuChangeExpanded = false;
 let compareKeys = [];
 let compareModalOpen = false;
 let dialogReturnFocus = null;
@@ -519,7 +520,7 @@ function setUiLanguage(language) {
   syncAdvisorCurrencyInputs();
   applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
-  const selectors = [".header-nav a", ".eyebrow", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
+  const selectors = [".header-nav a", ".eyebrow", "#settingsToggle", "#changeGpuButton", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
     const source = node.dataset.i18nSource || node.textContent.trim();
     node.dataset.i18nSource = source;
@@ -1092,6 +1093,12 @@ function bindEvents() {
     refreshWorkloadUi();
   });
 
+  $("changeGpuButton")?.addEventListener("click", () => {
+    gpuChangeExpanded = !gpuChangeExpanded;
+    refreshGpuChangePanel();
+    if (gpuChangeExpanded) $("gpuPreset")?.focus();
+  });
+
   ["vramGb", "gpuCount", "secondaryGpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb", "powerLimitW"].forEach((id) => {
     $(id).addEventListener("input", () => {
       render();
@@ -1189,6 +1196,12 @@ function bindEvents() {
       settingsExpanded = true;
       refreshWorkloadUi();
       $("gpuPresetSearch")?.focus();
+    } else if (selected) {
+      // Collapse the "GPU 변경" panel back once a real preset was chosen, so
+      // the compact summary view is what's shown again -- the whole point of
+      // hiding the picker behind a button is to not leave it open after use.
+      gpuChangeExpanded = false;
+      refreshGpuChangePanel();
     }
   });
 
@@ -1775,10 +1788,20 @@ function setViewMode(nextMode) {
   render();
 }
 
+function refreshGpuChangePanel() {
+  const panel = $("gpuChangePanel");
+  const button = $("changeGpuButton");
+  if (!panel || !button) return;
+  panel.hidden = !gpuChangeExpanded;
+  button.setAttribute("aria-expanded", String(gpuChangeExpanded));
+  button.textContent = gpuChangeExpanded ? t("closeChangeGpu") : t("changeGpu");
+}
+
 function refreshWorkloadUi() {
   $("settingsDrawer").hidden = !settingsExpanded;
   $("settingsToggle").setAttribute("aria-expanded", String(settingsExpanded));
   $("settingsToggle").textContent = settingsExpanded ? t("closeSettings") : t("settings");
+  refreshGpuChangePanel();
 
   document.querySelectorAll("[data-workload-tab]").forEach((button) => {
     const isActive = button.dataset.workloadTab === activeWorkload;
