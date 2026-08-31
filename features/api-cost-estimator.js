@@ -58,6 +58,31 @@
   // "전체 9개 모델 보기" (view all 9) table is currently expanded.
   let viewState = { workload: "general", tier: "balanced", expanded: false };
 
+  // One representative self-hosted (model, reference GPU, quant) per quality
+  // tier -- deliberately a single fixed pick per tier rather than the full
+  // GPU-catalog search the 인프라 견적 (infra sizing) flow does, so this
+  // panel can compute a Local figure from data already loaded at this point
+  // (GENERATIVE_MODELS, GPU_PRESETS, QUANTS, KOREAN_GPU_MARKET -- all bare
+  // globals declared earlier in the <script> load order) without pulling in
+  // platform-v3.js's much heavier QPS/concurrency-driven sizing pipeline.
+  // Q4_K_M is used for economy/balanced; flagship drops to Q3_K_M since
+  // Llama 3.3 70B at Q4_K_M leaves under 3GB of headroom on a 48GB card --
+  // Q3_K_M leaves a more realistic margin for KV cache.
+  const LOCAL_TIER_CONFIG = {
+    economy: { modelName: "Qwen3 8B", gpuId: "rtx4060ti-16", quantId: "q4" },
+    balanced: { modelName: "Qwen2.5 32B Instruct", gpuId: "rtx5090-32", quantId: "q4" },
+    flagship: { modelName: "Llama 3.3 70B Instruct", gpuId: "rtx6000ada-48", quantId: "q3" },
+  };
+  // Assumed light concurrent batching (not user-configurable here -- the
+  // infra flow is where QPS/concurrency become real inputs), the same
+  // batch-efficiency curve infrastructure-sizing.js uses for its own
+  // singleStreamSpeed -> safe-throughput conversion.
+  const LOCAL_BATCH_SIZE = 4;
+  const LOCAL_UTILIZATION_TARGET = 0.7;
+  const LOCAL_ELECTRICITY_KRW_PER_KWH = 150;
+  const LOCAL_MAINTENANCE_PCT = 8;
+  const SECONDS_PER_MONTH = 60 * 60 * 24 * 30;
+
   function providerOptions() {
     return [...new Set(apiModels().map((model) => model.provider))].sort();
   }
@@ -108,6 +133,62 @@
         };
       })
       .sort((a, b) => a.monthlyCostUsd - b.monthlyCostUsd);
+  }
+
+  // Lightweight, self-contained Local (self-hosted GPU) cost estimate for
+  // one quality tier -- deliberately NOT the same pipeline as the infra
+  // sizing flow's sizeCandidate()/choosePlans() (features/infrastructure-sizing.js),
+  // which needs QPS/concurrency/availability inputs this standalone panel
+  // doesn't collect. This mirrors that file's OWN conventions where it can
+  // (bandwidth/required-GB as a single-stream tok/s estimate, a batch-size
+  // -> batchEfficiency curve, purchaseKrw + 3x annual energy + 3x maintenance
+  // for a 3-year TCO, monthly = threeYearTcoKrw / 36) so the two flows stay
+  // conceptually consistent even though this one is much simpler.
+  function estimateLocal(tier, monthlyOutputTokens) {
+    const config = LOCAL_TIER_CONFIG[tier] || LOCAL_TIER_CONFIG.balanced;
+    const models = typeof GENERATIVE_MODELS !== "undefined" ? GENERATIVE_MODELS : [];
+    const gpus = typeof GPU_PRESETS !== "undefined" ? GPU_PRESETS : [];
+    const quants = typeof QUANTS !== "undefined" ? QUANTS : [];
+    const model = models.find((item) => item.name === config.modelName);
+    const gpu = gpus.find((item) => item.id === config.gpuId);
+    const quant = quants.find((item) => item.id === config.quantId);
+    if (!model || !gpu || !quant) return null;
+
+    // ~8% overhead beyond raw quantized weight size, same factor used
+    // elsewhere in the app's own weight-footprint math.
+    const requiredWeightsGb = model.params * quant.bytesPerB * 1.08;
+    const vram = Number(gpu.gpuUsableMemoryGb || gpu.vram || 0);
+    const singleStreamSpeed = Math.max(8, Number(gpu.bandwidth || 0) / Math.max(1, requiredWeightsGb));
+    const batchEfficiency = 1 + Math.log2(LOCAL_BATCH_SIZE) * 0.32;
+    const safeTokS = singleStreamSpeed * batchEfficiency * LOCAL_UTILIZATION_TARGET;
+    const monthlyCapacityPerGpu = safeTokS * SECONDS_PER_MONTH;
+    const gpuCount = Math.max(1, Math.ceil(Math.max(0, Number(monthlyOutputTokens) || 0) / monthlyCapacityPerGpu));
+
+    const market = typeof gpuMarketReference === "function"
+      ? gpuMarketReference(gpu)
+      : { priceUsd: 0, powerW: 300, priceKind: "calculated-reference" };
+    const koreanRows = typeof KOREAN_GPU_MARKET !== "undefined" ? KOREAN_GPU_MARKET : [];
+    const koreanMarket = koreanRows.find((row) => row.gpuId === gpu.id);
+    const unitPriceKrw = koreanMarket?.lowestKrw || koreanMarket?.newKrw || Math.round(market.priceUsd * apiExchangeRate());
+    const priceSource = koreanMarket
+      ? { kind: "korean-market", updatedAt: koreanMarket.updatedAt, url: koreanMarket.sourceUrl }
+      : { kind: market.priceKind, updatedAt: "", url: gpu.sourceUrl || "" };
+
+    const purchaseKrw = unitPriceKrw * gpuCount;
+    const powerW = market.powerW;
+    const annualEnergyKrw = Math.round((powerW / 1000) * 24 * 365 * LOCAL_ELECTRICITY_KRW_PER_KWH * gpuCount);
+    const maintenanceKrw = (purchaseKrw * LOCAL_MAINTENANCE_PCT) / 100;
+    const threeYearTcoKrw = Math.round(purchaseKrw + annualEnergyKrw * 3 + maintenanceKrw * 3);
+    const monthlyLocalKrw = threeYearTcoKrw / 36;
+    const monthlyRunningKrw = annualEnergyKrw / 12 + maintenanceKrw / 12;
+
+    return {
+      tier, model, gpu, quant, gpuCount,
+      requiredWeightsGb, vram, headroomGb: vram - requiredWeightsGb,
+      singleStreamSpeed, safeTokS, monthlyCapacityPerGpu,
+      unitPriceKrw, priceSource, powerW,
+      purchaseKrw, annualEnergyKrw, threeYearTcoKrw, monthlyLocalKrw, monthlyRunningKrw,
+    };
   }
 
   function formatUsd(value) {
@@ -185,6 +266,7 @@
           <table class="studio-table" id="apiCostFullTable"></table>
         </div>
       </div>
+      <div class="api-cost-local" id="apiCostLocal"></div>
       <p class="studio-form-note" id="apiCostCaveat"></p>
       <p id="apiCostBridge"></p>
     `;
@@ -311,6 +393,58 @@
     return `${head}<tbody>${body}</tbody>`;
   }
 
+  // Renders the "자체 구축(Local) 비용" section for the currently selected
+  // tier -- the actual Local content this tab was missing (previously only
+  // a text link out to the separate infra sizing flow). cheapestApiMonthlyKrw
+  // is the cheapest same-tier API model's monthly KRW cost, used both for the
+  // plain cost-comparison sentence and as the payback-months denominator.
+  function renderLocalSection(local, cheapestApiMonthlyKrw, language) {
+    const en = language === "en";
+    if (!local) {
+      return `<p class="api-cost-disclaimer">${en ? "Local reference data is unavailable for this tier." : "이 등급의 Local 참고 데이터를 불러올 수 없습니다."}</p>`;
+    }
+    const priceLabel = local.priceSource.kind === "korean-market"
+      ? (en ? `Korean market price (checked ${local.priceSource.updatedAt})` : `국내 시세 (${local.priceSource.updatedAt} 확인)`)
+      : (en ? "Reference price estimate" : "참고 가격 추정치");
+    const monthlySavingsKrw = cheapestApiMonthlyKrw - local.monthlyLocalKrw;
+    const tierLabel = TIER_LABEL[local.tier]?.[en ? "en" : "ko"] || local.tier;
+    const verdict = monthlySavingsKrw >= 0
+      ? (en
+        ? `Local costs about ${formatKrw(Math.abs(monthlySavingsKrw))} less per month than the cheapest ${tierLabel}-tier API model (3-year amortized).`
+        : `이 등급 API 최저가 대비 Local이 3년 분할 상환 기준 월 약 ${formatKrw(Math.abs(monthlySavingsKrw))} 더 저렴합니다.`)
+      : (en
+        ? `Local costs about ${formatKrw(Math.abs(monthlySavingsKrw))} more per month than the cheapest ${tierLabel}-tier API model (3-year amortized).`
+        : `이 등급 API 최저가 대비 Local이 3년 분할 상환 기준 월 약 ${formatKrw(Math.abs(monthlySavingsKrw))} 더 비쌉니다.`);
+    const paybackDenominator = cheapestApiMonthlyKrw - local.monthlyRunningKrw;
+    const paybackMonths = paybackDenominator > 0 ? Math.ceil(local.purchaseKrw / paybackDenominator) : null;
+    const paybackText = paybackMonths
+      ? (en
+        ? `At this usage level, the hardware cost would pay back in about ${paybackMonths.toLocaleString("en-US")} months compared to paying for the API instead.`
+        : `이 사용량 기준, 하드웨어 구매비는 API를 계속 쓰는 경우와 비교했을 때 약 ${paybackMonths.toLocaleString("ko-KR")}개월 만에 회수됩니다.`)
+      : (en
+        ? "At this usage level, self-hosting wouldn't pay back the hardware cost -- the API stays cheaper."
+        : "이 사용량에서는 자체 구축이 하드웨어 구매비를 회수하지 못합니다 -- API 쪽이 계속 더 저렴합니다.");
+    const sourceLink = local.priceSource.url
+      ? ` -- <a href="${escapeAttr(local.priceSource.url)}" target="_blank" rel="noreferrer">${en ? "source" : "출처"}</a>`
+      : "";
+    return `
+      <h3>${en ? "Self-hosted (Local) cost" : "자체 구축(Local) 비용"}</h3>
+      <div class="simple-data-coverage">
+        <span>${en ? "Reference model" : "기준 모델"} <strong>${escapeHtml(local.model.name)}</strong></span>
+        <span>${en ? "Reference GPU" : "기준 GPU"} <strong>${escapeHtml(local.gpu.name)}${local.gpuCount > 1 ? ` x${local.gpuCount}` : ""}</strong></span>
+        <span>${en ? "Quant" : "양자화"} <strong>${escapeHtml(local.quant.label)}</strong></span>
+        <span>${en ? "Purchase cost" : "구매 비용"} <strong>${escapeHtml(formatKrw(local.purchaseKrw))}</strong></span>
+        <span>${en ? "Monthly (3-yr amortized)" : "월 비용(3년 분할)"} <strong>${escapeHtml(formatKrw(local.monthlyLocalKrw))}</strong></span>
+      </div>
+      <p class="api-cost-local-verdict">${verdict}</p>
+      <p class="api-cost-payback">${paybackText}</p>
+      <p class="api-cost-disclaimer">${en
+        ? `Assumes 24/7 operation, ₩150/kWh electricity, 8%/year maintenance over a 3-year amortization, and a single-stream, memory-bandwidth-based throughput estimate (batch ${LOCAL_BATCH_SIZE}, ${Math.round(LOCAL_UTILIZATION_TARGET * 100)}% utilization). GPU price: ${priceLabel}${sourceLink}.`
+        : `24시간 상시 가동, 전기료 150원/kWh, 유지비 연 8%(3년 분할 상각), 대역폭 기반 단일 스트림 처리량 추정(배치 ${LOCAL_BATCH_SIZE}, 가동률 ${Math.round(LOCAL_UTILIZATION_TARGET * 100)}%) 가정입니다. GPU 가격: ${priceLabel}${sourceLink}.`
+      }</p>
+    `;
+  }
+
   function renderApiCostEstimator() {
     const panel = ensureApiCostPanel();
     if (!panel) return;
@@ -408,13 +542,22 @@
     const filteredRows = applyTableFilterAndSort(allRows);
     panel.querySelector("#apiCostFullTable").innerHTML = renderFullTable(filteredRows, uiLanguage, allRows);
 
+    // Same-tier Local estimate, plus the cheapest same-tier API model's KRW
+    // monthly cost as the comparison baseline for both the plain
+    // cost-difference sentence and the payback-months figure.
+    const cheapestApiMonthlyKrw = compactRows.length
+      ? compactRows.reduce((min, row) => Math.min(min, row.monthlyCostKrw), Infinity)
+      : 0;
+    const localEstimate = estimateLocal(viewState.tier, monthlyOutputTokens);
+    panel.querySelector("#apiCostLocal").innerHTML = renderLocalSection(localEstimate, cheapestApiMonthlyKrw, uiLanguage);
+
     const meta = window.LLM_GPU_CHECKER_DATA?.apiPricingMeta;
     const caveat = meta?.basis?.[en ? "en" : "ko"] || "";
     panel.querySelector("#apiCostCaveat").textContent = `${caveat}${caveat ? " " : ""}${en ? `(checked ${meta?.verifiedAt || ""})` : `(확인일 ${meta?.verifiedAt || ""})`}`;
     panel.querySelector("#apiCostBridge").innerHTML = en
-      ? `Want to compare this against buying your own GPU for the same usage? Try <button type="button" class="ghost-button" data-core-task="infra">the infra sizing estimate</button>.`
-      : `같은 사용량 기준으로 직접 GPU를 사는 비용과 비교하려면 <button type="button" class="ghost-button" data-core-task="infra">인프라 견적</button>에서 확인하세요.`;
+      ? `The Local figures above use one reference GPU per tier. For a precise sizing that accounts for concurrent users and target latency, try <button type="button" class="ghost-button" data-core-task="infra">the infra sizing estimate</button>.`
+      : `위 Local 수치는 등급별 기준 GPU 1종을 기준으로 한 값입니다. 동시 사용자·응답 목표까지 반영한 정밀 견적은 <button type="button" class="ghost-button" data-core-task="infra">인프라 견적</button>에서 확인하세요.`;
   }
 
-  window.AIHardwareApiCost = { estimate, ensureApiCostPanel, renderApiCostEstimator, TIER_LABEL, formatUsd, formatKrw };
+  window.AIHardwareApiCost = { estimate, estimateLocal, ensureApiCostPanel, renderApiCostEstimator, TIER_LABEL, formatUsd, formatKrw };
 })();

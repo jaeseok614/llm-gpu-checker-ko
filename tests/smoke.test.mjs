@@ -379,6 +379,38 @@ test("API vs Local defaults to 3 tier-matched models with a computed usage summa
   app.eval('setUiLanguage("ko");');
 });
 
+test("API vs Local shows a real self-hosted Local cost section, not just a link to the infra flow", () => {
+  app.document.querySelector('[data-core-task="apiCost"]').click();
+  const local = () => app.document.getElementById("apiCostLocal");
+
+  // The default ("balanced") tier should show a real reference model/GPU
+  // combo, a purchase price, and a monthly amortized cost -- not an empty
+  // placeholder or just a link out to the infra sizing flow.
+  assert.match(local().textContent, /Qwen2\.5 32B Instruct/);
+  assert.match(local().textContent, /RTX 5090/);
+  assert.match(local().textContent, /₩[\d,]+/);
+
+  // Switching the quality tier should swap in that tier's own reference
+  // model/GPU (not just relabel the same numbers).
+  app.document.getElementById("apiCostTier").value = "economy";
+  app.document.getElementById("apiCostTier").dispatchEvent(new app.Event("change"));
+  assert.match(local().textContent, /Qwen3 8B/);
+  assert.match(local().textContent, /RTX 4060 Ti/);
+
+  app.document.getElementById("apiCostTier").value = "flagship";
+  app.document.getElementById("apiCostTier").dispatchEvent(new app.Event("change"));
+  assert.match(local().textContent, /Llama 3\.3 70B Instruct/);
+  assert.match(local().textContent, /RTX 6000 Ada/);
+  app.document.getElementById("apiCostTier").value = "balanced";
+  app.document.getElementById("apiCostTier").dispatchEvent(new app.Event("change"));
+
+  // English round trip: no Korean text should leak from this new section.
+  app.eval('setUiLanguage("en");');
+  assert.doesNotMatch(local().textContent, /[가-힣]/);
+  assert.match(local().textContent, /Self-hosted/);
+  app.eval('setUiLanguage("ko");');
+});
+
 test("API vs Local's expanded 9-model table supports provider/tier filtering and column sorting", () => {
   app.document.querySelector('[data-core-task="apiCost"]').click();
   app.document.getElementById("apiCostExpandToggle").click();

@@ -1430,7 +1430,8 @@ html[lang="en"] .simple-mode-head > div:first-child {
   padding: 20px 10px;
 }
 
-.si-api-cost-bridge {
+.si-api-cost-bridge,
+.api-cost-local {
   min-width: 0;
   margin: 18px 0;
   border: 1px solid var(--line);
@@ -1439,11 +1440,13 @@ html[lang="en"] .simple-mode-head > div:first-child {
   background: var(--surface-soft);
 }
 
-.si-api-cost-bridge h3 {
+.si-api-cost-bridge h3,
+.api-cost-local h3 {
   margin: 6px 0 8px;
 }
 
-.si-api-cost-verdict {
+.si-api-cost-verdict,
+.api-cost-local-verdict {
   font-weight: 600;
 }
 
