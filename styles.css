@@ -9345,13 +9345,24 @@ body.guide-modal-open {
       interaction left to go wrong.
    4. v7.20 -- the More▾ dropdown was flattened into two extra flat tabs
       (Stack Planner, API Cost; 6 total instead of 4), and the box was
-      switched from width: fit-content back to width: 100% so its left/
-      right edges always line up exactly with .hardware-panel/.results-
-      panel below instead of floating narrower than them. The fit-content
-      dead-space problem from #1 is far less visible now: the row is a
-      single compact line (not a tall card) and 6 tabs fill much more of
-      it, so a full-width bar reads as a normal toolbar strip rather than
-      a lopsided card. */
+      switched from width: fit-content to width: 100% so its left/right
+      edges line up with .hardware-panel/.results-panel below. That alone
+      reintroduced a real-browser-only bug (unreproducible in jsdom, whose
+      cascade check showed nothing wrong): with .core-task-actions at
+      width: auto relying on the column-direction switcher's align-items:
+      stretch to become full width, and buttons at flex: 0 0 auto (pure
+      shrink-to-fit intrinsic sizing, the same "known flexbox trap"
+      described in #3 above), some browsers' intrinsic-size pass let one
+      button (the active tab) balloon to consume the row while the rest
+      were pushed past the right edge and became invisible -- worse than
+      the plain dead-space problem #1 describes. Fixed by moving off
+      intrinsic sizing entirely: .core-task-actions now has an explicit
+      width: 100% (not inherited via stretch), and every button uses
+      flex: 1 1 auto (standard, unambiguous proportional-grow sizing) with
+      min-width: 0 so they can never overflow the row -- this fills the
+      full-width bar evenly with no leftover dead space and no risk of a
+      single item consuming the line, without depending on any browser's
+      intrinsic max-content computation. */
 #coreTaskSwitcher {
   width: 100%;
 }
@@ -9361,14 +9372,15 @@ body.guide-modal-open {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   align-items: stretch;
-  width: auto;
+  width: 100%;
 }
 
 #coreTaskSwitcher .core-task-button {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
   height: auto;
   padding: 5px 12px;
@@ -9385,7 +9397,11 @@ body.guide-modal-open {
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.15;
-  white-space: nowrap;
+  /* v7.20.1: buttons are now flex: 1 1 auto (can shrink), so forcing
+     white-space: nowrap here (as the earlier fit-content-era fix did)
+     would let this subtitle text overflow past the button's edge once it
+     shrinks below the text's natural width. Letting it wrap is the safe
+     fallback: the button just gets a touch taller instead of clipping. */
 }
 
 @media (max-width: 680px) {
