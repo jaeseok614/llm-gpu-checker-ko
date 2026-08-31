@@ -53,20 +53,24 @@
       <div class="header-inner">
         <button type="button" class="brand-block" data-reset-home>
           <img src="./assets/gpu-board.svg" alt="" class="brand-mark" />
-          <h1>내 GPU에서 돌아가는 AI 모델 찾기</h1>
+          <span class="brand-text">
+            <h1>AI Hardware Fit</h1>
+            <small class="brand-subtitle" id="brandSubtitle">AI 모델·GPU 적합성 분석</small>
+          </span>
         </button>
         <nav class="header-nav" aria-label="상단 메뉴">
           <a href="#calculationBasis">계산 기준</a>
           <a href="https://github.com/jaeseok614/llm-gpu-checker-ko#참고한-공식-자료" target="_blank" rel="noreferrer">데이터 출처</a>
           <a href="#benchmarkSheet">벤치마크</a>
+          <button type="button" class="ghost-button header-guide-button" data-open-start-guide aria-expanded="false" aria-controls="gettingStartedPanel">가이드</button>
           <a class="github-link" href="https://github.com/jaeseok614/llm-gpu-checker-ko" target="_blank" rel="noreferrer">GitHub</a>
           <div class="language-toggle" data-language-toggle role="group" aria-label="언어 선택">
-            <button type="button" data-lang="ko">한국어</button>
+            <button type="button" data-lang="ko">KO</button>
             <button type="button" data-lang="en">EN</button>
           </div>
           <div class="theme-toggle" data-theme-toggle role="group" aria-label="테마 선택">
-            <button type="button" data-theme="light">라이트</button>
-            <button type="button" data-theme="dark">다크</button>
+            <button type="button" data-theme="light" aria-label="라이트">☀</button>
+            <button type="button" data-theme="dark" aria-label="다크">☾</button>
           </div>
         </nav>
       </div>
@@ -74,58 +78,39 @@
 
     <main class="app-shell" id="mainContent" tabindex="-1">
       <section class="core-task-switcher" id="coreTaskSwitcher" aria-label="주요 작업 선택">
-        <div class="core-task-intro">
-          <div>
-            <span class="section-kicker">30초 시작</span>
-            <strong>지금 알고 있는 것 하나만 고르세요</strong>
-            <small>선택한 작업에 필요한 화면만 열고, 다음에 누를 버튼까지 안내합니다.</small>
-          </div>
-          <button type="button" class="ghost-button start-guide-button" data-open-start-guide aria-expanded="false" aria-controls="gettingStartedPanel">처음 사용 가이드</button>
-        </div>
         <div class="core-task-actions" role="tablist" aria-label="주요 작업">
           <button type="button" class="core-task-button is-active" data-core-task="finder" aria-selected="true">
-            <b class="task-choice-number">1</b>
-            <span>GPU가 이미 있어요</span>
-            <small>GPU 선택 → 실행 가능한 모델 추천</small>
-            <em>입력 1개 · 약 10초</em>
+            <span>GPU → Model</span>
+            <small>내 GPU에서 실행 가능한 모델</small>
           </button>
           <button type="button" class="core-task-button" data-core-task="modelFinder" aria-selected="false">
-            <b class="task-choice-number">2</b>
-            <span>실행할 모델을 알아요</span>
-            <small>모델 선택 → 예산에 맞는 GPU 추천</small>
-            <em>입력 2개 · 약 20초</em>
+            <span>Model → GPU</span>
+            <small>모델에 적합한 GPU</small>
           </button>
           <button type="button" class="core-task-button" data-core-task="infra" aria-selected="false">
-            <b class="task-choice-number">3</b>
-            <span>AI 서비스를 만들 거예요</span>
-            <small>서비스·사용자 수 → 전체 장비 간편 견적</small>
-            <em>3단계 · 약 1분</em>
+            <span>Infrastructure</span>
+            <small>AI 서비스 인프라 견적</small>
           </button>
           <button type="button" class="core-task-button" data-core-task="community" aria-selected="false">
-            <b class="task-choice-number">4</b>
-            <span>커뮤니티 데이터</span>
-            <small>실측 결과 제보 · 벤치마크 데이터 현황</small>
-            <em>제보형 · 선택 사항</em>
+            <span>Benchmarks</span>
+            <small>실측·벤치마크 데이터</small>
           </button>
-        </div>
-        <div class="core-task-demos" aria-label="샘플로 시작">
-          <span class="showcase-copy"><strong data-showcase-title>60초 체험</strong><small data-demo-label>입력 없이 결과부터 확인하세요</small></span>
-          <button type="button" class="demo-chip" data-demo-gpu="rtx3060-12">RTX 3060 모델 추천</button>
-          <button type="button" class="demo-chip" data-demo-model="Qwen2.5 32B">Qwen 32B용 GPU 찾기</button>
-          <button type="button" class="demo-chip" data-demo-infra="internal-rag" data-demo-users="30">사내 RAG 30명 견적</button>
-          <button type="button" class="demo-chip" data-demo-placement="1">Llama 70B+임베딩 2장 배치</button>
-          <a class="showcase-feedback" data-showcase-feedback target="_blank" rel="noopener noreferrer">써보고 불편한 점 보내기</a>
-          <details class="advanced-entry">
-            <summary>고급 도구</summary>
-            <button type="button" data-core-task="placement">
-              <span>여러 모델 함께 배치</span>
-              <small>LLM·RAG·VLM·음성 모델을 여러 GPU에 배치</small>
+          <div class="core-task-more" data-core-task-more>
+            <button type="button" class="core-task-button core-task-more-toggle" data-more-toggle aria-haspopup="true" aria-expanded="false">
+              <span>More</span>
+              <small>▾</small>
             </button>
-            <button type="button" data-core-task="apiCost">
-              <span>API 비용 계산기</span>
-              <small>GPU 없이 API로 쓸 때 월 비용 비교(OpenAI·Anthropic·Google)</small>
-            </button>
-          </details>
+            <div class="core-task-more-menu" data-more-menu role="menu" hidden>
+              <button type="button" data-core-task="placement" role="menuitem">
+                <span>Stack Planner</span>
+                <small>여러 모델 함께 배치</small>
+              </button>
+              <button type="button" data-core-task="apiCost" role="menuitem">
+                <span>API Cost</span>
+                <small>API 비용 계산기</small>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="guide-modal-backdrop" id="guideModalBackdrop" hidden></div>
         <div class="getting-started-panel" id="gettingStartedPanel" role="dialog" aria-modal="true" aria-label="처음 사용 가이드" hidden>
@@ -146,15 +131,14 @@
           </div>
           <div class="guide-wizard-view" data-guide-wizard-view hidden></div>
           <p>모르는 전문 용어는 상세 설정을 열기 전에는 입력하지 않아도 됩니다.</p>
-        </div>
-        <details class="catalog-request-center">
-          <summary>찾는 GPU나 모델이 없나요?</summary>
-          <div>
-            <span><b>1</b> 이름 중복 확인</span><span><b>2</b> 공식 출처 확인</span><span><b>3</b> 데이터 검토</span><span><b>4</b> 다음 릴리스 반영</span>
+          <div class="guide-examples" aria-label="예시로 보기">
+            <span class="guide-examples-title" data-guide-examples-title>예시로 보기</span>
+            <button type="button" class="demo-chip" data-demo-gpu="rtx3060-12">RTX 3060 모델 추천</button>
+            <button type="button" class="demo-chip" data-demo-model="Qwen2.5 32B">Qwen 32B용 GPU 찾기</button>
+            <button type="button" class="demo-chip" data-demo-infra="internal-rag" data-demo-users="30">사내 RAG 30명 견적</button>
+            <button type="button" class="demo-chip" data-demo-placement="1">Llama 70B+임베딩 2장 배치</button>
           </div>
-          <p>요청 전에 검색창에서 별칭까지 확인합니다. 새 항목은 공식 제품·모델 링크가 있으면 더 빠르게 검토할 수 있습니다.</p>
-          <nav><a data-catalog-request="gpu" target="_blank" rel="noopener noreferrer">GPU 추가 요청</a><a data-catalog-request="model" target="_blank" rel="noopener noreferrer">모델 추가 요청</a><a data-catalog-request="price" target="_blank" rel="noopener noreferrer">국내 가격 제보</a><a data-catalog-status="open" target="_blank" rel="noopener noreferrer">처리 중 요청 보기</a><a data-catalog-status="completed" target="_blank" rel="noopener noreferrer">반영 완료 보기</a></nav>
-        </details>
+        </div>
       </section>
 
       <nav class="workspace-journey" id="workspaceJourney" aria-label="현재 작업 진행 단계" aria-live="polite"></nav>
@@ -964,7 +948,21 @@
     <div class="compare-modal" id="compareModal" role="dialog" aria-modal="true" aria-label="모델 비교" hidden></div>
 
     <footer class="app-footer" id="calculationBasis">
-      <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실제 측정과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>
+      <div class="footer-section footer-contribute" id="footerContribute">
+        <h3>기여하기</h3>
+        <details class="catalog-request-center">
+          <summary>찾는 GPU나 모델이 없나요?</summary>
+          <div>
+            <span><b>1</b> 이름 중복 확인</span><span><b>2</b> 공식 출처 확인</span><span><b>3</b> 데이터 검토</span><span><b>4</b> 다음 릴리스 반영</span>
+          </div>
+          <p>요청 전에 검색창에서 별칭까지 확인합니다. 새 항목은 공식 제품·모델 링크가 있으면 더 빠르게 검토할 수 있습니다.</p>
+          <nav><a data-catalog-request="gpu" target="_blank" rel="noopener noreferrer">GPU 추가 요청</a><a data-catalog-request="model" target="_blank" rel="noopener noreferrer">모델 추가 요청</a><a data-catalog-request="price" target="_blank" rel="noopener noreferrer">국내 가격 제보</a><a data-catalog-status="open" target="_blank" rel="noopener noreferrer">처리 중 요청 보기</a><a data-catalog-status="completed" target="_blank" rel="noopener noreferrer">반영 완료 보기</a></nav>
+        </details>
+        <a class="showcase-feedback" data-showcase-feedback target="_blank" rel="noopener noreferrer">써보고 불편한 점 보내기</a>
+      </div>
+      <div class="footer-section footer-disclaimer">
+        <span>계산값은 로컬 추정치입니다. 실제 결과는 <strong>모델 아키텍처(MoE·attention 구조 등)</strong>, 드라이버, CUDA/ROCm, 프레임워크, 배치 크기, 예약 VRAM, KV cache, OCR 전처리 설정에 따라 크게 달라질 수 있으며, 특히 속도(tok/s)는 실제 측정과 배 단위로 차이가 날 수 있으니 상대 비교·참고용으로만 사용하세요.</span>
+      </div>
     </footer>
     <div class="app-toast" id="appToast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 

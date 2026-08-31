@@ -390,23 +390,22 @@ function refreshCoreTaskUi() {
     button.classList.toggle("is-active", active);
     if (button.closest("[role='tablist']")) button.setAttribute("aria-selected", String(active));
   });
+  const moreToggle = document.querySelector("[data-more-toggle]");
+  if (moreToggle) moreToggle.classList.toggle("is-active", placementActive || apiCostActive);
   const finderButton = document.querySelector('.core-task-actions [data-core-task="finder"]');
   if (finderButton) {
     finderButton.querySelector("span").textContent = uiText("core.finder.title");
     finderButton.querySelector("small").textContent = uiText("core.finder.note");
-    finderButton.querySelector("em").textContent = uiText("core.finder.time");
   }
   const modelFinderButton = document.querySelector('[data-core-task="modelFinder"]');
   if (modelFinderButton) {
     modelFinderButton.querySelector("span").textContent = uiText("core.modelFinder.title");
     modelFinderButton.querySelector("small").textContent = uiText("core.modelFinder.note");
-    modelFinderButton.querySelector("em").textContent = uiText("core.modelFinder.time");
   }
     const infraButton = document.querySelector('[data-core-task="infra"]');
   if (infraButton) {
     infraButton.querySelector("span").textContent = uiText("core.infra.title");
       infraButton.querySelector("small").textContent = uiText("core.infra.note");
-      infraButton.querySelector("em").textContent = uiText("core.infra.time");
     }
     const placementButton = document.querySelector('[data-core-task="placement"]');
     if (placementButton) {
@@ -417,7 +416,6 @@ function refreshCoreTaskUi() {
     if (communityButton) {
       communityButton.querySelector("span").textContent = uiText("core.community.title");
       communityButton.querySelector("small").textContent = uiText("core.community.note");
-      communityButton.querySelector("em").textContent = uiText("core.community.time");
     }
     const apiCostButton = document.querySelector('[data-core-task="apiCost"]');
     if (apiCostButton) {
@@ -521,7 +519,7 @@ function setUiLanguage(language) {
   syncAdvisorCurrencyInputs();
   applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
-  const selectors = [".header-nav a", ".eyebrow", "h1", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
+  const selectors = [".header-nav a", ".eyebrow", "#settingsToggle", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
     const source = node.dataset.i18nSource || node.textContent.trim();
     node.dataset.i18nSource = source;
@@ -598,7 +596,7 @@ function setUiLanguage(language) {
   const workspaceJourney = $("workspaceJourney");
   if (workspaceJourney) workspaceJourney.setAttribute("aria-label", uiLanguage === "en" ? "Current task progress" : "현재 작업 진행 단계");
   document.querySelectorAll("[data-theme-toggle] [data-theme]").forEach((button) => {
-    button.textContent = THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage];
+    button.setAttribute("aria-label", THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage]);
   });
   // Same deal for the placement-strategy tabs: set explicitly (after the
   // generic sweep above) rather than relying on it, since "모델 수 우선"
@@ -688,7 +686,7 @@ function setUiTheme(theme) {
       const active = button.dataset.theme === uiTheme;
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
-      button.textContent = THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage];
+      button.setAttribute("aria-label", THEME_TOGGLE_LABELS[button.dataset.theme][uiLanguage]);
     });
   }
 }
@@ -957,6 +955,36 @@ function refreshFilterOptions() {
   $("searchInput").placeholder = t("searchModel");
 }
 
+function closeCoreTaskMoreMenu() {
+  const wrapper = document.querySelector("[data-core-task-more]");
+  const menu = document.querySelector("[data-more-menu]");
+  const toggle = document.querySelector("[data-more-toggle]");
+  if (!wrapper || !menu || !toggle) return;
+  menu.hidden = true;
+  wrapper.classList.remove("is-open");
+  toggle.setAttribute("aria-expanded", "false");
+}
+
+function bindCoreTaskMoreMenu() {
+  const wrapper = document.querySelector("[data-core-task-more]");
+  const menu = document.querySelector("[data-more-menu]");
+  const toggle = document.querySelector("[data-more-toggle]");
+  if (!wrapper || !menu || !toggle) return;
+  toggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const willOpen = menu.hidden;
+    menu.hidden = !willOpen;
+    wrapper.classList.toggle("is-open", willOpen);
+    toggle.setAttribute("aria-expanded", String(willOpen));
+  });
+  document.addEventListener("click", (event) => {
+    if (!menu.hidden && !wrapper.contains(event.target)) closeCoreTaskMoreMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !menu.hidden) closeCoreTaskMoreMenu();
+  });
+}
+
 function bindEvents() {
   // The header logo/title acts as a "home" link, matching the conventional
   // click-logo-to-go-home pattern most sites use: reset to the default
@@ -971,6 +999,7 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     button.addEventListener("click", () => {
+      closeCoreTaskMoreMenu();
       if (button.dataset.coreTask === "infra" && typeof window.loadInfrastructureStudio === "function") {
         window.AIHardwareUI?.announce(uiLanguage === "en" ? "Loading the infrastructure workspace…" : "인프라 견적 화면을 불러오는 중입니다.");
         window.loadInfrastructureStudio().then(() => setCoreTaskMode("infra")).catch(() => {});
@@ -979,6 +1008,7 @@ function bindEvents() {
       setCoreTaskMode(button.dataset.coreTask);
     });
   });
+  bindCoreTaskMoreMenu();
   document.querySelectorAll("[data-demo-gpu]").forEach((button) => {
     button.addEventListener("click", () => {
       const selected = selectPrimaryGpu(button.dataset.demoGpu, { persist: true });

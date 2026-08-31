@@ -75,11 +75,11 @@ before(() => {
 
 test("v7.1 key catalog survives Korean-English-Korean round trips", () => {
   app.setUiLanguage("ko");
-  const korean = app.document.querySelector(".core-task-intro strong").textContent;
+  const korean = app.document.querySelector("#brandSubtitle").textContent;
   app.setUiLanguage("en");
-  assert.equal(app.document.querySelector(".core-task-intro strong").textContent, "Choose the one thing you already know");
+  assert.equal(app.document.querySelector("#brandSubtitle").textContent, "GPU · Model · Infrastructure Workbench");
   app.setUiLanguage("ko");
-  assert.equal(app.document.querySelector(".core-task-intro strong").textContent, korean);
+  assert.equal(app.document.querySelector("#brandSubtitle").textContent, korean);
   assert.ok(app.AIHardwareI18n.audit().keyedNodes >= 20);
   assert.deepEqual(Array.from(app.AIHardwareI18n.audit().missing), []);
 });
@@ -115,18 +115,20 @@ test("v7.5 terminal results are sanitized before submission", () => {
 
 after(() => dom?.window.close());
 
-test("first screen presents four beginner choices and one advanced placement tool", () => {
-  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 4);
-  assert.ok(app.document.querySelector('.advanced-entry [data-core-task="placement"]'));
-  assert.ok(app.document.querySelector('.advanced-entry [data-core-task="apiCost"]'));
+test("first screen presents a flat tool-switcher tab bar plus a More menu with the advanced tools", () => {
+  assert.equal(app.document.querySelectorAll(".core-task-actions > [data-core-task]").length, 4);
+  assert.equal(app.document.querySelectorAll(".task-choice-number").length, 0);
+  assert.ok(app.document.querySelector('.core-task-more-menu [data-core-task="placement"]'));
+  assert.ok(app.document.querySelector('.core-task-more-menu [data-core-task="apiCost"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
   assert.ok(app.document.querySelector('[data-demo-placement]'));
-  assert.equal(app.document.querySelectorAll(".core-task-button .task-choice-number").length, 4);
   assert.ok(app.document.getElementById("workspaceJourney"));
-  assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60초/);
+  assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /예시로 보기/);
   assert.match(app.document.querySelector("[data-showcase-feedback]").href, /product-feedback\.yml/);
+  assert.ok(app.document.querySelector("[data-open-start-guide]"));
+  assert.ok(app.document.querySelector(".app-header [data-open-start-guide]"));
 });
 
 test("locale helpers and price data trust remain deterministic", () => {
@@ -624,12 +626,12 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.document.querySelector('[data-si-input-mode="simple"]').click();
   app.eval('setUiLanguage("en"); setCoreTaskMode("infra");');
   app.document.querySelector('[data-studio-tab="consulting"]').click();
-  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /I know which model to run/);
-  assert.match(app.document.querySelector(".core-task-intro").textContent, /Choose the one thing you already know/);
+  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /GPU that fits my model/);
+  assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /Models that run on my GPU/);
   assert.match(app.document.querySelector("[data-demo-infra]").textContent, /30-user internal RAG estimate/);
-  assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /[가-힣]/);
+  assert.doesNotMatch(app.document.querySelector(".core-task-actions").textContent, /[가-힣]/);
   assert.match(app.document.querySelector(".si-simple-wizard").textContent, /three steps/i);
-  assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60-second/);
+  assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /Try examples/);
   assert.match(app.document.querySelector("[data-showcase-feedback]").textContent, /Send workflow feedback/);
   app.document.querySelector('[data-si-input-mode="expert"]').click();
   assert.match(app.document.querySelector('[data-si-input-mode="expert"]').textContent, /Detailed estimate/);
@@ -655,10 +657,10 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.eval('setUiLanguage("ko"); setCoreTaskMode("infra");');
   app.document.querySelector('[data-studio-tab="consulting"]').click();
   app.document.querySelector('[data-si-input-mode="expert"]').click();
-  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /실행할 모델을 알아요/);
-  assert.match(app.document.querySelector("[data-showcase-title]").textContent, /60초/);
-  assert.match(app.document.querySelector(".core-task-intro").textContent, /지금 알고 있는 것 하나만 고르세요/);
-  assert.doesNotMatch(app.document.querySelector(".core-task-switcher").textContent, /I know which|Choose the one/);
+  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /모델에 적합한 GPU/);
+  assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /예시로 보기/);
+  assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /내 GPU에서 실행 가능한 모델/);
+  assert.doesNotMatch(app.document.querySelector(".core-task-actions").textContent, /GPU that fits|Models that run/);
   assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "KRW");
   assert.match(app.document.getElementById("siElectricityKrw").closest("label").textContent, /원\/kWh/);
   assert.equal(Number(app.document.getElementById("siElectricityKrw").value), 150);

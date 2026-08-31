@@ -9039,3 +9039,181 @@ body.guide-modal-open {
     height: auto !important;
   }
 }
+
+/* v7.17 — flat header + tool-switcher tab bar (replaces the numbered
+   onboarding-card layout with a compact row of tabs, moves the guide
+   trigger into the header, and folds Stack Planner/API Cost into a
+   "More" dropdown). Appended at the end of the cascade so it wins over
+   the earlier v6.0 onboarding-card rules without having to touch every
+   scattered responsive block above. */
+
+.brand-block {
+  gap: 10px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brand-text h1 {
+  font-size: 17px;
+}
+
+.brand-subtitle {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.header-guide-button {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.core-task-switcher {
+  position: relative;
+  padding: 8px;
+}
+
+.core-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  grid-template-columns: none;
+  align-items: stretch;
+  gap: 6px;
+  width: auto;
+}
+
+.core-task-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  grid-template-columns: none;
+  gap: 1px;
+  min-height: 0;
+  padding: 7px 14px;
+  border-radius: 10px;
+}
+
+.core-task-button.is-active {
+  padding: 7px 14px;
+  border-width: 1px;
+}
+
+.core-task-button > span {
+  font-size: 13px;
+}
+
+.core-task-button > small {
+  grid-column: auto;
+  margin-top: 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.core-task-more {
+  position: relative;
+}
+
+.core-task-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--panel-raised);
+  box-shadow: 0 16px 32px rgba(15, 23, 32, 0.2);
+}
+
+.core-task-more-menu[hidden] {
+  display: none;
+}
+
+.core-task-more-menu button {
+  min-height: 0;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+}
+
+.core-task-more-menu button:hover {
+  border-color: transparent;
+  background: var(--blue-soft);
+}
+
+.core-task-more-toggle.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.guide-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.guide-examples-title {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.app-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer-section {
+  width: 100%;
+}
+
+.footer-contribute {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.footer-contribute .catalog-request-center {
+  flex: 1 1 420px;
+}
+
+.footer-contribute .showcase-feedback {
+  margin-left: 0;
+}
+
+@media (max-width: 680px) {
+  .core-task-actions {
+    flex-direction: column;
+  }
+  .core-task-button {
+    width: 100%;
+  }
+  .core-task-more-menu {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+}

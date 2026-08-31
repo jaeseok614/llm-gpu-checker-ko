@@ -1,30 +1,22 @@
 /** Extracted in v7.1 to keep the core bundle focused. */
 const UI_COPY_V15 = {
-  "core.intro.kicker": { ko: "30초 시작", en: "START IN 30 SECONDS" },
-  "core.intro.title": { ko: "지금 알고 있는 것 하나만 고르세요", en: "Choose the one thing you already know" },
-  "core.intro.note": { ko: "선택한 작업에 필요한 화면만 열고, 다음에 누를 버튼까지 안내합니다.", en: "We open only the workspace you need and show what to do next." },
-  "core.finder.title": { ko: "GPU가 이미 있어요", en: "I already have a GPU" },
-  "core.finder.note": { ko: "GPU 선택 → 실행 가능한 모델 추천", en: "Choose a GPU → get runnable model picks" },
-  "core.finder.time": { ko: "입력 1개 · 약 10초", en: "1 input · about 10 sec" },
-  "core.modelFinder.title": { ko: "실행할 모델을 알아요", en: "I know which model to run" },
-  "core.modelFinder.note": { ko: "모델 선택 → 예산에 맞는 GPU 추천", en: "Choose a model → find GPUs in budget" },
-  "core.modelFinder.time": { ko: "입력 2개 · 약 20초", en: "2 inputs · about 20 sec" },
-  "core.infra.title": { ko: "AI 서비스를 만들 거예요", en: "I am building an AI service" },
-  "core.infra.note": { ko: "서비스·사용자 수 → 전체 장비 간편 견적", en: "Service and users → complete system estimate" },
-  "core.infra.time": { ko: "3단계 · 약 1분", en: "3 steps · about 1 min" },
-  "core.placement.title": { ko: "여러 모델 함께 배치", en: "Place multiple models together" },
-  "core.placement.note": { ko: "LLM·RAG·VLM·음성 모델을 여러 GPU에 배치", en: "Place LLM, RAG, VLM, and voice models across GPUs" },
-  "core.community.title": { ko: "커뮤니티 데이터", en: "Community data" },
-  "core.community.note": { ko: "실측 결과 제보 · 벤치마크 데이터 현황", en: "Submit measurements · benchmark coverage" },
-  "core.community.time": { ko: "제보형 · 선택 사항", en: "Optional · community-submitted" },
-  "core.apiCost.title": { ko: "API 비용 계산기", en: "API cost calculator" },
-  "core.apiCost.note": { ko: "GPU 없이 API로 쓸 때 월 비용 비교(OpenAI·Anthropic·Google)", en: "Compare monthly cost of using hosted APIs instead of a GPU (OpenAI, Anthropic, Google)" },
-  "core.advanced": { ko: "고급 도구", en: "Advanced tools" },
+  "core.finder.title": { ko: "GPU → Model", en: "GPU → Model" },
+  "core.finder.note": { ko: "내 GPU에서 실행 가능한 모델", en: "Models that run on my GPU" },
+  "core.modelFinder.title": { ko: "Model → GPU", en: "Model → GPU" },
+  "core.modelFinder.note": { ko: "모델에 적합한 GPU", en: "GPU that fits my model" },
+  "core.infra.title": { ko: "Infrastructure", en: "Infrastructure" },
+  "core.infra.note": { ko: "AI 서비스 인프라 견적", en: "AI service infrastructure sizing" },
+  "core.placement.title": { ko: "Stack Planner", en: "Stack Planner" },
+  "core.placement.note": { ko: "여러 모델 함께 배치", en: "Plan multi-model GPU placement" },
+  "core.community.title": { ko: "Benchmarks", en: "Benchmarks" },
+  "core.community.note": { ko: "실측·벤치마크 데이터", en: "Measured benchmark data" },
+  "core.apiCost.title": { ko: "API Cost", en: "API Cost" },
+  "core.apiCost.note": { ko: "API 비용 계산기", en: "API cost calculator" },
+  "core.more": { ko: "더보기", en: "More" },
   "core.aria.section": { ko: "주요 작업 선택", en: "Choose a primary task" },
   "core.aria.tabs": { ko: "주요 작업", en: "Primary tasks" },
-  "core.aria.demos": { ko: "샘플로 시작", en: "Start with a sample" },
   "core.demo.gpu": { ko: "RTX 3060 모델 추천", en: "RTX 3060 model picks" },
-  "core.demo.label": { ko: "입력 없이 체험:", en: "Try without typing:" },
+  "core.demo.examplesTitle": { ko: "예시로 보기", en: "Try examples" },
   "core.demo.model": { ko: "Qwen 32B용 GPU 찾기", en: "Find a GPU for Qwen 32B" },
   "core.demo.infra": { ko: "사내 RAG 30명 견적", en: "30-user internal RAG estimate" },
   "core.demo.placement": { ko: "Llama 70B+임베딩 2장 배치", en: "Llama 70B + embedding on 2 GPUs" },
@@ -42,17 +34,10 @@ function uiText(key) {
 }
 function applyV15Translations() {
   const en = uiLanguage === "en";
-  const intro = document.querySelector(".core-task-intro > div");
-  if (intro) {
-    const [kicker, title, note] = intro.children;
-    if (kicker) kicker.textContent = uiText("core.intro.kicker");
-    if (title) title.textContent = uiText("core.intro.title");
-    if (note) note.textContent = uiText("core.intro.note");
-  }
   const gpuDemo = document.querySelector("[data-demo-gpu]");
   if (gpuDemo) gpuDemo.textContent = uiText("core.demo.gpu");
-  const demoLabel = document.querySelector("[data-demo-label]");
-  if (demoLabel) demoLabel.textContent = uiText("core.demo.label");
+  const examplesTitle = document.querySelector("[data-guide-examples-title]");
+  if (examplesTitle) examplesTitle.textContent = uiText("core.demo.examplesTitle");
   const infraDemo = document.querySelector("[data-demo-infra]");
   if (infraDemo) infraDemo.textContent = uiText("core.demo.infra");
   const modelDemo = document.querySelector("[data-demo-model]");
@@ -60,10 +45,8 @@ function applyV15Translations() {
   const taskSection = document.querySelector(".core-task-switcher");
   taskSection?.setAttribute("aria-label", uiText("core.aria.section"));
   taskSection?.querySelector(".core-task-actions")?.setAttribute("aria-label", uiText("core.aria.tabs"));
-  const demos = taskSection?.querySelector(".core-task-demos");
-  demos?.setAttribute("aria-label", uiText("core.aria.demos"));
-  const advancedSummary = demos?.querySelector(".advanced-entry > summary");
-  if (advancedSummary) advancedSummary.textContent = uiText("core.advanced");
+  const moreToggleLabel = document.querySelector("[data-more-toggle] > span");
+  if (moreToggleLabel) moreToggleLabel.textContent = uiText("core.more");
   if ($("advisorCurrentPriceLabel")) $("advisorCurrentPriceLabel").textContent = uiText("advisor.currentPrice");
   Object.assign(WORKLOAD_META.audioStt, {
     label: uiText("workload.audioStt"),
