@@ -7,32 +7,38 @@
   padding-block: 10px;
 }
 
-.core-task-switcher.is-collapsed .core-task-intro,
-.core-task-switcher.is-collapsed .core-task-demos,
-.core-task-switcher.is-collapsed .getting-started-panel,
-.core-task-switcher.is-collapsed .catalog-request-center {
-  display: none;
-}
+/* v7.20.3: this rule dates from the v6.1-v6.6 guided-workspace design,
+   where .core-task-intro/.core-task-demos/.catalog-request-center all used
+   to live directly inside .core-task-switcher and got hidden once the user
+   had already picked a task (is-collapsed). All three have since moved out
+   (the intro/demos blocks were removed entirely; catalog-request-center now
+   lives in the footer, per earlier refactors) -- so of the four selectors
+   here, only ".getting-started-panel" still matches anything, and it's a
+   real bug: #coreTaskSwitcher gets .is-collapsed applied any time a GPU is
+   already selected (setStarted(true), the normal case for a returning
+   visitor), and this rule's (0,3,0) specificity beats the panel's own
+   .getting-started-panel[hidden] rule regardless of source order -- so
+   clicking the header's "가이드"/"Getting started" button correctly clears
+   the panel's [hidden] attribute (confirmed via toggleGuide()'s own DOM
+   state), but the panel stays forced to display:none here and never
+   actually becomes visible. Removed entirely since none of its targets are
+   still valid children of .core-task-switcher. */
 
-.core-task-switcher.is-collapsed .core-task-actions {
-  display: block;
-}
-
-.core-task-switcher.is-collapsed .core-task-button:not(.is-active) {
-  display: none;
-}
-
-.core-task-switcher.is-collapsed .core-task-button.is-active {
-  min-height: 58px;
-  width: 100%;
-  grid-template-columns: auto minmax(140px, auto) 1fr auto;
-  align-items: center;
-}
-
-.core-task-switcher.is-collapsed .core-task-button.is-active small,
-.core-task-switcher.is-collapsed .core-task-button.is-active em {
-  margin: 0;
-}
+/* v7.20.3: the rest of this "collapse to a single active pill, hide the
+   other tabs" v6 design is also dead against the current always-show-all-6
+   -flat-tabs layout -- #coreTaskSwitcher's later ID-scoped rules for
+   .core-task-actions/.core-task-button always win the cascade for display,
+   so .core-task-actions never actually becomes display:block and inactive
+   buttons never actually get display:none here. The one exception was
+   dangerous rather than just inert: .core-task-button.is-active's
+   width: 100% has no ID-scoped counterpart to lose to, so it silently WAS
+   still winning and setting the active tab's flex-basis (via flex: 1 1
+   auto, whose auto basis defers to width) to 100% of the row whenever
+   .is-collapsed was applied -- which is any time a GPU is already selected,
+   the normal case for a returning visitor. That's the same "one tab
+   balloons, the rest lose space" failure mode fixed for the non-collapsed
+   case in v7.20.1, just still lurking here for the collapsed case. Removed
+   the whole group since none of it matches the current design's intent. */
 
 .workspace-journey [data-change-path] {
   margin-inline-start: auto;
@@ -205,15 +211,6 @@
 }
 
 @media (max-width: 760px) {
-  .core-task-switcher.is-collapsed .core-task-button.is-active {
-    grid-template-columns: auto 1fr;
-  }
-
-  .core-task-switcher.is-collapsed .core-task-button.is-active small,
-  .core-task-switcher.is-collapsed .core-task-button.is-active em {
-    grid-column: 2;
-  }
-
   .price-coverage-note,
   .evidence-coverage-note {
     align-items: stretch;

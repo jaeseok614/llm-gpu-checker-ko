@@ -922,3 +922,56 @@ test("the header logo acts as a home link, resetting to the default beginner mod
   assert.ok(app.document.body.classList.contains("finder-task-active"));
   assert.ok(!app.document.body.classList.contains("guided-workspace-started"), "the task chooser should be shown again after clicking the logo");
 });
+
+test("the getting-started guide panel actually becomes visible when opened after a GPU is already selected (is-collapsed)", () => {
+  // Regression test for a real bug: styles/v6-guided.css had a leftover rule
+  // from before the guide button moved into the header --
+  // ".core-task-switcher.is-collapsed .getting-started-panel { display: none; }"
+  // -- with (0,3,0) specificity, which beats the panel's own
+  // ".getting-started-panel[hidden] { display: none; }" rule regardless of
+  // source order. #coreTaskSwitcher gets .is-collapsed applied any time a
+  // GPU is already selected (the normal state for a returning visitor, via
+  // setStarted(true)), so toggleGuide() correctly cleared the panel's
+  // [hidden] attribute (which the existing DOM-only assertions below would
+  // still show as false) but the panel stayed forced to display:none and
+  // never actually appeared -- clicking "가이드"/"Getting started" looked
+  // completely broken. jsdom's own <link> tags don't load external
+  // stylesheets, so this test injects the real cascade (all 3 files, in
+  // their <link> order) into a fresh DOM and checks computed style, the
+  // only way to actually catch a cross-file specificity bug like this one
+  // (plain DOM/attribute assertions can't see it, since the JS side was
+  // always working correctly).
+  const css = [read("styles.css"), read("styles/components.css"), read("styles/v6-guided.css")].join("\n");
+  const cssDom = new JSDOM(read("index.html"), { pretendToBeVisual: true });
+  const doc = cssDom.window.document;
+  const styleTag = doc.createElement("style");
+  styleTag.textContent = css;
+  doc.head.appendChild(styleTag);
+
+  const switcher = doc.getElementById("coreTaskSwitcher");
+  switcher.classList.add("is-collapsed"); // simulates a GPU already being selected
+  const panel = doc.getElementById("gettingStartedPanel");
+  panel.hidden = false; // simulates toggleGuide() opening it
+
+  assert.notEqual(
+    cssDom.window.getComputedStyle(panel).display,
+    "none",
+    "the guide panel should render once opened, even when the tab bar is in its is-collapsed state",
+  );
+
+  // The same leftover rule block also forced width: 100% onto the active
+  // tab specifically while collapsed, which -- since .core-task-button is
+  // flex: 1 1 auto, whose auto flex-basis defers to an explicit width --
+  // would make that one tab's flex-basis 100% of the row while its 5
+  // siblings kept their content-sized basis: the same "one tab balloons"
+  // failure mode fixed in v7.20.1, just still lurking for the collapsed
+  // case. Confirm it no longer sets an explicit width.
+  const activeButton = doc.querySelector(".core-task-button.is-active");
+  assert.notEqual(
+    cssDom.window.getComputedStyle(activeButton).width,
+    "100%",
+    "the active tab should not get an explicit 100% width while the tab bar is collapsed",
+  );
+
+  cssDom.window.close();
+});
