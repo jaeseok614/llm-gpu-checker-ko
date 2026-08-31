@@ -12,10 +12,10 @@
       guideViewToggle: { list: "질문으로 찾기", wizard: "목록으로 보기" },
       guideWizardBack: "← 다시 선택",
       panelSteps: [
-        ["GPU는 있는데 뭘 돌릴 수 있는지 궁금하다면", "GPU 이름만 선택하면 바로 실행할 수 있는 모델 3개를 보여줍니다.", "입력 1개 · 약 10초", "finder"],
-        ["실행할 모델은 정했는데 어떤 GPU가 필요한지 모른다면", "실행할 모델과 예산을 고르면 적합한 GPU를 비교합니다.", "입력 2개 · 약 20초", "modelFinder"],
-        ["여러 사람이 함께 쓸 AI 서비스를 만들 계획이라면", "챗봇, RAG, 이미지, 음성 등 서비스와 사용자 수만 입력합니다.", "3단계 · 약 1분", "infra"],
-        ["직접 계산은 필요 없고 다른 사람이 측정한 데이터만 보고 싶다면", "실행 결과를 공유하거나 벤치마크 데이터 현황을 확인합니다.", "제보형 · 선택 사항", "community"],
+        ["GPU는 있는데 뭘 돌릴 수 있는지 궁금하다면", "GPU 이름만 선택하면 바로 실행할 수 있는 모델 3개를 보여줍니다.", "finder"],
+        ["실행할 모델은 정했는데 어떤 GPU가 필요한지 모른다면", "실행할 모델과 예산을 고르면 적합한 GPU를 비교합니다.", "modelFinder"],
+        ["여러 사람이 함께 쓸 AI 서비스를 만들 계획이라면", "챗봇, RAG, 이미지, 음성 등 서비스와 사용자 수만 입력합니다.", "infra"],
+        ["직접 계산은 필요 없고 다른 사람이 측정한 데이터만 보고 싶다면", "실행 결과를 공유하거나 벤치마크 데이터 현황을 확인합니다.", "community"],
       ],
       panelNote: "모르는 전문 용어는 고급 설정을 열기 전에는 입력하지 않아도 됩니다.",
       wizard: {
@@ -60,10 +60,10 @@
       guideViewToggle: { list: "Find by answering questions", wizard: "Show the list" },
       guideWizardBack: "← Start over",
       panelSteps: [
-        ["If you have a GPU and want to know what it can run", "Choose its name to see three models that can run immediately.", "1 input · about 10 sec", "finder"],
-        ["If you know which model to run but not which GPU to buy", "Choose a model and budget to compare suitable GPUs.", "2 inputs · about 20 sec", "modelFinder"],
-        ["If you are planning a service multiple people will use", "Enter only the service type and number of users.", "3 steps · about 1 min", "infra"],
-        ["If you just want to browse data others have measured", "Submit a run result or check benchmark coverage.", "Optional · community-submitted", "community"],
+        ["If you have a GPU and want to know what it can run", "Choose its name to see three models that can run immediately.", "finder"],
+        ["If you know which model to run but not which GPU to buy", "Choose a model and budget to compare suitable GPUs.", "modelFinder"],
+        ["If you are planning a service multiple people will use", "Enter only the service type and number of users.", "infra"],
+        ["If you just want to browse data others have measured", "Submit a run result or check benchmark coverage.", "community"],
       ],
       panelNote: "You do not need to enter unfamiliar technical terms unless you open advanced settings.",
       wizard: {
@@ -127,8 +127,8 @@
   let guideView = "list";
   let wizardNode = "start";
 
-  function guideStepMarkup([heading, detail, meta, mode]) {
-    return `<li><button type="button" class="guide-step-button" data-guide-select="${mode}"><b>${heading}</b><span>${detail}</span><em>${meta}</em></button></li>`;
+  function guideStepMarkup([heading, detail, mode]) {
+    return `<li><button type="button" class="guide-step-button" data-guide-select="${mode}"><b>${heading}</b><span>${detail}</span></button></li>`;
   }
 
   function renderGuideList() {

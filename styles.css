@@ -7932,7 +7932,12 @@ body.guide-modal-open {
 
 .guide-step-button {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) auto;
+  /* v7.20.4: dropped the trailing "auto" column, which used to hold a
+     <em> "입력 1개 · 약 10초"-style time/step-count tag. Feedback called
+     these out as reading like generic AI-generated filler rather than
+     something a person would actually write, so the tag (and its data)
+     were removed entirely instead of just restyled. */
+  grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: 4px 16px;
   width: 100%;
@@ -7982,23 +7987,9 @@ body.guide-modal-open {
   line-height: 1.5;
 }
 
-.getting-started-panel li em {
-  justify-self: end;
-  color: var(--blue);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 @media (max-width: 720px) {
   .guide-step-button {
     grid-template-columns: 26px 1fr;
-  }
-
-  .guide-step-button em {
-    grid-column: 2;
-    justify-self: start;
   }
 }
 
@@ -9136,12 +9127,25 @@ body.guide-modal-open {
 
 .guide-examples {
   display: flex;
-  flex-wrap: wrap;
+  /* v7.20.4: this used to be flex-wrap: wrap, which let the 4th demo chip
+     ("Llama 70B+임베딩 2장 배치") spill onto its own near-empty second line
+     -- flagged as looking broken/unfinished. Rather than gamble on shrinking
+     chip text to fit an arbitrary panel width (fragile across locales and
+     zoom levels, per this file's other "known flexbox trap" notes), keep
+     the row on one line and let it scroll horizontally if it doesn't fit,
+     the same safe pattern used for e.g. horizontally-scrolling tab strips. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
   align-items: center;
   gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+.guide-examples-title,
+.guide-examples .demo-chip {
+  flex: 0 0 auto;
 }
 
 .guide-examples-title {
