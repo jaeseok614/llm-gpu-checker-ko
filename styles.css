@@ -9315,3 +9315,47 @@ body.guide-modal-open {
     width: 100%;
   }
 }
+
+/* v7.18 — "API vs Local": Quality-first tier view, workload hint, and the
+   computed "비교 조건" (comparison conditions) summary. */
+
+.api-cost-tier-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.api-cost-usage-summary {
+  justify-content: flex-start;
+  max-width: none;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.api-cost-expand-toggle {
+  margin-top: 10px;
+}
+
+.api-cost-expanded {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.api-cost-payback {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.api-cost-disclaimer {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.si-api-cost-dimensions td.is-favorable {
+  font-weight: 700;
+  color: var(--blue);
+}

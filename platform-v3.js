@@ -1577,6 +1577,61 @@ function renderApiCostComparison(plans) {
         </tr>`).join("")}</tbody>
       </table></div>`
     : "";
+  // Payback period: how many months of hosted-API payments the hardware's
+  // upfront purchase price would need to "earn back" via monthly savings,
+  // ignoring the purchase price itself in the monthly-savings figure (only
+  // ongoing running cost -- energy, facility, maintenance/support -- is
+  // netted against the API's monthly bill). Reuses the same monthly
+  // running-cost formula as calculateTcoComparison()'s on-prem branch, so
+  // this stays consistent with the on-prem-vs-cloud comparison elsewhere in
+  // the same studio rather than introducing a second, slightly different
+  // notion of "monthly hardware cost".
+  const monthlyRunningKrw = recommended.annualEnergyKrw / 12
+    + studioState.siFacilityKrwMonth
+    + recommended.purchaseKrw * (studioState.siMaintenancePct + studioState.siSupportPct) / 1200;
+  const monthlySavingsKrw = cheapest.monthlyCostKrw - monthlyRunningKrw;
+  const paybackMonths = monthlySavingsKrw > 0 ? recommended.purchaseKrw / monthlySavingsKrw : null;
+  const paybackSentence = paybackMonths
+    ? (en
+        ? `Buying this hardware upfront (${studioMoney(recommended.purchaseKrw)}) would pay for itself in about ${Math.ceil(paybackMonths)} months of avoided ${cheapest.name} bills, after which self-hosting keeps saving roughly ${studioMoney(monthlySavingsKrw)}/month.`
+        : `이 하드웨어를 구매하는 비용(${studioMoney(recommended.purchaseKrw)})은 ${cheapest.name} 이용료를 아낀 것으로 약 ${Math.ceil(paybackMonths)}개월이면 회수되고, 그 이후로는 매달 약 ${studioMoney(monthlySavingsKrw)}씩 계속 절약됩니다.`)
+    : (en
+        ? `At this usage level, ${cheapest.name} alone costs less per month than just running this hardware (before counting its purchase price) -- self-hosting would not pay for itself here.`
+        : `이 사용량에서는 ${cheapest.name} 요금이 이 하드웨어를 운영만 하는 비용(구매비 제외)보다도 낮아, 자체 구축이 구매 비용을 회수하지 못합니다.`);
+  // Year-by-year cumulative cost, complementing the volume-based breakeven
+  // above with a calendar-time view: "if usage stays roughly the same, which
+  // option has spent less by the end of year 1/2/3".
+  const yearRows = [1, 2, 3].map((year) => {
+    const apiCumulativeKrw = cheapest.monthlyCostKrw * 12 * year;
+    const selfHostCumulativeKrw = recommended.purchaseKrw + monthlyRunningKrw * 12 * year;
+    return { year, apiCumulativeKrw, selfHostCumulativeKrw, selfHostCheaper: selfHostCumulativeKrw < apiCumulativeKrw };
+  });
+  const yearTable = `
+    <div class="studio-table-wrap"><table class="studio-table si-api-cost-scale">
+      <thead><tr><th>${en ? "By end of" : "누적 시점"}</th><th>${en ? "Self-hosted (cumulative)" : "자체 구축 (누적)"}</th><th>${cheapest.name} (${en ? "cumulative" : "누적"})</th></tr></thead>
+      <tbody>${yearRows.map((row) => `<tr>
+        <td>${en ? `Year ${row.year}` : `${row.year}년차`}</td>
+        <td class="${row.selfHostCheaper ? "is-cheapest" : ""}">${studioMoney(row.selfHostCumulativeKrw)}</td>
+        <td class="${!row.selfHostCheaper ? "is-cheapest" : ""}">${studioMoney(row.apiCumulativeKrw)}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
+  // Exactly the cost side of the comparison so far -- this line exists so
+  // the numbers above are never mistaken for a claim that the cheapest
+  // tracked API model and the recommended local model perform equivalently;
+  // this panel only ever compares what each option costs at the same usage,
+  // never what either one is actually capable of.
+  const qualityDisclaimer = en
+    ? `This is a cost-only comparison at the same usage level -- it does not mean ${cheapest.name} and the recommended local setup produce comparable quality or capability.`
+    : `이 비교는 동일 사용량 기준 "비용"만 비교한 것으로, ${cheapest.name}과 추천 로컬 구성의 성능·품질이 동등하다는 의미는 아닙니다.`;
+  const dimensionsTable = `
+    <div class="studio-table-wrap"><table class="studio-table si-api-cost-dimensions">
+      <thead><tr><th>${en ? "" : ""}</th><th>${en ? "Hosted API" : "API"}</th><th>${en ? "Self-hosted" : "자체 구축"}</th></tr></thead>
+      <tbody>
+        <tr><td>${en ? "Upfront cost" : "초기 비용"}</td><td class="is-favorable">${en ? "None -- pay only for usage" : "없음 (사용한 만큼만 지불)"}</td><td>${en ? `${studioMoney(recommended.purchaseKrw)} upfront` : `${studioMoney(recommended.purchaseKrw)} 선구매 필요`}</td></tr>
+        <tr><td>${en ? "Data leaves the premises" : "데이터 외부 전송"}</td><td>${en ? "Every request goes to the provider's servers" : "요청마다 제공사 서버로 전송됨"}</td><td class="is-favorable">${en ? "Stays on-site -- no request leaves the network" : "사내에서만 처리 (외부 전송 없음)"}</td></tr>
+        <tr><td>${en ? "Operational burden" : "운영 부담"}</td><td class="is-favorable">${en ? "None -- the provider runs it" : "없음 (제공사가 운영)"}</td><td>${en ? "You install, run, and maintain it" : "직접 설치·운영·유지보수 필요"}</td></tr>
+      </tbody>
+    </table></div>`;
   return `
     <div class="si-api-cost-bridge">
       <div><span class="section-kicker">${en ? "BUILD VS BUY" : "자체 구축 vs API"}</span><h3>${en ? "Same usage, hosted-API cost" : "같은 사용량 기준 API 이용료"}</h3>
@@ -1587,6 +1642,10 @@ function renderApiCostComparison(plans) {
         : (en ? "At this usage level, self-hosting looks cheaper on a pure monthly-cost basis over the 3-year horizon." : "이 사용량에서는 3년 기준으로 볼 때 자체 구축이 단순 월 비용 면에서 더 저렴합니다.")}</p>
       ${breakevenSentence ? `<p class="si-api-cost-breakeven">${breakevenSentence}</p>` : ""}
       ${scaleTable}
+      <p class="api-cost-payback">${paybackSentence}</p>
+      ${yearTable}
+      <p class="api-cost-disclaimer">${qualityDisclaimer}</p>
+      ${dimensionsTable}
       <button type="button" class="ghost-button" data-core-task="apiCost">${en ? "Compare all tracked API models →" : "추적 중인 API 전체 비교하기 →"}</button>
       </div>
     </div>`;

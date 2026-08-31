@@ -311,25 +311,51 @@ test("the multi-model placement demo chip seeds two GPUs and both models", () =>
   app.eval('placementSelectedKeys = new Set(); gpuInventoryRows = []; placementInventorySeeded = false;');
 });
 
-test("the API cost calculator is a standalone mode separate from the GPU catalog", () => {
+test("API vs Local defaults to 3 tier-matched models with a computed usage summary, and can expand to all 9", () => {
   app.document.querySelector('[data-core-task="apiCost"]').click();
   assert.equal(app.document.body.classList.contains("api-cost-task-active"), true);
   assert.equal(app.document.getElementById("apiCostPanel").hidden, false);
-  const rows = app.document.querySelectorAll("#apiCostTable tbody tr");
-  // 3 providers (OpenAI, Anthropic, Google) x 3 tiers (flagship/balanced/economy) each.
-  assert.equal(rows.length, 9);
+  assert.match(app.document.getElementById("apiCostTitle").textContent, /API vs Local/);
+
+  // Default view: exactly 3 models (one per provider) matching the
+  // Quality selector's default tier ("balanced"), not all 9 upfront.
+  const compactRows = () => app.document.querySelectorAll("#apiCostTable tbody tr");
+  assert.equal(compactRows().length, 3);
+  assert.equal(app.document.getElementById("apiCostTier").value, "balanced");
+  [...compactRows()].forEach((row) => assert.match(row.cells[2].textContent, /균형형/));
   const cheapestRow = app.document.querySelector("#apiCostTable tbody tr.is-cheapest");
-  assert.ok(cheapestRow, "cheapest row should be flagged");
-  // Every row must be cheaper than or equal to every other row's cost -- i.e.
-  // the table is actually sorted ascending, not just labeled. Read the cost
-  // back out of the rendered "Monthly cost" cell's leading "$..." figure
-  // (index 5) -- naively stripping all non-digit characters from the whole
-  // cell would also swallow the parenthetical KRW figure next to it and
-  // produce a garbled, meaningless number.
-  const parsedCosts = [...rows].map((row) => Number(row.cells[5].textContent.match(/\$([\d,]+\.?\d*)/)[1].replace(/,/g, "")));
-  for (let i = 1; i < parsedCosts.length; i += 1) {
-    assert.ok(parsedCosts[i] >= parsedCosts[i - 1], `row ${i} (${parsedCosts[i]}) should not be cheaper than row ${i - 1} (${parsedCosts[i - 1]})`);
-  }
+  assert.ok(cheapestRow, "the cheapest of the 3 shown models should be flagged, even though it isn't the globally cheapest model");
+
+  // "비교 조건" (comparison conditions): plain computed numbers, not framed
+  // as an AI "해석" of the inputs -- every figure should be a deterministic
+  // function of the 3 usage fields plus the selected quality tier.
+  const summary = app.document.getElementById("apiCostUsageSummary").textContent;
+  assert.match(summary, /100,000/); // monthly requests
+  assert.match(summary, /200,000,000/); // monthly input tokens = requests x 2,000
+  assert.match(summary, /50,000,000/); // monthly output tokens = requests x 500
+  assert.match(summary, /250,000,000/); // total throughput
+  assert.match(summary, /균형형/); // selected quality tier
+
+  // Choosing a workload pre-selects (but does not lock) a typical tier for it.
+  app.document.getElementById("apiCostWorkload").value = "coding";
+  app.document.getElementById("apiCostWorkload").dispatchEvent(new app.Event("change"));
+  assert.equal(app.document.getElementById("apiCostTier").value, "flagship");
+  assert.equal(compactRows().length, 3);
+  [...compactRows()].forEach((row) => assert.match(row.cells[2].textContent, /플래그십/));
+  assert.match(app.document.getElementById("apiCostTierHint").textContent, /코딩.*플래그십/);
+
+  // "전체 9개 모델 보기" expands to the full catalog with the provider/tier
+  // filter and sortable columns; collapsing goes back to the compact view.
+  const expandToggle = app.document.getElementById("apiCostExpandToggle");
+  assert.equal(app.document.getElementById("apiCostExpanded").hidden, true);
+  expandToggle.click();
+  assert.equal(app.document.getElementById("apiCostExpanded").hidden, false);
+  assert.equal(app.document.querySelectorAll("#apiCostFullTable tbody tr").length, 9);
+  expandToggle.click();
+  assert.equal(app.document.getElementById("apiCostExpanded").hidden, true);
+  assert.equal(compactRows().length, 3, "collapsing back should restore the compact tier-matched view");
+  app.document.getElementById("apiCostWorkload").value = "general";
+  app.document.getElementById("apiCostWorkload").dispatchEvent(new app.Event("change"));
 
   // Changing usage inputs should recompute the table (not just relabel it).
   const before = app.document.getElementById("apiCostTable").textContent;
@@ -348,9 +374,10 @@ test("the API cost calculator is a standalone mode separate from the GPU catalog
   app.eval('setUiLanguage("ko");');
 });
 
-test("API cost calculator table supports provider/tier filtering and column sorting", () => {
+test("API vs Local's expanded 9-model table supports provider/tier filtering and column sorting", () => {
   app.document.querySelector('[data-core-task="apiCost"]').click();
-  const table = () => app.document.getElementById("apiCostTable");
+  app.document.getElementById("apiCostExpandToggle").click();
+  const table = () => app.document.getElementById("apiCostFullTable");
   const providerSelect = app.document.getElementById("apiCostProviderFilter");
   const tierSelect = app.document.getElementById("apiCostTierFilter");
   assert.ok(providerSelect, "a provider filter should exist");
@@ -451,6 +478,60 @@ test("build-vs-buy comparison shows a breakeven point and a usage-scaling table"
   assert.equal(hardwareCosts[0], hardwareCosts[1]);
   assert.equal(hardwareCosts[1], hardwareCosts[2]);
   assert.equal(hardwareCosts[2], hardwareCosts[3]);
+  app.eval('setCoreTaskMode("finder");');
+});
+
+test("build-vs-buy comparison also shows a hardware payback period, year-by-year totals, and a non-cost comparison table", () => {
+  app.eval('setCoreTaskMode("infra");');
+  const bridge = app.document.querySelector(".si-api-cost-bridge");
+  assert.ok(bridge);
+
+  // Payback period: how many months the hardware's upfront cost takes to
+  // be recovered via avoided API bills (or an explicit "won't pay for
+  // itself here" sentence when the API is cheaper than just running the
+  // hardware, ignoring its purchase price).
+  const payback = bridge.querySelector(".api-cost-payback");
+  assert.ok(payback, "a payback-period sentence should be shown");
+  // At the default usage level the cheapest tracked API (economy tier) can
+  // cost less than just running the hardware, so payback is "never" here --
+  // accept either that sentence or an actual N-month figure, since which one
+  // applies depends on today's tracked API prices vs the recommended plan's
+  // running cost, not on anything this test controls.
+  assert.match(payback.textContent, /개월|month|회수하지 못|not pay for itself/);
+
+  // Year-by-year cumulative cost table (1/2/3 years), complementing the
+  // volume-based breakeven with a calendar-time view.
+  const yearTables = [...bridge.querySelectorAll(".si-api-cost-scale")];
+  const yearTable = yearTables.find((table) => table.textContent.includes("1년차") || table.textContent.includes("Year 1"));
+  assert.ok(yearTable, "a year-by-year cumulative cost table should be shown");
+  const yearRows = [...yearTable.querySelectorAll("tbody tr")];
+  assert.equal(yearRows.length, 3);
+  const parseMoney = (text) => Number(text.replace(/[^0-9.]/g, ""));
+  const selfHostByYear = yearRows.map((row) => parseMoney(row.cells[1].textContent));
+  const apiByYear = yearRows.map((row) => parseMoney(row.cells[2].textContent));
+  // Self-hosted cumulative cost grows by a fixed monthly running cost each
+  // year (purchase price is a one-time cost in year 0), so successive years
+  // must increase by the same amount; the API's cumulative cost must scale
+  // linearly (3x by year 3) since its per-request rate never changes.
+  assert.ok(selfHostByYear[1] - selfHostByYear[0] > 0);
+  assert.ok(Math.abs((selfHostByYear[2] - selfHostByYear[1]) - (selfHostByYear[1] - selfHostByYear[0])) < 1);
+  assert.ok(Math.abs(apiByYear[2] / apiByYear[0] - 3) < 0.05);
+
+  // Non-quality-equivalence disclaimer: the comparison above is cost-only
+  // and must not read as a claim that the cheapest tracked API model and
+  // the recommended local setup perform equivalently.
+  const disclaimer = bridge.querySelector(".api-cost-disclaimer");
+  assert.ok(disclaimer, "a cost-only / not-quality-equivalent disclaimer should be shown");
+  assert.match(disclaimer.textContent, /동일 사용량 기준|비용만|cost-only/);
+
+  // The 3 non-cost comparison dimensions: upfront cost, whether data leaves
+  // the premises, and operational burden.
+  const dimensionsTable = bridge.querySelector(".si-api-cost-dimensions");
+  assert.ok(dimensionsTable, "a non-cost comparison table should be shown");
+  assert.match(dimensionsTable.textContent, /초기 비용/);
+  assert.match(dimensionsTable.textContent, /데이터 외부 전송/);
+  assert.match(dimensionsTable.textContent, /운영 부담/);
+
   app.eval('setCoreTaskMode("finder");');
 });
 
