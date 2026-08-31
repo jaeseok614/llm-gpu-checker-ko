@@ -109,7 +109,7 @@ try {
     check(state.purposeWorkload === "audioTts", `${width}x${height}: TTS purpose state was not restored`);
     check(state.purposeValues.includes("voiceCloning"), `${width}x${height}: voice-cloning purpose is missing`);
     check(state.cardTypes.length > 0 && state.cardTypes.every((type) => type === "audio-tts"), `${width}x${height}: recommendation crossed workload boundaries`);
-    check(state.taskButtons === 4, `${width}x${height}: beginner task count changed`);
+    check(state.taskButtons === 6, `${width}x${height}: beginner task count changed`);
 
     if (width === 1280 && axePath) {
       await page.addScriptTag({ path: axePath });
