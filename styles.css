@@ -9363,22 +9363,35 @@ body.guide-modal-open {
 }
 
 /* v7.19 — the plain-class .core-task-switcher/.core-task-actions/
-   .core-task-button tightening above (v7.18) still left two real problems
-   once actually rendered in a browser (jsdom's cascade check can't catch
-   real layout, only which declaration wins):
+   .core-task-button tightening above (v7.18) still left real problems once
+   actually rendered in a browser (jsdom's cascade check only proves which
+   declaration wins on paper, not real layout):
    1. #coreTaskSwitcher is a grid item of .app-shell's single-column grid,
       which defaults to justify-items: stretch, so the switcher's border/
       background box always spans the full app-shell width even though its
       buttons only need a fraction of that -- reading as a big lopsided
       card with dead space on the right instead of a compact tab strip.
-   2. The plain .core-task-button rule apparently isn't reliably winning
-      against the much older, much taller v6-era .core-task-button rules
-      still sitting earlier in this same file (min-height: 132/112/72/60px
-      at various points) once real flexbox/line-wrap layout is involved --
-      not just cascade-order but real rendering disagreed with what the
-      cascade alone predicted. Rather than keep hunting for the exact
-      interaction, scope this with #coreTaskSwitcher so it wins on
-      specificity alone, regardless of source order. */
+   2. Found the real cause of the remaining tallness: an ancient rule,
+      ".core-task-switcher > div:first-child { flex: 0 1 310px; }" (this
+      file's very first .core-task-switcher block, from when the switcher
+      was a row with a narrow 310px-wide text intro next to the button
+      grid). #coreTaskSwitcher is flex-direction: column now, so that same
+      310px "flex-basis" -- .core-task-actions is the switcher's first
+      child div -- gets applied to HEIGHT instead of width, forcing the
+      button row itself to ~310px tall, which then stretches every button
+      inside it via align-items: stretch. Overridden with an explicit
+      flex: 0 0 auto on #coreTaskSwitcher .core-task-actions below.
+   3. A first attempt at #1 used width: fit-content directly on the
+      flex-wrap: wrap row. That combination is a known flexbox trap: with
+      wrap allowed, a browser's intrinsic (shrink-to-fit) width pass can
+      size the row to fit only its single widest item, so that one item
+      (here, whichever tab is .is-active) fills the whole line alone and
+      balloons in both directions while the rest wrap below it -- worse
+      than the original dead-space problem. Fixed by keeping the row
+      nowrap (natural content width, single line) and only wrapping to a
+      stacked column below the 680px breakpoint, where #coreTaskSwitcher
+      is forced back to width: 100% so there's no fit-content/wrap
+      interaction left to go wrong. */
 #coreTaskSwitcher {
   width: fit-content;
   max-width: 100%;
@@ -9386,7 +9399,8 @@ body.guide-modal-open {
 
 #coreTaskSwitcher .core-task-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   align-items: stretch;
   width: auto;
 }
@@ -9395,6 +9409,7 @@ body.guide-modal-open {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  flex: 0 0 auto;
   min-height: 0;
   height: auto;
   padding: 5px 12px;
@@ -9411,9 +9426,28 @@ body.guide-modal-open {
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.15;
+  white-space: nowrap;
+}
+
+#coreTaskSwitcher .core-task-more {
+  flex: 0 0 auto;
 }
 
 #coreTaskSwitcher .core-task-more-toggle {
   min-height: 0;
   height: auto;
+}
+
+@media (max-width: 680px) {
+  #coreTaskSwitcher {
+    width: 100%;
+  }
+
+  #coreTaskSwitcher .core-task-actions {
+    flex-wrap: wrap;
+  }
+
+  #coreTaskSwitcher .core-task-button > small {
+    white-space: normal;
+  }
 }
