@@ -9134,50 +9134,6 @@ body.guide-modal-open {
   line-height: 1.15;
 }
 
-.core-task-more {
-  position: relative;
-}
-
-.core-task-more-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 210px;
-  padding: 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--panel-raised);
-  box-shadow: 0 16px 32px rgba(15, 23, 32, 0.2);
-}
-
-.core-task-more-menu[hidden] {
-  display: none;
-}
-
-.core-task-more-menu button {
-  min-height: 0;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  text-align: left;
-}
-
-.core-task-more-menu button:hover {
-  border-color: transparent;
-  background: var(--blue-soft);
-}
-
-.core-task-more-toggle.is-active {
-  border-color: var(--blue);
-  background: var(--blue-soft);
-  color: var(--blue);
-}
-
 .guide-examples {
   display: flex;
   flex-wrap: wrap;
@@ -9226,11 +9182,6 @@ body.guide-modal-open {
     flex-direction: column;
   }
   .core-task-button {
-    width: 100%;
-  }
-  .core-task-more-menu {
-    left: 0;
-    right: auto;
     width: 100%;
   }
 }
@@ -9391,10 +9342,18 @@ body.guide-modal-open {
       nowrap (natural content width, single line) and only wrapping to a
       stacked column below the 680px breakpoint, where #coreTaskSwitcher
       is forced back to width: 100% so there's no fit-content/wrap
-      interaction left to go wrong. */
+      interaction left to go wrong.
+   4. v7.20 -- the More▾ dropdown was flattened into two extra flat tabs
+      (Stack Planner, API Cost; 6 total instead of 4), and the box was
+      switched from width: fit-content back to width: 100% so its left/
+      right edges always line up exactly with .hardware-panel/.results-
+      panel below instead of floating narrower than them. The fit-content
+      dead-space problem from #1 is far less visible now: the row is a
+      single compact line (not a tall card) and 6 tabs fill much more of
+      it, so a full-width bar reads as a normal toolbar strip rather than
+      a lopsided card. */
 #coreTaskSwitcher {
-  width: fit-content;
-  max-width: 100%;
+  width: 100%;
 }
 
 #coreTaskSwitcher .core-task-actions {
@@ -9427,15 +9386,6 @@ body.guide-modal-open {
   font-weight: 600;
   line-height: 1.15;
   white-space: nowrap;
-}
-
-#coreTaskSwitcher .core-task-more {
-  flex: 0 0 auto;
-}
-
-#coreTaskSwitcher .core-task-more-toggle {
-  min-height: 0;
-  height: auto;
 }
 
 @media (max-width: 680px) {

@@ -736,7 +736,7 @@ describe("URL state save / restore", () => {
     assert.match(modelControls, /Preferred setting/);
     assert.doesNotMatch(modelControls, /선호|요청 비율|최소 동시|GPU 고정/);
 
-    english.document.querySelector(".core-task-more-menu [data-core-task='placement']")
+    english.document.querySelector(".core-task-actions [data-core-task='placement']")
       .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
     english.document.querySelector("[data-placement-starter='rag']")
       .dispatchEvent(new english.MouseEvent("click", { bubbles: true }));
@@ -1180,8 +1180,8 @@ describe("v2.2 user build calculator", () => {
 describe("v3.7 infrastructure sizing and multimodal stack", () => {
   test("opens infrastructure sizing as a separate beginner-first workspace", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko", {}, { platformV2: true });
-    assert.equal(platform.document.querySelectorAll(".core-task-actions > [data-core-task]").length, 4);
-    assert.ok(platform.document.querySelector(".core-task-more-menu [data-core-task='placement']"));
+    assert.equal(platform.document.querySelectorAll(".core-task-actions > [data-core-task]").length, 6);
+    assert.ok(platform.document.querySelector(".core-task-actions > [data-core-task='placement']"));
     assert.equal(platform.document.querySelector("#gpuAdvisorPanel").hidden, true);
     assert.equal(platform.document.querySelector("#resultsPanel").previousElementSibling.id, "hardwarePanel");
     assert.equal(platform.document.querySelector("#decisionStudio").hidden, true);

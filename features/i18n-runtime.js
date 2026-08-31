@@ -12,7 +12,6 @@ const UI_COPY_V15 = {
   "core.community.note": { ko: "실측·벤치마크 데이터", en: "Measured benchmark data" },
   "core.apiCost.title": { ko: "API Cost", en: "API Cost" },
   "core.apiCost.note": { ko: "API 비용 계산기", en: "API cost calculator" },
-  "core.more": { ko: "더보기", en: "More" },
   "core.aria.section": { ko: "주요 작업 선택", en: "Choose a primary task" },
   "core.aria.tabs": { ko: "주요 작업", en: "Primary tasks" },
   "core.demo.gpu": { ko: "RTX 3060 모델 추천", en: "RTX 3060 model picks" },
@@ -45,8 +44,6 @@ function applyV15Translations() {
   const taskSection = document.querySelector(".core-task-switcher");
   taskSection?.setAttribute("aria-label", uiText("core.aria.section"));
   taskSection?.querySelector(".core-task-actions")?.setAttribute("aria-label", uiText("core.aria.tabs"));
-  const moreToggleLabel = document.querySelector("[data-more-toggle] > span");
-  if (moreToggleLabel) moreToggleLabel.textContent = uiText("core.more");
   if ($("advisorCurrentPriceLabel")) $("advisorCurrentPriceLabel").textContent = uiText("advisor.currentPrice");
   Object.assign(WORKLOAD_META.audioStt, {
     label: uiText("workload.audioStt"),

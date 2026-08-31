@@ -95,22 +95,14 @@
             <span>Benchmarks</span>
             <small>실측·벤치마크 데이터</small>
           </button>
-          <div class="core-task-more" data-core-task-more>
-            <button type="button" class="core-task-button core-task-more-toggle" data-more-toggle aria-haspopup="true" aria-expanded="false">
-              <span>More</span>
-              <small>▾</small>
-            </button>
-            <div class="core-task-more-menu" data-more-menu role="menu" hidden>
-              <button type="button" data-core-task="placement" role="menuitem">
-                <span>Stack Planner</span>
-                <small>여러 모델 함께 배치</small>
-              </button>
-              <button type="button" data-core-task="apiCost" role="menuitem">
-                <span>API Cost</span>
-                <small>API 비용 계산기</small>
-              </button>
-            </div>
-          </div>
+          <button type="button" class="core-task-button" data-core-task="placement" aria-selected="false">
+            <span>Stack Planner</span>
+            <small>여러 모델 함께 배치</small>
+          </button>
+          <button type="button" class="core-task-button" data-core-task="apiCost" aria-selected="false">
+            <span>API Cost</span>
+            <small>API 비용 계산기</small>
+          </button>
         </div>
         <div class="guide-modal-backdrop" id="guideModalBackdrop" hidden></div>
         <div class="getting-started-panel" id="gettingStartedPanel" role="dialog" aria-modal="true" aria-label="처음 사용 가이드" hidden>

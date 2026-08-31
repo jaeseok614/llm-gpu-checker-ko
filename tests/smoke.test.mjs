@@ -115,11 +115,12 @@ test("v7.5 terminal results are sanitized before submission", () => {
 
 after(() => dom?.window.close());
 
-test("first screen presents a flat tool-switcher tab bar plus a More menu with the advanced tools", () => {
-  assert.equal(app.document.querySelectorAll(".core-task-actions > [data-core-task]").length, 4);
+test("first screen presents a flat tool-switcher tab bar with all tools visible (no More menu)", () => {
+  assert.equal(app.document.querySelectorAll(".core-task-actions > [data-core-task]").length, 6);
   assert.equal(app.document.querySelectorAll(".task-choice-number").length, 0);
-  assert.ok(app.document.querySelector('.core-task-more-menu [data-core-task="placement"]'));
-  assert.ok(app.document.querySelector('.core-task-more-menu [data-core-task="apiCost"]'));
+  assert.equal(app.document.querySelector("[data-more-toggle]"), null);
+  assert.ok(app.document.querySelector('.core-task-actions > [data-core-task="placement"]'));
+  assert.ok(app.document.querySelector('.core-task-actions > [data-core-task="apiCost"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
