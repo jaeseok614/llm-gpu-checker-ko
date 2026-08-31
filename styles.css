@@ -8156,19 +8156,19 @@ body.guide-modal-open {
   color: var(--green);
 }
 
-.workspace-journey li.is-clickable {
+.workspace-journey .journey-step-trigger {
   cursor: pointer;
   border-radius: 6px;
 }
 
-.workspace-journey li.is-clickable:hover,
-.workspace-journey li.is-clickable:focus-visible {
+.workspace-journey .journey-step-trigger:hover,
+.workspace-journey .journey-step-trigger:focus-visible {
   color: var(--blue);
   outline: none;
 }
 
-.workspace-journey li.is-clickable:hover b,
-.workspace-journey li.is-clickable:focus-visible b {
+.workspace-journey .journey-step-trigger:hover b,
+.workspace-journey .journey-step-trigger:focus-visible b {
   border-color: var(--blue);
 }
 

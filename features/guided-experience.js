@@ -129,9 +129,21 @@
     const copy = COPY[language];
     const steps = copy[currentMode];
     const clickable = currentMode === "finder";
+    // The <li> itself must keep its implicit "listitem" role -- axe's `list`
+    // rule flags the parent <ol> as broken if role="button" overrides that
+    // (a role="button" child no longer counts as a listitem, so the <ol>
+    // ends up owning no listitem children). So the button semantics/handler
+    // target go on an inner wrapper instead, and the <li> only carries the
+    // is-current/is-done/is-clickable *styling* classes.
     target.innerHTML = `
       <strong>${copy.next}</strong>
-      <ol>${steps.map((step, index) => `<li class="${index === nextIndex ? "is-current" : index < nextIndex ? "is-done" : ""}${clickable ? " is-clickable" : ""}" ${index === nextIndex ? 'aria-current="step"' : ""} ${clickable ? `data-journey-step="${index}" role="button" tabindex="0"` : ""}><b>${index + 1}</b><span>${step}</span></li>`).join("")}</ol>`;
+      <ol>${steps.map((step, index) => {
+        const inner = `<b>${index + 1}</b><span>${step}</span>`;
+        const body = clickable
+          ? `<span class="journey-step-trigger" data-journey-step="${index}" role="button" tabindex="0">${inner}</span>`
+          : inner;
+        return `<li class="${index === nextIndex ? "is-current" : index < nextIndex ? "is-done" : ""}${clickable ? " is-clickable" : ""}" ${index === nextIndex ? 'aria-current="step"' : ""}>${body}</li>`;
+      }).join("")}</ol>`;
   }
 
   function setStarted(nextStarted, focus = false) {
