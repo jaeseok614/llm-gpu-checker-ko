@@ -316,6 +316,8 @@ window.LLM_GPU_CHECKER_DATA.gpus = [
   { id: "m4max-128", name: "Apple M4 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 546, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 96, runtimes: ["Metal", "MLX"], aliases: ["M4 Max", "Mac Studio M4 Max"], sourceUrl: "https://support.apple.com/en-us/122211" },
   { id: "m3max-128", name: "Apple M3 Max 128GB 통합메모리", vram: 128, ram: 128, bandwidth: 400, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 96, runtimes: ["Metal", "MLX"], aliases: ["M3 Max", "MacBook Pro M3 Max"], sourceUrl: "https://support.apple.com/en-us/117736" },
   { id: "m2max-96", name: "Apple M2 Max 96GB 통합메모리", vram: 96, ram: 96, bandwidth: 400, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 72, runtimes: ["Metal", "MLX"], aliases: ["M2 Max", "MacBook Pro M2 Max"], sourceUrl: "https://support.apple.com/en-us/111835" },
+  { id: "m4pro-64", name: "Apple M4 Pro 64GB 통합메모리", vram: 64, ram: 64, bandwidth: 273, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 48, runtimes: ["Metal", "MLX"], aliases: ["M4 Pro", "Mac mini M4 Pro"], sourceUrl: "https://support.apple.com/en-us/121555" },
+  { id: "m4-32", name: "Apple M4 32GB 통합메모리", vram: 32, ram: 32, bandwidth: 120, vendor: "Apple", architecture: "Apple Silicon", memoryType: "unified", formFactor: "integrated", gpuUsableMemoryGb: 24, runtimes: ["Metal", "MLX"], aliases: ["M4", "Mac mini M4"], sourceUrl: "https://support.apple.com/en-us/121555" },
 ];
 
 function officialGpuFamilySource(vendor, text) {
