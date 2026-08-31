@@ -780,10 +780,7 @@
 
       <section class="gpu-insights-panel" id="gpuInsightsPanel" aria-labelledby="gpuInsightsTitle" hidden>
         <div class="gpu-insights-head">
-          <div>
-            <span class="section-kicker">GPU 상세·비교</span>
-            <h2 id="gpuInsightsTitle">현재 GPU의 사양과 대안을 비교하세요</h2>
-          </div>
+          <h2 id="gpuInsightsTitle">GPU 비교</h2>
           <button type="button" class="ghost-button" id="toggleGpuCompare" aria-expanded="false">GPU 비교 열기</button>
         </div>
         <div class="gpu-detail-summary" id="gpuDetailSummary"></div>
@@ -804,14 +801,10 @@
           <div class="simple-mode-body">
             <div class="simple-mode-head">
               <div>
-                <h2>GPU에 맞는 모델 3개를 바로 추천합니다</h2>
-                <p>위에서 GPU를 선택하고 용도와 우선순위를 고르면 현재 워크로드의 실행 가능한 모델만 추립니다.</p>
+                <h2>추천 모델</h2>
+                <p class="simple-current-gpu"><strong id="simpleModeGpuReadout">GPU 선택 필요</strong><span>· 실행 가능한 모델 3개</span></p>
               </div>
               <div class="simple-data-coverage" id="simpleDataCoverage" aria-label="데이터 범위"></div>
-            </div>
-            <div class="simple-current-gpu">
-              <span>현재 GPU</span>
-              <strong id="simpleModeGpuReadout">GPU 선택 필요</strong>
             </div>
             <div class="simple-mode-questions">
               <label class="field">
@@ -837,14 +830,16 @@
             </div>
             <div class="simple-mode-result" id="simpleModeResult"></div>
             <div class="simple-explore-actions" id="simpleExploreActions" hidden>
-              <div class="simple-share-actions">
-                <button type="button" class="ghost-button" data-share-link>결과 링크 복사</button>
-                <button type="button" class="ghost-button" data-download-share-card>요약 카드 PNG</button>
-                <button type="button" class="ghost-button" data-share-3060>RTX 3060 링크</button>
+              <div class="simple-share-dropdown" data-share-dropdown>
+                <button type="button" class="ghost-button" data-share-toggle aria-haspopup="true" aria-expanded="false">공유 ▾</button>
+                <div class="simple-share-menu" data-share-menu hidden>
+                  <button type="button" data-share-link>결과 링크 복사</button>
+                  <button type="button" data-download-share-card>요약 카드 PNG</button>
+                </div>
               </div>
               <div class="simple-next-actions">
-                <button type="button" class="ghost-button" id="simpleOpenExpert">전체 모델에서 비교하기</button>
-                <button type="button" class="primary-button" id="simpleOpenPlacement">LLM과 RAG 모델 함께 배치</button>
+                <button type="button" class="primary-button" id="simpleOpenExpert">전체 모델에서 비교하기</button>
+                <button type="button" class="text-link-button" id="simpleOpenPlacement">LLM과 RAG 모델 함께 배치</button>
               </div>
             </div>
           </div>

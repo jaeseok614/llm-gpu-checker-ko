@@ -278,13 +278,14 @@ function translatePresetOptionLabels(language) {
 }
 
 const ENGLISH_UI_REPLACEMENTS = [
+  ["추천 모델", "Recommended models"],
+  ["· 실행 가능한 모델 3개", "· 3 runnable models"],
   ["찾는 GPU가 아직 목록에 없나요?", "Can't find your GPU yet?"],
   ["직접 사양을 입력해 바로 계산하거나, 이름을 채운 상태로 추가 요청을 보낼 수 있습니다.", "Enter specifications to calculate now, or submit a prefilled GPU request."],
   ["직접 사양 입력", "Enter specifications"],
   ["GPU 추가 요청", "Request a GPU"],
-  ["GPU 상세·비교", "GPU details and comparison"],
-  ["현재 GPU의 사양과 대안을 비교하세요", "Compare your GPU specifications and alternatives"],
-  ["Current GPU의 사양과 대안을 비교하세요", "Compare your GPU specifications and alternatives"],
+  ["GPU 비교", "Hardware Comparison"],
+  ["공유 ▾", "Share ▾"],
   ["GPU 비교 열기", "Open GPU comparison"],
   ["GPU 비교 닫기", "Close GPU comparison"],
   ["비교 GPU 선택", "Select a GPU to compare"],

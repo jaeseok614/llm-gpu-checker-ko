@@ -520,7 +520,7 @@ function setUiLanguage(language) {
   syncAdvisorCurrencyInputs();
   applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
-  const selectors = [".header-nav a", ".eyebrow", "#settingsToggle", "#changeGpuButton", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", "[data-share-3060]", ".primary-gpu-control > .field > span", ".section-kicker"];
+  const selectors = [".header-nav a", ".eyebrow", "#settingsToggle", "#changeGpuButton", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", ".primary-gpu-control > .field > span", ".section-kicker"];
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
     const source = node.dataset.i18nSource || node.textContent.trim();
     node.dataset.i18nSource = source;
@@ -1324,16 +1324,30 @@ function bindEvents() {
   });
   $("simpleOpenExpert").addEventListener("click", () => setAppMode("expert"));
   $("simpleExploreActions").addEventListener("click", (event) => {
+    if (event.target.closest("[data-share-toggle]")) {
+      const wrapper = event.target.closest("[data-share-dropdown]");
+      const menu = wrapper?.querySelector("[data-share-menu]");
+      const toggle = event.target.closest("[data-share-toggle]");
+      if (!wrapper || !menu || !toggle) return;
+      const willOpen = menu.hidden;
+      menu.hidden = !willOpen;
+      toggle.setAttribute("aria-expanded", String(willOpen));
+      return;
+    }
     if (event.target.closest("[data-share-link]")) {
       copyTextToClipboard(window.location.href, event.target.closest("[data-share-link]"));
       return;
     }
     if (event.target.closest("[data-download-share-card]")) {
       downloadShareCard("", event.target.closest("[data-download-share-card]"));
-      return;
     }
-    if (event.target.closest("[data-share-3060]")) {
-      copyRecommendationLinkForGpu("rtx3060-12", event.target.closest("[data-share-3060]"));
+  });
+  document.addEventListener("click", (event) => {
+    const wrapper = $("simpleExploreActions")?.querySelector("[data-share-dropdown]");
+    const menu = wrapper?.querySelector("[data-share-menu]");
+    if (menu && !menu.hidden && !wrapper.contains(event.target)) {
+      menu.hidden = true;
+      wrapper.querySelector("[data-share-toggle]")?.setAttribute("aria-expanded", "false");
     }
   });
 
@@ -1921,14 +1935,6 @@ function renderShareActions(model) {
       </div>
     </div>
   `;
-}
-
-function copyRecommendationLinkForGpu(gpuId, button) {
-  const url = new URL(window.location.href);
-  url.searchParams.set("gpu", gpuId);
-  url.searchParams.set("ui", "simple");
-  url.searchParams.delete("model");
-  copyTextToClipboard(url.toString(), button);
 }
 
 function getShareCardEntries(modelKeyOverride = "") {

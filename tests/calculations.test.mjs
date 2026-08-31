@@ -434,9 +434,10 @@ describe("quick recommendation navigation", () => {
     const card = fresh.document.querySelector(".simple-pick-card");
     assert.ok(card, "expected a quick recommendation card");
     assert.match(card.querySelector(".simple-pick-cta").textContent, /상세 계산 보기/);
+    assert.ok(fresh.document.querySelector("[data-share-toggle]"));
     assert.ok(fresh.document.querySelector("[data-share-link]"));
     assert.ok(fresh.document.querySelector("[data-download-share-card]"));
-    assert.ok(fresh.document.querySelector("[data-share-3060]"));
+    assert.equal(fresh.document.querySelector("[data-share-3060]"), null, "RTX 3060 static share link was dropped from the Share menu");
 
     const languageToggle = fresh.document.querySelector("[data-language-toggle]");
     const englishButton = languageToggle.querySelector("[data-lang='en']");
