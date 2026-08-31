@@ -876,6 +876,33 @@ test("benchmark-meta placeholder translates cleanly before the lazy benchmark wo
   assert.equal(app.document.getElementById("benchmarkMeta").textContent, "벤치마크 데이터 준비 중");
 });
 
+test("the lazy benchmark workspace's own data (qualityBenchmark.note like \"공식 품질\") gets swept to English on first load, not just the table's own headers", () => {
+  // Regression test for a real production bug: features/benchmark-workspace.js
+  // is lazy-loaded (via feature-loader.js's IntersectionObserver/timeout/metric
+  // filter triggers), and its .then() callback used to call renderDashboard()
+  // and renderSheet() WITHOUT a follow-up translateDynamicUi()/
+  // AIHardwareLocalization.apply() sweep -- unlike every other path that
+  // (re-)renders these tables (setUiLanguage's manual toggle, and the four
+  // infra/placement/modelFinder/apiCost core-task render() branches). The
+  // table's own headers/labels go through uiLanguage-conditional t()/ternary
+  // calls and were always correct, but each row's raw data fields (e.g.
+  // model.qualityBenchmark.note, which defaults to the bare Korean string
+  // "공식 품질" in data/model-metadata.js's quality() helper) are never
+  // wrapped in a language ternary -- they only get translated by the sweep.
+  // So a page that loaded already in English and then lazy-loaded this panel
+  // for the first time showed "공식 품질" forever, even though "Environment"
+  // and every other header was correctly in English.
+  app.eval('setUiLanguage("en");');
+  // Simulate the lazy-load callback's render step in isolation, exactly as
+  // feature-loader.js's loadBenchmarkWorkspace().then() does it, followed by
+  // the sweep calls that block now includes.
+  app.eval('AIHardwareBenchmark.renderDashboard(); AIHardwareBenchmark.renderSheet();');
+  app.eval('translateDynamicUi("en"); window.AIHardwareLocalization?.apply("en");');
+  const tableText = app.document.getElementById("benchmarkTable").textContent;
+  assert.doesNotMatch(tableText, /[가-힣]/, "benchmark table should have no leftover Korean once English mode's lazy-load sweep has run");
+  assert.match(tableText, /Official quality|Official report|Official distillation/, "at least one qualityBenchmark.note value should be visibly translated, not just absent");
+});
+
 test("the header logo acts as a home link, resetting to the default beginner mode", () => {
   // The header logo/title (.brand-block) is a <button data-reset-home> that
   // should behave like the conventional "click the logo to go home" pattern

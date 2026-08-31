@@ -68,6 +68,24 @@
         .then(() => {
           window.AIHardwareBenchmark?.renderDashboard();
           window.AIHardwareBenchmark?.renderSheet();
+          // These two renders bake each row's raw Korean fields (e.g.
+          // qualityBenchmark.note like "공식 품질") straight from data --
+          // unlike the table's own headers/labels, they're not wrapped in a
+          // uiLanguage ternary, so they only ever get translated by the
+          // dictionary sweep below. Every OTHER path that (re-)renders the
+          // benchmark tables (setUiLanguage's manual toggle, and the four
+          // infra/placement/modelFinder/apiCost core-task branches in
+          // render()) already follows up with this same sweep; this lazy-
+          // load entry point (triggered by scrolling the panel into view, a
+          // 2.5s fallback timer, or opening a metric filter) was the one
+          // place that didn't, so a page that loaded already in English and
+          // then lazy-loaded this panel for the first time kept showing
+          // untranslated Korean condition/environment text forever (until
+          // the user happened to toggle the language switch, which forces a
+          // full re-render + sweep).
+          const currentLanguage = document.documentElement.lang === "en" ? "en" : "ko";
+          window.translateDynamicUi?.(currentLanguage);
+          window.AIHardwareLocalization?.apply(currentLanguage);
         })
         .catch((error) => {
           benchmarkPromise = null;
