@@ -1067,7 +1067,7 @@ function bindEvents() {
   document.querySelectorAll("[data-demo-placement]").forEach((button) => {
     button.addEventListener("click", () => {
       // Standalone demo: don't depend on the user having already picked a primary
-      // GPU (unlike openPlacementFromHardware below), so seed the inventory
+      // GPU (unlike the More▾ menu's Stack Planner entry), so seed the inventory
       // directly with two 24GB cards -- enough to show a 70B model split across
       // GPUs alongside a small embedding model, matching the "여러 모델 함께 배치"
       // pitch (LLM + RAG embedding model on 2 GPUs at once).
@@ -1082,10 +1082,6 @@ function bindEvents() {
         ? "Loaded the multi-model placement example: Llama 3.1 70B + an embedding model across 2x RTX 4090."
         : "멀티 모델 배치 예시를 불러왔습니다: Llama 3.1 70B와 임베딩 모델을 RTX 4090 2장에 배치합니다.");
     });
-  });
-
-  $("openPlacementFromHardware")?.addEventListener("click", () => {
-    openPlacementPlanner([], { showBuilder: false, seedHardware: true });
   });
 
   $("settingsToggle").addEventListener("click", () => {

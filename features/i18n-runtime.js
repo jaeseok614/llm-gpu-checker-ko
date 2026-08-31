@@ -541,7 +541,6 @@ const ENGLISH_UI_REPLACEMENTS = [
   ["배치 결과", "Placement result"],
   ["결론과 배치안을 먼저 보고, 필요할 때 계산 상세를 펼치세요.", "Review the conclusion and plans first, then expand calculation details when needed."],
   ["계산 상세 보기", "View calculation details"],
-  ["AI 스택 배치", "AI stack placement"],
   ["LLM과 RAG 모델 함께 배치", "Place LLM and RAG models together"],
   ["GPU에 함께 배치", "Place together on GPUs"],
   ["아직 선택된 모델이 없습니다.", "No models selected yet."],

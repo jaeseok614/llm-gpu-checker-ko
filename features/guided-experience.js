@@ -6,7 +6,6 @@
       placement: ["GPU 구성", "모델 추가", "배치안 확인"],
       infra: ["서비스 선택", "사용자 수", "예산·우선순위", "3가지 견적 비교"],
       next: "현재 단계",
-      change: "다른 작업 선택",
       guide: "처음 사용 가이드",
       close: "가이드 닫기",
       panelTitle: "내 상황에 맞는 시작점",
@@ -55,7 +54,6 @@
       placement: ["Add GPUs", "Add models", "Review placement"],
       infra: ["Choose a service", "Set users", "Budget and priority", "Compare 3 plans"],
       next: "Current path",
-      change: "Choose another task",
       guide: "Getting started",
       close: "Close guide",
       panelTitle: "Choose the path that matches your situation",
@@ -112,9 +110,7 @@
     const steps = copy[currentMode];
     target.innerHTML = `
       <strong>${copy.next}</strong>
-      <ol>${steps.map((step, index) => `<li class="${index === nextIndex ? "is-current" : index < nextIndex ? "is-done" : ""}" ${index === nextIndex ? 'aria-current="step"' : ""}><b>${index + 1}</b><span>${step}</span></li>`).join("")}</ol>
-      <button type="button" class="ghost-button" data-change-path>${copy.change}</button>`;
-    target.querySelector("[data-change-path]")?.addEventListener("click", () => setStarted(false, true));
+      <ol>${steps.map((step, index) => `<li class="${index === nextIndex ? "is-current" : index < nextIndex ? "is-done" : ""}" ${index === nextIndex ? 'aria-current="step"' : ""}><b>${index + 1}</b><span>${step}</span></li>`).join("")}</ol>`;
   }
 
   function setStarted(nextStarted, focus = false) {

@@ -511,20 +511,21 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .hardware-capability-summary {
-  margin-top: 14px;
-  padding: 18px 22px 0;
+  margin-top: 10px;
+  padding: 14px 18px 0;
   border-top: 1px solid var(--line);
 }
 
 .hardware-capability-summary > strong {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
 }
 
 .hardware-capability-card {
   flex: 1 1 175px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
   background: var(--surface-soft);
 }
 
@@ -532,11 +533,13 @@ html[lang="en"] .simple-mode-head > div:first-child {
 .hardware-capability-card small {
   display: block;
   color: var(--muted);
+  line-height: 1.2;
 }
 
 .hardware-capability-card strong {
   display: block;
-  margin: 4px 0;
+  margin: 2px 0;
+  line-height: 1.2;
 }
 
 .gpu-insights-panel {
@@ -2641,10 +2644,6 @@ body[data-workspace="placement"] #hardwarePanel > :not(#gpuPlacementPanel) {
   align-items: center;
   flex-wrap: wrap;
   gap: 7px;
-}
-
-.placement-entry-button {
-  white-space: nowrap;
 }
 
 body.placement-task-active #hardwarePanel {
@@ -9092,7 +9091,7 @@ body.guide-modal-open {
 
 .core-task-switcher {
   position: relative;
-  padding: 8px;
+  padding: 5px;
 }
 
 .core-task-actions {
@@ -9110,26 +9109,29 @@ body.guide-modal-open {
   flex-direction: column;
   align-items: flex-start;
   grid-template-columns: none;
-  gap: 1px;
+  gap: 0;
   min-height: 0;
-  padding: 7px 14px;
+  padding: 5px 12px;
   border-radius: 10px;
+  line-height: 1.15;
 }
 
 .core-task-button.is-active {
-  padding: 7px 14px;
+  padding: 5px 12px;
   border-width: 1px;
 }
 
 .core-task-button > span {
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1.15;
 }
 
 .core-task-button > small {
   grid-column: auto;
   margin-top: 0;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
+  line-height: 1.15;
 }
 
 .core-task-more {

@@ -154,11 +154,15 @@ test("locale helpers and price data trust remain deterministic", () => {
   assert.equal(app.AIHardwareDataTrust.validateMarketRows(app.LLM_GPU_CHECKER_DATA.koreanGpuMarket).length, 0);
 });
 
-test("guided workspace collapses the chooser and can return to it", () => {
+test("selecting a task marks the workspace as started, with no separate change-path button", () => {
+  // The always-visible tool-switcher tab bar (GPU→Model / Model→GPU / ...)
+  // is itself the way back to another task, so there is no separate "Choose
+  // another task" button living inside the progress nav anymore -- clicking
+  // a tab (or the header logo, covered by a separate test) is enough.
+  assert.equal(app.document.querySelector("[data-change-path]"), null);
   app.document.querySelector('[data-core-task="finder"]').click();
   assert.equal(app.document.getElementById("coreTaskSwitcher").classList.contains("is-collapsed"), true);
-  app.document.querySelector("[data-change-path]").click();
-  assert.equal(app.document.getElementById("coreTaskSwitcher").classList.contains("is-collapsed"), false);
+  assert.ok(app.document.body.classList.contains("guided-workspace-started"));
 });
 
 test("catalog search accepts aliases, typos, and natural GPU conditions", () => {
