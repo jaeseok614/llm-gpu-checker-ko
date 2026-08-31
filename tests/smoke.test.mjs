@@ -189,6 +189,38 @@ test("evidence policy distinguishes official model and family sources", () => {
   assert.ok(audit.priority.length >= 10);
 });
 
+test("workspace journey steps are clickable and navigate between finder steps", () => {
+  app.eval('selectPrimaryGpu("rtx3060-12"); coreTaskMode = "finder"; appMode = "simple"; render();');
+  const journeySteps = () => app.document.querySelectorAll("#workspaceJourney [data-journey-step]");
+  assert.equal(journeySteps().length, 3);
+  assert.equal(app.document.getElementById("simpleModePanel").hidden, false);
+  assert.equal(app.document.getElementById("expertModeSection").hidden, true);
+
+  // Reading top-level `let appMode` back out through a *separate* app.eval()
+  // call is unreliable in this jsdom harness (each eval() gets its own
+  // lexical scope for let/const, so the mutation made by the real,
+  // in-process click handler doesn't reliably show up that way) -- so this
+  // asserts on the DOM side effects setAppMode() itself drives instead,
+  // which are backed by real, shared DOM node references.
+  journeySteps()[2].dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(app.document.getElementById("expertModeSection").hidden, false);
+  assert.equal(app.document.getElementById("simpleModePanel").hidden, true);
+
+  journeySteps()[1].dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(app.document.getElementById("simpleModePanel").hidden, false);
+  assert.equal(app.document.getElementById("expertModeSection").hidden, true);
+
+  app.eval('gpuChangeExpanded = false; refreshGpuChangePanel();');
+  assert.equal(app.document.getElementById("gpuChangePanel").hidden, true);
+  journeySteps()[0].dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(app.document.getElementById("gpuChangePanel").hidden, false);
+  assert.equal(app.document.activeElement.id, "gpuPreset");
+
+  app.eval('gpuChangeExpanded = false; refreshGpuChangePanel(); setCoreTaskMode("infra");');
+  assert.equal(app.document.querySelectorAll("#workspaceJourney [data-journey-step]").length, 0);
+  app.eval('setCoreTaskMode("finder"); appMode = "simple"; render();');
+});
+
 test("GPU selection renders three quick recommendations", () => {
   app.eval('selectPrimaryGpu("rtx3060-12"); coreTaskMode = "finder"; appMode = "simple"; render();');
   assert.equal(app.document.querySelectorAll(".simple-pick-card").length, 3);

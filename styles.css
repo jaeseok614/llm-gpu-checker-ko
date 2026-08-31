@@ -8156,6 +8156,22 @@ body.guide-modal-open {
   color: var(--green);
 }
 
+.workspace-journey li.is-clickable {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.workspace-journey li.is-clickable:hover,
+.workspace-journey li.is-clickable:focus-visible {
+  color: var(--blue);
+  outline: none;
+}
+
+.workspace-journey li.is-clickable:hover b,
+.workspace-journey li.is-clickable:focus-visible b {
+  border-color: var(--blue);
+}
+
 .si-wizard-progress {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

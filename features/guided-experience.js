@@ -102,15 +102,36 @@
   let currentMode = "finder";
   let started = false;
 
+  // Only the "finder" flow's 3 steps map onto a single click target each
+  // (change GPU / show the 3-pick view / show the full catalog) -- the other
+  // flows (modelFinder/placement/infra's own multi-step wizards) don't have
+  // an equally simple "jump to this step" action yet, so their <li>s stay
+  // plain, non-interactive labels for now.
+  function goToJourneyStep(index) {
+    if (currentMode !== "finder") return;
+    if (index === 0) {
+      const panel = document.getElementById("gpuChangePanel");
+      const button = document.getElementById("changeGpuButton");
+      if (panel?.hidden && button) button.click();
+      document.getElementById("gpuPreset")?.focus();
+      document.getElementById("hardwarePanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    } else if (index === 1) {
+      window.setAppMode?.("simple");
+    } else if (index === 2) {
+      window.setAppMode?.("expert");
+    }
+  }
+
   function render(mode = currentMode, nextIndex = 0) {
     currentMode = ["finder", "modelFinder", "placement", "infra"].includes(mode) ? mode : "finder";
     const target = document.getElementById("workspaceJourney");
     if (!target) return;
     const copy = COPY[language];
     const steps = copy[currentMode];
+    const clickable = currentMode === "finder";
     target.innerHTML = `
       <strong>${copy.next}</strong>
-      <ol>${steps.map((step, index) => `<li class="${index === nextIndex ? "is-current" : index < nextIndex ? "is-done" : ""}" ${index === nextIndex ? 'aria-current="step"' : ""}><b>${index + 1}</b><span>${step}</span></li>`).join("")}</ol>`;
+      <ol>${steps.map((step, index) => `<li class="${index === nextIndex ? "is-current" : index < nextIndex ? "is-done" : ""}${clickable ? " is-clickable" : ""}" ${index === nextIndex ? 'aria-current="step"' : ""} ${clickable ? `data-journey-step="${index}" role="button" tabindex="0"` : ""}><b>${index + 1}</b><span>${step}</span></li>`).join("")}</ol>`;
   }
 
   function setStarted(nextStarted, focus = false) {
@@ -287,6 +308,23 @@
     });
     document.querySelectorAll("[data-core-task], [data-demo-gpu], [data-demo-model], [data-demo-infra]").forEach((control) => {
       control.addEventListener("click", () => setStarted(true));
+    });
+    // #workspaceJourney's <li>s are rewritten wholesale on every render() call
+    // (language switch, step change, mode change), so -- same reasoning as
+    // the #apiCostBridge/#apiCostFullTable delegated listeners -- bind one
+    // listener on the stable <nav> here rather than re-binding per <li> each
+    // render, which would only ever catch the first render's elements.
+    const journey = document.getElementById("workspaceJourney");
+    journey?.addEventListener("click", (event) => {
+      const step = event.target.closest("[data-journey-step]");
+      if (step) goToJourneyStep(Number(step.dataset.journeyStep));
+    });
+    journey?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const step = event.target.closest("[data-journey-step]");
+      if (!step) return;
+      event.preventDefault();
+      goToJourneyStep(Number(step.dataset.journeyStep));
     });
     window.addEventListener("ai-hardware-workspacechange", (event) => {
       render(event.detail?.mode);
