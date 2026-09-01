@@ -56,7 +56,7 @@
   // Primary view state: which quality tier the compact 3-model view shows,
   // which workload preset last drove that tier choice, and whether the
   // "전체 9개 모델 보기" (view all 9) table is currently expanded.
-  let viewState = { workload: "general", tier: "balanced", expanded: false };
+  let viewState = { workload: "general", tier: "balanced", expanded: false, selectedProvider: null };
 
   // One representative self-hosted (model, reference GPU, quant) per quality
   // tier -- deliberately a single fixed pick per tier rather than the full
@@ -256,7 +256,7 @@
       </div>
       <div class="simple-data-coverage api-cost-usage-summary" id="apiCostUsageSummary" aria-label="비교 조건"></div>
       <div class="api-cost-verdict" id="apiCostVerdict"></div>
-      <div class="api-cost-candidates" id="apiCostTable"></div>
+      <div class="api-cost-candidates" id="apiCostTable" role="listbox" aria-label="비교할 제공사 선택"></div>
       <button type="button" class="ghost-button api-cost-expand-toggle" id="apiCostExpandToggle" aria-expanded="false"></button>
       <div class="api-cost-expanded" id="apiCostExpanded" hidden>
         <div class="studio-question-grid api-cost-filter-row">
@@ -290,6 +290,18 @@
     });
     panel.querySelector("#apiCostExpandToggle").addEventListener("click", () => {
       viewState.expanded = !viewState.expanded;
+      renderApiCostEstimator();
+    });
+    // Delegated click handler for candidate-card selection: cards are
+    // rebuilt from scratch on every render (renderCandidateCards), so the
+    // listener is bound once on the stable #apiCostTable container instead
+    // of on the cards themselves -- the same pattern already used for the
+    // full-table sort headers below.
+    panel.querySelector("#apiCostTable").addEventListener("click", (event) => {
+      const card = event.target.closest("[data-provider]");
+      if (!card) return;
+      const provider = card.getAttribute("data-provider");
+      viewState.selectedProvider = viewState.selectedProvider === provider ? null : provider;
       renderApiCostEstimator();
     });
     panel.querySelector("#apiCostProviderFilter").addEventListener("change", (event) => {
@@ -363,56 +375,78 @@
   // the panel shows before anyone expands anything. Cards (rather than a
   // dense table row) put the monthly cost front and center, with
   // provider/model/rate details as secondary text -- a decision-screen
-  // layout instead of a spreadsheet-style comparison. The "cheapest" badge
-  // here is scoped to the 3 cards actually shown (cheapest within this
-  // tier), not the global cheapest across all 9 -- the global cheapest is
-  // almost always the economy tier, which wouldn't appear at all while
-  // looking at, say, the flagship tier, leaving no card flagged.
-  function apiCostCandidateCard(row, language, isCheapest) {
+  // layout instead of a spreadsheet-style comparison. Cards are real
+  // <button role="option"> elements inside a role="listbox" (#apiCostTable,
+  // see ensureApiCostPanel): clicking one makes it the model the verdict
+  // banner and break-even chart compare against, instead of always
+  // silently using the cheapest. The "cheapest" badge is scoped to the 3
+  // cards actually shown (cheapest within this tier), not the global
+  // cheapest across all 9 -- the global cheapest is almost always the
+  // economy tier, which wouldn't appear at all while looking at, say, the
+  // flagship tier, leaving no card flagged.
+  function apiCostCandidateCard(row, language, isCheapest, isSelected) {
     const en = language === "en";
     const tierLabel = TIER_LABEL[row.tier]?.[en ? "en" : "ko"] || row.tier;
     const note = row.note?.[en ? "en" : "ko"] || "";
-    return `<article class="api-cost-candidate-card${isCheapest ? " is-cheapest" : ""}">
+    const badgeText = isSelected
+      ? (isCheapest ? (en ? "Cheapest · Selected" : "최저가·비교 기준") : (en ? "Selected" : "비교 기준"))
+      : (isCheapest ? (en ? "Cheapest" : "최저가") : "");
+    const classes = ["api-cost-candidate-card"];
+    if (isCheapest) classes.push("is-cheapest");
+    if (isSelected) classes.push("is-selected");
+    return `<button type="button" role="option" aria-selected="${isSelected ? "true" : "false"}" class="${classes.join(" ")}" data-provider="${escapeAttr(row.provider)}">
       <span class="api-cost-candidate-provider">${escapeHtml(row.provider)}</span>
       <strong class="api-cost-candidate-cost">${escapeHtml(formatKrw(row.monthlyCostKrw))}<small>${escapeHtml(formatUsd(row.monthlyCostUsd))} · ${en ? "per month" : "월 예상"}</small></strong>
       <span class="api-cost-candidate-name">
-        <a href="${escapeAttr(row.sourceUrl)}" target="_blank" rel="noreferrer" title="${escapeAttr(note)}">${escapeHtml(row.name)}</a>
-        ${isCheapest ? `<span class="placement-primary-badge">${en ? "Cheapest" : "최저가"}</span>` : ""}
+        <span class="api-cost-candidate-name-text" title="${escapeAttr(note)}">${escapeHtml(row.name)}</span>
+        ${badgeText ? `<span class="placement-primary-badge">${escapeHtml(badgeText)}</span>` : ""}
       </span>
       <span class="api-cost-candidate-rates">${en ? "Tier" : "등급"} ${escapeHtml(tierLabel)} · ${en ? "in" : "입력"} $${row.inputPerMTokUsd.toFixed(2)}/1M · ${en ? "out" : "출력"} $${row.outputPerMTokUsd.toFixed(2)}/1M</span>
-    </article>`;
+    </button>`;
   }
 
-  function renderCandidateCards(compactRows, language) {
+  function renderCandidateCards(compactRows, language, selectedProvider) {
     const en = language === "en";
     if (!compactRows.length) {
       return `<p class="api-cost-empty">${en ? "No tracked model in this tier." : "이 등급에 해당하는 모델이 없습니다."}</p>`;
     }
     const cheapestUsd = compactRows.reduce((min, row) => Math.min(min, row.monthlyCostUsd), Infinity);
-    return compactRows.map((row) => apiCostCandidateCard(row, language, row.monthlyCostUsd === cheapestUsd)).join("");
+    return compactRows.map((row) => apiCostCandidateCard(
+      row,
+      language,
+      row.monthlyCostUsd === cheapestUsd,
+      row.provider === selectedProvider,
+    )).join("");
   }
 
   // "결론" banner -- the plain-language verdict this panel leads with, so a
   // user doesn't have to read every row of the table below to work out
-  // which side is cheaper. Every figure here is derived from the same
-  // cheapestApiMonthlyKrw / localEstimate values the rest of the panel
-  // already computes -- nothing new is calculated here except the
-  // break-even request volume (linear in requests, since the usage inputs
-  // hold input/output tokens-per-request fixed).
-  function renderVerdictBanner(monthlyRequests, cheapestApiMonthlyKrw, localEstimate, language) {
+  // which side is cheaper. `selectedRow` is whichever candidate card is
+  // active -- the cheapest one by default, or whatever the user clicked
+  // (see viewState.selectedProvider) -- so the banner always matches what
+  // is highlighted in the cards below it, not silently the global cheapest.
+  // Every figure here is derived from selectedRow.monthlyCostKrw /
+  // localEstimate -- nothing new is calculated here except the break-even
+  // request volume (linear in requests, since the usage inputs hold
+  // input/output tokens-per-request fixed).
+  function renderVerdictBanner(monthlyRequests, selectedRow, localEstimate, language, isCheapestSelected) {
     const en = language === "en";
-    if (!localEstimate || !cheapestApiMonthlyKrw) return "";
-    const apiFavorable = cheapestApiMonthlyKrw <= localEstimate.monthlyLocalKrw;
-    const diffKrw = Math.abs(cheapestApiMonthlyKrw - localEstimate.monthlyLocalKrw);
+    if (!localEstimate || !selectedRow) return "";
+    const selectedApiMonthlyKrw = selectedRow.monthlyCostKrw;
+    const apiFavorable = selectedApiMonthlyKrw <= localEstimate.monthlyLocalKrw;
+    const diffKrw = Math.abs(selectedApiMonthlyKrw - localEstimate.monthlyLocalKrw);
     const numberLocale = en ? "en-US" : "ko-KR";
-    const headline = apiFavorable
-      ? (en ? "At this usage, using the API is cheaper" : "현재 조건에서는 API 사용이 유리합니다")
-      : (en ? "At this usage, self-hosting (Local) is cheaper" : "현재 조건에서는 Local 구축이 유리합니다");
+    const headline = en
+      ? `Based on ${selectedRow.name}, ${apiFavorable ? "using the API is cheaper" : "self-hosting (Local) is cheaper"}`
+      : `${selectedRow.name} 기준으로는 ${apiFavorable ? "API 사용이" : "Local 구축이"} 유리합니다`;
     const diffSentence = apiFavorable
       ? (en ? `API is about ${formatKrw(diffKrw)} cheaper per month` : `API가 월 ${formatKrw(diffKrw)} 더 저렴`)
       : (en ? `Local is about ${formatKrw(diffKrw)} cheaper per month` : `Local이 월 ${formatKrw(diffKrw)} 더 저렴`);
+    const apiFigureLabel = isCheapestSelected
+      ? (en ? "Cheapest API" : "API 최저 비용")
+      : (en ? `${selectedRow.provider} API cost` : `${selectedRow.provider} API 비용`);
 
-    const costPerRequestKrw = monthlyRequests > 0 ? cheapestApiMonthlyKrw / monthlyRequests : 0;
+    const costPerRequestKrw = monthlyRequests > 0 ? selectedApiMonthlyKrw / monthlyRequests : 0;
     const breakevenRequests = costPerRequestKrw > 0 ? localEstimate.monthlyLocalKrw / costPerRequestKrw : null;
     let breakevenSentence = "";
     if (breakevenRequests && monthlyRequests > 0) {
@@ -427,10 +461,10 @@
     }
 
     return `
-      <p class="api-cost-verdict-headline">${headline}</p>
+      <p class="api-cost-verdict-headline">${escapeHtml(headline)}</p>
       <p class="api-cost-verdict-usage">${en ? "Monthly" : "월"} ${Math.round(monthlyRequests).toLocaleString(numberLocale)}${en ? " requests" : "회"}</p>
       <div class="api-cost-verdict-figures">
-        <span>${en ? "Cheapest API" : "API 최저 비용"}<strong>${escapeHtml(formatKrw(cheapestApiMonthlyKrw))}${en ? "/mo" : "/월"}</strong></span>
+        <span>${apiFigureLabel}<strong>${escapeHtml(formatKrw(selectedApiMonthlyKrw))}${en ? "/mo" : "/월"}</strong></span>
         <span>${en ? "Local (amortized)" : "Local 환산 비용"}<strong>${escapeHtml(formatKrw(localEstimate.monthlyLocalKrw))}${en ? "/mo" : "/월"}</strong></span>
         <span class="api-cost-verdict-diff">${en ? "Difference" : "차이"}<strong>${escapeHtml(diffSentence)}</strong></span>
       </div>
@@ -438,19 +472,23 @@
     `;
   }
 
-  // Simple break-even visualization: the cheapest same-tier API model's
+  // Simple break-even visualization: the selected same-tier API model's
   // cost scales linearly with monthly requests (fixed input/output tokens
   // per request), while Local is a flat amortized monthly cost -- so there
-  // is exactly one crossover point. Rendered as a small inline SVG line
-  // chart across 4 usage multiples (0.25x/1x/4x/16x today's usage), the
-  // same multiples platform-v3.js's build-vs-buy comparison already uses,
-  // so the two views stay conceptually consistent.
+  // is exactly one crossover point. `selectedRow` follows the same card
+  // the verdict banner above is using (cheapest by default, or whichever
+  // card the user clicked), so the chart never silently disagrees with the
+  // banner. Rendered as a small inline SVG line chart across 4 usage
+  // multiples (0.25x/1x/4x/16x today's usage), the same multiples
+  // platform-v3.js's build-vs-buy comparison already uses, so the two
+  // views stay conceptually consistent.
   const BREAKEVEN_MULTIPLIERS = [0.25, 1, 4, 16];
-  function renderBreakevenViz(monthlyRequests, cheapestApiMonthlyKrw, localEstimate, language) {
+  function renderBreakevenViz(monthlyRequests, selectedRow, localEstimate, language, isCheapestSelected) {
     const en = language === "en";
-    if (!localEstimate || !cheapestApiMonthlyKrw || monthlyRequests <= 0) return "";
+    if (!localEstimate || !selectedRow || monthlyRequests <= 0) return "";
+    const selectedApiMonthlyKrw = selectedRow.monthlyCostKrw;
     const numberLocale = en ? "en-US" : "ko-KR";
-    const costPerRequestKrw = cheapestApiMonthlyKrw / monthlyRequests;
+    const costPerRequestKrw = selectedApiMonthlyKrw / monthlyRequests;
     const points = BREAKEVEN_MULTIPLIERS.map((multiplier) => {
       const requests = monthlyRequests * multiplier;
       return { multiplier, requests, apiCostKrw: costPerRequestKrw * requests };
@@ -487,9 +525,14 @@
       return `<text x="${xScale(point.requests)}" y="${height - 10}" class="api-cost-chart-tick" text-anchor="middle">${escapeHtml(label)}</text>`;
     }).join("");
 
+    const chartTitle = isCheapestSelected
+      ? (en ? "API vs Local cost by usage" : "사용량별 API vs Local 비용")
+      : (en ? `${selectedRow.provider} API vs Local cost by usage` : `${selectedRow.provider} 기준 사용량별 API vs Local 비용`);
+    const apiLineLabel = en ? `${selectedRow.provider} (API)` : `${selectedRow.provider} (API)`;
+
     return `
-      <h3>${en ? "API vs Local cost by usage" : "사용량별 API vs Local 비용"}</h3>
-      <svg viewBox="0 0 ${width} ${height}" role="img" class="api-cost-chart" aria-label="${en ? "Chart comparing API cost (rising with usage) and Local flat cost across usage levels" : "사용량이 늘수록 상승하는 API 비용과 고정된 Local 비용을 비교하는 그래프"}">
+      <h3>${escapeHtml(chartTitle)}</h3>
+      <svg viewBox="0 0 ${width} ${height}" role="img" class="api-cost-chart" aria-label="${en ? `Chart comparing ${selectedRow.provider} API cost (rising with usage) and Local flat cost across usage levels` : `사용량이 늘수록 상승하는 ${selectedRow.provider} API 비용과 고정된 Local 비용을 비교하는 그래프`}">
         <line x1="${padLeft}" y1="${localY}" x2="${padLeft + plotWidth}" y2="${localY}" class="api-cost-chart-local-line" />
         <polyline points="${apiLinePoints}" class="api-cost-chart-api-line" fill="none" />
         ${breakevenInRange ? `<line x1="${breakevenX}" y1="${padTop}" x2="${breakevenX}" y2="${padTop + plotHeight}" class="api-cost-chart-breakeven-line" />
@@ -497,6 +540,7 @@
         <circle cx="${currentX}" cy="${currentApiY}" r="4" class="api-cost-chart-current-dot" />
         <text x="${currentX}" y="${currentApiY - 10}" class="api-cost-chart-current-label" text-anchor="middle">${en ? "Now" : "현재"}</text>
         <text x="${padLeft + plotWidth}" y="${localY - 8}" class="api-cost-chart-local-label" text-anchor="end">${en ? "Local (flat)" : "Local (고정)"}</text>
+        <text x="${xScale(points[points.length - 1].requests)}" y="${yScale(points[points.length - 1].apiCostKrw) - 8}" class="api-cost-chart-api-label" text-anchor="end">${escapeHtml(apiLineLabel)}</text>
         ${xTicks}
       </svg>
       <p class="api-cost-chart-caption">${en ? "X-axis: monthly requests (0.25x-16x today's usage). Y-axis: monthly cost." : "가로축: 월 요청 수(현재의 0.25배~16배). 세로축: 월 비용."}</p>
@@ -525,10 +569,13 @@
 
   // Renders the "자체 구축(Local) 비용" section for the currently selected
   // tier -- the actual Local content this tab was missing (previously only
-  // a text link out to the separate infra sizing flow). cheapestApiMonthlyKrw
-  // is the cheapest same-tier API model's monthly KRW cost, used both for the
-  // plain cost-comparison sentence and as the payback-months denominator.
-  function renderLocalSection(local, cheapestApiMonthlyKrw, language) {
+  // a text link out to the separate infra sizing flow). selectedApiMonthlyKrw
+  // is the currently-selected (or, by default, cheapest) same-tier API
+  // model's monthly KRW cost, used both for the plain cost-comparison
+  // sentence and as the payback-months denominator -- kept in sync with
+  // whatever card is highlighted above so this section never disagrees
+  // with the verdict banner and chart.
+  function renderLocalSection(local, selectedApiMonthlyKrw, language, selectedProviderLabel, isCheapestSelected) {
     const en = language === "en";
     if (!local) {
       return `<p class="api-cost-disclaimer">${en ? "Local reference data is unavailable for this tier." : "이 등급의 Local 참고 데이터를 불러올 수 없습니다."}</p>`;
@@ -536,16 +583,19 @@
     const priceLabel = local.priceSource.kind === "korean-market"
       ? (en ? `Korean market price (checked ${local.priceSource.updatedAt})` : `국내 시세 (${local.priceSource.updatedAt} 확인)`)
       : (en ? "Reference price estimate" : "참고 가격 추정치");
-    const monthlySavingsKrw = cheapestApiMonthlyKrw - local.monthlyLocalKrw;
+    const monthlySavingsKrw = selectedApiMonthlyKrw - local.monthlyLocalKrw;
     const tierLabel = TIER_LABEL[local.tier]?.[en ? "en" : "ko"] || local.tier;
+    const apiRefLabel = isCheapestSelected
+      ? (en ? `the cheapest ${tierLabel}-tier API model` : `이 등급 API 최저가`)
+      : (en ? `${selectedProviderLabel}` : `${selectedProviderLabel}`);
     const verdict = monthlySavingsKrw >= 0
       ? (en
-        ? `Local costs about ${formatKrw(Math.abs(monthlySavingsKrw))} less per month than the cheapest ${tierLabel}-tier API model (3-year amortized).`
-        : `이 등급 API 최저가 대비 Local이 3년 분할 상환 기준 월 약 ${formatKrw(Math.abs(monthlySavingsKrw))} 더 저렴합니다.`)
+        ? `Local costs about ${formatKrw(Math.abs(monthlySavingsKrw))} less per month than ${apiRefLabel} (3-year amortized).`
+        : `${apiRefLabel} 대비 Local이 3년 분할 상환 기준 월 약 ${formatKrw(Math.abs(monthlySavingsKrw))} 더 저렴합니다.`)
       : (en
-        ? `Local costs about ${formatKrw(Math.abs(monthlySavingsKrw))} more per month than the cheapest ${tierLabel}-tier API model (3-year amortized).`
-        : `이 등급 API 최저가 대비 Local이 3년 분할 상환 기준 월 약 ${formatKrw(Math.abs(monthlySavingsKrw))} 더 비쌉니다.`);
-    const paybackDenominator = cheapestApiMonthlyKrw - local.monthlyRunningKrw;
+        ? `Local costs about ${formatKrw(Math.abs(monthlySavingsKrw))} more per month than ${apiRefLabel} (3-year amortized).`
+        : `${apiRefLabel} 대비 Local이 3년 분할 상환 기준 월 약 ${formatKrw(Math.abs(monthlySavingsKrw))} 더 비쌉니다.`);
+    const paybackDenominator = selectedApiMonthlyKrw - local.monthlyRunningKrw;
     const paybackMonths = paybackDenominator > 0 ? Math.ceil(local.purchaseKrw / paybackDenominator) : null;
     const paybackText = paybackMonths
       ? (en
@@ -656,18 +706,27 @@
     // "one per provider" set with no extra dedupe logic needed.
     const compactRows = allRows.filter((row) => row.tier === viewState.tier);
 
-    // Same-tier Local estimate, plus the cheapest same-tier API model's KRW
-    // monthly cost as the comparison baseline for the verdict banner, the
-    // plain cost-difference sentence, the payback-months figure, and the
+    // Same-tier Local estimate, plus the selected candidate's KRW monthly
+    // cost as the comparison baseline for the verdict banner, the plain
+    // cost-difference sentence, the payback-months figure, and the
     // break-even chart -- computed up front so the "결론" banner (which
-    // leads the panel) can use the exact same numbers as everything below it.
-    const cheapestApiMonthlyKrw = compactRows.length
-      ? compactRows.reduce((min, row) => Math.min(min, row.monthlyCostKrw), Infinity)
-      : 0;
+    // leads the panel) can use the exact same numbers as everything below
+    // it. `selectedRow` defaults to the cheapest same-tier candidate, but
+    // follows viewState.selectedProvider once the user clicks a card --
+    // and falls back to cheapest again if that provider has no row in the
+    // current tier (e.g. after switching tiers).
+    const cheapestRow = compactRows.length
+      ? compactRows.reduce((min, row) => (row.monthlyCostKrw < min.monthlyCostKrw ? row : min))
+      : null;
+    const selectedRow = (viewState.selectedProvider
+      && compactRows.find((row) => row.provider === viewState.selectedProvider))
+      || cheapestRow;
+    const isCheapestSelected = !!selectedRow && !!cheapestRow && selectedRow === cheapestRow;
+    const selectedApiMonthlyKrw = selectedRow ? selectedRow.monthlyCostKrw : 0;
     const localEstimate = estimateLocal(viewState.tier, monthlyOutputTokens);
 
-    panel.querySelector("#apiCostVerdict").innerHTML = renderVerdictBanner(monthlyRequests, cheapestApiMonthlyKrw, localEstimate, uiLanguage);
-    panel.querySelector("#apiCostTable").innerHTML = renderCandidateCards(compactRows, uiLanguage);
+    panel.querySelector("#apiCostVerdict").innerHTML = renderVerdictBanner(monthlyRequests, selectedRow, localEstimate, uiLanguage, isCheapestSelected);
+    panel.querySelector("#apiCostTable").innerHTML = renderCandidateCards(compactRows, uiLanguage, selectedRow?.provider);
 
     const expandToggle = panel.querySelector("#apiCostExpandToggle");
     expandToggle.setAttribute("aria-expanded", String(viewState.expanded));
@@ -684,8 +743,8 @@
     const filteredRows = applyTableFilterAndSort(allRows);
     panel.querySelector("#apiCostFullTable").innerHTML = renderFullTable(filteredRows, uiLanguage, allRows);
 
-    panel.querySelector("#apiCostLocal").innerHTML = renderLocalSection(localEstimate, cheapestApiMonthlyKrw, uiLanguage);
-    panel.querySelector("#apiCostBreakeven").innerHTML = renderBreakevenViz(monthlyRequests, cheapestApiMonthlyKrw, localEstimate, uiLanguage);
+    panel.querySelector("#apiCostLocal").innerHTML = renderLocalSection(localEstimate, selectedApiMonthlyKrw, uiLanguage, selectedRow?.provider, isCheapestSelected);
+    panel.querySelector("#apiCostBreakeven").innerHTML = renderBreakevenViz(monthlyRequests, selectedRow, localEstimate, uiLanguage, isCheapestSelected);
 
     const meta = window.LLM_GPU_CHECKER_DATA?.apiPricingMeta;
     const caveat = meta?.basis?.[en ? "en" : "ko"] || "";

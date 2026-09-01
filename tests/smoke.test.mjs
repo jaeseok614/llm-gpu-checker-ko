@@ -449,6 +449,8 @@ test("API vs Local defaults to 3 tier-matched models with a computed usage summa
   [...compactRows()].forEach((row) => assert.match(row.querySelector(".api-cost-candidate-rates").textContent, /균형형/));
   const cheapestRow = app.document.querySelector("#apiCostTable .api-cost-candidate-card.is-cheapest");
   assert.ok(cheapestRow, "the cheapest of the 3 shown candidate cards should be flagged, even though it isn't the globally cheapest model");
+  assert.equal(cheapestRow.classList.contains("is-selected"), true, "before any card is clicked, the cheapest card should be selected by default");
+  assert.equal(cheapestRow.getAttribute("aria-selected"), "true");
 
   // The panel leads with a plain-language "결론" verdict banner (which side
   // is cheaper, the monthly figures for both, and a break-even sentence),
@@ -464,6 +466,29 @@ test("API vs Local defaults to 3 tier-matched models with a computed usage summa
   assert.ok(chart, "a break-even chart should render once usage is non-zero");
   assert.ok(chart.querySelector(".api-cost-chart-api-line"), "the chart should draw the rising API cost line");
   assert.ok(chart.querySelector(".api-cost-chart-local-line"), "the chart should draw the flat Local cost line");
+
+  // Candidate cards are clickable options in a listbox: clicking a
+  // non-cheapest card should make the verdict banner and break-even chart
+  // recompute against that card's provider instead of always the cheapest.
+  assert.equal(app.document.getElementById("apiCostTable").getAttribute("role"), "listbox");
+  const otherCard = [...compactRows()].find((row) => !row.classList.contains("is-cheapest"));
+  assert.ok(otherCard, "there should be a non-cheapest candidate card to select");
+  assert.equal(otherCard.getAttribute("role"), "option");
+  const otherProvider = otherCard.getAttribute("data-provider");
+  otherCard.click();
+  const reselected = app.document.querySelector(`#apiCostTable .api-cost-candidate-card[data-provider="${otherProvider}"]`);
+  assert.equal(reselected.classList.contains("is-selected"), true);
+  assert.equal(reselected.getAttribute("aria-selected"), "true");
+  const cheapestAfterSelect = app.document.querySelector("#apiCostTable .api-cost-candidate-card.is-cheapest");
+  assert.equal(cheapestAfterSelect.classList.contains("is-selected"), false, "selecting a different card should deselect the previously-selected cheapest card");
+  const verdictAfterSelect = app.document.getElementById("apiCostVerdict").textContent;
+  assert.match(verdictAfterSelect, new RegExp(`${otherProvider}.*비용`));
+  const chartAfterSelect = app.document.getElementById("apiCostBreakeven").textContent;
+  assert.match(chartAfterSelect, new RegExp(otherProvider));
+  // Clicking the same card again deselects it, reverting to the cheapest.
+  reselected.click();
+  assert.match(app.document.getElementById("apiCostVerdict").textContent, /API 최저 비용/);
+  assert.equal(app.document.querySelector("#apiCostTable .api-cost-candidate-card.is-cheapest").classList.contains("is-selected"), true);
 
   // "비교 조건" (comparison conditions): plain computed numbers, not framed
   // as an AI "해석" of the inputs -- every figure should be a deterministic

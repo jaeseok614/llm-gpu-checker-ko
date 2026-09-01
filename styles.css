@@ -9536,15 +9536,33 @@ body.guide-modal-open {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel-raised);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.api-cost-candidate-card:hover {
+  border-color: var(--blue);
+}
+
+.api-cost-candidate-card:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .api-cost-candidate-card.is-cheapest {
+  border-color: var(--green, #1a9c5c);
+}
+
+.api-cost-candidate-card.is-selected {
   border-color: var(--blue);
   background: var(--blue-soft);
+  box-shadow: inset 0 0 0 1px var(--blue);
 }
 
 .api-cost-candidate-provider {

@@ -1,6 +1,6 @@
 {
   "name": "ai-hardware-fit",
-  "version": "7.23.1",
+  "version": "7.24.0",
   "private": false,
   "description": "Open-source AI infrastructure sizing assistant for LLM, RAG, VLM, media, voice, and avatar workloads with SLA, BOM, TCO, and proposal exports.",
   "type": "module",
