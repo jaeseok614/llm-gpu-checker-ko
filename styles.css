@@ -416,10 +416,93 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .primary-gpu-control select,
-.primary-gpu-control input {
+.primary-gpu-control input,
+.primary-gpu-control .gpu-preset-trigger {
   min-height: 40px;
   border-color: var(--line-strong);
   font-weight: 700;
+}
+
+/* "내 GPU" custom dropdown -- a plain native <select> with 150+ options
+   opens its options as an OS-level popup that overlays the page (and can
+   even cover the browser's own chrome). This trigger button + in-flow list
+   panel replaces that visible interaction surface; the real <select> stays
+   in the DOM (hidden) as the value store every other script still reads. */
+.gpu-preset-combo {
+  position: relative;
+  min-width: 0;
+}
+
+.gpu-preset-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  background: var(--panel-raised);
+  color: var(--ink);
+  text-align: left;
+}
+
+.gpu-preset-trigger-caret {
+  color: var(--muted);
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.gpu-preset-trigger[aria-expanded="true"] .gpu-preset-trigger-caret {
+  transform: rotate(180deg);
+}
+
+.gpu-preset-list-panel {
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.gpu-preset-list-panel[hidden] {
+  display: none;
+}
+
+.gpu-preset-filter {
+  margin-bottom: 6px;
+}
+
+.gpu-preset-list {
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.gpu-preset-option {
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.gpu-preset-option:hover,
+.gpu-preset-option.is-highlighted {
+  background: var(--blue-soft);
+}
+
+.gpu-preset-option.is-selected {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.gpu-preset-list-empty {
+  margin: 6px 2px 2px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .hardware-copy {

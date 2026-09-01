@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v7.22.0 - 2026-09-01
+
+- **"내 GPU" 선택 드롭다운이 화면 밖으로 넘쳐 보이던 문제 수정:** 기존 네이티브 `<select id="gpuPreset">`는 브라우저가 자체적으로 그리는 오버레이 팝업이라 목록이 길면 브라우저 탭 바/창 경계까지 넘어가 보였습니다("선택할 때 기존 화면을 넘어가져서 불편해"). 이를 화면 안에서 아래로 쭉 펼쳐지는(in-flow) 커스텀 콤보박스로 교체했습니다: 트리거 버튼(`aria-haspopup="listbox"`, `aria-expanded`, `aria-controls`)을 누르면 그 아래 자리에 검색 입력과 `<ul role="listbox">` 목록이 바로 이어서 그려지며, 방향키로 하이라이트를 옮기고 Enter로 선택, Esc로 닫을 수 있습니다. 기존 `<select id="gpuPreset">`는 화면에서 숨겼지만 그대로 두어(`hidden`, 값 저장소 겸 `change` 이벤트 발생원 역할), 이 값을 읽던 기존 코드는 전혀 건드리지 않았습니다. 리팩터링 과정에서 놓칠 뻔한 접근성 라벨 누락(`aria-label`)과 한국어 모드에서 선택 후 트리거에 영문 브랜드명이 그대로 남던 번역 누락도 함께 고쳤습니다.
+- **AI 모델 카탈로그에 최신 오픈 웨이트 모델 3종 추가:** GLM-5.3-Flash(320B 총 파라미터 중 18B 활성 MoE, MIT 라이선스, 1M 토큰 컨텍스트, 네이티브 비전 입력), Qwen3.8-Flash-Next(125B 총 파라미터 중 6B 활성 MoE에 51B 규모 n-gram 조회 컴포넌트를 더한 Qwen4 아키텍처 오픈 웨이트 프리뷰, Qwen Community License 1.0, 262K 토큰 컨텍스트), Muse Glimmer 30B(Meta가 오랜만에 공개한 오픈 웨이트 모델로 약 29.6B dense 파라미터 + 1.8B ViT-G/14 비전 인코더, Apache 2.0, 128K 토큰 컨텍스트)를 각각 라이선스 정책과 출처 메타데이터까지 함께 등록했습니다.
+
 ## v7.21.5 - 2026-09-01
 
 - **"현재 단계" 진행 표시가 axe 접근성 검사(list 규칙)를 위반해 CI가 다시 실패하던 문제 수정:** v7.21.4에서 각 단계 `<li>`에 `role="button"`을 직접 얹었더니, `<li>`의 원래 암묵적 역할(listitem)이 button으로 덮어써져 부모 `<ol>`이 axe 기준으로 "listitem을 하나도 갖지 않은 리스트"가 되어 CI의 axe 검사(list 규칙)에서 막혔습니다("Error: axe found blocking issues: list [#workspaceJourney > ol]"). `<li>`는 원래대로 listitem 역할을 유지하도록 두고, `role="button"`·`tabindex`·클릭 핸들러 대상이 되는 `data-journey-step` 속성은 `<li>` 안에 새로 감싼 내부 `<span class="journey-step-trigger">` 쪽으로 옮겼습니다. 클릭/키보드 동작과 hover·focus 스타일은 이 내부 span을 기준으로 그대로 동작하며, axe-core를 로컬에서 직접 실행해 list 규칙 위반이 사라진 것을 확인했습니다.

@@ -176,13 +176,24 @@
           </div>
         </div>
         <div class="primary-gpu-control" id="gpuChangePanel" hidden>
-          <label class="field">
-            <span>내 GPU</span>
+          <div class="field">
+            <span id="gpuPresetFieldLabel">내 GPU</span>
             <div class="field-control-pair" id="gpuPresetPair">
-              <select id="gpuPreset" aria-label="기본 GPU"></select>
-              <input type="text" id="gpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="GPU 모델명 검색" hidden />
+              <div class="gpu-preset-combo" id="gpuPresetCombo">
+                <button type="button" class="gpu-preset-trigger" id="gpuPresetTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="gpuPresetListPanel" aria-labelledby="gpuPresetFieldLabel gpuPresetTriggerLabel">
+                  <span id="gpuPresetTriggerLabel">GPU를 선택하세요</span>
+                  <span class="gpu-preset-trigger-caret" aria-hidden="true">▾</span>
+                </button>
+                <div class="gpu-preset-list-panel" id="gpuPresetListPanel" hidden>
+                  <input type="text" class="gpu-preset-filter" id="gpuPresetFilter" autocomplete="off" placeholder="GPU 이름으로 검색" aria-label="GPU 이름으로 검색" aria-controls="gpuPresetList" />
+                  <ul class="gpu-preset-list" id="gpuPresetList" role="listbox" aria-label="GPU 목록"></ul>
+                  <p class="gpu-preset-list-empty" id="gpuPresetListEmpty" hidden>일치하는 GPU가 없습니다.</p>
+                </div>
+              </div>
+              <select id="gpuPreset" aria-label="기본 GPU" aria-hidden="true" tabindex="-1" hidden></select>
+              <input type="text" id="gpuPresetSearch" list="gpuFixedPresetOptions" autocomplete="off" placeholder="GPU 모델명 검색" aria-label="GPU 모델명 검색" hidden />
             </div>
-          </label>
+          </div>
           <datalist id="gpuFixedPresetOptions"></datalist>
         </div>
         <section class="hardware-capability-summary" id="hardwareCapabilitySummary" aria-live="polite" hidden></section>

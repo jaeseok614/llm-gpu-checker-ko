@@ -349,8 +349,8 @@ function selectPrimaryGpu(id, { persist = false } = {}) {
 }
 
 function focusPrimaryGpuSelector() {
-  $("gpuPreset")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-  $("gpuPreset")?.focus();
+  $("gpuPresetTrigger")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  $("gpuPresetTrigger")?.focus();
 }
 
 function selectOnboardingGpu(id) {
@@ -767,6 +767,7 @@ function populateSelects() {
     ),
   ].join("");
   $("gpuPreset").value = "";
+  renderGpuPresetOptionList();
   $("secondaryGpuPreset").innerHTML = [
     `<option value="none">사용 안 함</option>`,
     ...GPU_PRESETS
@@ -912,6 +913,112 @@ function syncGpuPresetSearchDisplay() {
   const isSecondarySearch = $("secondaryGpuPreset").value === "__search__";
   if ($("secondaryGpuPresetSearch")) $("secondaryGpuPresetSearch").hidden = !isSecondarySearch;
   $("secondaryGpuPresetPair")?.classList.toggle("is-custom", isSecondarySearch);
+
+  syncGpuPresetTriggerLabel();
+}
+
+// --- "내 GPU" custom dropdown -----------------------------------------
+//
+// The native <select id="gpuPreset"> now has 150+ options, and a plain
+// native <select> renders its dropdown as an OS-level popup that overlays
+// whatever is under it (can even cover the browser's own tabs/chrome on
+// some platforms) instead of pushing the rest of the page's content down.
+// That native select is kept in the DOM (hidden) purely as the value store
+// and "change" event source every other piece of code already reads/writes
+// -- selectPrimaryGpu(), the URL/localStorage restore in init(), the
+// existing "change" listener a few lines down, tests, etc. all keep
+// working unmodified. This block only adds a custom trigger button + an
+// in-flow (not position:absolute) filterable list on top of it, so opening
+// the list grows the panel in place instead of overlaying the page.
+let gpuPresetHighlightIndex = -1;
+
+function renderGpuPresetOptionList() {
+  const list = $("gpuPresetList");
+  if (!list) return;
+  list.innerHTML = GPU_PRESETS.map(
+    (gpu) => `<li role="option" class="gpu-preset-option" data-gpu-preset-option="${escapeAttr(gpu.id)}" id="gpuPresetOption-${escapeAttr(gpu.id)}">${escapeHtml(gpu.name)}</li>`,
+  ).join("");
+}
+
+function syncGpuPresetTriggerLabel() {
+  const label = $("gpuPresetTriggerLabel");
+  if (!label) return;
+  const value = $("gpuPreset").value;
+  const preset = GPU_PRESETS.find((gpu) => gpu.id === value);
+  // Read the display text back from the matching <li> instead of using
+  // preset.name directly: renderGpuPresetOptionList() runs once at startup
+  // and its text is kept in sync by the generic translateDynamicUi() sweep
+  // on every language toggle (e.g. "GeForce" -> "지포스" in Korean mode), but
+  // a plain GPU pick in "finder" mode doesn't re-run that sweep (see
+  // render()'s early-return branches -- only infra/placement/modelFinder/
+  // apiCost trigger it). Writing preset.name here directly would show the
+  // raw, untranslated brand name after every pick while in Korean mode.
+  const optionEl = value ? $(`gpuPresetOption-${value}`) : null;
+  label.textContent = preset ? (optionEl?.textContent ?? preset.name) : "GPU를 선택하세요";
+  $("gpuPresetList")?.querySelectorAll("[data-gpu-preset-option]").forEach((item) => {
+    const isSelected = item.dataset.gpuPresetOption === value;
+    item.classList.toggle("is-selected", isSelected);
+    item.setAttribute("aria-selected", String(isSelected));
+  });
+}
+
+function visibleGpuPresetOptions() {
+  return [...($("gpuPresetList")?.children || [])].filter((item) => !item.hidden);
+}
+
+function setGpuPresetHighlight(index) {
+  const items = visibleGpuPresetOptions();
+  items.forEach((item) => item.classList.remove("is-highlighted"));
+  if (!items.length) {
+    gpuPresetHighlightIndex = -1;
+    $("gpuPresetFilter")?.removeAttribute("aria-activedescendant");
+    return;
+  }
+  gpuPresetHighlightIndex = Math.max(0, Math.min(index, items.length - 1));
+  const active = items[gpuPresetHighlightIndex];
+  active.classList.add("is-highlighted");
+  active.scrollIntoView?.({ block: "nearest" });
+  $("gpuPresetFilter")?.setAttribute("aria-activedescendant", active.id);
+}
+
+function filterGpuPresetList(query) {
+  const list = $("gpuPresetList");
+  const empty = $("gpuPresetListEmpty");
+  if (!list) return;
+  const q = query.trim().toLowerCase();
+  let visibleCount = 0;
+  [...list.children].forEach((item) => {
+    const gpu = GPU_PRESETS.find((candidate) => candidate.id === item.dataset.gpuPresetOption);
+    const haystack = [gpu?.name, ...(gpu?.aliases || [])].filter(Boolean).join(" ").toLowerCase();
+    const visible = !q || haystack.includes(q);
+    item.hidden = !visible;
+    if (visible) visibleCount += 1;
+  });
+  if (empty) empty.hidden = visibleCount !== 0;
+  setGpuPresetHighlight(0);
+}
+
+function setGpuPresetListOpen(open) {
+  const panel = $("gpuPresetListPanel");
+  const trigger = $("gpuPresetTrigger");
+  if (!panel || !trigger) return;
+  panel.hidden = !open;
+  trigger.setAttribute("aria-expanded", String(open));
+  if (open) {
+    if ($("gpuPresetFilter")) $("gpuPresetFilter").value = "";
+    filterGpuPresetList("");
+    window.requestAnimationFrame?.(() => $("gpuPresetFilter")?.focus());
+  }
+}
+
+function chooseGpuPresetOption(id) {
+  setGpuPresetListOpen(false);
+  $("gpuPreset").value = id;
+  // The existing "change" listener already handles persisting the pick,
+  // re-rendering, collapsing the "GPU 변경" panel, and (for "custom")
+  // revealing/focusing the free-text search field -- no need to duplicate
+  // any of that here.
+  $("gpuPreset").dispatchEvent(new Event("change"));
 }
 
 function populatePrecisionSelect(id, options) {
@@ -1058,7 +1165,7 @@ function bindEvents() {
   $("changeGpuButton")?.addEventListener("click", () => {
     gpuChangeExpanded = !gpuChangeExpanded;
     refreshGpuChangePanel();
-    if (gpuChangeExpanded) $("gpuPreset")?.focus();
+    if (gpuChangeExpanded) $("gpuPresetTrigger")?.focus();
   });
 
   ["vramGb", "gpuCount", "secondaryGpuCount", "ramGb", "bandwidth", "reservedVramGb", "safetyMarginGb", "powerLimitW"].forEach((id) => {
@@ -1164,6 +1271,41 @@ function bindEvents() {
       // hiding the picker behind a button is to not leave it open after use.
       gpuChangeExpanded = false;
       refreshGpuChangePanel();
+    }
+  });
+
+  $("gpuPresetTrigger")?.addEventListener("click", () => {
+    setGpuPresetListOpen($("gpuPresetListPanel")?.hidden !== false);
+  });
+
+  $("gpuPresetList")?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-gpu-preset-option]");
+    if (option) chooseGpuPresetOption(option.dataset.gpuPresetOption);
+  });
+
+  $("gpuPresetFilter")?.addEventListener("input", (event) => filterGpuPresetList(event.target.value));
+
+  $("gpuPresetFilter")?.addEventListener("keydown", (event) => {
+    const items = visibleGpuPresetOptions();
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setGpuPresetHighlight(gpuPresetHighlightIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setGpuPresetHighlight(gpuPresetHighlightIndex - 1);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const active = items[gpuPresetHighlightIndex] || items[0];
+      if (active) chooseGpuPresetOption(active.dataset.gpuPresetOption);
+    } else if (event.key === "Escape") {
+      setGpuPresetListOpen(false);
+      $("gpuPresetTrigger")?.focus();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if ($("gpuPresetListPanel")?.hidden === false && !$("gpuPresetCombo")?.contains(event.target)) {
+      setGpuPresetListOpen(false);
     }
   });
 

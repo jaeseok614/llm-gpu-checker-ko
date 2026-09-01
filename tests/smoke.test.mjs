@@ -214,7 +214,7 @@ test("workspace journey steps are clickable and navigate between finder steps", 
   assert.equal(app.document.getElementById("gpuChangePanel").hidden, true);
   journeySteps()[0].dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
   assert.equal(app.document.getElementById("gpuChangePanel").hidden, false);
-  assert.equal(app.document.activeElement.id, "gpuPreset");
+  assert.equal(app.document.activeElement.id, "gpuPresetTrigger");
 
   app.eval('gpuChangeExpanded = false; refreshGpuChangePanel(); setCoreTaskMode("infra");');
   assert.equal(app.document.querySelectorAll("#workspaceJourney [data-journey-step]").length, 0);
@@ -240,6 +240,67 @@ test("GPU selection renders three quick recommendations", () => {
     app.eval(`getAllModels().filter((model) => model.type === "audio-tts").length`),
     "voice cloning must not be assigned to every TTS model",
   );
+});
+
+test("the \"내 GPU\" picker is a custom in-flow dropdown, not a native <select> overlay", () => {
+  app.eval('gpuChangeExpanded = true; refreshGpuChangePanel();');
+  const trigger = app.document.getElementById("gpuPresetTrigger");
+  const panel = app.document.getElementById("gpuPresetListPanel");
+  const filter = app.document.getElementById("gpuPresetFilter");
+  assert.equal(panel.hidden, true);
+  assert.equal(trigger.getAttribute("aria-expanded"), "false");
+
+  // Opening the list must not switch to position:absolute/overlay styling --
+  // it's meant to grow the panel in place instead of covering the page, so
+  // the underlying native <select> stays hidden throughout.
+  assert.equal(app.document.getElementById("gpuPreset").hidden, true);
+
+  trigger.dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(panel.hidden, false);
+  assert.equal(trigger.getAttribute("aria-expanded"), "true");
+  assert.ok(app.document.querySelectorAll("#gpuPresetList [data-gpu-preset-option]").length > 100);
+
+  filter.value = "5090";
+  filter.dispatchEvent(new app.Event("input", { bubbles: true }));
+  const visible = () => [...app.document.querySelectorAll("#gpuPresetList [data-gpu-preset-option]")].filter((item) => !item.hidden);
+  assert.ok(visible().length >= 1 && visible().length < 10);
+  assert.equal(app.document.getElementById("gpuPresetListEmpty").hidden, true);
+
+  visible()[0].dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(panel.hidden, true, "choosing an option closes the list");
+  assert.equal(app.document.getElementById("gpuPreset").value, "rtx5090-32");
+  assert.equal(app.document.getElementById("gpuPresetTriggerLabel").textContent, "지포스 RTX 5090 32GB");
+  assert.equal(app.document.getElementById("gpuPresetOption-rtx5090-32").getAttribute("aria-selected"), "true");
+
+  // Keyboard: Enter on the highlighted (first) filtered option selects it.
+  trigger.dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  filter.value = "rtx 4090";
+  filter.dispatchEvent(new app.Event("input", { bubbles: true }));
+  filter.dispatchEvent(new app.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  assert.equal(app.document.getElementById("gpuPreset").value, "rtx4090-24");
+  assert.equal(panel.hidden, true);
+
+  // Escape closes without changing the current selection.
+  trigger.dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(panel.hidden, false);
+  filter.dispatchEvent(new app.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  assert.equal(panel.hidden, true);
+  assert.equal(app.document.getElementById("gpuPreset").value, "rtx4090-24");
+
+  // A query with no matches shows the empty state instead of an empty list.
+  trigger.dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  filter.value = "no-such-gpu-zzz";
+  filter.dispatchEvent(new app.Event("input", { bubbles: true }));
+  assert.equal(visible().length, 0);
+  assert.equal(app.document.getElementById("gpuPresetListEmpty").hidden, false);
+
+  // Clicking outside the combo closes it too.
+  filter.value = "";
+  filter.dispatchEvent(new app.Event("input", { bubbles: true }));
+  app.document.body.dispatchEvent(new app.MouseEvent("click", { bubbles: true }));
+  assert.equal(panel.hidden, true);
+
+  app.eval('selectPrimaryGpu("rtx3060-12"); coreTaskMode = "finder"; appMode = "simple"; render();');
 });
 
 test("quick recommendations keep purpose choices and models inside the selected workload", () => {

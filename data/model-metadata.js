@@ -1397,6 +1397,18 @@ mergeModelMetadata({
     releaseDate: "2026-08-14",
     sourceUrl: "https://huggingface.co/Qwen/Qwen3.8-27B",
   },
+  "GLM-5.3-Flash": {
+    releaseDate: "2026-08-20",
+    sourceUrl: "https://llm-stats.com/models/glm-5.3-flash",
+  },
+  "Qwen3.8-Flash-Next": {
+    releaseDate: "2026-08-25",
+    sourceUrl: "https://llm-stats.com/models/qwen3.8-flash-next",
+  },
+  "Muse Glimmer 30B": {
+    releaseDate: "2026-08-18",
+    sourceUrl: "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+  },
   "Mistral Small 4 119B A6B": {
     releaseDate: "2026-03-16",
     sourceUrl: "https://legal.mistral.ai/ai-governance/models",

@@ -113,7 +113,7 @@
       const panel = document.getElementById("gpuChangePanel");
       const button = document.getElementById("changeGpuButton");
       if (panel?.hidden && button) button.click();
-      document.getElementById("gpuPreset")?.focus();
+      document.getElementById("gpuPresetTrigger")?.focus();
       document.getElementById("hardwarePanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     } else if (index === 1) {
       window.setAppMode?.("simple");

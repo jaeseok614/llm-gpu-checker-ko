@@ -139,6 +139,16 @@ window.LLM_GPU_CHECKER_DATA.licensePolicies = {
     },
     "https://huggingface.co/Qwen/Qwen2.5-72B-Instruct/blob/main/LICENSE",
   ),
+  "Qwen Community License 1.0": licensePolicy(
+    "conditional",
+    "조건부 상업 이용",
+    "공개 가중치 프리뷰",
+    {
+      ko: "Qwen Community License 1.0은 상업 이용을 허용하지만 월간 활성 사용자 1억 명 초과 시 별도 허가가 필요하며, 실험적 프리뷰 성격상 표시·재배포 조건을 모델 카드에서 다시 확인해야 합니다.",
+      en: "The Qwen Community License 1.0 allows commercial use, but exceeding 100 million monthly active users requires separate permission; as an experimental preview release, re-check the attribution/redistribution terms on the model card.",
+    },
+    "https://huggingface.co/Qwen/Qwen3.8-Flash-Next/blob/main/LICENSE",
+  ),
   "Qwen Research": licensePolicy(
     "noncommercial",
     "연구·비상업 전용",
