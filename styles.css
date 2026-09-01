@@ -9419,6 +9419,231 @@ body.guide-modal-open {
   color: var(--blue);
 }
 
+/* v7.23 — "API vs Local" conclusion-first redesign: a verdict banner leads
+   the panel, the default 3-model view is comparison cards instead of a
+   table, the workload/tier selectors are restructured so "사용 목적" reads
+   as the primary input and "등급 변경" as a secondary override, and a small
+   inline SVG chart visualizes the API-vs-Local break-even point. */
+
+.api-cost-purpose-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.api-cost-purpose-field {
+  width: 100%;
+}
+
+.api-cost-tier-hint-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.api-cost-tier-hint-row .api-cost-tier-hint {
+  margin: 0;
+  flex: 1 1 240px;
+}
+
+.api-cost-tier-inline {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+}
+
+.api-cost-tier-inline span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.api-cost-tier-inline select {
+  min-height: 30px;
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.api-cost-verdict {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--blue-soft);
+}
+
+.api-cost-verdict-headline {
+  margin: 0;
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.api-cost-verdict-usage {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.api-cost-verdict-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.api-cost-verdict-figures span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.api-cost-verdict-figures strong {
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.api-cost-verdict-diff strong {
+  color: var(--blue);
+}
+
+.api-cost-verdict-breakeven {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.api-cost-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.api-cost-candidate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-raised);
+}
+
+.api-cost-candidate-card.is-cheapest {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.api-cost-candidate-provider {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.api-cost-candidate-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.api-cost-candidate-cost small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.api-cost-candidate-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.api-cost-candidate-rates {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.api-cost-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.api-cost-breakeven {
+  margin-top: 16px;
+}
+
+.api-cost-breakeven h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.api-cost-chart {
+  width: 100%;
+  height: auto;
+  max-width: 640px;
+}
+
+.api-cost-chart-local-line {
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.api-cost-chart-api-line {
+  stroke: var(--blue);
+  stroke-width: 2.5;
+}
+
+.api-cost-chart-breakeven-line {
+  stroke: var(--yellow);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.api-cost-chart-breakeven-label,
+.api-cost-chart-current-label,
+.api-cost-chart-local-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.api-cost-chart-current-dot {
+  fill: var(--blue);
+}
+
+.api-cost-chart-tick {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+.api-cost-chart-caption {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+
 /* v7.19 — the plain-class .core-task-switcher/.core-task-actions/
    .core-task-button tightening above (v7.18) still left real problems once
    actually rendered in a browser (jsdom's cascade check only proves which
@@ -9523,3 +9748,53 @@ body.guide-modal-open {
     white-space: normal;
   }
 }
+
+/* v7.24 — regroup the top nav's 6 flat tabs into 4 goal-oriented clusters
+   (모델 찾기 / 인프라 설계 / 비용 비교 / 데이터) per user feedback that 6
+   flat, same-weight tabs read as "a pile of tools" rather than a product
+   with a clear structure. All 6 underlying [data-core-task] buttons are
+   unchanged (same markup, same click/aria/i18n bindings) -- only their
+   grouping changed, from direct children of .core-task-actions to being
+   nested one level deeper under .core-task-group/.core-task-group-buttons.
+   Deliberately CSS Grid with explicit `repeat(4, 1fr)` tracks rather than
+   flex-wrap: the v7.19/v7.20 history above this block documents two
+   separate real-browser-only bugs caused by flex's intrinsic (shrink-to-
+   fit) sizing pass letting one item balloon and consume the row -- grid's
+   explicit track sizing has no equivalent intrinsic-sizing trap. */
+#coreTaskSwitcher .core-task-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex-wrap: unset;
+  gap: 10px 12px;
+  align-items: stretch;
+}
+
+.core-task-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.core-task-group-label {
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.core-task-group-buttons {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 680px) {
+  #coreTaskSwitcher .core-task-actions {
+    grid-template-columns: 1fr;
+  }
+}
+

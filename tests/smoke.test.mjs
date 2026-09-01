@@ -116,11 +116,11 @@ test("v7.5 terminal results are sanitized before submission", () => {
 after(() => dom?.window.close());
 
 test("first screen presents a flat tool-switcher tab bar with all tools visible (no More menu)", () => {
-  assert.equal(app.document.querySelectorAll(".core-task-actions > [data-core-task]").length, 6);
+  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 6);
   assert.equal(app.document.querySelectorAll(".task-choice-number").length, 0);
   assert.equal(app.document.querySelector("[data-more-toggle]"), null);
-  assert.ok(app.document.querySelector('.core-task-actions > [data-core-task="placement"]'));
-  assert.ok(app.document.querySelector('.core-task-actions > [data-core-task="apiCost"]'));
+  assert.ok(app.document.querySelector('.core-task-actions [data-core-task="placement"]'));
+  assert.ok(app.document.querySelector('.core-task-actions [data-core-task="apiCost"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
@@ -130,6 +130,32 @@ test("first screen presents a flat tool-switcher tab bar with all tools visible 
   assert.match(app.document.querySelector("[data-showcase-feedback]").href, /product-feedback\.yml/);
   assert.ok(app.document.querySelector("[data-open-start-guide]"));
   assert.ok(app.document.querySelector(".app-header [data-open-start-guide]"));
+
+  // v7.24: the 6 tabs are visually grouped into 4 goal-oriented clusters
+  // (모델 찾기 / 인프라 설계 / 비용 비교 / 데이터) instead of reading as 6
+  // flat, same-weight tools. Every underlying [data-core-task] button
+  // still exists and is still directly clickable -- only the grouping
+  // changed, not the click targets or their count.
+  const groups = app.document.querySelectorAll(".core-task-actions .core-task-group");
+  assert.equal(groups.length, 4);
+  const groupLabels = [...app.document.querySelectorAll(".core-task-group-label")].map((node) => node.textContent);
+  assert.deepEqual(groupLabels, ["모델 찾기", "인프라 설계", "비용 비교", "데이터"]);
+  assert.ok(app.document.querySelector('[data-core-group="model"] [data-core-task="finder"]'));
+  assert.ok(app.document.querySelector('[data-core-group="model"] [data-core-task="modelFinder"]'));
+  assert.ok(app.document.querySelector('[data-core-group="infra"] [data-core-task="infra"]'));
+  assert.ok(app.document.querySelector('[data-core-group="infra"] [data-core-task="placement"]'));
+  assert.ok(app.document.querySelector('[data-core-group="cost"] [data-core-task="apiCost"]'));
+  assert.ok(app.document.querySelector('[data-core-group="data"] [data-core-task="community"]'));
+  // Every tab button inside the switcher should still carry role="tab"
+  // (assigned via the tablist's button-descendant walk, not a direct-child
+  // walk -- grouping added a layer of wrapper divs between the tablist and
+  // its buttons). This deliberately excludes the handful of cross-nav
+  // "bridge" buttons elsewhere on the page that reuse [data-core-task] as a
+  // click target (e.g. the API-vs-Local panel's "인프라 견적" link) -- those
+  // aren't real tabs and were never assigned role="tab".
+  [...app.document.querySelectorAll(".core-task-actions [data-core-task]")].forEach((button) => {
+    assert.equal(button.getAttribute("role"), "tab");
+  });
 });
 
 test("locale helpers and price data trust remain deterministic", () => {
@@ -415,14 +441,29 @@ test("API vs Local defaults to 3 tier-matched models with a computed usage summa
   assert.equal(app.document.getElementById("apiCostPanel").hidden, false);
   assert.match(app.document.getElementById("apiCostTitle").textContent, /API vs Local/);
 
-  // Default view: exactly 3 models (one per provider) matching the
-  // Quality selector's default tier ("balanced"), not all 9 upfront.
-  const compactRows = () => app.document.querySelectorAll("#apiCostTable tbody tr");
+  // Default view: exactly 3 candidate cards (one per provider) matching the
+  // Tier selector's default tier ("balanced"), not all 9 upfront.
+  const compactRows = () => app.document.querySelectorAll("#apiCostTable .api-cost-candidate-card");
   assert.equal(compactRows().length, 3);
   assert.equal(app.document.getElementById("apiCostTier").value, "balanced");
-  [...compactRows()].forEach((row) => assert.match(row.cells[2].textContent, /균형형/));
-  const cheapestRow = app.document.querySelector("#apiCostTable tbody tr.is-cheapest");
-  assert.ok(cheapestRow, "the cheapest of the 3 shown models should be flagged, even though it isn't the globally cheapest model");
+  [...compactRows()].forEach((row) => assert.match(row.querySelector(".api-cost-candidate-rates").textContent, /균형형/));
+  const cheapestRow = app.document.querySelector("#apiCostTable .api-cost-candidate-card.is-cheapest");
+  assert.ok(cheapestRow, "the cheapest of the 3 shown candidate cards should be flagged, even though it isn't the globally cheapest model");
+
+  // The panel leads with a plain-language "결론" verdict banner (which side
+  // is cheaper, the monthly figures for both, and a break-even sentence),
+  // computed from the same numbers as the rest of the panel.
+  const verdict = app.document.getElementById("apiCostVerdict").textContent;
+  assert.match(verdict, /API 사용이 유리|Local 구축이 유리/);
+  assert.match(verdict, /API 최저 비용/);
+  assert.match(verdict, /Local 환산 비용/);
+  assert.match(verdict, /₩[\d,]+/);
+
+  // A small inline SVG chart visualizes the API-vs-Local break-even point.
+  const chart = app.document.querySelector("#apiCostBreakeven svg.api-cost-chart");
+  assert.ok(chart, "a break-even chart should render once usage is non-zero");
+  assert.ok(chart.querySelector(".api-cost-chart-api-line"), "the chart should draw the rising API cost line");
+  assert.ok(chart.querySelector(".api-cost-chart-local-line"), "the chart should draw the flat Local cost line");
 
   // "비교 조건" (comparison conditions): plain computed numbers, not framed
   // as an AI "해석" of the inputs -- every figure should be a deterministic
@@ -439,7 +480,7 @@ test("API vs Local defaults to 3 tier-matched models with a computed usage summa
   app.document.getElementById("apiCostWorkload").dispatchEvent(new app.Event("change"));
   assert.equal(app.document.getElementById("apiCostTier").value, "flagship");
   assert.equal(compactRows().length, 3);
-  [...compactRows()].forEach((row) => assert.match(row.cells[2].textContent, /플래그십/));
+  [...compactRows()].forEach((row) => assert.match(row.querySelector(".api-cost-candidate-rates").textContent, /플래그십/));
   assert.match(app.document.getElementById("apiCostTierHint").textContent, /코딩.*플래그십/);
 
   // "전체 9개 모델 보기" expands to the full catalog with the provider/tier

@@ -79,30 +79,50 @@
     <main class="app-shell" id="mainContent" tabindex="-1">
       <section class="core-task-switcher" id="coreTaskSwitcher" aria-label="주요 작업 선택">
         <div class="core-task-actions" role="tablist" aria-label="주요 작업">
-          <button type="button" class="core-task-button is-active" data-core-task="finder" aria-selected="true">
-            <span>GPU → Model</span>
-            <small>내 GPU에서 실행 가능한 모델</small>
-          </button>
-          <button type="button" class="core-task-button" data-core-task="modelFinder" aria-selected="false">
-            <span>Model → GPU</span>
-            <small>모델에 적합한 GPU</small>
-          </button>
-          <button type="button" class="core-task-button" data-core-task="infra" aria-selected="false">
-            <span>Infrastructure</span>
-            <small>AI 서비스 인프라 견적</small>
-          </button>
-          <button type="button" class="core-task-button" data-core-task="community" aria-selected="false">
-            <span>Benchmarks</span>
-            <small>실측·벤치마크 데이터</small>
-          </button>
-          <button type="button" class="core-task-button" data-core-task="placement" aria-selected="false">
-            <span>Stack Planner</span>
-            <small>여러 모델 함께 배치</small>
-          </button>
-          <button type="button" class="core-task-button" data-core-task="apiCost" aria-selected="false">
-            <span>API Cost</span>
-            <small>API 비용 계산기</small>
-          </button>
+          <div class="core-task-group" data-core-group="model">
+            <span class="core-task-group-label">모델 찾기</span>
+            <div class="core-task-group-buttons">
+              <button type="button" class="core-task-button is-active" data-core-task="finder" aria-selected="true">
+                <span>GPU → Model</span>
+                <small>내 GPU에서 실행 가능한 모델</small>
+              </button>
+              <button type="button" class="core-task-button" data-core-task="modelFinder" aria-selected="false">
+                <span>Model → GPU</span>
+                <small>모델에 적합한 GPU</small>
+              </button>
+            </div>
+          </div>
+          <div class="core-task-group" data-core-group="infra">
+            <span class="core-task-group-label">인프라 설계</span>
+            <div class="core-task-group-buttons">
+              <button type="button" class="core-task-button" data-core-task="infra" aria-selected="false">
+                <span>Infrastructure</span>
+                <small>AI 서비스 인프라 견적</small>
+              </button>
+              <button type="button" class="core-task-button" data-core-task="placement" aria-selected="false">
+                <span>Stack Planner</span>
+                <small>여러 모델 함께 배치</small>
+              </button>
+            </div>
+          </div>
+          <div class="core-task-group" data-core-group="cost">
+            <span class="core-task-group-label">비용 비교</span>
+            <div class="core-task-group-buttons">
+              <button type="button" class="core-task-button" data-core-task="apiCost" aria-selected="false">
+                <span>API Cost</span>
+                <small>API 비용 계산기</small>
+              </button>
+            </div>
+          </div>
+          <div class="core-task-group" data-core-group="data">
+            <span class="core-task-group-label">데이터</span>
+            <div class="core-task-group-buttons">
+              <button type="button" class="core-task-button" data-core-task="community" aria-selected="false">
+                <span>Benchmarks</span>
+                <small>실측·벤치마크 데이터</small>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="guide-modal-backdrop" id="guideModalBackdrop" hidden></div>
         <div class="getting-started-panel" id="gettingStartedPanel" role="dialog" aria-modal="true" aria-label="처음 사용 가이드" hidden>

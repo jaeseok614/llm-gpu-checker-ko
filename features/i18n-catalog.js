@@ -22,6 +22,10 @@
     "core.placement.note": { ko: "여러 모델 함께 배치", en: "Plan multi-model GPU placement" },
     "core.apiCost.title": { ko: "API Cost", en: "API Cost" },
     "core.apiCost.note": { ko: "API 비용 계산기", en: "API cost calculator" },
+    "core.group.model": { ko: "모델 찾기", en: "Find a model" },
+    "core.group.infra": { ko: "인프라 설계", en: "Infra design" },
+    "core.group.cost": { ko: "비용 비교", en: "Cost compare" },
+    "core.group.data": { ko: "데이터", en: "Data" },
     "core.demo.examplesTitle": { ko: "예시로 보기", en: "Try examples" },
     "core.demo.gpu": { ko: "RTX 3060 모델 추천", en: "RTX 3060 model picks" },
     "core.demo.model": { ko: "Qwen 32B용 GPU 찾기", en: "Find a GPU for Qwen 32B" },
@@ -54,6 +58,10 @@
     ["[data-core-task='placement'] > small", "core.placement.note"],
     ["[data-core-task='apiCost'] > span", "core.apiCost.title"],
     ["[data-core-task='apiCost'] > small", "core.apiCost.note"],
+    ["[data-core-group='model'] > .core-task-group-label", "core.group.model"],
+    ["[data-core-group='infra'] > .core-task-group-label", "core.group.infra"],
+    ["[data-core-group='cost'] > .core-task-group-label", "core.group.cost"],
+    ["[data-core-group='data'] > .core-task-group-label", "core.group.data"],
     ["[data-guide-examples-title]", "core.demo.examplesTitle"],
     ["[data-demo-gpu]", "core.demo.gpu"],
     ["[data-demo-model]", "core.demo.model"],
@@ -80,9 +88,7 @@
       });
     });
     root.querySelectorAll("[role='tablist']").forEach((tablist) => {
-      [...tablist.children].forEach((node) => {
-        if (node.matches?.("button")) node.setAttribute("role", "tab");
-      });
+      tablist.querySelectorAll("button").forEach((node) => node.setAttribute("role", "tab"));
     });
     root.querySelectorAll(".command-block").forEach((node) => node.setAttribute("tabindex", "0"));
   }
