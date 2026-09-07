@@ -73,6 +73,16 @@
     balanced: { modelName: "Qwen2.5 32B Instruct", gpuId: "rtx5090-32", quantId: "q4" },
     flagship: { modelName: "Llama 3.3 70B Instruct", gpuId: "rtx6000ada-48", quantId: "q3" },
   };
+  // Same model+quant per tier as LOCAL_TIER_CONFIG (the workload is the
+  // same regardless of who owns the GPU), but paired with a GPU that's
+  // actually rentable by the hour on RunPod/Vast.ai/Lambda instead of a
+  // consumer card you'd buy outright -- see data/cloud-gpu-pricing.js for
+  // the per-provider hourly rates matching each of these gpuIds.
+  const CLOUD_TIER_CONFIG = {
+    economy: { modelName: "Qwen3 8B", gpuId: "rtx4090-24", quantId: "q4" },
+    balanced: { modelName: "Qwen2.5 32B Instruct", gpuId: "a100-pcie-80", quantId: "q4" },
+    flagship: { modelName: "Llama 3.3 70B Instruct", gpuId: "h100-pcie-80", quantId: "q3" },
+  };
   // Assumed light concurrent batching (not user-configurable here -- the
   // infra flow is where QPS/concurrency become real inputs), the same
   // batch-efficiency curve infrastructure-sizing.js uses for its own
@@ -82,6 +92,12 @@
   const LOCAL_ELECTRICITY_KRW_PER_KWH = 150;
   const LOCAL_MAINTENANCE_PCT = 8;
   const SECONDS_PER_MONTH = 60 * 60 * 24 * 30;
+  // Always-on assumption for both self-hosted and cloud-rented GPUs --
+  // serving real-time requests needs the instance running continuously,
+  // the same way a purchased GPU sits powered on 24/7 regardless of
+  // moment-to-moment traffic. 730 = 365*24/12, the standard
+  // hours-per-month cloud providers themselves bill against.
+  const HOURS_PER_MONTH = 730;
 
   function providerOptions() {
     return [...new Set(apiModels().map((model) => model.provider))].sort();
@@ -144,8 +160,13 @@
   // -> batchEfficiency curve, purchaseKrw + 3x annual energy + 3x maintenance
   // for a 3-year TCO, monthly = threeYearTcoKrw / 36) so the two flows stay
   // conceptually consistent even though this one is much simpler.
-  function estimateLocal(tier, monthlyOutputTokens) {
-    const config = LOCAL_TIER_CONFIG[tier] || LOCAL_TIER_CONFIG.balanced;
+  // Shared by estimateLocal() and estimateCloud(): given a (model, GPU,
+  // quant) triple, works out required weight footprint, achievable
+  // throughput, and how many of that GPU are needed to cover the given
+  // monthly output-token volume. Everything after this point (purchase-vs-
+  // rental cost) is specific to who owns the hardware, so it lives in each
+  // of those two functions instead of here.
+  function computeGpuRequirement(config, monthlyOutputTokens) {
     const models = typeof GENERATIVE_MODELS !== "undefined" ? GENERATIVE_MODELS : [];
     const gpus = typeof GPU_PRESETS !== "undefined" ? GPU_PRESETS : [];
     const quants = typeof QUANTS !== "undefined" ? QUANTS : [];
@@ -163,6 +184,19 @@
     const safeTokS = singleStreamSpeed * batchEfficiency * LOCAL_UTILIZATION_TARGET;
     const monthlyCapacityPerGpu = safeTokS * SECONDS_PER_MONTH;
     const gpuCount = Math.max(1, Math.ceil(Math.max(0, Number(monthlyOutputTokens) || 0) / monthlyCapacityPerGpu));
+
+    return {
+      model, gpu, quant, gpuCount,
+      requiredWeightsGb, vram, headroomGb: vram - requiredWeightsGb,
+      singleStreamSpeed, safeTokS, monthlyCapacityPerGpu,
+    };
+  }
+
+  function estimateLocal(tier, monthlyOutputTokens) {
+    const config = LOCAL_TIER_CONFIG[tier] || LOCAL_TIER_CONFIG.balanced;
+    const requirement = computeGpuRequirement(config, monthlyOutputTokens);
+    if (!requirement) return null;
+    const { model, gpu, quant, gpuCount } = requirement;
 
     const market = typeof gpuMarketReference === "function"
       ? gpuMarketReference(gpu)
@@ -184,11 +218,43 @@
 
     return {
       tier, model, gpu, quant, gpuCount,
-      requiredWeightsGb, vram, headroomGb: vram - requiredWeightsGb,
-      singleStreamSpeed, safeTokS, monthlyCapacityPerGpu,
+      requiredWeightsGb: requirement.requiredWeightsGb, vram: requirement.vram, headroomGb: requirement.headroomGb,
+      singleStreamSpeed: requirement.singleStreamSpeed, safeTokS: requirement.safeTokS, monthlyCapacityPerGpu: requirement.monthlyCapacityPerGpu,
       unitPriceKrw, priceSource, powerW,
       purchaseKrw, annualEnergyKrw, threeYearTcoKrw, monthlyLocalKrw, monthlyRunningKrw,
     };
+  }
+
+  // Cloud-rental counterpart to estimateLocal(): same (model, quant) per
+  // tier, same GPU-count-from-throughput math, but priced as an
+  // always-on hourly rental (see HOURS_PER_MONTH) across each of the 3
+  // providers in data/cloud-gpu-pricing.js instead of a one-time purchase
+  // + energy/maintenance TCO. Returns one row per provider so the UI can
+  // show RunPod/Vast.ai/Lambda side by side, the same way the API side
+  // shows one candidate card per provider.
+  function estimateCloud(tier, monthlyOutputTokens) {
+    const config = CLOUD_TIER_CONFIG[tier] || CLOUD_TIER_CONFIG.balanced;
+    const requirement = computeGpuRequirement(config, monthlyOutputTokens);
+    if (!requirement) return null;
+    const { model, gpu, quant, gpuCount } = requirement;
+
+    const tierPricing = (window.LLM_GPU_CHECKER_DATA?.cloudGpuPricing || []).find((row) => row.tier === tier);
+    const rate = apiExchangeRate();
+    const providers = (tierPricing?.providers || []).map((row) => {
+      const monthlyUsd = typeof row.hourlyUsd === "number" ? row.hourlyUsd * HOURS_PER_MONTH * gpuCount : null;
+      return {
+        provider: row.provider,
+        hourlyUsd: row.hourlyUsd,
+        monthlyCostUsd: monthlyUsd,
+        monthlyCostKrw: monthlyUsd !== null ? monthlyUsd * rate : null,
+        pricingKind: row.pricingKind,
+        updatedAt: row.updatedAt || "",
+        sourceUrl: row.sourceUrl || "",
+        note: row.note || null,
+      };
+    });
+
+    return { tier, model, gpu, quant, gpuCount, providers };
   }
 
   function formatUsd(value) {
@@ -268,6 +334,7 @@
         </div>
       </div>
       <div class="api-cost-local" id="apiCostLocal"></div>
+      <div class="api-cost-cloud" id="apiCostCloud"></div>
       <div class="api-cost-breakeven" id="apiCostBreakeven"></div>
       <p class="studio-form-note" id="apiCostCaveat"></p>
       <p id="apiCostBridge"></p>
@@ -429,35 +496,76 @@
   // localEstimate -- nothing new is calculated here except the break-even
   // request volume (linear in requests, since the usage inputs hold
   // input/output tokens-per-request fixed).
-  function renderVerdictBanner(monthlyRequests, selectedRow, localEstimate, language, isCheapestSelected) {
+  // Short label used in the compact diff/breakeven sentences (not the
+  // fuller figure-row labels) -- kept in one place so API/Local/Cloud read
+  // consistently everywhere in the banner.
+  function candidateShortLabel(candidate, en) {
+    if (candidate.key === "api") return "API";
+    if (candidate.key === "local") return "Local";
+    return en ? `${candidate.label} (Cloud)` : `${candidate.label} 대여`;
+  }
+
+  function renderVerdictBanner(monthlyRequests, selectedRow, localEstimate, cloudCandidate, language, isCheapestSelected) {
     const en = language === "en";
     if (!localEstimate || !selectedRow) return "";
     const selectedApiMonthlyKrw = selectedRow.monthlyCostKrw;
-    const apiFavorable = selectedApiMonthlyKrw <= localEstimate.monthlyLocalKrw;
-    const diffKrw = Math.abs(selectedApiMonthlyKrw - localEstimate.monthlyLocalKrw);
     const numberLocale = en ? "en-US" : "ko-KR";
+
+    // Three-way comparison: API (the selected/cheapest candidate card),
+    // Local (self-hosted), and -- when available for this tier -- the
+    // cheapest Cloud rental provider. cloudCandidate is null when no cloud
+    // provider offers a comparable GPU for this tier (e.g. Lambda has no
+    // consumer-tier GPU for the economy tier), in which case this quietly
+    // degrades back to the original 2-way API-vs-Local comparison.
+    const candidates = [
+      { key: "api", label: selectedRow.provider, monthlyKrw: selectedApiMonthlyKrw },
+      { key: "local", label: en ? "Local" : "Local", monthlyKrw: localEstimate.monthlyLocalKrw },
+      ...(cloudCandidate ? [{ key: "cloud", label: cloudCandidate.provider, monthlyKrw: cloudCandidate.monthlyCostKrw }] : []),
+    ].sort((a, b) => a.monthlyKrw - b.monthlyKrw);
+    const winner = candidates[0];
+    const runnerUp = candidates[1];
+    const apiFavorable = winner.key === "api";
+    const diffKrw = Math.abs(winner.monthlyKrw - runnerUp.monthlyKrw);
+
+    const winnerPhrase = en
+      ? (winner.key === "api" ? "using the API is cheaper" : winner.key === "local" ? "self-hosting (Local) is cheaper" : `renting on ${winner.label} (Cloud) is cheaper`)
+      : (winner.key === "api" ? "API 사용이" : winner.key === "local" ? "Local 구축이" : `${winner.label} 대여가`);
     const headline = en
-      ? `Based on ${selectedRow.name}, ${apiFavorable ? "using the API is cheaper" : "self-hosting (Local) is cheaper"}`
-      : `${selectedRow.name} 기준으로는 ${apiFavorable ? "API 사용이" : "Local 구축이"} 유리합니다`;
-    const diffSentence = apiFavorable
-      ? (en ? `API is about ${formatKrw(diffKrw)} cheaper per month` : `API가 월 ${formatKrw(diffKrw)} 더 저렴`)
-      : (en ? `Local is about ${formatKrw(diffKrw)} cheaper per month` : `Local이 월 ${formatKrw(diffKrw)} 더 저렴`);
+      ? `Based on ${selectedRow.name}, ${winnerPhrase}`
+      : `${selectedRow.name} 기준으로는 ${winnerPhrase} 유리합니다`;
+    const diffSentence = en
+      ? `${candidateShortLabel(winner, en)} is about ${formatKrw(diffKrw)} cheaper per month than ${candidateShortLabel(runnerUp, en)}`
+      : `${candidateShortLabel(winner, en)}이(가) ${candidateShortLabel(runnerUp, en)} 대비 월 ${formatKrw(diffKrw)} 더 저렴`;
     const apiFigureLabel = isCheapestSelected
       ? (en ? "Cheapest API" : "API 최저 비용")
       : (en ? `${selectedRow.provider} API cost` : `${selectedRow.provider} API 비용`);
+    const cloudFigureLabel = cloudCandidate
+      ? (en ? `Cheapest Cloud rental (${cloudCandidate.provider})` : `클라우드 최저가 (${cloudCandidate.provider})`)
+      : "";
 
+    // Break-even target: whichever flat-cost option (Local or Cloud) sits
+    // just on the other side of the API's linear cost line from the
+    // current winner -- the runner-up if API is winning (the next
+    // alternative to reconsider as usage grows), or the winner itself if
+    // API is losing (what usage would need to drop below for API to win
+    // instead). This is exactly the original 2-way formula when no cloud
+    // candidate exists, since then runnerUp/winner can only ever be Local.
+    const breakevenTarget = apiFavorable ? runnerUp : winner;
     const costPerRequestKrw = monthlyRequests > 0 ? selectedApiMonthlyKrw / monthlyRequests : 0;
-    const breakevenRequests = costPerRequestKrw > 0 ? localEstimate.monthlyLocalKrw / costPerRequestKrw : null;
+    const breakevenRequests = costPerRequestKrw > 0 && breakevenTarget.key !== "api"
+      ? breakevenTarget.monthlyKrw / costPerRequestKrw
+      : null;
     let breakevenSentence = "";
     if (breakevenRequests && monthlyRequests > 0) {
       const breakevenText = Math.round(breakevenRequests).toLocaleString(numberLocale);
+      const targetLabel = candidateShortLabel(breakevenTarget, en);
       breakevenSentence = apiFavorable
         ? (en
-          ? `If monthly usage grows past about ${breakevenText} requests, reconsider self-hosting.`
-          : `월 사용량이 약 ${breakevenText}건 이상이면 Local 구축을 다시 검토하세요.`)
+          ? `If monthly usage grows past about ${breakevenText} requests, reconsider ${targetLabel}.`
+          : `월 사용량이 약 ${breakevenText}건 이상이면 ${targetLabel}을(를) 다시 검토하세요.`)
         : (en
-          ? `If monthly usage falls below about ${breakevenText} requests, the API becomes cheaper instead.`
-          : `월 사용량이 약 ${breakevenText}건 아래로 줄어들면 API가 더 유리해집니다.`);
+          ? `If monthly usage falls below about ${breakevenText} requests, the API becomes cheaper than ${targetLabel} instead.`
+          : `월 사용량이 약 ${breakevenText}건 아래로 줄어들면 API가 ${targetLabel}보다 더 유리해집니다.`);
     }
 
     return `
@@ -466,6 +574,7 @@
       <div class="api-cost-verdict-figures">
         <span>${apiFigureLabel}<strong>${escapeHtml(formatKrw(selectedApiMonthlyKrw))}${en ? "/mo" : "/월"}</strong></span>
         <span>${en ? "Local (amortized)" : "Local 환산 비용"}<strong>${escapeHtml(formatKrw(localEstimate.monthlyLocalKrw))}${en ? "/mo" : "/월"}</strong></span>
+        ${cloudCandidate ? `<span>${escapeHtml(cloudFigureLabel)}<strong>${escapeHtml(formatKrw(cloudCandidate.monthlyCostKrw))}${en ? "/mo" : "/월"}</strong></span>` : ""}
         <span class="api-cost-verdict-diff">${en ? "Difference" : "차이"}<strong>${escapeHtml(diffSentence)}</strong></span>
       </div>
       ${breakevenSentence ? `<p class="api-cost-verdict-breakeven">${escapeHtml(breakevenSentence)}</p>` : ""}
@@ -483,7 +592,7 @@
   // platform-v3.js's build-vs-buy comparison already uses, so the two
   // views stay conceptually consistent.
   const BREAKEVEN_MULTIPLIERS = [0.25, 1, 4, 16];
-  function renderBreakevenViz(monthlyRequests, selectedRow, localEstimate, language, isCheapestSelected) {
+  function renderBreakevenViz(monthlyRequests, selectedRow, localEstimate, cloudCandidate, language, isCheapestSelected) {
     const en = language === "en";
     if (!localEstimate || !selectedRow || monthlyRequests <= 0) return "";
     const selectedApiMonthlyKrw = selectedRow.monthlyCostKrw;
@@ -494,8 +603,9 @@
       return { multiplier, requests, apiCostKrw: costPerRequestKrw * requests };
     });
     const localFlatKrw = localEstimate.monthlyLocalKrw;
+    const cloudFlatKrw = cloudCandidate ? cloudCandidate.monthlyCostKrw : null;
     const maxRequests = points[points.length - 1].requests;
-    const maxCostKrw = Math.max(...points.map((point) => point.apiCostKrw), localFlatKrw) * 1.1 || 1;
+    const maxCostKrw = Math.max(...points.map((point) => point.apiCostKrw), localFlatKrw, cloudFlatKrw || 0) * 1.1 || 1;
 
     const width = 640;
     const height = 200;
@@ -510,10 +620,16 @@
 
     const apiLinePoints = points.map((point) => `${xScale(point.requests)},${yScale(point.apiCostKrw)}`).join(" ");
     const localY = yScale(localFlatKrw);
+    const cloudY = cloudFlatKrw !== null ? yScale(cloudFlatKrw) : null;
     const currentX = xScale(monthlyRequests);
     const currentApiY = yScale(costPerRequestKrw * monthlyRequests);
 
-    const breakevenRequests = costPerRequestKrw > 0 ? localFlatKrw / costPerRequestKrw : null;
+    // Break-even marker targets whichever of Local/Cloud is the nearer
+    // (cheaper) alternative -- the one usage would cross first -- so the
+    // single marker shown here always matches renderVerdictBanner's own
+    // breakeven sentence, which uses the same "closest competitor" logic.
+    const comparisonFlatKrw = cloudFlatKrw !== null ? Math.min(localFlatKrw, cloudFlatKrw) : localFlatKrw;
+    const breakevenRequests = costPerRequestKrw > 0 ? comparisonFlatKrw / costPerRequestKrw : null;
     const breakevenInRange = breakevenRequests !== null && breakevenRequests >= 0 && breakevenRequests <= maxRequests;
     const breakevenX = breakevenInRange ? xScale(breakevenRequests) : null;
     const breakevenLabel = breakevenRequests !== null
@@ -526,20 +642,22 @@
     }).join("");
 
     const chartTitle = isCheapestSelected
-      ? (en ? "API vs Local cost by usage" : "사용량별 API vs Local 비용")
-      : (en ? `${selectedRow.provider} API vs Local cost by usage` : `${selectedRow.provider} 기준 사용량별 API vs Local 비용`);
-    const apiLineLabel = en ? `${selectedRow.provider} (API)` : `${selectedRow.provider} (API)`;
+      ? (en ? `API vs Local${cloudCandidate ? " vs Cloud" : ""} cost by usage` : `사용량별 API vs Local${cloudCandidate ? " vs Cloud" : ""} 비용`)
+      : (en ? `${selectedRow.provider} API vs Local${cloudCandidate ? " vs Cloud" : ""} cost by usage` : `${selectedRow.provider} 기준 사용량별 API vs Local${cloudCandidate ? " vs Cloud" : ""} 비용`);
+    const apiLineLabel = `${selectedRow.provider} (API)`;
 
     return `
       <h3>${escapeHtml(chartTitle)}</h3>
-      <svg viewBox="0 0 ${width} ${height}" role="img" class="api-cost-chart" aria-label="${en ? `Chart comparing ${selectedRow.provider} API cost (rising with usage) and Local flat cost across usage levels` : `사용량이 늘수록 상승하는 ${selectedRow.provider} API 비용과 고정된 Local 비용을 비교하는 그래프`}">
+      <svg viewBox="0 0 ${width} ${height}" role="img" class="api-cost-chart" aria-label="${en ? `Chart comparing ${selectedRow.provider} API cost (rising with usage), Local flat cost${cloudCandidate ? `, and ${cloudCandidate.provider} Cloud flat cost` : ""} across usage levels` : `사용량이 늘수록 상승하는 ${selectedRow.provider} API 비용과 고정된 Local 비용${cloudCandidate ? `, ${cloudCandidate.provider} 클라우드 비용` : ""}을 비교하는 그래프`}">
         <line x1="${padLeft}" y1="${localY}" x2="${padLeft + plotWidth}" y2="${localY}" class="api-cost-chart-local-line" />
+        ${cloudY !== null ? `<line x1="${padLeft}" y1="${cloudY}" x2="${padLeft + plotWidth}" y2="${cloudY}" class="api-cost-chart-cloud-line" />` : ""}
         <polyline points="${apiLinePoints}" class="api-cost-chart-api-line" fill="none" />
         ${breakevenInRange ? `<line x1="${breakevenX}" y1="${padTop}" x2="${breakevenX}" y2="${padTop + plotHeight}" class="api-cost-chart-breakeven-line" />
         <text x="${breakevenX}" y="${padTop - 4}" class="api-cost-chart-breakeven-label" text-anchor="middle">${en ? "Break-even" : "손익분기"} ${escapeHtml(breakevenLabel)}</text>` : ""}
         <circle cx="${currentX}" cy="${currentApiY}" r="4" class="api-cost-chart-current-dot" />
         <text x="${currentX}" y="${currentApiY - 10}" class="api-cost-chart-current-label" text-anchor="middle">${en ? "Now" : "현재"}</text>
         <text x="${padLeft + plotWidth}" y="${localY - 8}" class="api-cost-chart-local-label" text-anchor="end">${en ? "Local (flat)" : "Local (고정)"}</text>
+        ${cloudY !== null ? `<text x="${padLeft + plotWidth}" y="${cloudY - 8}" class="api-cost-chart-cloud-label" text-anchor="end">${escapeHtml(cloudCandidate.provider)} ${en ? "(Cloud, flat)" : "(Cloud, 고정)"}</text>` : ""}
         <text x="${xScale(points[points.length - 1].requests)}" y="${yScale(points[points.length - 1].apiCostKrw) - 8}" class="api-cost-chart-api-label" text-anchor="end">${escapeHtml(apiLineLabel)}</text>
         ${xTicks}
       </svg>
@@ -621,6 +739,69 @@
       <p class="api-cost-disclaimer">${en
         ? `Assumes 24/7 operation, ₩150/kWh electricity, 8%/year maintenance over a 3-year amortization, and a single-stream, memory-bandwidth-based throughput estimate (batch ${LOCAL_BATCH_SIZE}, ${Math.round(LOCAL_UTILIZATION_TARGET * 100)}% utilization). GPU price: ${priceLabel}${sourceLink}.`
         : `24시간 상시 가동, 전기료 150원/kWh, 유지비 연 8%(3년 분할 상각), 대역폭 기반 단일 스트림 처리량 추정(배치 ${LOCAL_BATCH_SIZE}, 가동률 ${Math.round(LOCAL_UTILIZATION_TARGET * 100)}%) 가정입니다. GPU 가격: ${priceLabel}${sourceLink}.`
+      }</p>
+    `;
+  }
+
+  // Base (non-referral) URL for each cloud provider's own site -- passed
+  // through window.AIHardwareAffiliate.buildCloudReferralLink() so a real
+  // "?ref=ID" gets appended once that provider's referral ID is configured
+  // in features/affiliate-links.js, and falls back to a plain link to the
+  // same page until then.
+  const CLOUD_PROVIDER_LINK = {
+    RunPod: "https://runpod.io",
+    "Vast.ai": "https://cloud.vast.ai/",
+    Lambda: "https://lambda.ai/instances",
+  };
+
+  // "☁️ 클라우드 대여" section: one card per provider (RunPod/Vast.ai/Lambda),
+  // parallel in spirit to renderLocalSection() but for rented instead of
+  // owned hardware. cloudEstimate is estimateCloud()'s return value for the
+  // current tier -- null only if the tier's model/GPU/quant can't be
+  // resolved (matches estimateLocal()'s own guard, should not normally
+  // happen for the 3 built-in tiers).
+  function renderCloudSection(cloudEstimate, language) {
+    const en = language === "en";
+    if (!cloudEstimate) {
+      return `<p class="api-cost-disclaimer">${en ? "Cloud reference data is unavailable for this tier." : "이 등급의 Cloud 참고 데이터를 불러올 수 없습니다."}</p>`;
+    }
+    const priced = cloudEstimate.providers.filter((row) => row.monthlyCostKrw !== null);
+    const cheapestKrw = priced.length ? Math.min(...priced.map((row) => row.monthlyCostKrw)) : null;
+    const cards = cloudEstimate.providers.map((row) => {
+      const isCheapest = row.monthlyCostKrw !== null && row.monthlyCostKrw === cheapestKrw;
+      const noteText = row.note?.[en ? "en" : "ko"] || "";
+      if (row.monthlyCostKrw === null) {
+        return `<article class="api-cost-cloud-card is-unavailable">
+          <span class="api-cost-candidate-provider">${escapeHtml(row.provider)}</span>
+          <p class="api-cost-disclaimer">${escapeHtml(noteText)}</p>
+        </article>`;
+      }
+      const kindLabel = row.pricingKind === "market-average"
+        ? (en ? "Market average" : "마켓 평균가")
+        : (en ? "Official rate" : "공식 요금");
+      const rentLink = window.AIHardwareAffiliate
+        ? window.AIHardwareAffiliate.buildCloudReferralLink(row.provider, CLOUD_PROVIDER_LINK[row.provider] || "#")
+        : (CLOUD_PROVIDER_LINK[row.provider] || "#");
+      return `<article class="api-cost-cloud-card${isCheapest ? " is-cheapest" : ""}">
+        <span class="api-cost-candidate-provider">${escapeHtml(row.provider)}</span>
+        <strong class="api-cost-candidate-cost">${escapeHtml(formatKrw(row.monthlyCostKrw))}<small>$${row.hourlyUsd.toFixed(2)}/hr${cloudEstimate.gpuCount > 1 ? ` x${cloudEstimate.gpuCount}` : ""} · ${en ? "per month" : "월 예상"}</small></strong>
+        <span class="api-cost-cloud-kind">${kindLabel}${row.updatedAt ? ` · ${escapeHtml(row.updatedAt)}` : ""}${isCheapest ? `<span class="placement-primary-badge">${en ? "Cheapest" : "최저가"}</span>` : ""}</span>
+        <p class="api-cost-cloud-note">${escapeHtml(noteText)}</p>
+        <a class="ghost-button" href="${escapeAttr(rentLink)}" target="_blank" rel="noopener noreferrer sponsored">${en ? "Rent at this price \u2197" : "이 가격으로 대여하기 \u2197"}</a>
+      </article>`;
+    }).join("");
+
+    return `
+      <h3>${en ? "Cloud rental cost" : "클라우드 대여 비용"}</h3>
+      <div class="simple-data-coverage">
+        <span>${en ? "Reference model" : "기준 모델"} <strong>${escapeHtml(cloudEstimate.model.name)}</strong></span>
+        <span>${en ? "Reference GPU" : "기준 GPU"} <strong>${escapeHtml(cloudEstimate.gpu.name)}${cloudEstimate.gpuCount > 1 ? ` x${cloudEstimate.gpuCount}` : ""}</strong></span>
+        <span>${en ? "Quant" : "양자화"} <strong>${escapeHtml(cloudEstimate.quant.label)}</strong></span>
+      </div>
+      <div class="api-cost-cloud-cards">${cards}</div>
+      <p class="api-cost-disclaimer">${en
+        ? "Assumes the instance runs 24/7 (730 hrs/mo) to serve real-time requests, the same always-on assumption as the Local figures above. Reserved/long-term-commitment and spot/interruptible discounts are not reflected."
+        : "실시간 요청 처리를 위해 24시간 상시 가동(월 730시간)한다고 가정합니다 -- 위 Local 수치와 동일한 가정입니다. 예약(장기 약정) 할인, 스팟/중단 가능 인스턴스 할인은 반영하지 않았습니다."
       }</p>
     `;
   }
@@ -725,7 +906,19 @@
     const selectedApiMonthlyKrw = selectedRow ? selectedRow.monthlyCostKrw : 0;
     const localEstimate = estimateLocal(viewState.tier, monthlyOutputTokens);
 
-    panel.querySelector("#apiCostVerdict").innerHTML = renderVerdictBanner(monthlyRequests, selectedRow, localEstimate, uiLanguage, isCheapestSelected);
+    // Cloud rental arm: same tier, cheapest-among-3-providers figure feeds
+    // the verdict banner and break-even chart exactly the way Local's
+    // figure already does -- neither of those two functions cares whether
+    // its "other side of the comparison" is owned or rented hardware.
+    // Computed up front (alongside localEstimate) so the verdict banner,
+    // which renders first, already has it.
+    const cloudEstimate = estimateCloud(viewState.tier, monthlyOutputTokens);
+    const pricedCloudProviders = cloudEstimate ? cloudEstimate.providers.filter((row) => row.monthlyCostKrw !== null) : [];
+    const cheapestCloudProvider = pricedCloudProviders.length
+      ? pricedCloudProviders.reduce((min, row) => (row.monthlyCostKrw < min.monthlyCostKrw ? row : min))
+      : null;
+
+    panel.querySelector("#apiCostVerdict").innerHTML = renderVerdictBanner(monthlyRequests, selectedRow, localEstimate, cheapestCloudProvider, uiLanguage, isCheapestSelected);
     panel.querySelector("#apiCostTable").innerHTML = renderCandidateCards(compactRows, uiLanguage, selectedRow?.provider);
 
     const expandToggle = panel.querySelector("#apiCostExpandToggle");
@@ -744,7 +937,8 @@
     panel.querySelector("#apiCostFullTable").innerHTML = renderFullTable(filteredRows, uiLanguage, allRows);
 
     panel.querySelector("#apiCostLocal").innerHTML = renderLocalSection(localEstimate, selectedApiMonthlyKrw, uiLanguage, selectedRow?.provider, isCheapestSelected);
-    panel.querySelector("#apiCostBreakeven").innerHTML = renderBreakevenViz(monthlyRequests, selectedRow, localEstimate, uiLanguage, isCheapestSelected);
+    panel.querySelector("#apiCostCloud").innerHTML = renderCloudSection(cloudEstimate, uiLanguage);
+    panel.querySelector("#apiCostBreakeven").innerHTML = renderBreakevenViz(monthlyRequests, selectedRow, localEstimate, cheapestCloudProvider, uiLanguage, isCheapestSelected);
 
     const meta = window.LLM_GPU_CHECKER_DATA?.apiPricingMeta;
     const caveat = meta?.basis?.[en ? "en" : "ko"] || "";
@@ -754,5 +948,5 @@
       : `위 Local 수치는 등급별 기준 GPU 1종을 기준으로 한 값입니다. 동시 사용자·응답 목표까지 반영한 정밀 견적은 <button type="button" class="ghost-button" data-core-task="infra">인프라 견적</button>에서 확인하세요.`;
   }
 
-  window.AIHardwareApiCost = { estimate, estimateLocal, ensureApiCostPanel, renderApiCostEstimator, TIER_LABEL, formatUsd, formatKrw };
+  window.AIHardwareApiCost = { estimate, estimateLocal, estimateCloud, ensureApiCostPanel, renderApiCostEstimator, TIER_LABEL, formatUsd, formatKrw };
 })();

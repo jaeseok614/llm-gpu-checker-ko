@@ -636,6 +636,7 @@ function renderPurchaseHub() {
   return `
     <p>${platformText("purchaseIntro")}</p>
     ${koreanMarket ? `<p class="market-source-note">${uiLanguage === "en" ? "Korean market snapshot" : "국내 시세 스냅샷"} · ${platformEscape(koreanMarket.updatedAt)} · <a href="${platformEscape(koreanMarket.sourceUrl)}" target="_blank" rel="noopener noreferrer">${platformEscape(koreanMarket.sourceName)}</a></p>` : ""}
+    <a class="ghost-button gpu-buy-link" href="${platformEscape(window.AIHardwareAffiliate ? window.AIHardwareAffiliate.buildCoupangLink(shortGpuName(targetGpu.name)) : `https://www.coupang.com/np/search?q=${encodeURIComponent(shortGpuName(targetGpu.name))}`)}" target="_blank" rel="noopener noreferrer sponsored">${uiLanguage === "en" ? "Buy this spec \u2197" : "이 사양대로 사기 \u2197"}</a>
     <div class="purchase-controls">
       <label><span>${platformText("upgradeCandidate")}</span><select id="purchaseTargetGpu">${GPU_PRESETS.filter((item) => item.id !== "custom").map((item) => `<option value="${platformEscape(item.id)}" ${item.id === targetGpu.id ? "selected" : ""}>${platformEscape(shortGpuName(item.name))}</option>`).join("")}</select></label>
       <label><span>${platformText("currency")}</span><select id="purchaseCurrency" disabled aria-disabled="true"><option value="${values.currency}" selected>${values.currency === "KRW" ? "KRW ₩" : "USD $"}</option></select></label>

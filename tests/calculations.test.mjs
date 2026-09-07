@@ -29,6 +29,8 @@ const DATA_FILES = [
   "data/benchmarks.js",
   "data/licenses.js",
   "data/decision-data.js",
+  "data/coupang-affiliate-links.js",
+  "data/cloud-gpu-pricing.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
   "features/privacy-analytics.js",
@@ -83,6 +85,7 @@ function loadApp(url = "https://example.com/?gpu=rtx4090-24", storage = {}, { pe
   combined += "\n;\n" + read("features/hf-import.js");
   combined += "\n;\n" + read("app.js");
   combined += "\n;\n" + read("features/i18n-runtime.js");
+  combined += "\n;\n" + read("features/affiliate-links.js");
   combined += "\n;\n" + read("features/gpu-advisor.js");
   combined += "\n;\n" + read("features/model-placement.js");
   combined += "\n;\n" + read("features/benchmark-workspace.js");

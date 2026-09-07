@@ -294,6 +294,7 @@ function renderGpuAdvisor() {
               : (pricing?.toKrw(item.market.priceUsd || currentPrice || budget, "USD") || 0) / 1000000)).toFixed(1)}</dd></div>
           </dl>
           <button type="button" class="ghost-button" data-advisor-select-gpu="${escapeAttr(item.preset.id)}">${en ? "Use this GPU" : "이 GPU 선택"}</button>
+          <a class="ghost-button gpu-buy-link" href="${escapeAttr(window.AIHardwareAffiliate ? window.AIHardwareAffiliate.buildCoupangLink(shortGpuName(item.preset.name)) : `https://www.coupang.com/np/search?q=${encodeURIComponent(shortGpuName(item.preset.name))}`)}" target="_blank" rel="noopener noreferrer sponsored">${en ? "Buy this spec \u2197" : "이 사양대로 사기 \u2197"}</a>
         </article>
       `).join("")}
     </div>

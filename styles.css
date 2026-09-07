@@ -9816,3 +9816,88 @@ body.guide-modal-open {
   }
 }
 
+
+/* v7.25 -- affiliate "구매하기" CTA on GPU recommendation cards and the
+   purchase hub. A distinct outline color (not a filled/loud button) marks
+   this as an external commerce link without competing visually with the
+   primary in-app actions ("이 GPU 선택" etc.) sitting right next to it. */
+.gpu-buy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-color: var(--green, #1a9c5c);
+  color: var(--green, #1a9c5c);
+  text-decoration: none;
+}
+
+.gpu-buy-link:hover {
+  background: var(--green-soft, #e2f0ea);
+}
+
+/* v7.25 -- Cloud rental section (API vs Local vs Cloud), parallel styling
+   to .api-cost-local / .api-cost-candidate-card above. */
+.api-cost-cloud {
+  min-width: 0;
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface-soft);
+}
+
+.api-cost-cloud h3 {
+  margin: 6px 0 8px;
+}
+
+.api-cost-cloud-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.api-cost-cloud-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-raised);
+}
+
+.api-cost-cloud-card.is-cheapest {
+  border-color: var(--green, #1a9c5c);
+}
+
+.api-cost-cloud-card.is-unavailable {
+  opacity: 0.6;
+}
+
+.api-cost-cloud-kind {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.api-cost-cloud-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.api-cost-chart-cloud-line {
+  stroke: var(--green, #1a9c5c);
+  stroke-width: 2;
+  stroke-dasharray: 6 3;
+}
+
+.api-cost-chart-cloud-label {
+  fill: var(--green, #1a9c5c);
+  font-size: 10px;
+  font-weight: 700;
+}

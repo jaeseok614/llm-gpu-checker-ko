@@ -21,7 +21,9 @@ const dataFiles = [
   "data/benchmarks.js",
   "data/licenses.js",
   "data/decision-data.js",
+  "data/coupang-affiliate-links.js",
   "data/api-models.js",
+  "data/cloud-gpu-pricing.js",
   "features/quick-recommendation.js",
   "features/community-feedback.js",
   "features/privacy-analytics.js",
@@ -62,6 +64,7 @@ before(() => {
     read("features/hf-import.js"),
     read("app.js"),
     read("features/i18n-runtime.js"),
+    read("features/affiliate-links.js"),
     read("features/gpu-advisor.js"),
     read("features/model-placement.js"),
     read("features/api-cost-estimator.js"),
@@ -417,6 +420,16 @@ test("full catalog and advisor produce usable results", () => {
   app.eval('setUiLanguage("ko"); renderGpuAdvisor();');
   assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "KRW");
   assert.equal(app.document.querySelectorAll(".gpu-advisor-card").length, 3);
+
+  // Each recommendation card should offer a "이 사양대로 사기" affiliate
+  // buy link out to Coupang -- a plain (non-tracked) search link until a
+  // real Coupang Partners deep link has been generated for that GPU.
+  const buyLinks = [...app.document.querySelectorAll(".gpu-advisor-card .gpu-buy-link")];
+  assert.equal(buyLinks.length, 3);
+  buyLinks.forEach((link) => {
+    assert.match(link.getAttribute("href"), /^https:\/\/www\.coupang\.com\/np\/search\?q=/);
+    assert.equal(link.getAttribute("rel"), "noopener noreferrer sponsored");
+  });
 });
 
 test("advanced placement remains available but outside the beginner choices", () => {
@@ -567,6 +580,50 @@ test("API vs Local shows a real self-hosted Local cost section, not just a link 
   app.eval('setUiLanguage("en");');
   assert.doesNotMatch(local().textContent, /[가-힣]/);
   assert.match(local().textContent, /Self-hosted/);
+  app.eval('setUiLanguage("ko");');
+});
+
+test("API vs Local includes a Cloud rental section (RunPod/Vast.ai/Lambda) that feeds the verdict banner and break-even chart", () => {
+  app.document.querySelector('[data-core-task="apiCost"]').click();
+  const cloud = () => app.document.getElementById("apiCostCloud");
+
+  // Default ("balanced") tier: all 3 providers have a comparable GPU, so
+  // all 3 render as priced cards, one of them flagged cheapest.
+  const cloudCards = () => cloud().querySelectorAll(".api-cost-cloud-card");
+  assert.equal(cloudCards().length, 3);
+  const cheapestCloudCard = cloud().querySelector(".api-cost-cloud-card.is-cheapest");
+  assert.ok(cheapestCloudCard, "the cheapest cloud provider for this tier should be flagged");
+  assert.match(cloud().textContent, /₩[\d,]+/);
+  // Every priced card should link out to rent at that provider (referral
+  // link when configured, plain link otherwise -- either way a real href).
+  cloudCards().forEach((card) => {
+    const link = card.querySelector("a");
+    if (link) assert.match(link.getAttribute("href"), /^https:\/\//);
+  });
+
+  // The verdict banner and break-even chart should incorporate the cloud
+  // figure, not just API vs Local.
+  const verdict = app.document.getElementById("apiCostVerdict").textContent;
+  assert.match(verdict, /클라우드 최저가/);
+  const breakevenHtml = app.document.getElementById("apiCostBreakeven").innerHTML;
+  assert.ok(breakevenHtml.includes("api-cost-chart-cloud-line"), "the break-even chart should draw a flat line for the cheapest cloud provider");
+
+  // Economy tier: Lambda has no consumer-tier GPU, so its card should be
+  // clearly marked unavailable rather than silently omitted or priced at 0.
+  app.document.getElementById("apiCostTier").value = "economy";
+  app.document.getElementById("apiCostTier").dispatchEvent(new app.Event("change"));
+  assert.equal(cloudCards().length, 3, "even an unavailable provider should still render its own card, just marked unavailable");
+  const unavailableCard = cloud().querySelector(".api-cost-cloud-card.is-unavailable");
+  assert.ok(unavailableCard, "Lambda should be marked unavailable in the economy tier");
+  assert.match(unavailableCard.textContent, /Lambda/);
+  app.document.getElementById("apiCostTier").value = "balanced";
+  app.document.getElementById("apiCostTier").dispatchEvent(new app.Event("change"));
+
+  // English round trip: no Korean text should leak from this new section.
+  app.eval('setUiLanguage("en");');
+  assert.doesNotMatch(cloud().textContent, /[가-힣]/);
+  assert.match(cloud().textContent, /Cloud rental cost/);
+  assert.match(app.document.getElementById("apiCostVerdict").textContent, /Cheapest Cloud rental/);
   app.eval('setUiLanguage("ko");');
 });
 
