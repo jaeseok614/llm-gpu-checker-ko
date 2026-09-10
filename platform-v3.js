@@ -613,6 +613,21 @@ const SI_SCENARIOS = {
     users: 50, concurrency: 8, input: 2048, output: 250, seconds: 3,
     availability: "ha", growth: 40, vector: 500, logs: 35, retention: 90, security: "restricted", serviceType: "avatar",
   },
+  // Unlike every other scenario here, this isn't recurring end-user
+  // traffic -- it's a one-time (or periodic) batch job that reads a
+  // document corpus and writes out a structured ontology/knowledge graph
+  // (see features/ontology-cost-estimator.js's own "API vs Local" cousin,
+  // the Ontology Cost tab, for the token-cost side of the same question).
+  // "users"/"concurrency" here are repurposed as "how many parallel
+  // extraction workers run at once" rather than literal people, since the
+  // infra-sizing math downstream only cares about concurrent load and
+  // per-request token sizes, not whether the requester is a human or a
+  // batch worker.
+  "ontology-batch": {
+    ko: "온톨로지 구축 배치", en: "Ontology construction batch", purpose: "문서 코퍼스를 지식그래프·온톨로지로 일괄 변환", purposeEn: "Batch-converting a document corpus into a knowledge graph or ontology",
+    users: 20, concurrency: 20, input: 6000, output: 1500, seconds: 25,
+    availability: "single", growth: 15, vector: 100, logs: 5, retention: 90, security: "restricted", serviceType: "rag",
+  },
 };
 
 const SI_BASELINE_PROFILES = {
@@ -1302,6 +1317,7 @@ function renderSimpleSizingWizard(model, plans) {
     "video-studio": [en ? "Generate marketing and training video" : "홍보·교육용 영상 생성", "Video"],
     "voice-agent": [en ? "Realtime STT, conversation, and TTS" : "실시간 음성 인식·대화·합성", "Voice"],
     "avatar-chat": [en ? "Voice conversation with a lip-synced avatar" : "음성 대화와 립싱크 아바타", "Avatar"],
+    "ontology-batch": [en ? "Batch-convert documents into a knowledge graph" : "문서를 일괄 지식그래프로 변환", "Batch"],
   };
   const priceCoverage = window.AIHardwareDataTrust?.priceCoverage(
     GPU_PRESETS.filter((gpu) => gpu.id !== "custom"),
@@ -2375,8 +2391,8 @@ function initDecisionStudio() {
     syncStudioUrl();
     renderDecisionStudio();
     window.AIHardwareUI?.announce(uiLanguage === "en"
-      ? `Loaded the ${users}-user internal RAG example.`
-      : `사내 RAG ${users}명 예시를 불러왔습니다.`);
+      ? `Loaded the ${users}-user ${preset.en} example.`
+      : `${preset.ko} ${users}명 예시를 불러왔습니다.`);
     document.getElementById("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   });
   window.addEventListener("languagechange", renderDecisionStudio);

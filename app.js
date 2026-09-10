@@ -1154,23 +1154,45 @@ function bindEvents() {
     });
   });
 
+  // Standalone demos: don't depend on the user having already picked a
+  // primary GPU (unlike the More▾ menu's Stack Planner entry), so each
+  // preset seeds the inventory directly. Keyed by the button's own
+  // data-demo-placement value rather than one hardcoded scenario, since
+  // more than one placement demo chip exists now (see index.html).
+  const PLACEMENT_DEMO_PRESETS = {
+    // "여러 모델 함께 배치" pitch: a 70B chat model split across 2 GPUs
+    // alongside a small RAG embedding model.
+    "1": {
+      gpuPresetId: "rtx4090-24",
+      gpuCount: 2,
+      modelKeys: ["llama-3-1-70b-instruct", "embedding-qwen-qwen3-embedding-4b"],
+      announceEn: "Loaded the multi-model placement example: Llama 3.1 70B + an embedding model across 2x RTX 4090.",
+      announceKo: "멀티 모델 배치 예시를 불러왔습니다: Llama 3.1 70B와 임베딩 모델을 RTX 4090 2장에 배치합니다.",
+    },
+    // Ontology-construction pitch: a long-context extraction model plus
+    // the embedding model used to index the resulting graph, sharing one
+    // GPU -- the same (model, quant) pairing api-cost-estimator.js's
+    // LOCAL_TIER_CONFIG.balanced uses, so this stays consistent with what
+    // "balanced" tier means everywhere else in the app.
+    "2": {
+      gpuPresetId: "rtx5090-32",
+      gpuCount: 1,
+      modelKeys: ["qwen2-5-32b-instruct", "embedding-qwen-qwen3-embedding-4b"],
+      announceEn: "Loaded the ontology-construction pipeline example: an extraction-capable Qwen2.5 32B plus an embedding model on a single RTX 5090.",
+      announceKo: "온톨로지 구축 파이프라인 배치 예시를 불러왔습니다: 추출용 Qwen2.5 32B와 임베딩 모델을 RTX 5090 1장에 배치합니다.",
+    },
+  };
   document.querySelectorAll("[data-demo-placement]").forEach((button) => {
     button.addEventListener("click", () => {
-      // Standalone demo: don't depend on the user having already picked a primary
-      // GPU (unlike the More▾ menu's Stack Planner entry), so seed the inventory
-      // directly with two 24GB cards -- enough to show a 70B model split across
-      // GPUs alongside a small embedding model, matching the "여러 모델 함께 배치"
-      // pitch (LLM + RAG embedding model on 2 GPUs at once).
-      gpuInventoryRows = [{ id: "gpu-row-1", presetId: "rtx4090-24", count: 2 }];
+      const preset = PLACEMENT_DEMO_PRESETS[button.dataset.demoPlacement] || PLACEMENT_DEMO_PRESETS["1"];
+      gpuInventoryRows = [{ id: "gpu-row-1", presetId: preset.gpuPresetId, count: preset.gpuCount }];
       gpuInventoryIdCounter = gpuInventoryRows.length;
       placementInventorySeeded = true;
-      openPlacementPlanner(["llama-3-1-70b-instruct", "embedding-qwen-qwen3-embedding-4b"], {
+      openPlacementPlanner(preset.modelKeys, {
         showBuilder: true,
         seedHardware: false,
       });
-      window.AIHardwareUI?.announce(uiLanguage === "en"
-        ? "Loaded the multi-model placement example: Llama 3.1 70B + an embedding model across 2x RTX 4090."
-        : "멀티 모델 배치 예시를 불러왔습니다: Llama 3.1 70B와 임베딩 모델을 RTX 4090 2장에 배치합니다.");
+      window.AIHardwareUI?.announce(uiLanguage === "en" ? preset.announceEn : preset.announceKo);
     });
   });
 

@@ -84,7 +84,24 @@
   };
   const DOC_TYPE_ORDER = ["text", "scanned"];
 
-  let viewState = { docPages: 500, docType: "text", passProfile: "thorough", tier: "balanced", selectedProvider: null };
+  // Scanned-document resolution: even within "scanned/photo", how much a
+  // page costs to process still varies a lot by resolution/detail level --
+  // most vision APIs' own "low detail" vs "high detail" input modes are the
+  // real-world analogue (low detail uses a small fixed token budget per
+  // image regardless of size; high detail scales with resolution/tiling).
+  // "standard" is set to the same 3x-over-text figure this file used before
+  // resolution existed as an input, so a default-configuration estimate is
+  // unchanged by this addition -- "low"/"high" let a user move off that
+  // default once they know their scan quality.
+  const RESOLUTION_MULTIPLIER = { low: 1.5, standard: IMAGE_TOKEN_MULTIPLIER, high: 5 };
+  const RESOLUTION_LABEL = {
+    low: { ko: "저해상도 (저용량 미리보기·썸네일 수준)", en: "Low resolution (thumbnail/preview quality)" },
+    standard: { ko: "표준 해상도 (일반적인 스캔본)", en: "Standard resolution (a typical scan)" },
+    high: { ko: "고해상도 (작은 글씨·표까지 정밀 인식 필요)", en: "High resolution (needs to resolve fine print and tables)" },
+  };
+  const RESOLUTION_ORDER = ["low", "standard", "high"];
+
+  let viewState = { docPages: 500, docType: "text", scanResolution: "standard", passProfile: "thorough", tier: "balanced", selectedProvider: null };
 
   function apiModels() {
     return window.LLM_GPU_CHECKER_DATA?.apiModels || [];
@@ -108,9 +125,13 @@
   // Pure math, no DOM -- converts the two inputs a person actually knows
   // (how many pages, what kind of document) into the token count the cost
   // formula below needs. Reused directly by tests.
-  function docTokensFromPages(pages, docType) {
+  function docTokensFromPages(pages, docType, resolution = "standard") {
     const pageCount = Math.max(0, Number(pages) || 0);
-    const multiplier = DOC_TYPE_MULTIPLIER[docType] || 1;
+    // Resolution only changes anything for scanned pages -- a text/digital
+    // document has no "resolution" to speak of, so it always uses the
+    // plain per-page rate regardless of what the (irrelevant, in that case)
+    // resolution selector happens to be set to.
+    const multiplier = docType === "scanned" ? (RESOLUTION_MULTIPLIER[resolution] || RESOLUTION_MULTIPLIER.standard) : 1;
     return Math.round(pageCount * TOKENS_PER_PAGE * multiplier);
   }
 
@@ -180,6 +201,13 @@
             <option value="scanned"></option>
           </select>
         </label>
+        <label class="field"><span id="ontologyCostResolutionLabel"></span>
+          <select id="ontologyCostResolution">
+            <option value="low"></option>
+            <option value="standard"></option>
+            <option value="high"></option>
+          </select>
+        </label>
         <label class="field"><span id="ontologyCostPassLabel"></span>
           <select id="ontologyCostPassProfile">
             <option value="single"></option>
@@ -206,6 +234,10 @@
     });
     panel.querySelector("#ontologyCostDocType").addEventListener("change", (event) => {
       viewState.docType = event.target.value;
+      renderOntologyCostEstimator();
+    });
+    panel.querySelector("#ontologyCostResolution").addEventListener("change", (event) => {
+      viewState.scanResolution = event.target.value;
       renderOntologyCostEstimator();
     });
     panel.querySelector("#ontologyCostPassProfile").addEventListener("change", (event) => {
@@ -278,6 +310,7 @@
       : "내 문서를 LLM으로 구조화된 온톨로지·지식그래프로 만들 때 드는 비용을 추정합니다. 매달 반복되는 비용이 아니라 1회성 배치 작업 기준입니다.";
     panel.querySelector("#ontologyCostDocPagesLabel").textContent = en ? "Document count (pages)" : "처리할 문서 분량 (페이지 수)";
     panel.querySelector("#ontologyCostDocTypeLabel").textContent = en ? "Document type" : "문서 유형";
+    panel.querySelector("#ontologyCostResolutionLabel").textContent = en ? "Scan resolution (scanned docs only)" : "스캔 해상도 (스캔 문서에만 적용)";
     panel.querySelector("#ontologyCostPassLabel").textContent = en ? "Pipeline depth" : "처리 단계";
     panel.querySelector("#ontologyCostTierLabel").textContent = en ? "Model tier" : "모델 등급";
 
@@ -289,6 +322,17 @@
       option.textContent = DOC_TYPE_LABEL[option.value]?.[en ? "en" : "ko"] || option.value;
     });
     docTypeSelect.value = viewState.docType;
+
+    const resolutionSelect = panel.querySelector("#ontologyCostResolution");
+    [...resolutionSelect.options].forEach((option) => {
+      option.textContent = RESOLUTION_LABEL[option.value]?.[en ? "en" : "ko"] || option.value;
+    });
+    resolutionSelect.value = viewState.scanResolution;
+    // The resolution choice only means anything once a scan is on screen --
+    // disabling it for a text document (rather than hiding it) keeps the
+    // question grid's layout fixed across both document types, matching
+    // every other field in this panel never appearing/disappearing.
+    resolutionSelect.disabled = viewState.docType !== "scanned";
 
     const passSelect = panel.querySelector("#ontologyCostPassProfile");
     [...passSelect.options].forEach((option) => {
@@ -302,7 +346,7 @@
     });
     tierSelect.value = viewState.tier;
 
-    const docTokens = docTokensFromPages(viewState.docPages, viewState.docType);
+    const docTokens = docTokensFromPages(viewState.docPages, viewState.docType, viewState.scanResolution);
     const rows = estimateOntologyCost({ docTokens, passProfileKey: viewState.passProfile }).filter((row) => row.tier === viewState.tier);
     const cheapestUsd = rows.length ? Math.min(...rows.map((row) => row.costUsd)) : 0;
     // A previously-selected provider can disappear from view when the
@@ -316,18 +360,24 @@
     const totalInputTokens = rows[0]?.totalInputTokens ?? 0;
     const totalOutputTokens = rows[0]?.totalOutputTokens ?? 0;
     const docTypeLabel = DOC_TYPE_LABEL[viewState.docType]?.[en ? "en" : "ko"] || viewState.docType;
+    const resolutionLabel = RESOLUTION_LABEL[viewState.scanResolution]?.[en ? "en" : "ko"] || viewState.scanResolution;
+    // Only mention resolution in the summary when it actually applied to
+    // the calculation above -- for a text document it's a no-op, and
+    // showing it anyway would suggest it changed something it didn't.
+    const docTypeSummary = viewState.docType === "scanned" ? `${docTypeLabel} · ${resolutionLabel}` : docTypeLabel;
     panel.querySelector("#ontologyCostUsageSummary").textContent = en
-      ? `${Math.round(Number(viewState.docPages) || 0).toLocaleString("en-US")} pages (${docTypeLabel}) · total input ${Math.round(totalInputTokens).toLocaleString("en-US")} tokens · total output ${Math.round(totalOutputTokens).toLocaleString("en-US")} tokens`
-      : `${Math.round(Number(viewState.docPages) || 0).toLocaleString("ko-KR")}페이지 (${docTypeLabel}) · 총 입력 ${Math.round(totalInputTokens).toLocaleString("ko-KR")} 토큰 · 총 출력 ${Math.round(totalOutputTokens).toLocaleString("ko-KR")} 토큰`;
+      ? `${Math.round(Number(viewState.docPages) || 0).toLocaleString("en-US")} pages (${docTypeSummary}) · total input ${Math.round(totalInputTokens).toLocaleString("en-US")} tokens · total output ${Math.round(totalOutputTokens).toLocaleString("en-US")} tokens`
+      : `${Math.round(Number(viewState.docPages) || 0).toLocaleString("ko-KR")}페이지 (${docTypeSummary}) · 총 입력 ${Math.round(totalInputTokens).toLocaleString("ko-KR")} 토큰 · 총 출력 ${Math.round(totalOutputTokens).toLocaleString("ko-KR")} 토큰`;
 
     panel.querySelector("#ontologyCostTable").innerHTML = rows
       .map((row) => ontologyCandidateCard(row, uiLanguage, row.costUsd === cheapestUsd, row.provider === viewState.selectedProvider))
       .join("");
 
+    const activeMultiplier = RESOLUTION_MULTIPLIER[viewState.scanResolution] || RESOLUTION_MULTIPLIER.standard;
     const scannedCaveat = viewState.docType === "scanned"
       ? (en
-        ? ` Scanned/photo pages are assumed to cost ${IMAGE_TOKEN_MULTIPLIER}x the text-page rate to process via vision -- an OCR step beforehand can be cheaper than feeding raw scans directly, and isn't modeled here.`
-        : ` 스캔·사진 문서는 비전 처리 비용이 텍스트 대비 ${IMAGE_TOKEN_MULTIPLIER}배라고 가정했습니다 -- 사전에 OCR로 텍스트를 추출하면 더 저렴할 수 있으며, 그 경로는 반영하지 않았습니다.`)
+        ? ` Scanned/photo pages at ${resolutionLabel.toLowerCase()} are assumed to cost ${activeMultiplier}x the text-page rate to process via vision -- an OCR step beforehand can be cheaper than feeding raw scans directly, and isn't modeled here.`
+        : ` 스캔·사진 문서(${resolutionLabel})는 비전 처리 비용이 텍스트 대비 ${activeMultiplier}배라고 가정했습니다 -- 사전에 OCR로 텍스트를 추출하면 더 저렴할 수 있으며, 그 경로는 반영하지 않았습니다.`)
       : "";
     panel.querySelector("#ontologyCostCaveat").textContent = (en
       ? "Planning estimate only: pass count and the 30% output-token ratio are documented assumptions, not measurements -- actual chunking strategy, retries, and validation depth change real cost. No prompt caching or batch discounts are modeled."
@@ -345,6 +395,9 @@
     DOC_TYPE_LABEL,
     DOC_TYPE_ORDER,
     DOC_TYPE_MULTIPLIER,
+    RESOLUTION_LABEL,
+    RESOLUTION_ORDER,
+    RESOLUTION_MULTIPLIER,
     ensureOntologyCostPanel,
     renderOntologyCostEstimator,
     formatUsd,

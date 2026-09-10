@@ -1288,6 +1288,26 @@ describe("v3.7 infrastructure sizing and multimodal stack", () => {
     assert.match(platform.document.querySelector(".si-simple-wizard").textContent, /AI avatar chat/);
   });
 
+  test("the ontology-construction batch scenario (v7.27.0) sizes infra like any other SI_SCENARIOS entry", () => {
+    const platform = loadApp("https://example.com/?mode=infra&lang=en&studio=consulting&scenario=ontology-batch", {}, { platformV2: true });
+    assert.equal(platform.document.querySelector("#decisionStudio").hidden, false);
+    assert.equal(platform.eval("studioState.siScenario"), "ontology-batch");
+    assert.equal(platform.eval("studioState.siServiceType"), "rag");
+    assert.match(platform.document.querySelector(".si-simple-wizard").textContent, /Ontology construction batch/);
+
+    // Same event the Infra tab's "온톨로지 구축 배치 견적" demo chip dispatches
+    // (see app.js's [data-demo-infra] click handler) -- confirms the whole
+    // wire-up, not just the URL-param restore path exercised above.
+    platform.eval(`
+      window.dispatchEvent(new CustomEvent("ai-hardware-fit:infra-demo", {
+        detail: { scenario: "ontology-batch", users: 20 },
+      }));
+    `);
+    assert.equal(platform.eval("studioState.siScenario"), "ontology-batch");
+    assert.equal(platform.eval("studioState.siTotalUsers"), 20);
+    assert.equal(platform.eval("auditPlatformAccessibility(document).length"), 0);
+  });
+
   test("supports v4.4-v4.8 validation, commercial pricing, topology, approval, and option comparison", () => {
     const platform = loadApp("https://example.com/?gpu=rtx5070ti-16&lang=ko&studio=consulting", {}, { platformV2: true });
     platform.document.querySelector('[data-si-input-mode="expert"]').click();

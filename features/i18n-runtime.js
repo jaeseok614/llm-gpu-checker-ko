@@ -20,7 +20,9 @@ const UI_COPY_V15 = {
   "core.demo.examplesTitle": { ko: "예시로 보기", en: "Try examples" },
   "core.demo.model": { ko: "Qwen 32B용 GPU 찾기", en: "Find a GPU for Qwen 32B" },
   "core.demo.infra": { ko: "사내 RAG 30명 견적", en: "30-user internal RAG estimate" },
+  "core.demo.infraOntology": { ko: "온톨로지 구축 배치 견적", en: "Ontology construction batch estimate" },
   "core.demo.placement": { ko: "Llama 70B+임베딩 2장 배치", en: "Llama 70B + embedding on 2 GPUs" },
+  "core.demo.placementOntology": { ko: "온톨로지 추출+임베딩 배치", en: "Ontology extraction + embedding batch" },
   "workload.audioStt": { ko: "음성 인식", en: "Speech recognition" },
   "workload.audioTts": { ko: "음성 합성", en: "Speech synthesis" },
   "workload.avatarGeneration": { ko: "아바타·립싱크", en: "Avatar · lip sync" },
@@ -39,8 +41,10 @@ function applyV15Translations() {
   if (gpuDemo) gpuDemo.textContent = uiText("core.demo.gpu");
   const examplesTitle = document.querySelector("[data-guide-examples-title]");
   if (examplesTitle) examplesTitle.textContent = uiText("core.demo.examplesTitle");
-  const infraDemo = document.querySelector("[data-demo-infra]");
+  const infraDemo = document.querySelector("[data-demo-infra='internal-rag']");
   if (infraDemo) infraDemo.textContent = uiText("core.demo.infra");
+  const infraDemoOntology = document.querySelector("[data-demo-infra='ontology-batch']");
+  if (infraDemoOntology) infraDemoOntology.textContent = uiText("core.demo.infraOntology");
   const modelDemo = document.querySelector("[data-demo-model]");
   if (modelDemo) modelDemo.textContent = uiText("core.demo.model");
   const taskSection = document.querySelector(".core-task-switcher");

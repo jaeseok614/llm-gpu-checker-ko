@@ -127,8 +127,10 @@ test("first screen presents a flat tool-switcher tab bar with all tools visible 
   assert.ok(app.document.querySelector('.core-task-actions [data-core-task="apiCost"]'));
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
+  assert.ok(app.document.querySelector('[data-demo-infra="ontology-batch"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
-  assert.ok(app.document.querySelector('[data-demo-placement]'));
+  assert.ok(app.document.querySelector('[data-demo-placement="1"]'));
+  assert.ok(app.document.querySelector('[data-demo-placement="2"]'));
   assert.ok(app.document.getElementById("workspaceJourney"));
   assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /예시로 보기/);
   assert.match(app.document.querySelector("[data-showcase-feedback]").href, /product-feedback\.yml/);
@@ -441,12 +443,24 @@ test("advanced placement remains available but outside the beginner choices", ()
 });
 
 test("the multi-model placement demo chip seeds two GPUs and both models", () => {
-  app.document.querySelector("[data-demo-placement]").click();
+  app.document.querySelector('[data-demo-placement="1"]').click();
   assert.equal(app.document.getElementById("gpuPlacementPanel").hidden, false);
   const selected = app.document.getElementById("placementModelSelected").textContent;
   assert.match(selected, /Llama 3\.1 70B Instruct/);
   assert.match(selected, /Qwen3-Embedding-4B/);
   assert.equal(app.document.querySelectorAll("#gpuInventoryList .gpu-inventory-row").length, 1);
+  assert.equal(app.document.querySelector("#gpuInventoryList .gpu-inventory-row").textContent.includes("RTX 4090"), true);
+  app.eval('placementSelectedKeys = new Set(); gpuInventoryRows = []; placementInventorySeeded = false;');
+});
+
+test("the ontology-construction placement demo chip seeds a distinct 1-GPU extraction+embedding pipeline", () => {
+  app.document.querySelector('[data-demo-placement="2"]').click();
+  assert.equal(app.document.getElementById("gpuPlacementPanel").hidden, false);
+  const selected = app.document.getElementById("placementModelSelected").textContent;
+  assert.match(selected, /Qwen2\.5 32B Instruct/);
+  assert.match(selected, /Qwen3-Embedding-4B/);
+  assert.equal(app.document.querySelectorAll("#gpuInventoryList .gpu-inventory-row").length, 1);
+  assert.equal(app.document.querySelector("#gpuInventoryList .gpu-inventory-row").textContent.includes("RTX 5090"), true);
   app.eval('placementSelectedKeys = new Set(); gpuInventoryRows = []; placementInventorySeeded = false;');
 });
 
@@ -585,6 +599,25 @@ test("API vs Local shows a real self-hosted Local cost section, not just a link 
   app.eval('setUiLanguage("ko");');
 });
 
+test("API vs Local's ontology-construction 용도 redirects to the Ontology Cost tab instead of pricing it as monthly traffic", () => {
+  app.document.querySelector('[data-core-task="apiCost"]').click();
+  app.document.getElementById("apiCostWorkload").value = "ontology";
+  app.document.getElementById("apiCostWorkload").dispatchEvent(new app.Event("change"));
+  const hint = app.document.getElementById("apiCostTierHint");
+  assert.match(hint.textContent, /온톨로지 구축/);
+  assert.match(hint.textContent, /1회성 배치/);
+  const link = hint.querySelector('[data-core-task="ontologyCost"]');
+  assert.ok(link, "the redirect note should contain a real button, not just text mentioning the tab");
+  link.click();
+  assert.equal(app.document.body.classList.contains("ontology-cost-task-active"), true);
+  assert.equal(app.document.getElementById("ontologyCostPanel").hidden, false);
+
+  // Reset back to apiCost/general for tests that run after this one.
+  app.document.querySelector('[data-core-task="apiCost"]').click();
+  app.document.getElementById("apiCostWorkload").value = "general";
+  app.document.getElementById("apiCostWorkload").dispatchEvent(new app.Event("change"));
+});
+
 test("API vs Local includes a Cloud rental section (RunPod/Vast.ai/Lambda) that feeds the verdict banner and break-even chart", () => {
   app.document.querySelector('[data-core-task="apiCost"]').click();
   const cloud = () => app.document.getElementById("apiCostCloud");
@@ -609,6 +642,19 @@ test("API vs Local includes a Cloud rental section (RunPod/Vast.ai/Lambda) that 
   assert.match(verdict, /클라우드 최저가/);
   const breakevenHtml = app.document.getElementById("apiCostBreakeven").innerHTML;
   assert.ok(breakevenHtml.includes("api-cost-chart-cloud-line"), "the break-even chart should draw a flat line for the cheapest cloud provider");
+
+  // Regression: Local's and the cheapest Cloud provider's monthly costs
+  // are often close in value, which used to leave their two "-8px above
+  // the line" labels overlapping into unreadable garbled text (reported
+  // directly against production). Whatever their actual costs, the two
+  // labels' y positions must always be at least one label-height apart.
+  const breakevenSvg = app.document.getElementById("apiCostBreakeven").querySelector("svg");
+  const localLabelY = Number(breakevenSvg.querySelector(".api-cost-chart-local-label").getAttribute("y"));
+  const cloudLabelY = Number(breakevenSvg.querySelector(".api-cost-chart-cloud-label").getAttribute("y"));
+  assert.ok(
+    Math.abs(localLabelY - cloudLabelY) >= 14,
+    `Local and Cloud chart labels should never render close enough to overlap (got ${localLabelY} vs ${cloudLabelY})`,
+  );
 
   // Economy tier: Lambda has no consumer-tier GPU, so its card should be
   // clearly marked unavailable rather than silently omitted or priced at 0.
@@ -649,6 +695,21 @@ test("Ontology Cost tab estimates a one-time document-processing cost, separate 
   const scannedTokens = app.AIHardwareOntologyCost.docTokensFromPages(500, "scanned");
   assert.equal(scannedTokens, textTokens * app.AIHardwareOntologyCost.DOC_TYPE_MULTIPLIER.scanned);
 
+  // Resolution only matters for scanned docs -- a text document ignores it
+  // entirely (no "resolution" concept applies), while a scanned document's
+  // token count scales with RESOLUTION_MULTIPLIER for whichever level is
+  // passed in.
+  assert.equal(
+    app.AIHardwareOntologyCost.docTokensFromPages(500, "text", "high"),
+    app.AIHardwareOntologyCost.docTokensFromPages(500, "text", "low"),
+    "resolution should be a no-op for text documents",
+  );
+  const lowResTokens = app.AIHardwareOntologyCost.docTokensFromPages(500, "scanned", "low");
+  const highResTokens = app.AIHardwareOntologyCost.docTokensFromPages(500, "scanned", "high");
+  assert.equal(lowResTokens, 500 * 650 * app.AIHardwareOntologyCost.RESOLUTION_MULTIPLIER.low);
+  assert.equal(highResTokens, 500 * 650 * app.AIHardwareOntologyCost.RESOLUTION_MULTIPLIER.high);
+  assert.ok(highResTokens > scannedTokens && scannedTokens > lowResTokens);
+
   // Default (balanced tier, thorough/3-pass profile, text document) renders
   // one candidate card per provider for that tier, one of them flagged
   // cheapest, with a real (non-zero) cost shown in both USD and KRW.
@@ -682,16 +743,39 @@ test("Ontology Cost tab estimates a one-time document-processing cost, separate 
   docPagesInput.dispatchEvent(new app.Event("input"));
 
   // Switching document type to "scanned image" should raise the cost (same
-  // page count, more tokens per page) and add a scan-specific caveat.
+  // page count, more tokens per page) and add a scan-specific caveat. The
+  // resolution selector is meaningless for a text document, so it starts
+  // disabled and only becomes usable once "scanned" is chosen.
   const docTypeSelect = app.document.getElementById("ontologyCostDocType");
+  const resolutionSelect = app.document.getElementById("ontologyCostResolution");
+  assert.equal(resolutionSelect.disabled, true, "resolution should be disabled for a text document");
   const textCost = panel().querySelector(".api-cost-candidate-cost").textContent;
   docTypeSelect.value = "scanned";
   docTypeSelect.dispatchEvent(new app.Event("change"));
+  assert.equal(resolutionSelect.disabled, false, "resolution should become usable once docType is scanned");
   const scannedCost = panel().querySelector(".api-cost-candidate-cost").textContent;
   assert.notEqual(textCost, scannedCost);
   assert.match(app.document.getElementById("ontologyCostCaveat").textContent, /비전 처리/);
+
+  // Raising the resolution level (standard -> high) should raise the cost
+  // further still, and lowering it (standard -> low) should lower it --
+  // resolution scales cost on top of the base scanned-doc multiplier.
+  const standardScannedCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  resolutionSelect.value = "high";
+  resolutionSelect.dispatchEvent(new app.Event("change"));
+  const highResCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  assert.notEqual(standardScannedCost, highResCost);
+  resolutionSelect.value = "low";
+  resolutionSelect.dispatchEvent(new app.Event("change"));
+  const lowResCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  assert.notEqual(standardScannedCost, lowResCost);
+  assert.notEqual(highResCost, lowResCost);
+  resolutionSelect.value = "standard";
+  resolutionSelect.dispatchEvent(new app.Event("change"));
+
   docTypeSelect.value = "text";
   docTypeSelect.dispatchEvent(new app.Event("change"));
+  assert.equal(resolutionSelect.disabled, true, "resolution should go back to disabled once docType is text again");
 
   // Switching pipeline depth to "extraction only" should lower the cost
   // (fewer passes over the same corpus).
@@ -886,7 +970,8 @@ test("infrastructure sizing uses three steps and three decision cards", () => {
   assert.equal(app.document.querySelectorAll(".si-wizard-step").length, 3);
   assert.equal(app.document.querySelectorAll(".si-plan-card").length, 3);
   assert.equal(app.document.querySelectorAll(".si-auto-parts > span").length, 6);
-  assert.equal(app.document.querySelectorAll(".si-scenario-grid > button").length, 8);
+  // 9 scenarios: the 8 pre-existing ones plus "온톨로지 구축 배치" (v7.27.0).
+  assert.equal(app.document.querySelectorAll(".si-scenario-grid > button").length, 9);
   assert.equal(app.document.querySelectorAll(".si-wizard-progress > li").length, 4);
   assert.ok(app.document.querySelector(".decision-guidance"));
   assert.equal(app.document.querySelectorAll("[data-si-adjust]").length, 3);
@@ -1050,7 +1135,8 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.document.querySelector('[data-studio-tab="consulting"]').click();
   assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /GPU that fits my model/);
   assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /Models that run on my GPU/);
-  assert.match(app.document.querySelector("[data-demo-infra]").textContent, /30-user internal RAG estimate/);
+  assert.match(app.document.querySelector('[data-demo-infra="internal-rag"]').textContent, /30-user internal RAG estimate/);
+  assert.match(app.document.querySelector('[data-demo-infra="ontology-batch"]').textContent, /Ontology construction batch estimate/);
   assert.doesNotMatch(app.document.querySelector(".core-task-actions").textContent, /[가-힣]/);
   assert.match(app.document.querySelector(".si-simple-wizard").textContent, /three steps/i);
   assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /Try examples/);

@@ -27,6 +27,12 @@
     coding: { ko: "코딩", en: "Coding" },
     reasoning: { ko: "추론", en: "Reasoning" },
     batch: { ko: "대량 배치", en: "Batch processing" },
+    // Deliberately included in this list (so someone comparing "용도"
+    // options runs into it) even though this panel can't actually price it
+    // correctly -- see the #apiCostTierHint branch in render() below, which
+    // redirects to the dedicated Ontology Cost tab instead of pretending
+    // this panel's monthly-request model applies to a one-time batch job.
+    ontology: { ko: "온톨로지 구축", en: "Ontology construction" },
   };
   // Which quality tier a given workload TYPICALLY calls for -- purely a
   // starting-point suggestion for the primary Quality selector below, never
@@ -38,6 +44,7 @@
     coding: "flagship",
     reasoning: "flagship",
     batch: "economy",
+    ontology: "balanced",
   };
 
   // Provider filter and column sort inside the "전체 9개 모델 보기" (view all 9)
@@ -307,6 +314,7 @@
             <option value="coding"></option>
             <option value="reasoning"></option>
             <option value="batch"></option>
+            <option value="ontology"></option>
           </select>
         </label>
         <div class="api-cost-tier-hint-row">
@@ -401,6 +409,15 @@
     // `[data-core-task]` click binding set up once in bindEvents() at init --
     // this button doesn't exist in the DOM yet at that point.
     panel.querySelector("#apiCostBridge").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-core-task]");
+      if (button && typeof setCoreTaskMode === "function") setCoreTaskMode(button.dataset.coreTask);
+    });
+    // Same delegated-listener reasoning as #apiCostBridge just above --
+    // #apiCostTierHint's innerHTML is rewritten every render() call (it
+    // needs a live link out to the Ontology Cost tab when that workload is
+    // selected), so the click handler is bound once here on the stable
+    // element instead of on a button that gets replaced on each render.
+    panel.querySelector("#apiCostTierHint").addEventListener("click", (event) => {
       const button = event.target.closest("[data-core-task]");
       if (button && typeof setCoreTaskMode === "function") setCoreTaskMode(button.dataset.coreTask);
     });
@@ -624,6 +641,29 @@
     const currentX = xScale(monthlyRequests);
     const currentApiY = yScale(costPerRequestKrw * monthlyRequests);
 
+    // Local's and a rented Cloud GPU's monthly costs are often close in
+    // value (that's the point of showing both), which puts their flat
+    // lines only a few pixels apart -- left as two independent "-8 above
+    // the line" labels, they render on top of each other and become
+    // unreadable (reported directly against production: Local and
+    // Vast.ai's labels overlapping into garbled text). When the two
+    // lines are closer together than a label's own height allows,
+    // spread both labels apart from their shared midpoint by a fixed gap
+    // instead, keeping whichever line is visually higher labeled higher.
+    const LABEL_MIN_GAP = 14;
+    let localLabelY = localY - 8;
+    let cloudLabelY = cloudY !== null ? cloudY - 8 : null;
+    if (cloudLabelY !== null && Math.abs(localLabelY - cloudLabelY) < LABEL_MIN_GAP) {
+      const midY = (localLabelY + cloudLabelY) / 2;
+      if (localY <= cloudY) {
+        localLabelY = midY - LABEL_MIN_GAP / 2;
+        cloudLabelY = midY + LABEL_MIN_GAP / 2;
+      } else {
+        localLabelY = midY + LABEL_MIN_GAP / 2;
+        cloudLabelY = midY - LABEL_MIN_GAP / 2;
+      }
+    }
+
     // Break-even marker targets whichever of Local/Cloud is the nearer
     // (cheaper) alternative -- the one usage would cross first -- so the
     // single marker shown here always matches renderVerdictBanner's own
@@ -656,8 +696,8 @@
         <text x="${breakevenX}" y="${padTop - 4}" class="api-cost-chart-breakeven-label" text-anchor="middle">${en ? "Break-even" : "손익분기"} ${escapeHtml(breakevenLabel)}</text>` : ""}
         <circle cx="${currentX}" cy="${currentApiY}" r="4" class="api-cost-chart-current-dot" />
         <text x="${currentX}" y="${currentApiY - 10}" class="api-cost-chart-current-label" text-anchor="middle">${en ? "Now" : "현재"}</text>
-        <text x="${padLeft + plotWidth}" y="${localY - 8}" class="api-cost-chart-local-label" text-anchor="end">${en ? "Local (flat)" : "Local (고정)"}</text>
-        ${cloudY !== null ? `<text x="${padLeft + plotWidth}" y="${cloudY - 8}" class="api-cost-chart-cloud-label" text-anchor="end">${escapeHtml(cloudCandidate.provider)} ${en ? "(Cloud, flat)" : "(Cloud, 고정)"}</text>` : ""}
+        <text x="${padLeft + plotWidth}" y="${localLabelY}" class="api-cost-chart-local-label" text-anchor="end">${en ? "Local (flat)" : "Local (고정)"}</text>
+        ${cloudLabelY !== null ? `<text x="${padLeft + plotWidth}" y="${cloudLabelY}" class="api-cost-chart-cloud-label" text-anchor="end">${escapeHtml(cloudCandidate.provider)} ${en ? "(Cloud, flat)" : "(Cloud, 고정)"}</text>` : ""}
         <text x="${xScale(points[points.length - 1].requests)}" y="${yScale(points[points.length - 1].apiCostKrw) - 8}" class="api-cost-chart-api-label" text-anchor="end">${escapeHtml(apiLineLabel)}</text>
         ${xTicks}
       </svg>
@@ -860,9 +900,19 @@
     const hintTier = WORKLOAD_TIER_HINT[viewState.workload];
     const hintTierLabel = TIER_LABEL[hintTier]?.[en ? "en" : "ko"] || hintTier;
     const workloadLabel = WORKLOAD_LABEL[viewState.workload]?.[en ? "en" : "ko"] || viewState.workload;
-    panel.querySelector("#apiCostTierHint").textContent = en
-      ? `${workloadLabel} usage typically fits the ${hintTierLabel} tier -- feel free to pick a different one.`
-      : `${workloadLabel}에는 보통 ${hintTierLabel} 등급을 많이 사용합니다 -- 다른 등급을 직접 골라도 됩니다.`;
+    // "온톨로지 구축" is a one-time batch job, not the monthly recurring
+    // traffic every other 용도 here assumes -- rather than silently
+    // computing a monthly figure that doesn't mean anything for a batch
+    // job, redirect to the tab built for that actual workload shape (see
+    // features/ontology-cost-estimator.js's header comment for why it's a
+    // separate tab in the first place).
+    panel.querySelector("#apiCostTierHint").innerHTML = viewState.workload === "ontology"
+      ? (en
+        ? `${escapeHtml(workloadLabel)} is a one-time batch job, not monthly recurring traffic -- this panel's numbers assume monthly usage, so use <button type="button" class="ghost-button" data-core-task="ontologyCost">the Ontology Cost tab</button> for an accurate estimate instead.`
+        : `${escapeHtml(workloadLabel)}은(는) 매달 반복되는 트래픽이 아니라 1회성 배치 작업입니다 -- 이 화면은 월간 사용량 기준이라 정확한 비용은 <button type="button" class="ghost-button" data-core-task="ontologyCost">Ontology Cost 탭</button>에서 확인하세요.`)
+      : (en
+        ? `${escapeHtml(workloadLabel)} usage typically fits the ${escapeHtml(hintTierLabel)} tier -- feel free to pick a different one.`
+        : `${escapeHtml(workloadLabel)}에는 보통 ${escapeHtml(hintTierLabel)} 등급을 많이 사용합니다 -- 다른 등급을 직접 골라도 됩니다.`);
 
     // "비교 조건" (comparison conditions) -- plain computed numbers, not an
     // AI "interpretation" of the inputs above. Every figure here is a
