@@ -68,6 +68,7 @@ before(() => {
     read("features/gpu-advisor.js"),
     read("features/model-placement.js"),
     read("features/api-cost-estimator.js"),
+    read("features/ontology-cost-estimator.js"),
     read("features/benchmark-workspace.js"),
     read("platform-v2.js"),
     read("platform-v3.js"),
@@ -119,7 +120,7 @@ test("v7.5 terminal results are sanitized before submission", () => {
 after(() => dom?.window.close());
 
 test("first screen presents a flat tool-switcher tab bar with all tools visible (no More menu)", () => {
-  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 6);
+  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 7);
   assert.equal(app.document.querySelectorAll(".task-choice-number").length, 0);
   assert.equal(app.document.querySelector("[data-more-toggle]"), null);
   assert.ok(app.document.querySelector('.core-task-actions [data-core-task="placement"]'));
@@ -141,6 +142,7 @@ test("first screen presents a flat tool-switcher tab bar with all tools visible 
   // changed, not the click targets or their count.
   const groups = app.document.querySelectorAll(".core-task-actions .core-task-group");
   assert.equal(groups.length, 4);
+  assert.ok(app.document.querySelector('[data-core-group="cost"] [data-core-task="ontologyCost"]'));
   const groupLabels = [...app.document.querySelectorAll(".core-task-group-label")].map((node) => node.textContent);
   assert.deepEqual(groupLabels, ["모델 찾기", "인프라 설계", "비용 비교", "데이터"]);
   assert.ok(app.document.querySelector('[data-core-group="model"] [data-core-task="finder"]'));
@@ -624,6 +626,60 @@ test("API vs Local includes a Cloud rental section (RunPod/Vast.ai/Lambda) that 
   assert.doesNotMatch(cloud().textContent, /[가-힣]/);
   assert.match(cloud().textContent, /Cloud rental cost/);
   assert.match(app.document.getElementById("apiCostVerdict").textContent, /Cheapest Cloud rental/);
+  app.eval('setUiLanguage("ko");');
+});
+
+test("Ontology Cost tab estimates a one-time document-processing cost, separate from API vs Local's monthly figures", () => {
+  app.document.querySelector('[data-core-task="ontologyCost"]').click();
+  const panel = () => app.document.getElementById("ontologyCostPanel");
+  assert.equal(panel().hidden, false);
+
+  // Pure math sanity check, independent of the DOM: doubling the pass
+  // count should exactly double both total input and total output tokens
+  // (and therefore cost), since each pass re-reads the same corpus size.
+  const onePass = app.AIHardwareOntologyCost.estimateOntologyCost({ docTokens: 500000, passProfileKey: "single" });
+  const threePass = app.AIHardwareOntologyCost.estimateOntologyCost({ docTokens: 500000, passProfileKey: "thorough" });
+  assert.equal(threePass[0].totalInputTokens, onePass[0].totalInputTokens * 3);
+  assert.ok(threePass[0].costUsd > onePass[0].costUsd);
+
+  // Default (balanced tier, thorough/3-pass profile) renders one candidate
+  // card per provider for that tier, one of them flagged cheapest, with a
+  // real (non-zero) cost shown in both USD and KRW.
+  const cards = () => panel().querySelectorAll(".api-cost-candidate-card");
+  assert.equal(cards().length, 3);
+  const cheapestCard = panel().querySelector(".api-cost-candidate-card.is-cheapest");
+  assert.ok(cheapestCard, "the cheapest provider for this tier should be flagged");
+  assert.match(panel().textContent, /₩[\d,]+/);
+
+  // Raising the document size should raise every rendered candidate's cost.
+  const docTokensInput = app.document.getElementById("ontologyCostDocTokens");
+  const costBefore = panel().querySelector(".api-cost-candidate-cost").textContent;
+  docTokensInput.value = "5000000";
+  docTokensInput.dispatchEvent(new app.Event("input"));
+  const costAfter = panel().querySelector(".api-cost-candidate-cost").textContent;
+  assert.notEqual(costBefore, costAfter);
+  docTokensInput.value = "500000";
+  docTokensInput.dispatchEvent(new app.Event("input"));
+
+  // Switching pipeline depth to "extraction only" should lower the cost
+  // (fewer passes over the same corpus).
+  const passSelect = app.document.getElementById("ontologyCostPassProfile");
+  const thoroughCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  passSelect.value = "single";
+  passSelect.dispatchEvent(new app.Event("change"));
+  const singleCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  assert.notEqual(thoroughCost, singleCost);
+  passSelect.value = "thorough";
+  passSelect.dispatchEvent(new app.Event("change"));
+
+  // This is a distinct, one-time-batch estimate, not the same monthly
+  // "API vs Local" figure -- the caveat text should say so explicitly.
+  assert.match(app.document.getElementById("ontologyCostCaveat").textContent, /가정값/);
+
+  // English round trip: no Korean text should leak from this new panel.
+  app.eval('setUiLanguage("en");');
+  assert.doesNotMatch(panel().textContent, /[가-힣]/);
+  assert.match(panel().textContent, /Ontology construction cost/);
   app.eval('setUiLanguage("ko");');
 });
 

@@ -12,6 +12,8 @@ const UI_COPY_V15 = {
   "core.community.note": { ko: "실측·벤치마크 데이터", en: "Measured benchmark data" },
   "core.apiCost.title": { ko: "API Cost", en: "API Cost" },
   "core.apiCost.note": { ko: "API 비용 계산기", en: "API cost calculator" },
+  "core.ontologyCost.title": { ko: "Ontology Cost", en: "Ontology Cost" },
+  "core.ontologyCost.note": { ko: "온톨로지 구축 비용", en: "Ontology construction cost" },
   "core.aria.section": { ko: "주요 작업 선택", en: "Choose a primary task" },
   "core.aria.tabs": { ko: "주요 작업", en: "Primary tasks" },
   "core.demo.gpu": { ko: "RTX 3060 모델 추천", en: "RTX 3060 model picks" },

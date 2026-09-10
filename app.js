@@ -380,12 +380,14 @@ function refreshCoreTaskUi() {
   const infraActive = coreTaskMode === "infra";
   const communityActive = coreTaskMode === "community";
   const apiCostActive = coreTaskMode === "apiCost";
+  const ontologyCostActive = coreTaskMode === "ontologyCost";
   document.body.classList.toggle("placement-task-active", placementActive);
   document.body.classList.toggle("finder-task-active", coreTaskMode === "finder");
   document.body.classList.toggle("model-finder-task-active", modelFinderActive);
   document.body.classList.toggle("infra-task-active", infraActive);
   document.body.classList.toggle("community-task-active", communityActive);
   document.body.classList.toggle("api-cost-task-active", apiCostActive);
+  document.body.classList.toggle("ontology-cost-task-active", ontologyCostActive);
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
     button.classList.toggle("is-active", active);
@@ -421,6 +423,11 @@ function refreshCoreTaskUi() {
       apiCostButton.querySelector("span").textContent = uiText("core.apiCost.title");
       apiCostButton.querySelector("small").textContent = uiText("core.apiCost.note");
     }
+    const ontologyCostButton = document.querySelector('[data-core-task="ontologyCost"]');
+    if (ontologyCostButton) {
+      ontologyCostButton.querySelector("span").textContent = uiText("core.ontologyCost.title");
+      ontologyCostButton.querySelector("small").textContent = uiText("core.ontologyCost.note");
+    }
   const sttTab = document.querySelector('[data-workload-tab="audioStt"]');
   const ttsTab = document.querySelector('[data-workload-tab="audioTts"]');
   const avatarTab = document.querySelector('[data-workload-tab="avatarGeneration"]');
@@ -430,6 +437,7 @@ function refreshCoreTaskUi() {
   if ($("gpuPlacementPanel")) $("gpuPlacementPanel").hidden = !placementActive;
   if ($("decisionStudio")) $("decisionStudio").hidden = !infraActive;
   if ($("apiCostPanel")) $("apiCostPanel").hidden = !apiCostActive;
+  if ($("ontologyCostPanel")) $("ontologyCostPanel").hidden = !ontologyCostActive;
   window.AIHardwareWorkspace?.apply(coreTaskMode);
   window.AIHardwareGuide?.render(
     coreTaskMode,
@@ -488,15 +496,17 @@ function setCoreTaskMode(mode) {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
     return;
   }
-  coreTaskMode = mode === "modelFinder" || mode === "infra" || mode === "community" || mode === "apiCost" ? mode : "finder";
+  coreTaskMode = mode === "modelFinder" || mode === "infra" || mode === "community" || mode === "apiCost" || mode === "ontologyCost" ? mode : "finder";
   refreshCoreTaskUi();
   render();
   if (coreTaskMode === "infra" && typeof renderDecisionStudio === "function") renderDecisionStudio();
   if (coreTaskMode === "apiCost") window.AIHardwareApiCost?.renderApiCostEstimator();
+  if (coreTaskMode === "ontologyCost") window.AIHardwareOntologyCost?.renderOntologyCostEstimator();
   if (coreTaskMode === "modelFinder") $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "infra") $("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "community") $("benchmarkDashboard")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "apiCost") $("apiCostPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  if (coreTaskMode === "ontologyCost") $("ontologyCostPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
 // 커뮤니티 제보 패널이 다른 모드에서는 숨겨져 있어(styles.css
@@ -572,6 +582,12 @@ function setUiLanguage(language) {
   // while some other core-task mode is active, and setUiLanguage() is called
   // directly from the language-toggle buttons rather than through render().
   if (coreTaskMode === "apiCost") window.AIHardwareApiCost?.renderApiCostEstimator();
+  // Same reasoning again: the Ontology Cost panel is created once at
+  // DOMContentLoaded (like apiCostPanel above) and builds its own
+  // uiLanguage-conditional text inside renderOntologyCostEstimator() only
+  // when that render function actually runs -- a pure language toggle
+  // never reaches it otherwise while a different core-task mode is active.
+  if (coreTaskMode === "ontologyCost") window.AIHardwareOntologyCost?.renderOntologyCostEstimator();
   // The community measurement-intake panel (features/community-feedback.js)
   // is created once at DOMContentLoaded and never rebuilt by the main
   // render() pass, so -- like the apiCost panel above -- a pure language
@@ -735,6 +751,7 @@ function init() {
   restoreImportedHfModels();
   ensureGpuAdvisorPanel();
   window.AIHardwareApiCost?.ensureApiCostPanel();
+  window.AIHardwareOntologyCost?.ensureOntologyCostPanel();
   populateSelects();
   applyUrlState();
   captureStaticTranslationSources();
@@ -2200,9 +2217,10 @@ function render(options = {}) {
   const modelFinderActive = coreTaskMode === "modelFinder";
   const infraActive = coreTaskMode === "infra";
   const apiCostActive = coreTaskMode === "apiCost";
-  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || infraActive || apiCostActive || hasPrimaryGpuSelection;
-  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || infraActive || apiCostActive || (!placementActive && !hasPrimaryGpuSelection);
-  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || infraActive || apiCostActive || !hasPrimaryGpuSelection;
+  const ontologyCostActive = coreTaskMode === "ontologyCost";
+  if (onboardingScreen) onboardingScreen.hidden = placementActive || modelFinderActive || infraActive || apiCostActive || ontologyCostActive || hasPrimaryGpuSelection;
+  if (hardwarePanel) hardwarePanel.hidden = modelFinderActive || infraActive || apiCostActive || ontologyCostActive || (!placementActive && !hasPrimaryGpuSelection);
+  if (resultsPanel) resultsPanel.hidden = placementActive || modelFinderActive || infraActive || apiCostActive || ontologyCostActive || !hasPrimaryGpuSelection;
   refreshCoreTaskUi();
   renderPlacementWorkspaceUi();
 
@@ -2262,6 +2280,17 @@ function render(options = {}) {
     // panel renders its own dynamic content (provider/model table, cost
     // figures) with language-conditional strings baked in at render time,
     // so it needs the same dictionary-sweep safety net after rendering.
+    translateDynamicUi(uiLanguage);
+    window.AIHardwareLocalization?.apply(uiLanguage);
+    return;
+  }
+  if (ontologyCostActive) {
+    window.AIHardwareOntologyCost?.renderOntologyCostEstimator();
+    if (syncUrl) syncUrlState();
+    // Same reasoning as the apiCostActive branch above: the panel renders
+    // its own dynamic content (candidate cards, usage summary) with
+    // language-conditional strings baked in at render time, so it needs
+    // the same dictionary-sweep safety net after rendering.
     translateDynamicUi(uiLanguage);
     window.AIHardwareLocalization?.apply(uiLanguage);
     return;
@@ -4938,7 +4967,7 @@ function syncUrlState() {
   const params = new URLSearchParams();
   params.set("ui", appMode);
   params.set("lang", uiLanguage);
-  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : coreTaskMode === "infra" ? "infra" : coreTaskMode === "apiCost" ? "apiCost" : activeWorkload);
+  params.set("mode", coreTaskMode === "placement" ? "placement" : coreTaskMode === "modelFinder" ? "modelFinder" : coreTaskMode === "infra" ? "infra" : coreTaskMode === "apiCost" ? "apiCost" : coreTaskMode === "ontologyCost" ? "ontologyCost" : activeWorkload);
   if (coreTaskMode === "placement") params.set("workload", activeWorkload);
   const hardware = getHardware();
   if (hasPrimaryGpuSelection) {
@@ -5030,7 +5059,7 @@ function syncUrlState() {
 function applyUrlState() {
   const params = new URLSearchParams(window.location.search);
   const modeParam = params.get("mode");
-  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : modeParam === "infra" ? "infra" : modeParam === "apiCost" ? "apiCost" : "finder";
+  coreTaskMode = modeParam === "placement" || params.has("pgModels") ? "placement" : modeParam === "modelFinder" ? "modelFinder" : modeParam === "infra" ? "infra" : modeParam === "apiCost" ? "apiCost" : modeParam === "ontologyCost" ? "ontologyCost" : "finder";
   const uiParam = params.get("ui");
   appMode = uiParam === "expert" || uiParam === "simple"
     ? uiParam
