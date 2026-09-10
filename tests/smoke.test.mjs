@@ -642,24 +642,56 @@ test("Ontology Cost tab estimates a one-time document-processing cost, separate 
   assert.equal(threePass[0].totalInputTokens, onePass[0].totalInputTokens * 3);
   assert.ok(threePass[0].costUsd > onePass[0].costUsd);
 
-  // Default (balanced tier, thorough/3-pass profile) renders one candidate
-  // card per provider for that tier, one of them flagged cheapest, with a
-  // real (non-zero) cost shown in both USD and KRW.
+  // Page count -> token count conversion: a scanned document should cost
+  // more tokens than the same page count of plain text (vision processing
+  // assumption), by exactly the documented multiplier.
+  const textTokens = app.AIHardwareOntologyCost.docTokensFromPages(500, "text");
+  const scannedTokens = app.AIHardwareOntologyCost.docTokensFromPages(500, "scanned");
+  assert.equal(scannedTokens, textTokens * app.AIHardwareOntologyCost.DOC_TYPE_MULTIPLIER.scanned);
+
+  // Default (balanced tier, thorough/3-pass profile, text document) renders
+  // one candidate card per provider for that tier, one of them flagged
+  // cheapest, with a real (non-zero) cost shown in both USD and KRW.
   const cards = () => panel().querySelectorAll(".api-cost-candidate-card");
   assert.equal(cards().length, 3);
   const cheapestCard = panel().querySelector(".api-cost-candidate-card.is-cheapest");
   assert.ok(cheapestCard, "the cheapest provider for this tier should be flagged");
   assert.match(panel().textContent, /₩[\d,]+/);
 
-  // Raising the document size should raise every rendered candidate's cost.
-  const docTokensInput = app.document.getElementById("ontologyCostDocTokens");
+  // Cards are real, selectable options (unlike a static list): clicking one
+  // marks it selected and reveals its own input/output cost breakdown,
+  // clicking again hides it.
+  assert.equal(app.document.getElementById("ontologyCostTable").getAttribute("role"), "listbox");
+  assert.equal(cards()[0].tagName, "BUTTON");
+  assert.equal(cards()[0].getAttribute("aria-selected"), "false");
+  cards()[0].click();
+  assert.equal(cards()[0].getAttribute("aria-selected"), "true");
+  assert.match(cards()[0].textContent, /입력 비용/);
+  cards()[0].click();
+  assert.equal(cards()[0].getAttribute("aria-selected"), "false");
+  assert.doesNotMatch(cards()[0].textContent, /입력 비용/);
+
+  // Raising the document page count should raise every rendered candidate's cost.
+  const docPagesInput = app.document.getElementById("ontologyCostDocPages");
   const costBefore = panel().querySelector(".api-cost-candidate-cost").textContent;
-  docTokensInput.value = "5000000";
-  docTokensInput.dispatchEvent(new app.Event("input"));
+  docPagesInput.value = "5000";
+  docPagesInput.dispatchEvent(new app.Event("input"));
   const costAfter = panel().querySelector(".api-cost-candidate-cost").textContent;
   assert.notEqual(costBefore, costAfter);
-  docTokensInput.value = "500000";
-  docTokensInput.dispatchEvent(new app.Event("input"));
+  docPagesInput.value = "500";
+  docPagesInput.dispatchEvent(new app.Event("input"));
+
+  // Switching document type to "scanned image" should raise the cost (same
+  // page count, more tokens per page) and add a scan-specific caveat.
+  const docTypeSelect = app.document.getElementById("ontologyCostDocType");
+  const textCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  docTypeSelect.value = "scanned";
+  docTypeSelect.dispatchEvent(new app.Event("change"));
+  const scannedCost = panel().querySelector(".api-cost-candidate-cost").textContent;
+  assert.notEqual(textCost, scannedCost);
+  assert.match(app.document.getElementById("ontologyCostCaveat").textContent, /비전 처리/);
+  docTypeSelect.value = "text";
+  docTypeSelect.dispatchEvent(new app.Event("change"));
 
   // Switching pipeline depth to "extraction only" should lower the cost
   // (fewer passes over the same corpus).
