@@ -1,11 +1,11 @@
 /** Extracted in v7.1 to keep the core bundle focused. */
 const UI_COPY_V15 = {
   "core.finder.title": { ko: "내 GPU로 모델 찾기", en: "Find models for my GPU" },
-  "core.finder.note": { ko: "지금 가진 GPU에서 잘 도는 모델", en: "See what runs well on your hardware" },
+  "core.finder.note": { ko: "GPU 이름만 고르면 바로 비교", en: "Choose a GPU and compare immediately" },
   "core.modelFinder.title": { ko: "모델에 맞는 GPU 찾기", en: "Find a GPU for a model" },
-  "core.modelFinder.note": { ko: "실행할 모델 기준으로 GPU와 예산 비교", en: "Compare GPUs and budget for one model" },
-  "core.infra.title": { ko: "AI 서비스 견적", en: "Size an AI service" },
-  "core.infra.note": { ko: "사용자 수와 트래픽으로 서버 구성 계산", en: "Estimate servers from users and traffic" },
+  "core.modelFinder.note": { ko: "모델·예산 기준 추천 GPU 비교", en: "Compare recommended GPUs by model and budget" },
+  "core.infra.title": { ko: "AI 서비스 서버 견적", en: "Size an AI service" },
+  "core.infra.note": { ko: "사용자 수로 GPU·비용 산정", en: "Estimate GPUs and cost from user demand" },
   "core.placement.title": { ko: "여러 모델 배치", en: "Place multiple models" },
   "core.placement.note": { ko: "한 대 이상의 GPU에 모델 함께 배치", en: "Share one or more GPUs across models" },
   "core.community.title": { ko: "실측 벤치마크", en: "Measured benchmarks" },

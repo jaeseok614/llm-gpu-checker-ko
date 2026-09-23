@@ -554,7 +554,7 @@ function setUiLanguage(language) {
   syncAdvisorCurrencyInputs();
   applyV15Translations();
   const dictionary = UI_TRANSLATIONS[uiLanguage];
-  const selectors = [".header-nav a", ".eyebrow", "#settingsToggle", "#changeGpuButton", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", ".primary-gpu-control > .field > span", ".section-kicker"];
+  const selectors = [".header-nav a:not(.github-link)", ".eyebrow", "#settingsToggle", "#changeGpuButton", "#simpleOpenExpert", "[data-share-link]", "[data-download-share-card]", ".primary-gpu-control > .field > span", ".section-kicker"];
   document.querySelectorAll(selectors.join(",")).forEach((node) => {
     const source = node.dataset.i18nSource || node.textContent.trim();
     node.dataset.i18nSource = source;
@@ -5021,6 +5021,29 @@ function syncUrlState() {
   if (!window.history || !window.location) return;
 
   const existingParams = new URLSearchParams(window.location.search);
+  const landingIntentKeys = ["gpu", "model", "pgModels", "hub", "detail", "build", "studio", "studioState", "scenario", "users"];
+  const requestedMode = existingParams.get("mode");
+  const hasLandingIntent = landingIntentKeys.some((key) => existingParams.has(key))
+    || (requestedMode && requestedMode !== "generative")
+    || (existingParams.has("ui") && existingParams.get("ui") !== "simple");
+  const isUntouchedFinder = !hasPrimaryGpuSelection
+    && coreTaskMode === "finder"
+    && activeWorkload === "generative"
+    && !selectedModelKey
+    && !simpleExpandedKey
+    && placementSelectedKeys.size === 0
+    && !hasLandingIntent;
+
+  // A first visit used to expand ?lang=ko into dozens of default controls.
+  // Keep the shareable landing URL human-readable until the user chooses a
+  // GPU, task, workload, or explicit deep-link state.
+  if (isUntouchedFinder) {
+    const landingParams = new URLSearchParams();
+    landingParams.set("lang", uiLanguage);
+    window.history.replaceState({}, "", window.location.pathname + "?" + landingParams.toString());
+    return;
+  }
+
   const params = new URLSearchParams();
   params.set("ui", appMode);
   params.set("lang", uiLanguage);

@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <img src="./docs/home-v7.29.png" alt="내 GPU에서 실행 가능한 AI 모델을 찾는 AI Hardware Fit 첫 화면" />
+  <img src="./docs/home-v7.30.png" alt="내 GPU에서 실행 가능한 AI 모델을 찾는 AI Hardware Fit 첫 화면" />
 </p>
 
 <p align="center">
@@ -52,6 +52,7 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v7.30.0** — 첫 화면을 큰 작업 선택 바와 명확한 2단 GPU 탐색 화면으로 재설계했습니다. 모바일 헤더·긴 기본 URL을 고치고 중복 작업 선택기 CSS 254줄도 제거했습니다.
 - **v7.29.0** — 첫 화면을 3개 핵심 작업과 검색 중심 GPU 선택으로 단순화하고, 고급 도구는 접었습니다. 비교 허브·API/온톨로지 계산기를 필요할 때만 불러오도록 초기 로딩도 줄였습니다.
 - **v7.28.0** — Xing4.0 29B A4B와 Xiaomi MiMo-V2.6 3종(Distill Qwen 9B·Flash-RL·Pro-RL)을 실측 파라미터·공식 출처와 함께 AI 모델 카탈로그에 추가했습니다.
 - **v7.27.0** — Ontology Cost에 스캔 해상도 입력을, Infra/Stack Planner/API vs Local에 온톨로지 구축 예시·옵션을 추가했습니다. 손익분기 그래프에서 Local·Cloud 라벨이 겹치던 버그도 고쳤습니다.

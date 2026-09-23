@@ -105,8 +105,12 @@ try {
       taskButtons: document.querySelectorAll(".core-task-actions [data-core-task]").length,
       primaryTaskButtons: document.querySelectorAll(".core-task-primary [data-core-task]").length,
       mainWidth: Math.round(document.querySelector("main")?.getBoundingClientRect().width || 0),
+      githubTextNode: Boolean(document.querySelector(".github-link-text")),
+      githubLinkDisplay: getComputedStyle(document.querySelector(".github-link")).display,
     }));
     check(state.overflow <= 0, `${width}x${height}: horizontal overflow ${state.overflow}px`);
+    check(state.githubTextNode, `${width}x${height}: language sweep flattened the GitHub link markup`);
+    if (width <= 520) check(state.githubLinkDisplay === "none", `${width}x${height}: mobile GitHub link should be hidden to preserve the brand`);
     check(state.purposeWorkload === "audioTts", `${width}x${height}: TTS purpose state was not restored`);
     check(state.purposeValues.includes("voiceCloning"), `${width}x${height}: voice-cloning purpose is missing`);
     check(state.cardTypes.length > 0 && state.cardTypes.every((type) => type === "audio-tts"), `${width}x${height}: recommendation crossed workload boundaries`);
@@ -134,6 +138,8 @@ try {
   const lazyContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
   const lazyPage = await lazyContext.newPage();
   await lazyPage.goto(`${baseUrl}/?lang=ko`, { waitUntil: "networkidle" });
+  const landingParams = await lazyPage.evaluate(() => [...new URL(window.location.href).searchParams.keys()]);
+  check(landingParams.length === 1 && landingParams[0] === "lang", "Untouched landing URL expanded with default controls");
   check(await lazyPage.locator("#decisionHub").count() === 0, "Decision tools loaded before a GPU was selected");
   let loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
   check(!loadedScripts.some((url) => /api-cost-estimator\.js/.test(url)), "API cost estimator loaded eagerly");

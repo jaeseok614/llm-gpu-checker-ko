@@ -300,66 +300,6 @@ html[lang="en"] .simple-mode-head > div:first-child {
   margin: 18px auto;
 }
 
-.core-task-switcher {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 12px;
-  padding: 14px 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--panel-raised);
-}
-
-.core-task-switcher > div:first-child {
-  flex: 0 1 310px;
-}
-
-.core-task-switcher strong {
-  display: block;
-  font-size: 15px;
-}
-
-.core-task-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(230px, 1fr));
-  gap: 8px;
-  width: min(680px, 100%);
-}
-
-.core-task-button {
-  display: grid;
-  gap: 3px;
-  min-height: 54px;
-  padding: 9px 13px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-  background: var(--panel-raised);
-  color: var(--ink);
-  cursor: pointer;
-  text-align: left;
-}
-
-.core-task-button:hover {
-  border-color: var(--blue);
-}
-
-.core-task-button.is-active {
-  border-color: var(--blue);
-  background: var(--blue-soft);
-  color: var(--blue);
-}
-
-.core-task-button span {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.core-task-button small {
-  color: var(--muted);
-  font-size: 11px;
-}
 
 .hardware-panel,
 .results-panel {
@@ -1788,40 +1728,6 @@ html[lang="en"] .simple-mode-head > div:first-child {
 
   .studio-market-summary {
     display: block;
-  }
-}
-
-/* Keep the v6 goal-first shell above legacy release overrides. */
-.core-task-intro {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  max-width: none;
-}
-
-.core-task-button {
-  min-height: 132px;
-  padding: 18px;
-}
-
-.core-task-button.is-active {
-  padding: 17px;
-}
-
-@media (max-width: 900px) {
-  .core-task-intro {
-    max-width: none;
-  }
-
-  .core-task-button {
-    min-height: 112px;
-  }
-}
-
-@media (max-width: 600px) {
-  .core-task-intro {
-    display: flex;
   }
 }
 
@@ -7160,10 +7066,6 @@ button:focus-visible {
   .si-commercial-flow > span { flex-basis: auto; }
   .si-commercial-flow > b { transform: rotate(90deg); }
 }
-.core-task-actions {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
 body.infra-task-active .onboarding-screen,
 body.infra-task-active #hardwarePanel,
 body.infra-task-active #resultsPanel,
@@ -7812,123 +7714,6 @@ body.community-task-active #benchmarkSheet {
   }
 }
 
-/* v6.0 — goal-first navigation, guided estimate, and customer result */
-.core-task-switcher {
-  position: relative;
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-}
-
-.core-task-intro {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.core-task-intro > div {
-  min-width: 0;
-}
-
-.core-task-intro strong {
-  margin: 4px 0;
-  font-size: clamp(18px, 2.3vw, 25px);
-  line-height: 1.25;
-}
-
-.core-task-intro small {
-  display: block;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.start-guide-button {
-  flex: 0 0 auto;
-  min-height: 40px;
-}
-
-.core-task-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.core-task-button {
-  position: relative;
-  display: grid;
-  grid-template-columns: 30px 1fr;
-  align-content: start;
-  gap: 4px 10px;
-  min-height: 132px;
-  padding: 18px;
-  text-align: left;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel-raised);
-}
-
-.core-task-button:hover {
-  border-color: var(--blue);
-  background: var(--blue-soft);
-}
-
-.core-task-button.is-active {
-  border: 2px solid var(--blue);
-  padding: 17px;
-  background: var(--blue-soft);
-}
-
-.task-choice-number {
-  grid-row: 1 / span 3;
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--surface-tint);
-  color: var(--blue);
-  font-family: var(--mono);
-}
-
-.core-task-button.is-active .task-choice-number {
-  background: var(--blue);
-  color: var(--on-blue);
-}
-
-.core-task-button > span {
-  color: var(--ink);
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.core-task-button > small,
-.core-task-button > em {
-  grid-column: 2;
-}
-
-.core-task-button > small {
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.core-task-button > em {
-  margin-top: 6px;
-  color: var(--blue);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 800;
-}
-
-.core-task-demos {
-  align-items: center;
-}
-
-.core-task-demos > span {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
 
 .showcase-copy {
   display: grid;
@@ -8731,45 +8516,6 @@ body.guide-modal-open {
   transform: translateY(0);
 }
 
-.core-task-switcher {
-  align-items: stretch;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.core-task-intro {
-  display: grid;
-  gap: 4px;
-  width: 100%;
-  max-width: 760px;
-}
-
-.core-task-switcher > .core-task-intro:first-child {
-  flex: 0 0 auto;
-}
-
-.core-task-intro small {
-  color: var(--muted);
-}
-
-.core-task-actions {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  width: 100%;
-}
-
-.core-task-button {
-  min-height: 72px;
-  padding: 12px 14px;
-}
-
-.core-task-demos {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
 
 .demo-chip,
 .advanced-entry > summary,
