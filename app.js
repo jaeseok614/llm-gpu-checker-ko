@@ -760,7 +760,7 @@ function refreshAppModeUi() {
   // existing fixed-overlay detail drawer untouched.
   document.body.classList.toggle("model-workbench-active", finderActive && !isSimple && Boolean(selectedModelKey));
   document.body.classList.toggle("simple-inspector-active", finderActive && isSimple && Boolean(simpleExpandedKey));
-  document.querySelectorAll("[data-app-mode]").forEach((button) => {
+  document.querySelectorAll(".app-mode-tab[data-app-mode]").forEach((button) => {
     const active = button.dataset.appMode === appMode;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-selected", String(active));
@@ -1747,7 +1747,7 @@ function bindEvents() {
     $("modelDetail")?.focus();
   });
 
-  document.querySelectorAll("[data-app-mode]").forEach((button) => {
+  document.querySelectorAll(".app-mode-tab[data-app-mode]").forEach((button) => {
     button.addEventListener("click", () => setAppMode(button.dataset.appMode));
   });
 

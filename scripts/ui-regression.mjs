@@ -107,9 +107,11 @@ try {
       mainWidth: Math.round(document.querySelector("main")?.getBoundingClientRect().width || 0),
       githubTextNode: Boolean(document.querySelector(".github-link-text")),
       githubLinkDisplay: getComputedStyle(document.querySelector(".github-link")).display,
+      bodyAriaSelected: document.body.hasAttribute("aria-selected"),
     }));
     check(state.overflow <= 0, `${width}x${height}: horizontal overflow ${state.overflow}px`);
     check(state.githubTextNode, `${width}x${height}: language sweep flattened the GitHub link markup`);
+    check(!state.bodyAriaSelected, width + "x" + height + ": body must not receive tab-only aria-selected");
     if (width <= 520) check(state.githubLinkDisplay === "none", `${width}x${height}: mobile GitHub link should be hidden to preserve the brand`);
     check(state.purposeWorkload === "audioTts", `${width}x${height}: TTS purpose state was not restored`);
     check(state.purposeValues.includes("voiceCloning"), `${width}x${height}: voice-cloning purpose is missing`);
