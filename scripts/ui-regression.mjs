@@ -139,7 +139,10 @@ try {
 
   const lazyContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
   const lazyPage = await lazyContext.newPage();
+  await lazyPage.addInitScript(() => localStorage.setItem("ai-hardware-fit-primary-gpu-v1", "rtx3060-12"));
   await lazyPage.goto(`${baseUrl}/?lang=ko`, { waitUntil: "networkidle" });
+  check(await lazyPage.locator("#onboardingScreen").isVisible(), "Saved GPU bypassed the homepage chooser");
+  check((await lazyPage.locator("[data-quick-gpu]").first().textContent()).includes("최근 선택"), "Last-used GPU shortcut is missing");
   const landingParams = await lazyPage.evaluate(() => [...new URL(window.location.href).searchParams.keys()]);
   check(landingParams.length === 1 && landingParams[0] === "lang", "Untouched landing URL expanded with default controls");
   check(await lazyPage.locator("#decisionHub").count() === 0, "Decision tools loaded before a GPU was selected");

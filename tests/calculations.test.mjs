@@ -324,7 +324,7 @@ describe("first-visit GPU onboarding", () => {
     assert.match(fresh.document.getElementById("simpleModeResult").textContent, /내 GPU를 선택하면 추천을 시작합니다/);
   });
 
-  test("remembers a fixed GPU and restores it on the next visit", () => {
+  test("remembers a fixed GPU as an explicit shortcut without bypassing the chooser", () => {
     const fresh = loadApp("https://example.com/");
     const select = fresh.document.getElementById("gpuPreset");
     select.value = "rtx3060-12";
@@ -337,6 +337,12 @@ describe("first-visit GPU onboarding", () => {
     const restored = loadApp("https://example.com/", {
       [storageKey]: "rtx3060-12",
     });
+    assert.equal(restored.document.getElementById("gpuPreset").value, "");
+    assert.equal(restored.document.getElementById("onboardingScreen").hidden, false);
+    const recent = restored.document.querySelector("[data-quick-gpu]");
+    assert.equal(recent.dataset.quickGpu, "rtx3060-12");
+    assert.match(recent.textContent, /최근 선택/);
+    recent.click();
     assert.equal(restored.document.getElementById("gpuPreset").value, "rtx3060-12");
     assert.match(restored.document.getElementById("simpleModeGpuReadout").textContent, /RTX 3060/);
   });

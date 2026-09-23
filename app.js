@@ -848,7 +848,9 @@ function populateSelects() {
 function renderOnboardingQuickPicks() {
   const target = $("onboardingQuickpicks");
   if (!target) return;
-  const picks = ONBOARDING_QUICK_GPU_IDS
+  const lastGpuId = getStoredPrimaryGpuId();
+  const pickIds = [...new Set([lastGpuId, ...ONBOARDING_QUICK_GPU_IDS].filter(Boolean))].slice(0, 8);
+  const picks = pickIds
     .map((id) => GPU_PRESETS.find((gpu) => gpu.id === id))
     .filter(Boolean);
   target.innerHTML = picks
@@ -856,7 +858,7 @@ function renderOnboardingQuickPicks() {
       (gpu) => `
         <button type="button" class="onboarding-gpu-card" data-quick-gpu="${escapeAttr(gpu.id)}">
           <strong>${escapeHtml(shortGpuName(gpu.name))}</strong>
-          <span>${formatGb(gpu.vram)} VRAM</span>
+          <span>${gpu.id === lastGpuId ? (uiLanguage === "en" ? "Last used · " : "최근 선택 · ") : ""}${formatGb(gpu.vram)} VRAM</span>
         </button>
       `,
     )
@@ -5198,11 +5200,8 @@ function applyUrlState() {
   refreshFilterOptions();
 
   const gpuId = params.get("gpu");
-  const restoredFromUrl = gpuId ? selectPrimaryGpu(gpuId) : false;
-  if (!restoredFromUrl) {
-    const storedGpuId = getStoredPrimaryGpuId();
-    if (storedGpuId) selectPrimaryGpu(storedGpuId);
-  }
+  // A homepage visit starts at the chooser; only an explicit URL selects a GPU.
+  if (gpuId) selectPrimaryGpu(gpuId);
 
   if (hasPrimaryGpuSelection) {
     setValueIfPresent("vramGb", params.get("vram"));

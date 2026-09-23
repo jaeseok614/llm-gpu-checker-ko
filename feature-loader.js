@@ -31,7 +31,11 @@
         script.dataset.loaded = "true";
         resolve();
       }, { once: true });
-      script.addEventListener("error", reject, { once: true });
+      script.addEventListener("error", (error) => {
+        // Remove the failed element so a subsequent user action can retry.
+        script.remove();
+        reject(error);
+      }, { once: true });
       document.head.appendChild(script);
     });
   }
@@ -151,7 +155,7 @@
       targets.forEach((target) => observer.observe(target));
     } else {
       window.setTimeout(() => {
-        window.loadBenchmarkWorkspace();
+        if (benchmarkTarget && !benchmarkTarget.hidden) window.loadBenchmarkWorkspace();
       }, 2500);
     }
   });

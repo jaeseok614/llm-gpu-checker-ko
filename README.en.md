@@ -30,6 +30,8 @@
   <sub>Choose a GPU → compare runnable models, quantization, and estimated speed · calculations stay in your browser</sub>
 </p>
 
+The homepage always opens the GPU chooser. GPU-specific example links open results directly; your last GPU remains an explicit shortcut, not an automatic redirect.
+
 ## Open a sample scenario
 
 | Scenario | Start |

@@ -4,7 +4,8 @@ import { execFileSync } from "node:child_process";
 import vm from "node:vm";
 
 const outputDir = "_site";
-const excluded = new Set([".git", ".github", "node_modules", "_site", "work", "outputs"]);
+const excluded = new Set([".git", ".github", "node_modules", "_site", "work", "outputs",
+  "tests", "scripts", "package.json", "package-lock.json", "lighthouserc.cjs", ".gitignore"]);
 const baseUrl = (process.env.SITE_URL || "https://jaeseok614.github.io/llm-gpu-checker-ko").replace(/\/$/, "");
 let version = process.env.GITHUB_SHA?.slice(0, 12) || "";
 

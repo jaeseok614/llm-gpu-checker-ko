@@ -8,6 +8,9 @@ test("Pages deployment builds a cache-stamped artifact", () => {
   const html = fs.readFileSync("_site/index.html", "utf8");
   assert.equal(html.includes("__CACHE_VERSION__"), false);
   assert.match(html, /app\.js\?v=[a-f0-9]{7,}/);
+  for (const developmentPath of ["tests", "scripts", "package-lock.json", "lighthouserc.cjs"]) {
+    assert.equal(fs.existsSync("_site/" + developmentPath), false, "Development files leaked into the Pages artifact");
+  }
   assert.ok(fs.existsSync("_site/sitemap.xml"));
   assert.ok(fs.existsSync("_site/robots.txt"));
   assert.ok(fs.existsSync("_site/gpu/rtx4090-24/index.html"));
