@@ -345,9 +345,6 @@ function selectPrimaryGpu(id, { persist = false } = {}) {
   applyPreset(preset.id);
   hasPrimaryGpuSelection = true;
   if (persist) rememberPrimaryGpuId(preset.id);
-  // The comparison/launch hub is useful only after a GPU exists. Loading it
-  // here keeps about 49 KiB of secondary UI code off the first visit.
-  window.loadDecisionTools?.().catch(() => {});
   return true;
 }
 
@@ -371,6 +368,10 @@ function setAppMode(mode) {
   coreTaskMode = "finder";
   appMode = mode;
   if (mode !== "simple") simpleExpandedKey = "";
+  if (mode === "expert") {
+    window.loadDecisionTools?.().catch(() => {});
+    window.loadBenchmarkWorkspace?.().catch(() => {});
+  }
   refreshCoreTaskUi();
   refreshAppModeUi();
   render();
@@ -746,6 +747,7 @@ function restoreUiTheme() {
 function refreshAppModeUi() {
   const isSimple = appMode === "simple";
   const finderActive = coreTaskMode === "finder";
+  document.body.dataset.appMode = appMode;
   $("simpleModePanel").hidden = !finderActive || !isSimple;
   $("expertModeSection").hidden = !finderActive || isSimple;
   $("calculationBasisStrip").hidden = !finderActive || isSimple;
@@ -792,7 +794,7 @@ function init() {
   renderPlacementPrimarySelect();
   setPlacementUsageMode(placementUsageMode);
   renderPlacementWorkspaceUi();
-  render({ syncUrl: false });
+  render();
   if (placementSelectedKeys.size) {
     placementBuilderStarted = true;
     coreTaskMode = "placement";
@@ -2377,8 +2379,10 @@ function render(options = {}) {
   renderBenchmarkSheet();
   renderBenchmarkDashboard();
   const benchmarkSheet = $("benchmarkSheet");
-  if (benchmarkSheet) benchmarkSheet.hidden = placementActive || modelFinderActive || !hasPrimaryGpuSelection;
-  if ($("benchmarkDashboard")) $("benchmarkDashboard").hidden = placementActive || modelFinderActive;
+  const hideExtendedFinderTools = appMode === "simple";
+  if (benchmarkSheet) benchmarkSheet.hidden = placementActive || modelFinderActive || !hasPrimaryGpuSelection || hideExtendedFinderTools;
+  if ($("benchmarkDashboard")) $("benchmarkDashboard").hidden = placementActive || modelFinderActive || hideExtendedFinderTools;
+  if ($("decisionHub")) $("decisionHub").hidden = placementActive || modelFinderActive || hideExtendedFinderTools;
 
   if (syncUrl) syncUrlState();
   if (uiLanguage === "en") setUiLanguage("en");
@@ -2395,6 +2399,7 @@ function renderHardware(hardware, allEstimates) {
     $("gpuSourceLinks").innerHTML = "";
     if ($("gpuRuntimeFacts")) $("gpuRuntimeFacts").hidden = true;
     if ($("hardwareCapabilitySummary")) $("hardwareCapabilitySummary").hidden = true;
+    if ($("hardwareCapabilityDetails")) $("hardwareCapabilityDetails").hidden = true;
     if ($("powerLimitField")) $("powerLimitField").hidden = true;
     return;
   }
@@ -2589,6 +2594,7 @@ function renderGpuInsights(hardware) {
     </div>
   `);
 
+  detail.hidden = !gpuCompareOpen;
   const toggle = $("toggleGpuCompare");
   toggle.setAttribute("aria-expanded", String(gpuCompareOpen));
   toggle.textContent = gpuCompareOpen
@@ -2668,36 +2674,6 @@ function renderGpuRuntimeFacts(hardware) {
   target.innerHTML = facts.map((fact) => `<span>${escapeHtml(fact)}</span>`).join("");
 }
 
-function renderHardwareCapabilitiesLegacy(hardware, activeEstimates) {
-  const target = $("hardwareCapabilitySummary");
-  if (!target) return;
-  const runnable = activeEstimates.filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score);
-  const largest = [...runnable].sort((a, b) => (b.model.params || 0) - (a.model.params || 0))[0];
-  const vram = hardware.availableVram;
-  const imageStatus = vram >= 24 ? "FLUX급 가능" : vram >= 10 ? "SDXL급 가능" : "경량·오프로딩 권장";
-  const videoStatus = vram >= 24 ? "5B급 비디오 가능" : vram >= 10 ? "1~2B급 저해상도" : "CPU 오프로딩 필요";
-  const finetuneStatus = vram >= 48 ? "14B LoRA 후보" : vram >= 24 ? "7B LoRA 후보" : vram >= 12 ? "3B LoRA 후보" : "초경량 LoRA";
-  const rows = [
-    ["현재 모델 종류", `${runnable.length}개 실행 가능`, largest ? `최대 ${largest.model.params}B급 후보` : "설정 완화 필요"],
-    ["이미지 생성", imageStatus, "1024px·배치 1 기준"],
-    ["비디오 생성", videoStatus, "480p·81프레임 기준"],
-    ["경량 튜닝", finetuneStatus, "QLoRA 기준 참고"],
-  ];
-  target.hidden = false;
-  target.innerHTML = `
-    <strong>이 GPU로 할 수 있는 작업</strong>
-    <div class="hardware-capability-grid">
-      ${rows.map(([label, value, note]) => `
-        <div class="hardware-capability-card">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(value)}</strong>
-          <small>${escapeHtml(note)}</small>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
 // Keep capability copy language-native instead of relying on the generic DOM
 // replacement pass, because values combine live counts with translated suffixes.
 function renderHardwareCapabilities(hardware, activeEstimates) {
@@ -2736,8 +2712,17 @@ function renderHardwareCapabilities(hardware, activeEstimates) {
     ["경량 튜닝", finetuneStatus, "QLoRA 기준 참고"],
   ];
   target.hidden = false;
+  const details = $("hardwareCapabilityDetails");
+  if (details) details.hidden = false;
+  if ($("hardwareCapabilityLabel")) {
+    $("hardwareCapabilityLabel").textContent = en ? "Workload range for this GPU" : "이 GPU의 작업 범위";
+  }
+  if ($("hardwareCapabilityTeaser")) {
+    $("hardwareCapabilityTeaser").textContent = largest
+      ? (en ? `${runnable.length} runnable · up to ${largest.model.params}B` : `${runnable.length}개 실행 가능 · 최대 ${largest.model.params}B급`)
+      : (en ? "Open to see the estimates" : "펼쳐서 예상 범위 확인");
+  }
   target.innerHTML = `
-    <strong>${en ? "What this GPU can do" : "이 GPU로 할 수 있는 작업"}</strong>
     <div class="hardware-capability-grid">
       ${rows.map(([label, value, note]) => `
         <div class="hardware-capability-card">
@@ -3043,18 +3028,12 @@ function renderSimpleMode(hardware, allEstimates) {
           ${reasons.length ? `<span class="simple-pick-reasons">${reasons.map((reason) => `<span>${escapeHtml(reason)}</span>`).join("")}</span>` : ""}
         </button>
         <span class="simple-pick-actions">
-          <span class="simple-pick-cta" data-model-key="${escapeAttr(key)}">${escapeHtml(ctaLabel)} ${isSelected ? "✓" : "→"}</span>
-          <span class="simple-pick-copy" role="button" tabindex="0" data-copy-command="${escapeAttr(estimate.model.type === "generative" ? buildOllamaCommand(estimate.model, estimate.quant, hardware) : buildNonGenerativeCommand(estimate.model, estimate))}">${uiLanguage === "en" ? "Copy run command" : "실행 명령어 복사"}</span>
+          <button type="button" class="simple-pick-cta" data-model-key="${escapeAttr(key)}">${escapeHtml(ctaLabel)} ${isSelected ? "✓" : "→"}</button>
+          <button type="button" class="simple-pick-copy" data-copy-command="${escapeAttr(estimate.model.type === "generative" ? buildOllamaCommand(estimate.model, estimate.quant, hardware) : buildNonGenerativeCommand(estimate.model, estimate))}">${uiLanguage === "en" ? "Copy run command" : "실행 명령어 복사"}</button>
         </span>
       </div>
     `;
   }).join("");
-  const topPick = picks[0];
-  target.insertAdjacentHTML("beforeend", `
-    <div class="mobile-decision-summary" aria-label="${uiLanguage === "en" ? "Selected recommendation summary" : "선택한 추천 요약"}">
-      <span><small>${uiLanguage === "en" ? "Top recommendation" : "1순위 추천"}</small><strong>${escapeHtml(topPick.model.name)}</strong></span>
-      <button type="button" class="primary-button" data-model-key="${escapeAttr(modelKey(topPick.model))}">${uiLanguage === "en" ? "View" : "보기"}</button>
-    </div>`);
 }
 
 function buildModelShareUrl(key, mode = "expert") {
@@ -3613,17 +3592,6 @@ function renderModelCard(estimate) {
       <span class="compact-summary">${escapeHtml(modelSummary(estimate.model))}</span>
     </button>
   `;
-}
-
-function getRecommendationRanks() {
-  const hardware = getHardware();
-  const ranked = getActiveModels()
-    .map((model) => estimateAnyModel(model, hardware))
-    .filter((estimate) => GRADE_META[estimate.grade].score >= GRADE_META.B.score)
-    .sort((a, b) => recommendationScore(b) - recommendationScore(a) || gradeSort(a, b) || a.pressure - b.pressure)
-    .slice(0, 3);
-
-  return new Map(ranked.map((estimate, index) => [modelKey(estimate.model), index + 1]));
 }
 
 function renderDetailEmptyStateHtml() {
@@ -5131,6 +5099,82 @@ function syncUrlState() {
   ["hub", "detail", "build", "studio", "studioState", "scenario", "users"].forEach((key) => {
     if (existingParams.get(key)) params.set(key, existingParams.get(key));
   });
+
+  const dropDefault = (key, value) => {
+    if (params.get(key) === String(value)) params.delete(key);
+  };
+  const defaultParams = {
+    mode: "generative",
+    ctx: 8192,
+    con: 1,
+    out: 512,
+    kv: "fp16",
+    runtime: "llamacpp",
+    quant: "auto",
+    embTokens: 384,
+    embBatch: 32,
+    embPrecision: "auto",
+    embRuntime: "tei",
+    embBatchTokens: 16384,
+    rerankQuery: 64,
+    rerankDoc: 512,
+    rerankCandidates: 40,
+    rerankBatch: 16,
+    rerankPrecision: "auto",
+    rerankRuntime: "tei",
+    ocrPreset: "a4-200",
+    ocrWidth: 1654,
+    ocrHeight: 2339,
+    ocrBatch: 1,
+    ocrPrecision: "auto",
+    ocrFeature: "text",
+    mediaSteps: 28,
+    mediaFrames: 81,
+    mediaFps: 16,
+    mediaLora: 0,
+    mediaOffload: "none",
+    mediaOptimization: "standard",
+    task: "all",
+    provider: "all",
+    license: "all",
+    licenseUse: "all",
+    grade: "all",
+    fit: "all",
+    sort: "latest",
+    view: "list",
+    purpose: "general",
+    priority: "balanced",
+  };
+  Object.entries(defaultParams).forEach(([key, value]) => dropDefault(key, value));
+
+  // Keep ?ui=simple only when it disambiguates a model link; otherwise the
+  // default mode is implicit and the address remains readable.
+  if (appMode === "simple" && !params.has("model")) params.delete("ui");
+
+  const primaryPreset = hasPrimaryGpuSelection
+    ? GPU_PRESETS.find((gpu) => gpu.id === $("gpuPreset").value)
+    : null;
+  if (primaryPreset && primaryPreset.id !== "custom") {
+    dropDefault("vram", primaryPreset.gpuUsableMemoryGb || primaryPreset.vram);
+    dropDefault("ram", primaryPreset.ram);
+    dropDefault("count", 1);
+    dropDefault("gpu2", "none");
+    dropDefault("count2", 1);
+    dropDefault("bandwidth", primaryPreset.bandwidth);
+    dropDefault("reserved", 0);
+    dropDefault("margin", 2);
+    dropDefault("power", primaryPreset.tgpReferenceW || primaryPreset.tgpMaxW || 115);
+  }
+
+  if (coreTaskMode !== "modelFinder") {
+    ["advisorModel", "advisorCategory", "advisorSearch", "budget", "currentPrice", "electricity", "hours", "advisorVendor", "advisorForm"]
+      .forEach((key) => params.delete(key));
+  } else {
+    dropDefault("advisorCategory", "all");
+    dropDefault("currentPrice", 0);
+    dropDefault("advisorVendor", "all");
+    dropDefault("advisorForm", "all");
+  }
 
   const nextUrl = `${window.location.pathname}?${params.toString()}`;
   window.history.replaceState({}, "", nextUrl);

@@ -307,7 +307,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .hardware-panel {
@@ -514,8 +514,7 @@ html[lang="en"] .simple-mode-head > div:first-child {
 }
 
 .gpu-not-found-actions > div,
-.gpu-runtime-facts,
-.hardware-capability-grid {
+.gpu-runtime-facts {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -533,43 +532,98 @@ html[lang="en"] .simple-mode-head > div:first-child {
   font-size: 0.78rem;
 }
 
-.hardware-capability-summary {
-  margin-top: 10px;
-  padding: 14px 18px 0;
+.hardware-capability-details {
+  margin: 0 22px 12px;
   border-top: 1px solid var(--line);
 }
 
-.hardware-capability-summary > strong {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 0.92rem;
+.hardware-capability-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 8px 0;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.hardware-capability-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hardware-capability-details > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--blue);
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.hardware-capability-details[open] > summary::after {
+  content: "−";
+}
+
+.hardware-capability-details > summary span {
+  font-size: 12.5px;
+  font-weight: 850;
+}
+
+.hardware-capability-details > summary small {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hardware-capability-summary {
+  margin: 0;
+  padding: 0 0 12px;
+}
+
+.hardware-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
 }
 
 .hardware-capability-card {
-  flex: 1 1 175px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--surface-soft);
+  min-width: 0;
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  background: transparent;
+}
+
+.hardware-capability-card:last-child {
+  border-right: 0;
 }
 
 .hardware-capability-card span,
 .hardware-capability-card small {
   display: block;
   color: var(--muted);
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 .hardware-capability-card strong {
   display: block;
-  margin: 2px 0;
-  line-height: 1.2;
+  margin: 3px 0;
+  line-height: 1.25;
 }
 
 .gpu-insights-panel {
-  margin: 18px 0;
-  padding: 20px;
+  margin: 12px 0;
+  padding: 14px 20px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--panel);
 }
 
@@ -3256,15 +3310,14 @@ button:focus-visible {
 }
 
 .simple-mode-panel {
-  margin-bottom: 16px;
-  border: 1px solid var(--line);
-  border-top: 2px solid var(--blue);
-  border-radius: var(--radius-md);
-  background: var(--panel-raised);
+  margin-bottom: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .simple-mode-body {
-  padding: 18px;
+  padding: 0;
 }
 
 .simple-mode-body p {
@@ -3369,7 +3422,7 @@ button:focus-visible {
   gap: 8px;
   position: relative;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   padding: 13px;
   background: var(--panel-raised);
   text-align: left;
@@ -3386,8 +3439,9 @@ button:focus-visible {
    line) so it doesn't read as a 3rd identical box with a different-colored
    badge -- there should be one clear place the eye lands first. */
 .simple-pick-card.is-top-pick {
-  border: 2px solid var(--blue);
-  background: var(--blue-soft);
+  border-color: var(--blue);
+  background: color-mix(in srgb, var(--blue-soft) 52%, var(--panel-raised));
+  box-shadow: inset 3px 0 0 var(--blue);
 }
 
 .simple-pick-card.is-top-pick .simple-pick-head strong {
@@ -3461,6 +3515,11 @@ button:focus-visible {
 }
 
 .simple-pick-cta {
+  min-height: 32px;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 4px;
+  background: transparent;
   color: var(--blue);
   font-size: 11px;
   font-weight: 800;
@@ -3476,9 +3535,15 @@ button:focus-visible {
 }
 
 .simple-pick-copy {
+  min-height: 32px;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 4px;
+  background: transparent;
   color: var(--muted);
   font-size: 10.5px;
   font-weight: 800;
+  cursor: pointer;
 }
 
 .simple-pick-copy:hover,
@@ -6637,7 +6702,7 @@ button:focus-visible {
   }
 
   .simple-mode-body {
-    padding: 14px;
+    padding: 0;
   }
 
   .simple-mode-head {
@@ -6713,15 +6778,20 @@ button:focus-visible {
   }
 
   .workload-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 14px;
-    padding: 0 14px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 0 12px 6px;
+    scroll-padding-inline: 12px;
+    scrollbar-width: thin;
   }
 
   .workload-tab {
-    width: 100%;
-    padding: 0 8px;
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0 10px;
+    white-space: nowrap;
   }
 
   .summary-filterbar {
@@ -6917,14 +6987,23 @@ button:focus-visible {
     align-items: flex-start;
   }
 
-  .hardware-top-actions,
+  .hardware-top-actions {
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .hardware-top-actions .ghost-button,
+  .hardware-top-actions .primary-button {
+    flex: 1 1 0;
+    width: auto;
+    white-space: nowrap;
+  }
+
   .simple-next-actions {
     width: 100%;
     flex-direction: column;
   }
 
-  .hardware-top-actions .ghost-button,
-  .hardware-top-actions .primary-button,
   .simple-next-actions .ghost-button,
   .simple-next-actions .primary-button {
     width: 100%;

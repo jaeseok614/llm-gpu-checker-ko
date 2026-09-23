@@ -195,6 +195,44 @@ html[lang="en"] .onboarding-copy h2 { max-width: 18ch; font-size: clamp(34px, 3.
 
 body:not(.guided-workspace-started) #workspaceJourney { display: none; }
 
+body.guided-workspace-started #coreTaskSwitcher {
+  margin-bottom: 12px;
+  padding-bottom: 9px;
+}
+
+body.guided-workspace-started .core-task-primary {
+  padding: 4px;
+}
+
+body.guided-workspace-started #coreTaskSwitcher .core-task-button {
+  min-height: 54px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+body.guided-workspace-started #coreTaskSwitcher .core-task-button > small {
+  display: none;
+}
+
+body.guided-workspace-started #coreTaskSwitcher .core-task-more > summary {
+  min-height: 30px;
+  padding-top: 6px;
+}
+
+body.guided-workspace-started #hardwareSubline {
+  display: none;
+}
+
+body[data-app-mode="simple"] .app-mode-status {
+  display: none;
+}
+
+body[data-app-mode="simple"] #decisionHub,
+body[data-app-mode="simple"] #benchmarkDashboard,
+body[data-app-mode="simple"] #benchmarkSheet {
+  display: none !important;
+}
+
 .guide-examples {
   display: flex; flex-wrap: nowrap; overflow-x: auto; align-items: center; gap: 8px;
   margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line);
@@ -230,6 +268,14 @@ body:not(.guided-workspace-started) #workspaceJourney { display: none; }
   #coreTaskSwitcher { margin-bottom: 17px; padding-bottom: 11px; }
   .core-task-primary { grid-template-columns: 1fr; gap: 5px; }
   #coreTaskSwitcher .core-task-button { min-height: 62px; padding: 11px 42px 11px 13px; }
+  body.guided-workspace-started #workspaceJourney { display: none; }
+  body.guided-workspace-started .core-task-primary { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+  body.guided-workspace-started #coreTaskSwitcher .core-task-button {
+    min-height: 54px;
+    padding: 8px 21px 8px 9px;
+  }
+  body.guided-workspace-started #coreTaskSwitcher .core-task-button::after { right: 7px; font-size: 17px; }
+  body.guided-workspace-started #coreTaskSwitcher .core-task-button > span { font-size: 12.5px; line-height: 1.25; }
   #coreTaskSwitcher .core-task-button > span { font-size: 14px; }
   #coreTaskSwitcher .core-task-button > small { font-size: 11.5px; }
   .core-task-secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -253,6 +299,7 @@ body:not(.guided-workspace-started) #workspaceJourney { display: none; }
   .theme-toggle { margin-left: 0; }
   .theme-toggle { display: none; }
   .core-task-secondary { grid-template-columns: 1fr; }
+  body.guided-workspace-started .core-task-primary { grid-template-columns: repeat(3, minmax(104px, 1fr)); overflow-x: auto; }
   .onboarding-copy { padding: 30px 23px; }
   .onboarding-copy h2 { font-size: clamp(30px, 9.2vw, 38px); }
   .onboarding-picker { padding: 26px 22px 28px; }

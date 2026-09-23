@@ -437,6 +437,14 @@ describe("quick recommendation navigation", () => {
     const card = fresh.document.querySelector(".simple-pick-card");
     assert.ok(card, "expected a quick recommendation card");
     assert.match(card.querySelector(".simple-pick-cta").textContent, /상세 계산 보기/);
+    assert.equal(card.querySelector(".simple-pick-cta").tagName, "BUTTON");
+    assert.equal(card.querySelector(".simple-pick-copy").tagName, "BUTTON");
+    assert.equal(fresh.document.querySelector(".mobile-decision-summary"), null);
+    assert.equal(fresh.document.getElementById("hardwareCapabilityDetails").hidden, false);
+    assert.equal(fresh.document.getElementById("hardwareCapabilityDetails").open, false);
+    assert.equal(fresh.document.getElementById("benchmarkSheet").hidden, true);
+    assert.equal(fresh.document.getElementById("gpuDetailSummary").hidden, true);
+    assert.equal(fresh.document.getElementById("gpuCompareBuilder").hidden, true);
     assert.ok(fresh.document.querySelector("[data-share-toggle]"));
     assert.ok(fresh.document.querySelector("[data-share-link]"));
     assert.ok(fresh.document.querySelector("[data-download-share-card]"));
@@ -491,6 +499,7 @@ describe("quick recommendation navigation", () => {
     assert.equal(fresh.document.getElementById("simpleModePanel").hidden, true);
     assert.equal(fresh.document.getElementById("expertModeSection").hidden, false);
     assert.equal(fresh.document.getElementById("calculationBasisStrip").hidden, false);
+    assert.equal(fresh.document.getElementById("benchmarkSheet").hidden, false);
     assert.equal(new URLSearchParams(fresh.location.search).get("ui"), "expert");
   });
 
@@ -761,7 +770,12 @@ describe("URL state save / restore", () => {
     assert.equal(params.get("gpu"), "h100-sxm-80");
     assert.equal(params.get("ctx"), "32768");
     assert.equal(params.get("con"), "4");
-    assert.equal(params.get("ui"), "simple");
+    assert.equal(params.get("ui"), null);
+  });
+
+  test("default controls collapse to a readable GPU result URL", () => {
+    const compact = loadApp("https://example.com/?ui=simple&lang=ko&mode=generative&gpu=rtx5070ti-16&vram=16&ram=64&count=1&gpu2=none&count2=1&bandwidth=896&reserved=0&margin=2&power=115&ctx=8192&con=1&out=512&kv=fp16&runtime=llamacpp&quant=auto&embTokens=384&embBatch=32&embPrecision=auto&embRuntime=tei&embBatchTokens=16384&rerankQuery=64&rerankDoc=512&rerankCandidates=40&rerankBatch=16&rerankPrecision=auto&rerankRuntime=tei&ocrPreset=a4-200&ocrWidth=1654&ocrHeight=2339&ocrBatch=1&ocrPrecision=auto&ocrFeature=text&mediaSteps=28&mediaFrames=81&mediaFps=16&mediaLora=0&mediaOffload=none&mediaOptimization=standard&advisorModel=tinyllama-1-1b-chat&advisorCategory=all&budget=2800000&currentPrice=0&electricity=150&hours=120&advisorVendor=all&advisorForm=all&task=all&provider=all&license=all&licenseUse=all&grade=all&fit=all&sort=latest&view=list&purpose=general&priority=balanced");
+    assert.equal(compact.location.search, "?lang=ko&gpu=rtx5070ti-16");
   });
 
   test("loading a URL with query params restores the same settings on a fresh session", () => {

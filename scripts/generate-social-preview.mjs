@@ -6,46 +6,60 @@ const height = 640;
 const pixels = Buffer.alloc((width * 3 + 1) * height);
 
 const colors = {
-  bg: [244, 246, 248],
-  panel: [255, 255, 255],
-  line: [217, 224, 231],
-  ink: [24, 33, 43],
-  muted: [102, 115, 130],
-  blue: [22, 74, 123],
-  blueSoft: [232, 241, 251],
-  green: [19, 121, 91],
-  greenSoft: [229, 244, 238],
-  violet: [95, 75, 182],
-  violetSoft: [238, 234, 253],
-  yellow: [154, 103, 0],
-  yellowSoft: [255, 244, 214],
+  bg: [7, 31, 45],
+  panel: [250, 252, 253],
+  line: [198, 211, 220],
+  ink: [18, 39, 52],
+  muted: [88, 108, 120],
+  mutedOnDark: [188, 210, 220],
+  blue: [18, 91, 127],
+  blueSoft: [225, 240, 247],
+  mint: [131, 216, 189],
+  green: [16, 119, 86],
+  greenSoft: [225, 244, 237],
+  white: [248, 252, 253],
 };
 
 function main() {
   fill(colors.bg);
-  rect(64, 56, 1152, 528, colors.panel);
-  strokeRect(64, 56, 1152, 528, colors.line, 3);
-  rect(104, 96, 84, 84, colors.blueSoft);
-  strokeRect(104, 96, 84, 84, colors.blue, 6);
-  rect(128, 120, 36, 36, colors.greenSoft);
-  strokeRect(128, 120, 36, 36, colors.green, 5);
-  text(226, 92, "AI HARDWARE FIT", 4, colors.blue);
-  text(226, 140, "WHAT RUNS ON YOUR GPU?", 5, colors.ink);
-  text(226, 204, "332 AI MODELS / 151 GPUS", 3, colors.muted);
-  rect(920, 96, 222, 44, colors.blue);
-  text(938, 109, "OPEN SOURCE", 3, colors.panel);
-  infoCard(104, 300, "FIND MODELS", "VRAM QUANT SPEED", colors.greenSoft, colors.green);
-  infoCard(464, 300, "PICK A GPU", "BUDGET POWER FIT", colors.blueSoft, colors.blue);
-  infoCard(824, 300, "SIZE SERVICE", "USERS SLA TCO", colors.violetSoft, colors.violet);
-  rect(104, 486, 1058, 54, colors.ink);
-  text(134, 503, "NO SIGNUP  LOCAL CALC  OPEN DATA", 3, colors.panel);
+  rect(0, 0, 18, height, colors.mint);
+
+  rect(72, 58, 52, 52, colors.mint);
+  strokeRect(83, 69, 30, 30, colors.bg, 4);
+  rect(91, 77, 14, 14, colors.greenSoft);
+  text(148, 67, "AI HARDWARE FIT", 3, colors.white);
+  text(148, 101, "OPEN SOURCE GPU SIZING", 2, colors.mutedOnDark);
+
+  rect(72, 164, 72, 5, colors.mint);
+  text(72, 192, "PICK A GPU.", 5, colors.white);
+  text(72, 254, "GET A MODEL SHORTLIST.", 4, colors.white);
+  text(72, 326, "VRAM FIT / QUANTIZATION / SPEED", 2, colors.mutedOnDark);
+  text(72, 386, "152 GPUS / 332 AI MODELS", 3, colors.mint);
+  rect(72, 448, 520, 1, [57, 82, 95]);
+  text(72, 477, "NO SIGNUP / LOCAL CALC / OPEN DATA", 2, colors.white);
+
+  rect(690, 58, 526, 524, colors.panel);
+  strokeRect(690, 58, 526, 524, colors.line, 2);
+  text(726, 91, "SELECTED GPU", 2, colors.blue);
+  text(726, 126, "RTX 5070 TI / 16 GB", 3, colors.ink);
+  rect(726, 174, 454, 2, colors.line);
+
+  infoRow(726, 202, "01", "MODEL FIT", "CAN IT RUN?");
+  infoRow(726, 302, "02", "QUANT", "WHICH SETTING?");
+  infoRow(726, 402, "03", "SPEED", "WHAT TO EXPECT?");
+
+  rect(726, 520, 454, 38, colors.blue);
+  text(754, 531, "RESULT FIRST / DETAILS ON DEMAND", 2, colors.white);
 
   writePng("docs/social-preview.png");
 }
-function infoCard(x, y, title, body, fillColor, titleColor) {
-  rect(x, y, 320, 116, fillColor);
-  text(x + 26, y + 32, title, 4, titleColor);
-  text(x + 26, y + 78, body, 2, colors.ink);
+
+function infoRow(x, y, number, title, body) {
+  rect(x, y, 48, 48, colors.greenSoft);
+  text(x + 7, y + 14, number, 3, colors.green);
+  text(x + 72, y + 2, title, 3, colors.ink);
+  text(x + 72, y + 39, body, 2, colors.muted);
+  rect(x, y + 76, 454, 1, colors.line);
 }
 
 function fill(color) {

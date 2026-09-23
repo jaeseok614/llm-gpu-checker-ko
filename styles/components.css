@@ -1,6 +1,6 @@
 /* v7.1 shared visual primitives: cards, controls, badges, and statuses. */
 :root {
-  --ui-radius-card: 18px;
+  --ui-radius-card: 12px;
   --ui-radius-control: 8px;
   --ui-control-min-height: 44px;
   /* --border, --accent, and --panel-soft were never real design tokens (the
@@ -75,7 +75,6 @@
 .local-funnel-summary { display: flex; flex-wrap: wrap; gap: .5rem; }
 .local-funnel-summary span { padding: .35rem .55rem; border-radius: 999px; background: var(--ui-surface-muted); }
 .local-funnel-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
-.mobile-decision-summary { display: none; }
 
 .community-measurement-panel {
   /* 이 패널은 community-feedback.js에서 #benchmarkSheet 바로 뒤에
@@ -131,7 +130,7 @@ html:not([data-theme="dark"]) .evidence-badge.is-estimate {
   color: #7c2d12;
   background: #ffedd5;
 }
-html:not([data-theme="dark"]) .simple-pick-copy[role="button"] {
+html:not([data-theme="dark"]) .simple-pick-copy {
   color: #164e63;
 }
 html:not([data-theme="dark"]) .data-kind.is-reference {
@@ -147,21 +146,9 @@ html:not([data-theme="dark"]) :where(.app-footer, .app-footer strong, .local-fun
     min-height: 44px;
   }
 
-  .mobile-decision-summary {
-    position: sticky;
-    z-index: 30;
-    bottom: 0;
-    display: flex;
-    justify-content: space-between;
-    gap: .75rem;
-    padding: .75rem 1rem;
-    border-top: 1px solid var(--ui-border);
-    background: color-mix(in srgb, var(--ui-surface) 94%, transparent);
-    backdrop-filter: blur(12px);
-  }
 }
 
 @media print {
-  :where(.app-header, .core-task-switcher, .app-toast, .mobile-decision-summary) { display: none !important; }
+  :where(.app-header, .core-task-switcher, .app-toast) { display: none !important; }
   :where(.gpu-advisor-card, .studio-plan-card, .detail-section) { break-inside: avoid; }
 }

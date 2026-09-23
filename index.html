@@ -241,7 +241,13 @@
           </div>
           <datalist id="gpuFixedPresetOptions"></datalist>
         </div>
-        <section class="hardware-capability-summary" id="hardwareCapabilitySummary" aria-live="polite" hidden></section>
+        <details class="hardware-capability-details" id="hardwareCapabilityDetails" hidden>
+          <summary>
+            <span id="hardwareCapabilityLabel">이 GPU의 작업 범위</span>
+            <small id="hardwareCapabilityTeaser"></small>
+          </summary>
+          <section class="hardware-capability-summary" id="hardwareCapabilitySummary" aria-live="polite" hidden></section>
+        </details>
 
         <div class="settings-drawer" id="settingsDrawer" hidden>
           <div class="settings-panel hardware-editor" id="hardwareEditor">

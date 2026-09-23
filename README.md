@@ -34,9 +34,15 @@
 
 | 사례 | 바로 시작 |
 | --- | --- |
+| RTX 5070 Ti 16GB · 로컬 모델 추천 | [GPU 결과 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko&gpu=rtx5070ti-16) |
+| RTX 3060 12GB · 로컬 모델 추천 | [GPU 결과 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=ko&gpu=rtx3060-12) |
 | 사내 문서 RAG · 사용자 30명 | [간편 견적 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=ko&studio=consulting&scenario=internal-rag&users=30) |
 | 고객 상담 AI 챗봇 · 사용자 100명 | [간편 견적 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=ko&studio=consulting&scenario=ai-chatbot&users=100) |
 | 실시간 AI 아바타 채팅 · 사용자 50명 | [간편 견적 열기](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=ko&studio=consulting&scenario=avatar-chat&users=50) |
+
+<p align="center">
+  <img src="./docs/result-v7.31.png" alt="RTX 5070 Ti 16GB 빠른 추천 결과 화면" />
+</p>
 
 ## 10초 요약
 
@@ -52,6 +58,7 @@
 
 > 새 버전이 나올 때마다 가장 최신 항목을 맨 위에 한 줄로 추가합니다. 자세한 변경 내용은 [CHANGELOG](./CHANGELOG.md)에서 확인할 수 있습니다.
 
+- **v7.31.0** — GPU 선택 뒤 빠른 추천 화면을 짧고 평평한 구조로 정리했습니다. 비교·벤치마크 코드는 전체 탐색에서만 불러오고, 결과 URL·키보드 버튼·소셜 미리보기도 함께 개선했습니다.
 - **v7.30.0** — 첫 화면을 큰 작업 선택 바와 명확한 2단 GPU 탐색 화면으로 재설계했습니다. 모바일 헤더·긴 기본 URL을 고치고 중복 작업 선택기 CSS 254줄도 제거했습니다.
 - **v7.29.0** — 첫 화면을 3개 핵심 작업과 검색 중심 GPU 선택으로 단순화하고, 고급 도구는 접었습니다. 비교 허브·API/온톨로지 계산기를 필요할 때만 불러오도록 초기 로딩도 줄였습니다.
 - **v7.28.0** — Xing4.0 29B A4B와 Xiaomi MiMo-V2.6 3종(Distill Qwen 9B·Flash-RL·Pro-RL)을 실측 파라미터·공식 출처와 함께 AI 모델 카탈로그에 추가했습니다.
@@ -173,7 +180,7 @@
 - 신품·중고 가격, 원화 환산, 현재 GPU 처분가, 전기요금과 사용 기간으로 업그레이드 가치를 계산합니다.
 - Ollama, llama.cpp, vLLM, Docker Compose 설정을 선택한 모델·GPU에 맞춰 생성합니다.
 - GPU와 모델을 각각 최대 4개까지 비교하며 모바일에서는 카드형 비교 화면을 사용합니다.
-- 데스크톱·데이터센터·Apple Silicon·노트북을 포함한 GPU 116종
+- 데스크톱·데이터센터·Apple Silicon·노트북을 포함한 GPU 152종
 - 생성형 LLM, 임베딩, 리랭커, OCR, 문서/범용 VLM, 이미지·비디오 생성, 아바타·립싱크, STT·TTS 워크로드
 - GPU를 먼저 고르는 화면과 모델·예산을 먼저 고르는 전용 진입 화면
 - GPU 상세 정보와 최대 3개 GPU 비교: VRAM, 대역폭, 실행 가능한 모델 수, 예상 속도
@@ -236,6 +243,9 @@ npm run test:visual
 - [v2.0 의사결정 플랫폼](./docs/v2.0-decision-platform.md)
 - [v2.2 사용자 빌드 계산기](./docs/v2.2-build-calculator.md)
 - [v3.0 구매 결정 스튜디오 계산 기준](./docs/v3.0-decision-studio.md)
+- [v7.31 릴리스 노트](./docs/releases/v7.31.0.md)
+- [v7.31 사례 중심 홍보 문안](./docs/promotion/v7.31-growth-kit.md)
+- [v7.30 릴리스 노트](./docs/releases/v7.30.0.md)
 - [v7.0 릴리스 노트](./docs/releases/v7.0.0.md)
 - [v7.5 릴리스 노트](./docs/releases/v7.5.0.md)
 - [v7.0 60초 데모·홍보 문안](./docs/promotion/v7.0-launch-kit.md)

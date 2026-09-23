@@ -135,7 +135,7 @@
     if (mode === "ontologyCost") {
       window.loadOntologyCostEstimator().then(() => window.AIHardwareCore?.setCoreTaskMode("ontologyCost"));
     }
-    if (params.has("gpu") || params.has("hub") || params.has("detail") || params.has("build")) {
+    if (params.get("ui") === "expert" || params.has("model") || params.has("hub") || params.has("detail") || params.has("build")) {
       window.loadDecisionTools();
     }
     const benchmarkTarget = document.getElementById("benchmarkSheet");

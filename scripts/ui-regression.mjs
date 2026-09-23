@@ -158,9 +158,21 @@ try {
 
   await lazyPage.locator('[data-core-task="finder"]').first().click();
   await lazyPage.locator("[data-quick-gpu]").first().click();
+  await lazyPage.locator("#simpleModePanel").waitFor({ state: "visible" });
+  check(await lazyPage.locator("#decisionHub").count() === 0, "Decision tools loaded for the simple GPU result");
+  check(await lazyPage.locator("#benchmarkSheet").isHidden(), "Benchmark sheet is visible in simple mode");
+  check(await lazyPage.locator(".mobile-decision-summary").count() === 0, "Duplicate mobile recommendation summary is still rendered");
+  const compactResultUrl = await lazyPage.evaluate(() => window.location.search);
+  check(/^\?lang=ko&gpu=[a-z0-9-]+$/.test(compactResultUrl), "GPU result URL is not compact: " + compactResultUrl);
+  loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
+  check(!loadedScripts.some((url) => /platform-v2\.js/.test(url)), "Decision tools loaded before expert mode");
+  check(!loadedScripts.some((url) => /benchmark-workspace\.js/.test(url)), "Benchmark workspace loaded before expert mode");
+
+  await lazyPage.locator('[data-app-mode="expert"]').click();
   await lazyPage.locator("#decisionHub").waitFor({ state: "attached" });
   loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
-  check(loadedScripts.some((url) => /platform-v2\.js/.test(url)), "Decision tools did not lazy-load after GPU selection");
+  check(loadedScripts.some((url) => /platform-v2\.js/.test(url)), "Decision tools did not lazy-load in expert mode");
+  check(loadedScripts.some((url) => /benchmark-workspace\.js/.test(url)), "Benchmark workspace did not lazy-load in expert mode");
   report.flows.lazyAdvancedTools = true;
   await lazyContext.close();
 

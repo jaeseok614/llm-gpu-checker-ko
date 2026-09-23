@@ -34,9 +34,15 @@
 
 | Scenario | Start |
 | --- | --- |
+| RTX 5070 Ti 16GB · local model shortlist | [Open GPU result](https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en&gpu=rtx5070ti-16) |
+| RTX 3060 12GB · local model shortlist | [Open GPU result](https://jaeseok614.github.io/llm-gpu-checker-ko/?lang=en&gpu=rtx3060-12) |
 | Internal document RAG · 30 users | [Open quick sizing](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=en&studio=consulting&scenario=internal-rag&users=30) |
 | Customer support chatbot · 100 users | [Open quick sizing](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=en&studio=consulting&scenario=ai-chatbot&users=100) |
 | Real-time AI avatar chat · 50 users | [Open quick sizing](https://jaeseok614.github.io/llm-gpu-checker-ko/?mode=infra&lang=en&studio=consulting&scenario=avatar-chat&users=50) |
+
+<p align="center">
+  <img src="./docs/result-v7.31.png" alt="Quick recommendation results for an RTX 5070 Ti 16GB" />
+</p>
 
 ## In 10 seconds
 
@@ -52,6 +58,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v7.31.0** — Simplified the post-GPU quick-result screen, deferred comparison and benchmark code until full catalog mode, shortened result URLs, replaced faux controls with buttons, and refreshed the social preview.
 - **v7.30.0** — Rebuilt the landing screen around a larger task selector and a clear two-panel GPU picker. Also fixed the cramped mobile header and default URL, and removed 254 lines of duplicate task-switcher CSS.
 - **v7.29.0** — Simplified the first screen to three primary tasks and a search-first GPU picker. Advanced tools are disclosed on demand, while the comparison hub and two cost estimators now lazy-load only when needed.
 - **v7.13** — Added AMD Radeon 780M integrated GPU (Ryzen 7040/8040 laptops/mini-PCs) to the GPU catalog per a community request on r/LocalLLaMA. Korean pricing left blank for now since it is not sold as a standalone part. Also fixed a bug where part of the GPU comparison detail panel stayed in Korean after switching to English mode.
