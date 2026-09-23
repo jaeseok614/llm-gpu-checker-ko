@@ -345,6 +345,9 @@ function selectPrimaryGpu(id, { persist = false } = {}) {
   applyPreset(preset.id);
   hasPrimaryGpuSelection = true;
   if (persist) rememberPrimaryGpuId(preset.id);
+  // The comparison/launch hub is useful only after a GPU exists. Loading it
+  // here keeps about 49 KiB of secondary UI code off the first visit.
+  window.loadDecisionTools?.().catch(() => {});
   return true;
 }
 
@@ -358,6 +361,7 @@ function selectOnboardingGpu(id) {
   if (!preset) return;
   $("gpuPreset").value = preset.id;
   selectPrimaryGpu(preset.id, { persist: true });
+  window.AIHardwareGuide?.setStarted?.(true);
   refreshSecondaryGpuUi();
   render();
 }
@@ -391,8 +395,14 @@ function refreshCoreTaskUi() {
   document.querySelectorAll("[data-core-task]").forEach((button) => {
     const active = button.dataset.coreTask === coreTaskMode;
     button.classList.toggle("is-active", active);
+    if (button.closest(".core-task-actions")) {
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    }
     if (button.closest("[role='tablist']")) button.setAttribute("aria-selected", String(active));
   });
+  const advancedTasks = document.querySelector(".core-task-more");
+  if (advancedTasks?.querySelector(".core-task-button.is-active")) advancedTasks.open = true;
   const finderButton = document.querySelector('.core-task-actions [data-core-task="finder"]');
   if (finderButton) {
     finderButton.querySelector("span").textContent = uiText("core.finder.title");
@@ -492,6 +502,16 @@ function openPlacementPlanner(modelKeys = [], { showBuilder = false, seedHardwar
 }
 
 function setCoreTaskMode(mode) {
+  if (mode === "apiCost" && !window.AIHardwareApiCost && typeof window.loadApiCostEstimator === "function") {
+    window.AIHardwareUI?.announce(uiLanguage === "en" ? "Loading the cost comparison…" : "비용 비교 화면을 불러오는 중입니다.");
+    window.loadApiCostEstimator().then(() => setCoreTaskMode("apiCost")).catch(() => {});
+    return;
+  }
+  if (mode === "ontologyCost" && !window.AIHardwareOntologyCost && typeof window.loadOntologyCostEstimator === "function") {
+    window.AIHardwareUI?.announce(uiLanguage === "en" ? "Loading the ontology cost estimator…" : "온톨로지 비용 계산기를 불러오는 중입니다.");
+    window.loadOntologyCostEstimator().then(() => setCoreTaskMode("ontologyCost")).catch(() => {});
+    return;
+  }
   if (mode === "placement") {
     openPlacementPlanner([], { showBuilder: false, seedHardware: true });
     return;
@@ -500,8 +520,14 @@ function setCoreTaskMode(mode) {
   refreshCoreTaskUi();
   render();
   if (coreTaskMode === "infra" && typeof renderDecisionStudio === "function") renderDecisionStudio();
-  if (coreTaskMode === "apiCost") window.AIHardwareApiCost?.renderApiCostEstimator();
-  if (coreTaskMode === "ontologyCost") window.AIHardwareOntologyCost?.renderOntologyCostEstimator();
+  if (coreTaskMode === "apiCost") {
+    window.AIHardwareApiCost?.renderApiCostEstimator();
+    if ($("apiCostPanel")) $("apiCostPanel").hidden = false;
+  }
+  if (coreTaskMode === "ontologyCost") {
+    window.AIHardwareOntologyCost?.renderOntologyCostEstimator();
+    if ($("ontologyCostPanel")) $("ontologyCostPanel").hidden = false;
+  }
   if (coreTaskMode === "modelFinder") $("gpuAdvisorPanel")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "infra") $("decisionStudio")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   if (coreTaskMode === "community") $("benchmarkDashboard")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
@@ -828,18 +854,25 @@ function renderOnboardingQuickPicks() {
       (gpu) => `
         <button type="button" class="onboarding-gpu-card" data-quick-gpu="${escapeAttr(gpu.id)}">
           <strong>${escapeHtml(shortGpuName(gpu.name))}</strong>
-          <span>VRAM ${formatGb(gpu.vram)} · ${Math.round(gpu.bandwidth).toLocaleString("ko-KR")} GB/s</span>
+          <span>${formatGb(gpu.vram)} VRAM</span>
         </button>
       `,
     )
     .join("");
 
+  const gpuCount = GPU_PRESETS.filter((gpu) => gpu.id !== "custom").length;
+  const modelCount = getAllModels().length;
   const hint = $("onboardingSearchHint");
   if (hint) {
-    const count = GPU_PRESETS.filter((gpu) => gpu.id !== "custom").length;
     hint.textContent = uiLanguage === "en"
-      ? `${count} GPU presets available · custom entry supported`
-      : `GPU 프리셋 ${count}개 지원 · 직접 입력도 가능`;
+      ? "Type part of a product name. Custom specifications are also supported."
+      : "제품명 일부만 입력해도 됩니다. 목록에 없으면 직접 사양을 넣을 수 있습니다.";
+  }
+  const catalogCount = $("onboardingCatalogCount");
+  if (catalogCount) {
+    catalogCount.textContent = uiLanguage === "en"
+      ? gpuCount + " GPUs · " + modelCount + " AI models"
+      : "GPU " + gpuCount + "종 · AI 모델 " + modelCount + "종";
   }
 }
 
@@ -2297,6 +2330,7 @@ function render(options = {}) {
   }
   if (apiCostActive) {
     window.AIHardwareApiCost?.renderApiCostEstimator();
+    if ($("apiCostPanel")) $("apiCostPanel").hidden = false;
     if (syncUrl) syncUrlState();
     // Same reasoning as the infra/placement/modelFinder branches above: the
     // panel renders its own dynamic content (provider/model table, cost
@@ -2308,6 +2342,7 @@ function render(options = {}) {
   }
   if (ontologyCostActive) {
     window.AIHardwareOntologyCost?.renderOntologyCostEstimator();
+    if ($("ontologyCostPanel")) $("ontologyCostPanel").hidden = false;
     if (syncUrl) syncUrlState();
     // Same reasoning as the apiCostActive branch above: the panel renders
     // its own dynamic content (candidate cards, usage summary) with

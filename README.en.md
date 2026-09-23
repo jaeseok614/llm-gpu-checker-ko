@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Turn model, traffic, and latency goals into comparable GPU, CPU, RAM, storage, and network plans.<br />An open-source AI infrastructure pre-sales sizing assistant.</strong>
+  <strong>Find what AI models run on your GPU, or which GPU fits a model.<br />An open-source calculator with no install or sign-in.</strong>
 </p>
 
 <p align="center">
@@ -23,11 +23,11 @@
 </p>
 
 <p align="center">
-  <img src="./docs/social-preview-v3.1.png" alt="AI Hardware Fit turns workload requirements into economy, recommended, and scalable infrastructure plans" />
+  <img src="./docs/home-v7.29.png" alt="AI Hardware Fit home screen for finding AI models that run on a GPU" />
 </p>
 
 <p align="center">
-  <sub>Enter workload requirements → compare economy, recommended, and scalable options → produce an infrastructure plan</sub>
+  <sub>Choose a GPU → compare runnable models, quantization, and estimated speed · calculations stay in your browser</sub>
 </p>
 
 ## Open a sample scenario
@@ -40,9 +40,9 @@
 
 ## In 10 seconds
 
-- **Developers and individuals** can find LLM, VLM, image, and video models that fit their GPU.
-- **Infrastructure teams, MSPs, and server vendors** can turn model, QPS, concurrency, p95, and availability requirements into economy, recommended, and scalable plans.
-- **Outputs** include per-server GPU, CPU, RAM, NVMe, NIC, power, TCO, placement, confidence, PoC checks, Excel/PDF, and a deployment draft.
+- **Already have a GPU?** See runnable LLM, VLM, image, and audio models with recommended quantization and estimated speed.
+- **Already chose a model?** Compare three GPUs by VRAM, budget, and power constraints.
+- **Sizing a service?** Turn users, concurrency, and SLA targets into servers, TCO, and a PoC checklist.
 
 > This tool supports preliminary sizing, comparison, and pre-PoC hypotheses. It does not guarantee performance or produce a final vendor-approved bill of materials.
 
@@ -52,6 +52,7 @@
 
 > Add each new release to the top as a single line. See the [CHANGELOG](./CHANGELOG.md) for complete details.
 
+- **v7.29.0** — Simplified the first screen to three primary tasks and a search-first GPU picker. Advanced tools are disclosed on demand, while the comparison hub and two cost estimators now lazy-load only when needed.
 - **v7.13** — Added AMD Radeon 780M integrated GPU (Ryzen 7040/8040 laptops/mini-PCs) to the GPU catalog per a community request on r/LocalLLaMA. Korean pricing left blank for now since it is not sold as a standalone part. Also fixed a bug where part of the GPU comparison detail panel stayed in Korean after switching to English mode.
 - **v7.14** — Added a 4th "60-second trial" demo button for "place multiple models together" (the GPU placement planner). While building it, also fixed a real bug where an embedding model's name (containing the word "Embedding") got corrupted to Korean ("임베딩") whenever it appeared in the placement/model-finder/infra screens.
 - **v7.15** — Added a new "API cost calculator" (under Advanced tools): computes monthly cost of using OpenAI/Anthropic/Google's hosted APIs instead of buying a GPU, based on each provider's official pricing (checked 2026-08-28, 9 models). Also added a "self-host vs API" comparison to the infra sizing results, reusing the same usage assumptions.

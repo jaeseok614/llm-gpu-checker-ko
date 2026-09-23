@@ -5,13 +5,13 @@
 ## Description (About)
 
 ```
-AI infrastructure sizing assistant for LLM, RAG, VLM, voice and avatar workloads — GPU sizing, SLA, BOM, TCO and proposal exports
+Open-source GPU fit calculator for local AI models — VRAM, quantization, speed, GPU picking, API cost and infrastructure sizing
 ```
 
 한국어 버전이 필요하면:
 
 ```
-LLM·RAG·VLM·음성·아바타 요구를 GPU 서버 구성, SLA, BOM, TCO와 견적 3안으로 변환하는 AI 인프라 산정 도구
+내 GPU에서 실행 가능한 AI 모델과 필요한 VRAM·양자화·예상 속도를 비교하는 오픈소스 GPU 적합성 계산기
 ```
 
 ## Website
@@ -54,3 +54,5 @@ korean
 - 저장소 임시 상호작용 제한: 없음
 
 로그아웃 사용자는 로그인 화면으로 이동하며, 로그인한 GitHub 사용자는 공개 Issue form을 열 수 있습니다.
+
+- 2026-09-23: v7.29 포지셔닝에 맞춰 첫 사용 사례(GPU→모델) 중심 Description으로 갱신

@@ -103,13 +103,15 @@ try {
       purposeValues: [...document.querySelectorAll("#simplePurpose option")].map((option) => option.value),
       cardTypes: [...document.querySelectorAll(".simple-pick-card")].map((card) => card.dataset.modelType),
       taskButtons: document.querySelectorAll(".core-task-actions [data-core-task]").length,
+      primaryTaskButtons: document.querySelectorAll(".core-task-primary [data-core-task]").length,
       mainWidth: Math.round(document.querySelector("main")?.getBoundingClientRect().width || 0),
     }));
     check(state.overflow <= 0, `${width}x${height}: horizontal overflow ${state.overflow}px`);
     check(state.purposeWorkload === "audioTts", `${width}x${height}: TTS purpose state was not restored`);
     check(state.purposeValues.includes("voiceCloning"), `${width}x${height}: voice-cloning purpose is missing`);
     check(state.cardTypes.length > 0 && state.cardTypes.every((type) => type === "audio-tts"), `${width}x${height}: recommendation crossed workload boundaries`);
-    check(state.taskButtons === 7, `${width}x${height}: beginner task count changed`);
+    check(state.taskButtons === 7, width + "x" + height + ": task capability count changed");
+    check(state.primaryTaskButtons === 3, width + "x" + height + ": first screen should expose exactly 3 primary tasks");
 
     if (width === 1280 && axePath) {
       await page.addScriptTag({ path: axePath });
@@ -128,6 +130,33 @@ try {
     report.viewports.push({ width, height, ...state });
     await context.close();
   }
+
+  const lazyContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: "light" });
+  const lazyPage = await lazyContext.newPage();
+  await lazyPage.goto(`${baseUrl}/?lang=ko`, { waitUntil: "networkidle" });
+  check(await lazyPage.locator("#decisionHub").count() === 0, "Decision tools loaded before a GPU was selected");
+  let loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
+  check(!loadedScripts.some((url) => /api-cost-estimator\.js/.test(url)), "API cost estimator loaded eagerly");
+  check(!loadedScripts.some((url) => /ontology-cost-estimator\.js/.test(url)), "Ontology cost estimator loaded eagerly");
+
+  await lazyPage.locator(".core-task-more > summary").click();
+  await lazyPage.locator('[data-core-task="apiCost"]').click();
+  await lazyPage.locator("#apiCostPanel").waitFor({ state: "visible" });
+  loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
+  check(loadedScripts.some((url) => /api-cost-estimator\.js/.test(url)), "API cost estimator did not lazy-load");
+
+  await lazyPage.locator('[data-core-task="ontologyCost"]').click();
+  await lazyPage.locator("#ontologyCostPanel").waitFor({ state: "visible" });
+  loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
+  check(loadedScripts.some((url) => /ontology-cost-estimator\.js/.test(url)), "Ontology cost estimator did not lazy-load");
+
+  await lazyPage.locator('[data-core-task="finder"]').first().click();
+  await lazyPage.locator("[data-quick-gpu]").first().click();
+  await lazyPage.locator("#decisionHub").waitFor({ state: "attached" });
+  loadedScripts = await lazyPage.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
+  check(loadedScripts.some((url) => /platform-v2\.js/.test(url)), "Decision tools did not lazy-load after GPU selection");
+  report.flows.lazyAdvancedTools = true;
+  await lazyContext.close();
 
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();

@@ -4,8 +4,8 @@
  */
 const PLATFORM_V2_COPY = {
   ko: {
-    hub: "의사결정 허브",
-    hubNote: "실측 신뢰도부터 구매 비용과 실행 설정까지 한곳에서 확인합니다.",
+    hub: "비교·실행 도구",
+    hubNote: "선택한 GPU 기준으로 실측 자료, 업그레이드 비용, 실행 설정을 확인합니다.",
     reliability: "실측 신뢰도",
     benchmark: "벤치마크 2.0",
     detail: "상세 주소",
@@ -106,8 +106,8 @@ const PLATFORM_V2_COPY = {
     referencePriceNote: "가격은 참고값입니다. 실제 구매가는 직접 입력하세요.",
   },
   en: {
-    hub: "Decision hub",
-    hubNote: "Review measured confidence, purchase cost, and launch settings in one place.",
+    hub: "Compare and run",
+    hubNote: "Review measurements, upgrade cost, and launch settings for the selected GPU.",
     reliability: "Measurement confidence",
     benchmark: "Benchmark 2.0",
     detail: "Deep links",
@@ -498,7 +498,7 @@ function ensureDecisionHub() {
   panel.setAttribute("aria-labelledby", "decisionHubTitle");
   panel.innerHTML = `
     <div class="decision-hub-head">
-      <div><span class="section-kicker">v2.0</span><h2 id="decisionHubTitle"></h2><p id="decisionHubNote"></p></div>
+      <div><h2 id="decisionHubTitle"></h2><p id="decisionHubNote"></p></div>
       <div class="decision-hub-tabs" role="tablist"></div>
     </div>
     <div id="decisionHubBody" class="decision-hub-body" aria-live="polite"></div>`;

@@ -17,6 +17,8 @@ const budgets = [
   ["platform-v2.js", 60 * 1024],
   ["platform-v3.js", 230 * 1024],
   ["styles.css", 200 * 1024],
+  ["styles/home.css", 16 * 1024],
+  ["styles/v6-guided.css", 12 * 1024],
 ];
 
 const failures = [];

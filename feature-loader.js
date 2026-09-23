@@ -8,6 +8,8 @@
   let infrastructurePromise = null;
   let decisionToolsPromise = null;
   let benchmarkPromise = null;
+  let apiCostPromise = null;
+  let ontologyCostPromise = null;
 
   function loadScript(path) {
     return new Promise((resolve, reject) => {
@@ -62,6 +64,26 @@
     return decisionToolsPromise;
   };
 
+  window.loadApiCostEstimator = () => {
+    if (!apiCostPromise) {
+      apiCostPromise = loadScript("features/api-cost-estimator.js").catch((error) => {
+        apiCostPromise = null;
+        throw error;
+      });
+    }
+    return apiCostPromise;
+  };
+
+  window.loadOntologyCostEstimator = () => {
+    if (!ontologyCostPromise) {
+      ontologyCostPromise = loadScript("features/ontology-cost-estimator.js").catch((error) => {
+        ontologyCostPromise = null;
+        throw error;
+      });
+    }
+    return ontologyCostPromise;
+  };
+
   window.loadBenchmarkWorkspace = () => {
     if (!benchmarkPromise) {
       benchmarkPromise = loadScript("features/benchmark-workspace.js")
@@ -103,12 +125,21 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     const params = new URL(window.location.href).searchParams;
-    if (params.get("mode") === "infra" || params.get("studio") === "consulting" || params.has("scenario")) {
+    const mode = params.get("mode");
+    if (mode === "infra" || params.get("studio") === "consulting" || params.has("scenario")) {
       window.loadInfrastructureStudio();
     }
+    if (mode === "apiCost") {
+      window.loadApiCostEstimator().then(() => window.AIHardwareCore?.setCoreTaskMode("apiCost"));
+    }
+    if (mode === "ontologyCost") {
+      window.loadOntologyCostEstimator().then(() => window.AIHardwareCore?.setCoreTaskMode("ontologyCost"));
+    }
+    if (params.has("gpu") || params.has("hub") || params.has("detail") || params.has("build")) {
+      window.loadDecisionTools();
+    }
     const benchmarkTarget = document.getElementById("benchmarkSheet");
-    const decisionTarget = document.getElementById("calculationBasis");
-    const targets = [benchmarkTarget, decisionTarget].filter(Boolean);
+    const targets = [benchmarkTarget].filter(Boolean);
     if ("IntersectionObserver" in window && targets.length) {
       const observer = new IntersectionObserver((entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
@@ -116,15 +147,10 @@
           observer.unobserve(benchmarkTarget);
           window.loadBenchmarkWorkspace();
         }
-        if (entries.some((entry) => entry.isIntersecting && entry.target === decisionTarget)) {
-          observer.unobserve(decisionTarget);
-          window.loadDecisionTools();
-        }
       }, { rootMargin: "500px" });
       targets.forEach((target) => observer.observe(target));
     } else {
       window.setTimeout(() => {
-        window.loadDecisionTools();
         window.loadBenchmarkWorkspace();
       }, 2500);
     }

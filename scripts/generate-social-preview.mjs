@@ -25,28 +25,25 @@ function main() {
   fill(colors.bg);
   rect(64, 56, 1152, 528, colors.panel);
   strokeRect(64, 56, 1152, 528, colors.line, 3);
-  rect(104, 98, 92, 92, colors.blueSoft);
-  strokeRect(104, 98, 92, 92, colors.blue, 6);
-  rect(130, 124, 40, 40, colors.greenSoft);
-  strokeRect(130, 124, 40, 40, colors.green, 6);
-  text(230, 104, "AI HARDWARE FIT", 4, colors.blue);
-  text(230, 156, "AI INFRA SIZING", 7, colors.ink);
-  text(230, 230, "LLM RAG VLM VOICE AVATAR", 4, colors.muted);
-  rect(1000, 104, 150, 48, colors.blue);
-  text(1023, 119, "V4.8", 4, colors.panel);
-  infoCard(104, 326, "3 PLANS", "COST SLA CAPACITY", colors.greenSoft, colors.green);
-  infoCard(376, 326, "BOM CHECK", "CPU RAM POWER", colors.blueSoft, colors.blue);
-  infoCard(648, 326, "TOPOLOGY", "RACK NET COOLING", colors.violetSoft, colors.violet);
-  infoCard(920, 326, "EXPORT", "EXCEL PDF JSON", colors.yellowSoft, colors.yellow);
-  rect(104, 496, 1058, 48, colors.ink);
-  text(130, 511, "SIZING  SLA  BOM  TCO  POC", 3, colors.panel);
+  rect(104, 96, 84, 84, colors.blueSoft);
+  strokeRect(104, 96, 84, 84, colors.blue, 6);
+  rect(128, 120, 36, 36, colors.greenSoft);
+  strokeRect(128, 120, 36, 36, colors.green, 5);
+  text(226, 92, "AI HARDWARE FIT", 4, colors.blue);
+  text(226, 140, "WHAT RUNS ON YOUR GPU?", 5, colors.ink);
+  text(226, 204, "332 AI MODELS / 151 GPUS", 3, colors.muted);
+  rect(920, 96, 222, 44, colors.blue);
+  text(938, 109, "OPEN SOURCE", 3, colors.panel);
+  infoCard(104, 300, "FIND MODELS", "VRAM QUANT SPEED", colors.greenSoft, colors.green);
+  infoCard(464, 300, "PICK A GPU", "BUDGET POWER FIT", colors.blueSoft, colors.blue);
+  infoCard(824, 300, "SIZE SERVICE", "USERS SLA TCO", colors.violetSoft, colors.violet);
+  rect(104, 486, 1058, 54, colors.ink);
+  text(134, 503, "NO SIGNUP  LOCAL CALC  OPEN DATA", 3, colors.panel);
 
   writePng("docs/social-preview.png");
-  writePng("docs/social-preview-v4.8.png");
 }
-
 function infoCard(x, y, title, body, fillColor, titleColor) {
-  rect(x, y, 242, 116, fillColor);
+  rect(x, y, 320, 116, fillColor);
   text(x + 26, y + 32, title, 4, titleColor);
   text(x + 26, y + 78, body, 2, colors.ink);
 }

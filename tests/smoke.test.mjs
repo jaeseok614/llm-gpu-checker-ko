@@ -81,7 +81,7 @@ test("v7.1 key catalog survives Korean-English-Korean round trips", () => {
   app.setUiLanguage("ko");
   const korean = app.document.querySelector("#brandSubtitle").textContent;
   app.setUiLanguage("en");
-  assert.equal(app.document.querySelector("#brandSubtitle").textContent, "GPU · Model · Infrastructure Workbench");
+  assert.equal(app.document.querySelector("#brandSubtitle").textContent, "Open-source GPU and model fit calculator");
   app.setUiLanguage("ko");
   assert.equal(app.document.querySelector("#brandSubtitle").textContent, korean);
   assert.ok(app.AIHardwareI18n.audit().keyedNodes >= 20);
@@ -119,52 +119,41 @@ test("v7.5 terminal results are sanitized before submission", () => {
 
 after(() => dom?.window.close());
 
-test("first screen presents a flat tool-switcher tab bar with all tools visible (no More menu)", () => {
-  assert.equal(app.document.querySelectorAll(".core-task-actions [data-core-task]").length, 7);
+test("first screen prioritizes three common tasks and keeps advanced tools accessible", () => {
+  const actions = app.document.querySelector(".core-task-actions");
+  assert.equal(actions.querySelectorAll("[data-core-task]").length, 7);
+  assert.equal(actions.querySelectorAll(".core-task-primary [data-core-task]").length, 3);
+  assert.equal(actions.querySelectorAll(".core-task-secondary [data-core-task]").length, 4);
   assert.equal(app.document.querySelectorAll(".task-choice-number").length, 0);
-  assert.equal(app.document.querySelector("[data-more-toggle]"), null);
-  assert.ok(app.document.querySelector('.core-task-actions [data-core-task="placement"]'));
-  assert.ok(app.document.querySelector('.core-task-actions [data-core-task="apiCost"]'));
+  assert.ok(actions.querySelector('[data-core-task="finder"]'));
+  assert.ok(actions.querySelector('[data-core-task="modelFinder"]'));
+  assert.ok(actions.querySelector('[data-core-task="infra"]'));
+  assert.ok(actions.querySelector('[data-core-task="placement"]'));
+  assert.ok(actions.querySelector('[data-core-task="apiCost"]'));
+  assert.ok(actions.querySelector('[data-core-task="ontologyCost"]'));
+  assert.ok(actions.querySelector('[data-core-task="community"]'));
+  assert.ok(app.document.querySelector(".core-task-more"));
+  assert.equal(app.document.querySelector(".core-task-more").open, false);
   assert.ok(app.document.querySelector('[data-demo-gpu="rtx3060-12"]'));
   assert.ok(app.document.querySelector('[data-demo-infra="internal-rag"]'));
-  assert.ok(app.document.querySelector('[data-demo-infra="ontology-batch"]'));
   assert.ok(app.document.querySelector('[data-demo-model]'));
-  assert.ok(app.document.querySelector('[data-demo-placement="1"]'));
-  assert.ok(app.document.querySelector('[data-demo-placement="2"]'));
   assert.ok(app.document.getElementById("workspaceJourney"));
-  assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /예시로 보기/);
-  assert.match(app.document.querySelector("[data-showcase-feedback]").href, /product-feedback\.yml/);
   assert.ok(app.document.querySelector("[data-open-start-guide]"));
   assert.ok(app.document.querySelector(".app-header [data-open-start-guide]"));
-
-  // v7.24: the 6 tabs are visually grouped into 4 goal-oriented clusters
-  // (모델 찾기 / 인프라 설계 / 비용 비교 / 데이터) instead of reading as 6
-  // flat, same-weight tools. Every underlying [data-core-task] button
-  // still exists and is still directly clickable -- only the grouping
-  // changed, not the click targets or their count.
-  const groups = app.document.querySelectorAll(".core-task-actions .core-task-group");
-  assert.equal(groups.length, 4);
-  assert.ok(app.document.querySelector('[data-core-group="cost"] [data-core-task="ontologyCost"]'));
-  const groupLabels = [...app.document.querySelectorAll(".core-task-group-label")].map((node) => node.textContent);
-  assert.deepEqual(groupLabels, ["모델 찾기", "인프라 설계", "비용 비교", "데이터"]);
-  assert.ok(app.document.querySelector('[data-core-group="model"] [data-core-task="finder"]'));
-  assert.ok(app.document.querySelector('[data-core-group="model"] [data-core-task="modelFinder"]'));
-  assert.ok(app.document.querySelector('[data-core-group="infra"] [data-core-task="infra"]'));
-  assert.ok(app.document.querySelector('[data-core-group="infra"] [data-core-task="placement"]'));
-  assert.ok(app.document.querySelector('[data-core-group="cost"] [data-core-task="apiCost"]'));
-  assert.ok(app.document.querySelector('[data-core-group="data"] [data-core-task="community"]'));
-  // Every tab button inside the switcher should still carry role="tab"
-  // (assigned via the tablist's button-descendant walk, not a direct-child
-  // walk -- grouping added a layer of wrapper divs between the tablist and
-  // its buttons). This deliberately excludes the handful of cross-nav
-  // "bridge" buttons elsewhere on the page that reuse [data-core-task] as a
-  // click target (e.g. the API-vs-Local panel's "인프라 견적" link) -- those
-  // aren't real tabs and were never assigned role="tab".
-  [...app.document.querySelectorAll(".core-task-actions [data-core-task]")].forEach((button) => {
-    assert.equal(button.getAttribute("role"), "tab");
+  [...actions.querySelectorAll("[data-core-task]")].forEach((button) => {
+    assert.notEqual(button.getAttribute("role"), "tab");
+    assert.equal(button.hasAttribute("aria-pressed"), false);
   });
-});
+  assert.equal(app.document.querySelector('[data-core-task="finder"]').getAttribute("aria-current"), "page");
+  assert.equal(actions.querySelectorAll('[aria-current="page"]').length, 1);
 
+  const html = read("index.html");
+  const loader = read("feature-loader.js");
+  assert.doesNotMatch(html, /<script src="\.\/features\/(?:api-cost-estimator|ontology-cost-estimator)\.js/);
+  assert.match(loader, /loadApiCostEstimator/);
+  assert.match(loader, /loadOntologyCostEstimator/);
+  assert.doesNotMatch(loader, /decisionTarget/);
+});
 test("locale helpers and price data trust remain deterministic", () => {
   assert.equal(app.AIHardwareLocale.confidence("낮음", "en"), "Low");
   assert.equal(app.AIHardwareLocale.confidence("Low", "ko"), "낮음");
@@ -1133,8 +1122,8 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.document.querySelector('[data-si-input-mode="simple"]').click();
   app.eval('setUiLanguage("en"); setCoreTaskMode("infra");');
   app.document.querySelector('[data-studio-tab="consulting"]').click();
-  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /GPU that fits my model/);
-  assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /Models that run on my GPU/);
+  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /Find a GPU for a model/);
+  assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /Find models for my GPU/);
   assert.match(app.document.querySelector('[data-demo-infra="internal-rag"]').textContent, /30-user internal RAG estimate/);
   assert.match(app.document.querySelector('[data-demo-infra="ontology-batch"]').textContent, /Ontology construction batch estimate/);
   assert.doesNotMatch(app.document.querySelector(".core-task-actions").textContent, /[가-힣]/);
@@ -1165,10 +1154,10 @@ test("English mode updates the primary navigation and infrastructure wizard", ()
   app.eval('setUiLanguage("ko"); setCoreTaskMode("infra");');
   app.document.querySelector('[data-studio-tab="consulting"]').click();
   app.document.querySelector('[data-si-input-mode="expert"]').click();
-  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /모델에 적합한 GPU/);
+  assert.match(app.document.querySelector('[data-core-task="modelFinder"]').textContent, /모델에 맞는 GPU 찾기/);
   assert.match(app.document.querySelector("[data-guide-examples-title]").textContent, /예시로 보기/);
-  assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /내 GPU에서 실행 가능한 모델/);
-  assert.doesNotMatch(app.document.querySelector(".core-task-actions").textContent, /GPU that fits|Models that run/);
+  assert.match(app.document.querySelector('[data-core-task="finder"]').textContent, /내 GPU로 모델 찾기/);
+  assert.doesNotMatch(app.document.querySelector(".core-task-actions").textContent, /Find a GPU|Find models/);
   assert.equal(app.document.getElementById("advisorBudgetUsd").dataset.currency, "KRW");
   assert.match(app.document.getElementById("siElectricityKrw").closest("label").textContent, /원\/kWh/);
   assert.equal(Number(app.document.getElementById("siElectricityKrw").value), 150);

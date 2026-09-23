@@ -1,8 +1,8 @@
 {
   "name": "ai-hardware-fit",
-  "version": "7.28.0",
+  "version": "7.29.0",
   "private": false,
-  "description": "Open-source AI infrastructure sizing assistant for LLM, RAG, VLM, media, voice, and avatar workloads with SLA, BOM, TCO, and proposal exports.",
+  "description": "Open-source GPU fit calculator for local AI models with VRAM, quantization, speed, GPU selection, API cost, and infrastructure sizing.",
   "type": "module",
   "bin": {
     "ai-hardware-fit": "./scripts/benchmark-cli.mjs"
