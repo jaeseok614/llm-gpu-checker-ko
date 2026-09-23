@@ -1409,6 +1409,22 @@ mergeModelMetadata({
     releaseDate: "2026-08-18",
     sourceUrl: "https://huggingface.co/meta-models/Muse-Glimmer-30B",
   },
+  "MiMo-V2.6 Distill Qwen 9B": {
+    releaseDate: "2026-09-22",
+    sourceUrl: "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Distill-Qwen-9B",
+  },
+  "Xing4.0 29B A4B": {
+    releaseDate: "2026-09-16",
+    sourceUrl: "https://huggingface.co/XingChen-AGI/Xing4.0-29B-A4B",
+  },
+  "MiMo-V2.6 Flash-RL": {
+    releaseDate: "2026-09-22",
+    sourceUrl: "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Flash-RL",
+  },
+  "MiMo-V2.6 Pro-RL": {
+    releaseDate: "2026-09-22",
+    sourceUrl: "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Pro-RL",
+  },
   "Mistral Small 4 119B A6B": {
     releaseDate: "2026-03-16",
     sourceUrl: "https://legal.mistral.ai/ai-governance/models",
